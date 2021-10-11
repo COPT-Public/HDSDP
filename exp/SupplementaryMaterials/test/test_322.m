@@ -19,14 +19,14 @@ steprange = logspace(0, 2, 10);
 nsteptotest = length(steprange);
 
 % Set index of image 
-digitimgs = [2, 24];
+digitimgs = [24];
 
 % Set range of pfail values of interest (here we use pfail * 10 for 
 % representation)
 pfailrange = [2, 3];
 
 % Set number of repeats
-nTest = 20;
+nTest = 1;
 
 % Set optimization parameters
 use_vm = 0;
