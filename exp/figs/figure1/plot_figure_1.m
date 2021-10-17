@@ -1,3 +1,22 @@
+sgdSpeedup = ones(nTest, nbatchtotest + 1);
+nsgdBatchOneIter = ones(nTest, 1);
+proxlinSpeedup = ones(nTest, nbatchtotest + 1);
+nproxlinBatchOneIter = ones(nTest, 1);
+proxptSpeedup = ones(nTest, nbatchtotest + 1);
+nproxptBatchOneIter = ones(nTest, 1);
+
+for i = 1:nTest
+    tempSpeedup = min((nsgdIter(:, :, i)'));
+    nsgdBatchOneIter(i) = tempSpeedup(1);
+    sgdSpeedup(i, :) = max(tempSpeedup) ./ tempSpeedup;
+    tempSpeedup = min((nproxlinIter(:, :, i)'));
+    nproxlinBatchOneIter(i, :) = tempSpeedup(1);
+    proxlinSpeedup(i, :) = max(tempSpeedup) ./ tempSpeedup;
+    tempSpeedup = min((nproxptIter(:, :, i)'));
+    nproxptBatchOneIter(i) = tempSpeedup(1);
+    proxptSpeedup(i, :) = max(tempSpeedup) ./ tempSpeedup;
+end % End for
+
 fprintf("Type 1 figure: Speedup vs. Batchsize \n");
 
 % Plot figure type 1: speedup
@@ -13,7 +32,7 @@ legend(["SPL", "SGD", "SPP"], "FontSize", 20);
 % xlabel("batchsize m");
 % ylabel("speedup");
 set(gca, "Fontsize", 20);
-savefig("kappa_" + kappa + "_pfail_" + pfail + "_type_1.fig")
+savefig("zipcode_" + imgidx + "_pfail_" + pfail + "_type_1.fig")
 fprintf("Done. \n");
 
 close all;
@@ -50,7 +69,7 @@ for i = 1:nrobusttest
     
     legend(["SPL", "SGD", "SPP"], "FontSize", 20);
     set(gca, "Fontsize", 20);
-    savefig("kappa_" + kappa + "_pfail_" + pfail + "_type_2_batch_" + batchsize + ".fig")
+    savefig("zipcode_" + imgidx + "_pfail_" + pfail + "_type_2_batch_" + batchsize + ".fig")
     
     %     xlabel("stepsize");
     %     ylabel("speedup");
@@ -86,7 +105,7 @@ for i = 1:nrobusttest
     
     legend(["SPL", "SGD", "SPP"], "FontSize", 20);
     set(gca, "Fontsize", 20);
-    savefig("kappa_" + kappa + "_pfail_" + pfail + "_type_3_batch_" + batchsize + ".fig")
+    savefig("zipcode_" + imgidx + "_pfail_" + pfail + "_type_3_batch_" + batchsize + ".fig")
     
     %     xlabel("stepsize");
     %     ylabel("speedup");
