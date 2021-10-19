@@ -7,17 +7,14 @@ tol = bestloss * 1.5;
 
 [m, n] = size(A);
 
-load ../../gwz/exp/idx_24_pfail_3_momentum_0.9_epoch_env.mat
-nTest = 2;
-
-% nSgdEpochtoOpt = ones(nTest, length(steprange)) * maxiter * m;
-% nSgdmEpochtoOpt = ones(nTest, length(steprange)) * maxiter * m;
-% nSgdbEpochtoOpt = ones(nTest, length(steprange)) * maxiter * m;
-% nSgdbmEpochtoOpt = ones(nTest, length(steprange)) * maxiter * m;
-% nProxLinEpochtoOpt = ones(nTest, length(steprange)) * maxiter * m;
-% nProxLinmEpochtoOpt = ones(nTest, length(steprange)) * maxiter * m;
-% nProxLinbEpochtoOpt = ones(nTest, length(steprange)) * maxiter * m;
-% nProxLinbmEpochtoOpt = ones(nTest, length(steprange)) * maxiter * m;
+nSgdEpochtoOpt = ones(nTest, length(steprange)) * maxiter * m;
+nSgdmEpochtoOpt = ones(nTest, length(steprange)) * maxiter * m;
+nSgdbEpochtoOpt = ones(nTest, length(steprange)) * maxiter * m;
+nSgdbmEpochtoOpt = ones(nTest, length(steprange)) * maxiter * m;
+nProxLinEpochtoOpt = ones(nTest, length(steprange)) * maxiter * m;
+nProxLinmEpochtoOpt = ones(nTest, length(steprange)) * maxiter * m;
+nProxLinbEpochtoOpt = ones(nTest, length(steprange)) * maxiter * m;
+nProxLinbmEpochtoOpt = ones(nTest, length(steprange)) * maxiter * m;
 nProxPtEpochtoOpt = ones(nTest, length(steprange)) * maxiter * m;
 nProxPtmEpochtoOpt = ones(nTest, length(steprange)) * maxiter * m;
 nProxPtbEpochtoOpt = ones(nTest, length(steprange)) * maxiter * m;
@@ -29,27 +26,27 @@ for k = 1:length(steprange)
     stepsize = steprange(k);
     runb = true;
     
-    parfor i = 1:nTest
+    for i = 1:nTest
         
         init_x = randn(n, 1);
         
         % Nothing
         %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%         % Test SGD
-%         [sgdsol, sgdinfo] = proxsgd(A, b, sqrt(maxiter * m), 0, init_x, ...
-%             maxiter, tol, true, 1, 0, stepsize, 0, show_info);
-%         
-%         if sgdinfo.status == "Optimal"
-%             nSgdEpochtoOpt(i, k) = sgdinfo.niter;
-%         end % End if
-%         
-%         % Test Proximal linear
-%         [proxlinsol, proxlininfo] = proxlin(A, b, sqrt(maxiter * m), 0, init_x, ...
-%             maxiter, tol, true, 0, stepsize, 0, show_info);
-%         
-%         if proxlininfo.status == "Optimal"
-%             nProxLinEpochtoOpt(i, k) = proxlininfo.niter;
-%         end % End if 
+        % Test SGD
+        [sgdsol, sgdinfo] = proxsgd(A, b, sqrt(maxiter * m), 0, init_x, ...
+            maxiter, tol, true, 1, 0, stepsize, 0, show_info);
+        
+        if sgdinfo.status == "Optimal"
+            nSgdEpochtoOpt(i, k) = sgdinfo.niter;
+        end % End if
+        
+        % Test Proximal linear
+        [proxlinsol, proxlininfo] = proxlin(A, b, sqrt(maxiter * m), 0, init_x, ...
+            maxiter, tol, true, 0, stepsize, 0, show_info);
+        
+        if proxlininfo.status == "Optimal"
+            nProxLinEpochtoOpt(i, k) = proxlininfo.niter;
+        end % End if 
         
         % Test Proximal point
         [proxptsol, proxptinfo] = proxpt(A, b, sqrt(maxiter * m), 0, init_x, ...
@@ -62,21 +59,21 @@ for k = 1:length(steprange)
         
         % Momentum
         %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%         % Test SGD
-%         [sgdsolm, sgdinfom] = proxsgd(A, b, sqrt(maxiter * m), beta, init_x, ...
-%             maxiter, tol, true, 1, 0, stepsize, 0, show_info);
-%         
-%         if sgdinfom.status == "Optimal"
-%             nSgdmEpochtoOpt(i, k) = sgdinfom.niter;
-%         end % End if
-%         
-%         % Test Proximal linear
-%         [proxlinsolm, proxlininfom] = proxlin(A, b, sqrt(maxiter * m), beta, init_x, ...
-%             maxiter, tol, true, 0, stepsize, 0, show_info);
-%         
-%         if proxlininfom.status == "Optimal"
-%             nProxLinmEpochtoOpt(i, k) = proxlininfom.niter;
-%         end % End if 
+        % Test SGD
+        [sgdsolm, sgdinfom] = proxsgd(A, b, sqrt(maxiter * m), beta, init_x, ...
+            maxiter, tol, true, 1, 0, stepsize, 0, show_info);
+        
+        if sgdinfom.status == "Optimal"
+            nSgdmEpochtoOpt(i, k) = sgdinfom.niter;
+        end % End if
+        
+        % Test Proximal linear
+        [proxlinsolm, proxlininfom] = proxlin(A, b, sqrt(maxiter * m), beta, init_x, ...
+            maxiter, tol, true, 0, stepsize, 0, show_info);
+        
+        if proxlininfom.status == "Optimal"
+            nProxLinmEpochtoOpt(i, k) = proxlininfom.niter;
+        end % End if 
         
         % Test Proximal point
         [proxptsolm, proxptinfom] = proxpt(A, b, sqrt(maxiter * m), beta, init_x, ...
@@ -89,24 +86,24 @@ for k = 1:length(steprange)
         
         % Minibatch
         %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%         % Test SGD
-%         [sgdsolb, sgdinfob] = proxsgd(A, b, sqrt(maxiter * m / batchsize), 0, init_x, ...
-%             maxiter, tol, true, batchsize, 0, stepsize, 0, show_info);
-%         
-%         if sgdinfob.status == "Optimal"
-%             nSgdbEpochtoOpt(i, k) = sgdinfob.niter;
-%         end % End if
-%         
-%         % Test Proximal linear
-%         [proxlinsolb, proxlininfob] = proxlinbatch(A, b, sqrt(maxiter * m / batchsize), 0, init_x, ...
-%             maxiter, tol, true, batchsize, 0, stepsize, show_info);
-%         
-%         if proxlininfob.status == "Optimal"
-%             nProxLinbEpochtoOpt(i, k) = proxlininfob.niter;
-%         end % End if 
+        % Test SGD
+        [sgdsolb, sgdinfob] = proxsgd(A, b, sqrt(maxiter * m / batchsize), 0, init_x, ...
+            maxiter, tol, true, batchsize, 0, stepsize, 0, show_info);
+        
+        if sgdinfob.status == "Optimal"
+            nSgdbEpochtoOpt(i, k) = sgdinfob.niter;
+        end % End if
+        
+        % Test Proximal linear
+        [proxlinsolb, proxlininfob] = proxlinbatch(A, b, sqrt(maxiter * m / batchsize), 0, init_x, ...
+            maxiter, tol, true, batchsize, 0, stepsize, show_info);
+        
+        if proxlininfob.status == "Optimal"
+            nProxLinbEpochtoOpt(i, k) = proxlininfob.niter;
+        end % End if 
         
         % Test Proximal point
-        if k >= 4
+        if k >= 2
             [proxptsolb, proxptinfob] = proxptbatch(A, b, sqrt(maxiter * m / batchsize), init_x, ...
                 maxiter, tol, true, batchsize, 0, stepsize, show_info);     
             if proxptinfob.status == "Optimal"
@@ -118,21 +115,21 @@ for k = 1:length(steprange)
 
         % Momentum and Minibatch
         %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%         % Test SGD
-%         [sgdsolbm, sgdinfobm] = proxsgd(A, b, sqrt(maxiter * m / batchsize), beta, init_x, ...
-%             maxiter, tol, true, batchsize, 0, stepsize, 0, show_info);
-%         
-%         if sgdinfobm.status == "Optimal"
-%             nSgdbmEpochtoOpt(i, k) = sgdinfobm.niter;
-%         end % End if
+        % Test SGD
+        [sgdsolbm, sgdinfobm] = proxsgd(A, b, sqrt(maxiter * m / batchsize), beta, init_x, ...
+            maxiter, tol, true, batchsize, 0, stepsize, 0, show_info);
         
-%         % Test Proximal linear
-%         [proxlinsolbm, proxlininfobm] = proxlinbatch(A, b, sqrt(maxiter * m / batchsize), beta, init_x, ...
-%             maxiter, tol, true, batchsize, 0, stepsize, show_info);
-%         
-%         if proxlininfobm.status == "Optimal"
-%             nProxLinbmEpochtoOpt(i, k) = proxlininfobm.niter;
-%         end % End if 
+        if sgdinfobm.status == "Optimal"
+            nSgdbmEpochtoOpt(i, k) = sgdinfobm.niter;
+        end % End if
+        
+        % Test Proximal linear
+        [proxlinsolbm, proxlininfobm] = proxlinbatch(A, b, sqrt(maxiter * m / batchsize), beta, init_x, ...
+            maxiter, tol, true, batchsize, 0, stepsize, show_info);
+        
+        if proxlininfobm.status == "Optimal"
+            nProxLinbmEpochtoOpt(i, k) = proxlininfobm.niter;
+        end % End if 
         
         % Test Proximal point
         [proxptsolbm, proxptinfobm] = proxptbatch(A, b, sqrt(maxiter * m / batchsize), init_x, ...
