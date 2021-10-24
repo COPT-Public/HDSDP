@@ -12,7 +12,7 @@ batchrange = [32];
 
 % Set range of initial stepsizes of interest
 % e.g., from 0.1 to 100 under logscale
-steprange = logspace(0, 1, 10);
+steprange = logspace(0, 3, 10);
 nsteptotest = length(steprange);
 
 % Momentum Range
@@ -26,7 +26,7 @@ idxrange = [24];
 pfailrange = [3];
 
 % Set number of repeats
-nTest = 20;
+nTest = 3;
 
 % Set optimization parameters
 use_vm = 0;
