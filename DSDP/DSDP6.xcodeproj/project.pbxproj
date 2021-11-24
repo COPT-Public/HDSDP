@@ -11,12 +11,10 @@
 		19118DE72737B72800D51D03 /* hsd.c in Sources */ = {isa = PBXBuildFile; fileRef = 19118D952737B72800D51D03 /* hsd.c */; };
 		19118DE82737B72800D51D03 /* residualsetup.c in Sources */ = {isa = PBXBuildFile; fileRef = 19118D962737B72800D51D03 /* residualsetup.c */; };
 		19118DE92737B72800D51D03 /* stepheur.c in Sources */ = {isa = PBXBuildFile; fileRef = 19118D972737B72800D51D03 /* stepheur.c */; };
-		19118DEA2737B72800D51D03 /* symmat.c in Sources */ = {isa = PBXBuildFile; fileRef = 19118D9B2737B72800D51D03 /* symmat.c */; };
 		19118DEB2737B72800D51D03 /* vec.c in Sources */ = {isa = PBXBuildFile; fileRef = 19118D9F2737B72800D51D03 /* vec.c */; };
 		19118DEC2737B72800D51D03 /* densemat.c in Sources */ = {isa = PBXBuildFile; fileRef = 19118DA12737B72800D51D03 /* densemat.c */; };
 		19118DED2737B72800D51D03 /* sparsemat.c in Sources */ = {isa = PBXBuildFile; fileRef = 19118DA22737B72800D51D03 /* sparsemat.c */; };
 		19118DEE2737B72800D51D03 /* SuiteSparse_config.c in Sources */ = {isa = PBXBuildFile; fileRef = 19118DA82737B72800D51D03 /* SuiteSparse_config.c */; };
-		19118DEF2737B72800D51D03 /* cs_load.c in Sources */ = {isa = PBXBuildFile; fileRef = 19118DAB2737B72800D51D03 /* cs_load.c */; };
 		19118DF12737B72800D51D03 /* cs_ipvec.c in Sources */ = {isa = PBXBuildFile; fileRef = 19118DAD2737B72800D51D03 /* cs_ipvec.c */; };
 		19118DF22737B72800D51D03 /* cs_reach.c in Sources */ = {isa = PBXBuildFile; fileRef = 19118DAE2737B72800D51D03 /* cs_reach.c */; };
 		19118DF32737B72800D51D03 /* cs_chol.c in Sources */ = {isa = PBXBuildFile; fileRef = 19118DAF2737B72800D51D03 /* cs_chol.c */; };
@@ -69,6 +67,11 @@
 		19118E222737B72800D51D03 /* cs_util.c in Sources */ = {isa = PBXBuildFile; fileRef = 19118DE02737B72800D51D03 /* cs_util.c */; };
 		19118E232737B72800D51D03 /* main.c in Sources */ = {isa = PBXBuildFile; fileRef = 19118DE22737B72800D51D03 /* main.c */; };
 		19118E242737B72800D51D03 /* dsdphsd.c in Sources */ = {isa = PBXBuildFile; fileRef = 19118DE42737B72800D51D03 /* dsdphsd.c */; };
+		19808F382737EEA60014086F /* test_vec.c in Sources */ = {isa = PBXBuildFile; fileRef = 19808F372737EEA60014086F /* test_vec.c */; };
+		19808F3F273807770014086F /* dsdpdata.c in Sources */ = {isa = PBXBuildFile; fileRef = 19808F3E273807770014086F /* dsdpdata.c */; };
+		19808F4327380A990014086F /* dsdppresolve.c in Sources */ = {isa = PBXBuildFile; fileRef = 19808F4227380A990014086F /* dsdppresolve.c */; };
+		19808F46273817510014086F /* rankonemat.c in Sources */ = {isa = PBXBuildFile; fileRef = 19808F45273817510014086F /* rankonemat.c */; };
+		19808F4B2738FC1F0014086F /* dsdppardiso.c in Sources */ = {isa = PBXBuildFile; fileRef = 19808F4A2738FC1F0014086F /* dsdppardiso.c */; };
 		199220762737D86C00DD975D /* Accelerate.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 199220752737D86C00DD975D /* Accelerate.framework */; platformFilter = maccatalyst; };
 		1992207B2737D8A400DD975D /* libmkl_intel_thread.1.dylib in Frameworks */ = {isa = PBXBuildFile; fileRef = 199220772737D8A400DD975D /* libmkl_intel_thread.1.dylib */; };
 		1992207C2737D8A400DD975D /* libmkl_intel_thread.1.dylib in Embed Libraries */ = {isa = PBXBuildFile; fileRef = 199220772737D8A400DD975D /* libmkl_intel_thread.1.dylib */; settings = {ATTRIBUTES = (CodeSignOnCopy, ); }; };
@@ -80,6 +83,8 @@
 		199220822737D8A400DD975D /* libmkl_mc3.1.dylib in Embed Libraries */ = {isa = PBXBuildFile; fileRef = 1992207A2737D8A400DD975D /* libmkl_mc3.1.dylib */; settings = {ATTRIBUTES = (CodeSignOnCopy, ); }; };
 		199220852737D8C500DD975D /* libiomp5.dylib in Frameworks */ = {isa = PBXBuildFile; fileRef = 199220842737D8C500DD975D /* libiomp5.dylib */; };
 		199220862737D8C500DD975D /* libiomp5.dylib in Embed Libraries */ = {isa = PBXBuildFile; fileRef = 199220842737D8C500DD975D /* libiomp5.dylib */; settings = {ATTRIBUTES = (CodeSignOnCopy, ); }; };
+		19BACAF3274EBC1900E987FD /* test_sparse.c in Sources */ = {isa = PBXBuildFile; fileRef = 19BACAF2274EBC1900E987FD /* test_sparse.c */; };
+		19BACAF5274EBC2D00E987FD /* test_dense.c in Sources */ = {isa = PBXBuildFile; fileRef = 19BACAF4274EBC2D00E987FD /* test_dense.c */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXCopyFilesBuildPhase section */
@@ -119,19 +124,16 @@
 		19118D972737B72800D51D03 /* stepheur.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = stepheur.c; sourceTree = "<group>"; };
 		19118D982737B72800D51D03 /* hsd.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = hsd.h; sourceTree = "<group>"; };
 		19118D992737B72800D51D03 /* schurmat.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = schurmat.h; sourceTree = "<group>"; };
-		19118D9B2737B72800D51D03 /* symmat.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = symmat.c; sourceTree = "<group>"; };
 		19118D9C2737B72800D51D03 /* vec.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = vec.h; sourceTree = "<group>"; };
 		19118D9D2737B72800D51D03 /* sparsemat.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = sparsemat.h; sourceTree = "<group>"; };
 		19118D9E2737B72800D51D03 /* densemat.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = densemat.h; sourceTree = "<group>"; };
 		19118D9F2737B72800D51D03 /* vec.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = vec.c; sourceTree = "<group>"; };
-		19118DA02737B72800D51D03 /* symmat.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = symmat.h; sourceTree = "<group>"; };
 		19118DA12737B72800D51D03 /* densemat.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = densemat.c; sourceTree = "<group>"; };
 		19118DA22737B72800D51D03 /* sparsemat.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = sparsemat.c; sourceTree = "<group>"; };
 		19118DA42737B72800D51D03 /* dsdppardiso.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = dsdppardiso.h; sourceTree = "<group>"; };
 		19118DA52737B72800D51D03 /* dsdplapack.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = dsdplapack.h; sourceTree = "<group>"; };
 		19118DA82737B72800D51D03 /* SuiteSparse_config.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = SuiteSparse_config.c; sourceTree = "<group>"; };
 		19118DA92737B72800D51D03 /* SuiteSparse_config.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = SuiteSparse_config.h; sourceTree = "<group>"; };
-		19118DAB2737B72800D51D03 /* cs_load.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = cs_load.c; sourceTree = "<group>"; };
 		19118DAD2737B72800D51D03 /* cs_ipvec.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = cs_ipvec.c; sourceTree = "<group>"; };
 		19118DAE2737B72800D51D03 /* cs_reach.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = cs_reach.c; sourceTree = "<group>"; };
 		19118DAF2737B72800D51D03 /* cs_chol.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = cs_chol.c; sourceTree = "<group>"; };
@@ -186,12 +188,25 @@
 		19118DE22737B72800D51D03 /* main.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = main.c; sourceTree = "<group>"; };
 		19118DE42737B72800D51D03 /* dsdphsd.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = dsdphsd.c; sourceTree = "<group>"; };
 		19118DE52737B72800D51D03 /* dsdphsd.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = dsdphsd.h; sourceTree = "<group>"; };
+		19808F372737EEA60014086F /* test_vec.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = test_vec.c; sourceTree = "<group>"; };
+		19808F392737FEDA0014086F /* test.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = test.h; sourceTree = "<group>"; };
+		19808F3D273807770014086F /* dsdpdata.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = dsdpdata.h; sourceTree = "<group>"; };
+		19808F3E273807770014086F /* dsdpdata.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = dsdpdata.c; sourceTree = "<group>"; };
+		19808F4127380A990014086F /* dsdppresolve.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; name = dsdppresolve.h; path = DSDP6/src/presolve/dsdppresolve.h; sourceTree = SOURCE_ROOT; };
+		19808F4227380A990014086F /* dsdppresolve.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; name = dsdppresolve.c; path = DSDP6/src/presolve/dsdppresolve.c; sourceTree = SOURCE_ROOT; };
+		19808F44273817510014086F /* rankonemat.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = rankonemat.h; sourceTree = "<group>"; };
+		19808F45273817510014086F /* rankonemat.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = rankonemat.c; sourceTree = "<group>"; };
+		19808F47273833760014086F /* dsdpparam.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = dsdpparam.h; sourceTree = "<group>"; };
+		19808F4A2738FC1F0014086F /* dsdppardiso.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = dsdppardiso.c; sourceTree = "<group>"; };
 		199220752737D86C00DD975D /* Accelerate.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = Accelerate.framework; path = System/Library/Frameworks/Accelerate.framework; sourceTree = SDKROOT; };
 		199220772737D8A400DD975D /* libmkl_intel_thread.1.dylib */ = {isa = PBXFileReference; lastKnownFileType = "compiled.mach-o.dylib"; name = libmkl_intel_thread.1.dylib; path = ../../../../../../opt/intel/oneapi/mkl/2021.2.0/lib/libmkl_intel_thread.1.dylib; sourceTree = "<group>"; };
 		199220782737D8A400DD975D /* libmkl_core.1.dylib */ = {isa = PBXFileReference; lastKnownFileType = "compiled.mach-o.dylib"; name = libmkl_core.1.dylib; path = ../../../../../../opt/intel/oneapi/mkl/2021.2.0/lib/libmkl_core.1.dylib; sourceTree = "<group>"; };
 		199220792737D8A400DD975D /* libmkl_intel_lp64.1.dylib */ = {isa = PBXFileReference; lastKnownFileType = "compiled.mach-o.dylib"; name = libmkl_intel_lp64.1.dylib; path = ../../../../../../opt/intel/oneapi/mkl/2021.2.0/lib/libmkl_intel_lp64.1.dylib; sourceTree = "<group>"; };
 		1992207A2737D8A400DD975D /* libmkl_mc3.1.dylib */ = {isa = PBXFileReference; lastKnownFileType = "compiled.mach-o.dylib"; name = libmkl_mc3.1.dylib; path = ../../../../../../opt/intel/oneapi/mkl/2021.2.0/lib/libmkl_mc3.1.dylib; sourceTree = "<group>"; };
 		199220842737D8C500DD975D /* libiomp5.dylib */ = {isa = PBXFileReference; lastKnownFileType = "compiled.mach-o.dylib"; name = libiomp5.dylib; path = ../../../../../../opt/intel/oneapi/compiler/2021.2.0/mac/compiler/lib/libiomp5.dylib; sourceTree = "<group>"; };
+		19BACAF1274EAE4500E987FD /* structs.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = structs.h; sourceTree = "<group>"; };
+		19BACAF2274EBC1900E987FD /* test_sparse.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = test_sparse.c; sourceTree = "<group>"; };
+		19BACAF4274EBC2D00E987FD /* test_dense.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = test_dense.c; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -244,6 +259,8 @@
 		19118D902737B72800D51D03 /* src */ = {
 			isa = PBXGroup;
 			children = (
+				19808F4027380A840014086F /* presolve */,
+				19808F3C2738074F0014086F /* data */,
 				19118D912737B72800D51D03 /* dsalg */,
 				19118D9A2737B72800D51D03 /* linsys */,
 			);
@@ -255,12 +272,10 @@
 			children = (
 				19118D922737B72800D51D03 /* residualsetup.h */,
 				19118D932737B72800D51D03 /* stepheur.h */,
-				19118D942737B72800D51D03 /* schurmat.c */,
 				19118D952737B72800D51D03 /* hsd.c */,
 				19118D962737B72800D51D03 /* residualsetup.c */,
 				19118D972737B72800D51D03 /* stepheur.c */,
 				19118D982737B72800D51D03 /* hsd.h */,
-				19118D992737B72800D51D03 /* schurmat.h */,
 			);
 			path = dsalg;
 			sourceTree = "<group>";
@@ -268,14 +283,19 @@
 		19118D9A2737B72800D51D03 /* linsys */ = {
 			isa = PBXGroup;
 			children = (
-				19118D9B2737B72800D51D03 /* symmat.c */,
+				19118DA42737B72800D51D03 /* dsdppardiso.h */,
+				19118D942737B72800D51D03 /* schurmat.c */,
+				19118D992737B72800D51D03 /* schurmat.h */,
 				19118D9C2737B72800D51D03 /* vec.h */,
 				19118D9D2737B72800D51D03 /* sparsemat.h */,
 				19118D9E2737B72800D51D03 /* densemat.h */,
 				19118D9F2737B72800D51D03 /* vec.c */,
-				19118DA02737B72800D51D03 /* symmat.h */,
 				19118DA12737B72800D51D03 /* densemat.c */,
 				19118DA22737B72800D51D03 /* sparsemat.c */,
+				19808F44273817510014086F /* rankonemat.h */,
+				19808F45273817510014086F /* rankonemat.c */,
+				19808F4A2738FC1F0014086F /* dsdppardiso.c */,
+				19BACAF1274EAE4500E987FD /* structs.h */,
 			);
 			path = linsys;
 			sourceTree = "<group>";
@@ -283,7 +303,6 @@
 		19118DA32737B72800D51D03 /* include */ = {
 			isa = PBXGroup;
 			children = (
-				19118DA42737B72800D51D03 /* dsdppardiso.h */,
 				19118DA52737B72800D51D03 /* dsdplapack.h */,
 			);
 			path = include;
@@ -310,7 +329,6 @@
 		19118DAA2737B72800D51D03 /* csparse */ = {
 			isa = PBXGroup;
 			children = (
-				19118DAB2737B72800D51D03 /* cs_load.c */,
 				19118DAD2737B72800D51D03 /* cs_ipvec.c */,
 				19118DAE2737B72800D51D03 /* cs_reach.c */,
 				19118DAF2737B72800D51D03 /* cs_chol.c */,
@@ -369,6 +387,10 @@
 		19118DE12737B72800D51D03 /* test */ = {
 			isa = PBXGroup;
 			children = (
+				19808F372737EEA60014086F /* test_vec.c */,
+				19808F392737FEDA0014086F /* test.h */,
+				19BACAF2274EBC1900E987FD /* test_sparse.c */,
+				19BACAF4274EBC2D00E987FD /* test_dense.c */,
 			);
 			path = test;
 			sourceTree = "<group>";
@@ -378,8 +400,27 @@
 			children = (
 				19118DE42737B72800D51D03 /* dsdphsd.c */,
 				19118DE52737B72800D51D03 /* dsdphsd.h */,
+				19808F47273833760014086F /* dsdpparam.h */,
 			);
 			path = interface;
+			sourceTree = "<group>";
+		};
+		19808F3C2738074F0014086F /* data */ = {
+			isa = PBXGroup;
+			children = (
+				19808F3D273807770014086F /* dsdpdata.h */,
+				19808F3E273807770014086F /* dsdpdata.c */,
+			);
+			path = data;
+			sourceTree = "<group>";
+		};
+		19808F4027380A840014086F /* presolve */ = {
+			isa = PBXGroup;
+			children = (
+				19808F4127380A990014086F /* dsdppresolve.h */,
+				19808F4227380A990014086F /* dsdppresolve.c */,
+			);
+			path = presolve;
 			sourceTree = "<group>";
 		};
 		199220742737D86C00DD975D /* Frameworks */ = {
@@ -402,10 +443,10 @@
 			isa = PBXNativeTarget;
 			buildConfigurationList = 19118D8D2737B6CF00D51D03 /* Build configuration list for PBXNativeTarget "DSDP6" */;
 			buildPhases = (
-				19118D822737B6CF00D51D03 /* Sources */,
 				19118D832737B6CF00D51D03 /* Frameworks */,
-				19118D842737B6CF00D51D03 /* CopyFiles */,
 				199220832737D8A400DD975D /* Embed Libraries */,
+				19118D822737B6CF00D51D03 /* Sources */,
+				19118D842737B6CF00D51D03 /* CopyFiles */,
 			);
 			buildRules = (
 			);
@@ -453,6 +494,7 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				19808F4327380A990014086F /* dsdppresolve.c in Sources */,
 				19118E002737B72800D51D03 /* cs_dupl.c in Sources */,
 				19118DEC2737B72800D51D03 /* densemat.c in Sources */,
 				19118DF72737B72800D51D03 /* cs_qrsol.c in Sources */,
@@ -461,14 +503,16 @@
 				19118E172737B72800D51D03 /* cs_cumsum.c in Sources */,
 				19118E022737B72800D51D03 /* cs_dfs.c in Sources */,
 				19118E1F2737B72800D51D03 /* cs_norm.c in Sources */,
-				19118DEA2737B72800D51D03 /* symmat.c in Sources */,
+				19808F46273817510014086F /* rankonemat.c in Sources */,
 				19118DE62737B72800D51D03 /* schurmat.c in Sources */,
+				19BACAF5274EBC2D00E987FD /* test_dense.c in Sources */,
 				19118DF92737B72800D51D03 /* cs_schol.c in Sources */,
 				19118E162737B72800D51D03 /* cs_amd.c in Sources */,
 				19118DED2737B72800D51D03 /* sparsemat.c in Sources */,
 				19118E082737B72800D51D03 /* cs_compress.c in Sources */,
 				19118E232737B72800D51D03 /* main.c in Sources */,
 				19118E1B2737B72800D51D03 /* cs_etree.c in Sources */,
+				19BACAF3274EBC1900E987FD /* test_sparse.c in Sources */,
 				19118E222737B72800D51D03 /* cs_util.c in Sources */,
 				19118DF82737B72800D51D03 /* cs_symperm.c in Sources */,
 				19118E0D2737B72800D51D03 /* cs_multiply.c in Sources */,
@@ -485,6 +529,7 @@
 				19118E0C2737B72800D51D03 /* cs_lu.c in Sources */,
 				19118E0F2737B72800D51D03 /* cs_ltsolve.c in Sources */,
 				19118E042737B72800D51D03 /* cs_add.c in Sources */,
+				19808F3F273807770014086F /* dsdpdata.c in Sources */,
 				19118E062737B72800D51D03 /* cs_utsolve.c in Sources */,
 				19118E052737B72800D51D03 /* cs_updown.c in Sources */,
 				19118E182737B72800D51D03 /* cs_dropzeros.c in Sources */,
@@ -492,9 +537,9 @@
 				19118DF52737B72800D51D03 /* cs_dmperm.c in Sources */,
 				19118DE82737B72800D51D03 /* residualsetup.c in Sources */,
 				19118DF12737B72800D51D03 /* cs_ipvec.c in Sources */,
+				19808F4B2738FC1F0014086F /* dsdppardiso.c in Sources */,
 				19118DFF2737B72800D51D03 /* cs_post.c in Sources */,
 				19118E0E2737B72800D51D03 /* cs_gaxpy.c in Sources */,
-				19118DEF2737B72800D51D03 /* cs_load.c in Sources */,
 				19118DFB2737B72800D51D03 /* cs_entry.c in Sources */,
 				19118DF62737B72800D51D03 /* cs_lsolve.c in Sources */,
 				19118E142737B72800D51D03 /* cs_ereach.c in Sources */,
@@ -506,6 +551,7 @@
 				19118E1A2737B72800D51D03 /* cs_house.c in Sources */,
 				19118DFE2737B72800D51D03 /* cs_leaf.c in Sources */,
 				19118E192737B72800D51D03 /* cs_permute.c in Sources */,
+				19808F382737EEA60014086F /* test_vec.c in Sources */,
 				19118E032737B72800D51D03 /* cs_lusol.c in Sources */,
 				19118DF42737B72800D51D03 /* cs_pvec.c in Sources */,
 				19118E092737B72800D51D03 /* cs_transpose.c in Sources */,

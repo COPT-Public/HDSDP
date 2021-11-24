@@ -16,6 +16,8 @@
  
 */
 
+#define DSDP64
+
 #ifdef COMPMEX
 #include "mex.h"
 #endif
@@ -26,16 +28,16 @@
 #define free mxFree
 // Define data type
 typedef mwSignedIndex DSDP_INT;
-#define KType double *
 #else
 #include <stdint.h>
-typedef int32_t DSDP_INT;
+typedef long int DSDP_INT;
+#define ID "%ld"
 #endif
 
 typedef struct HSDSolver Solver;
 
 // Memory handler
-#define DSDPFREE(var) do {free((var)); (var) = NULL;} while (0)
+#define DSDP_FREE(var) do {free((var)); (var) = NULL;} while (0)
 
 // Boolean flag
 #define TRUE                    1
@@ -58,9 +60,14 @@ typedef struct HSDSolver Solver;
 #define DSDP_STATUS_SOLVED      107
 #define DSDP_STATUS_FAILED      108
 
+// Memory strategy
+#define DSDP_MEMORY_THRESHOLD   10000
+
 // Version Number
 #define MAJOR_VERSION            0
 #define MINOR_VERSION            1
 
+// Error log
+#define error(etype, x)         printf("[%s]: %s", (etype), (x))
 
 #endif /* dsdphsd_h */

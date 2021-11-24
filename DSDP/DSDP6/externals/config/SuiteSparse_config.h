@@ -49,8 +49,7 @@ extern "C" {
 /* === SuiteSparse_long ===================================================== */
 /* ========================================================================== */
 
-#ifndef DSDP64
-
+#ifndef SuiteSparse_long
 #ifdef _WIN64
 
 #define SuiteSparse_long __int64
@@ -64,6 +63,7 @@ extern "C" {
 #define SuiteSparse_long_idd "ld"
 
 #endif
+
 #define SuiteSparse_long_id "%" SuiteSparse_long_idd
 #endif
 

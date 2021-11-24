@@ -1,39 +1,28 @@
 #ifndef dsdppardiso_h
 #define dsdppardiso_h
 
-/*
- The code implements the linear system solver substitution for an initial version of DSDP6 solver
- Here the PARDISO solver is applied to replace the sparse solver routines in DSDP as well as the conjugate
- gradient solver
- 
- July 8th, 2021
- By Gwz, Shanghai University of Finance and Economics
- */
-
+/* A wrapper for the pardiso linear system solver in terms of CSparse */
 #include "dsdphsd.h"
 
-#define PARDISOINDEX 64
+#define PARDISO_OK      ( 0)
+#define PARDISOINDEX    (64)      // Pardiso working array length
+#define PARDISO_SYM_FAC (12)      // Symbolic analysis and factorization
+#define PARDISO_SOLVE   (33)      // Solve linear system
+#define PARDISO_FREE    (-1)      // Free internal data structure
 
-#define POSITIVEDEFINITE  2
-#define INDEFINITE      (-2)
-
-void pardisoinit ( void *, const DSDP_INT *, DSDP_INT * );
-
-void pardiso     ( void     *, DSDP_INT    *, DSDP_INT *, DSDP_INT *, DSDP_INT *, DSDP_INT *,
-                   double   *, DSDP_INT    *, DSDP_INT *, DSDP_INT *, DSDP_INT *, DSDP_INT *,
-                   DSDP_INT *, double      *, double   *, DSDP_INT * );
-
-void pardiso_getdiag( const void     * pt[64],
-                      void           * df,
-                      void           * da,
-                      const DSDP_INT * mnum,
-                      DSDP_INT       * error );
+// Pardiso default parameters
+static DSDP_INT maxfct = 1; // Maximum number of factors
+static DSDP_INT mnum   = 1; // The matrix used for the solution phase
+static DSDP_INT mtype  = 2; // Real and symmetric positive definite
+static DSDP_INT msglvl = 0; // Print no information
+static DSDP_INT idummy = 0; // Dummy variable for taking up space
 
 // Pardiso cholesky solver
+// A good choice of iterative refinement parameter is 3
 static DSDP_INT PARDISO_PARAMS_CHOLESKY[PARDISOINDEX] = {
     
     1, /* Non-default value */ 3, /* P Nested dissection */ 0, /* Reserved          */
-    0, /* No CG             */ 0, /* No user permitation */ 0, /* No overwriting    */
+    0, /* No CG             */ 0, /* No user permutation */ 0, /* No overwriting    */
     0, /* Refinement report */ 0, /* Two steps of ItRef  */ 0, /* Reserved          */
     100,/* NO perturb       */ 1, /* Disable scaling     */ 0, /* No transpose      */
     1, /* Disable matching  */ 0, /* Report on pivots    */ 0, /* Output            */
@@ -60,7 +49,7 @@ static DSDP_INT PARDISO_PARAMS_CHOLESKY[PARDISOINDEX] = {
 static DSDP_INT PARDISO_PARAMS_CG[PARDISOINDEX] = {
     
     1, /* Non-default value */ 3, /* P Nested dissection */ 0, /* Reserved          */
-    1, /* No CG             */ 0, /* No user permitation */ 0, /* No overwriting    */
+    1, /* CG                */ 0, /* No user permutation */ 0, /* No overwriting    */
     0, /* Refinement report */ 0, /* Two steps of ItRef  */ 0, /* Reserved          */
     100,/* NO perturb       */ 1, /* Disable scaling     */ 0, /* No transpose      */
     1, /* Disable matching  */ 0, /* Report on pivots    */ 0, /* Output            */
@@ -82,5 +71,17 @@ static DSDP_INT PARDISO_PARAMS_CG[PARDISOINDEX] = {
     0,                         0,                           0,
     0
 };
+
+extern void pardisoinit ( void *, const DSDP_INT *, DSDP_INT * );
+
+extern void pardiso     ( void     *, DSDP_INT    *, DSDP_INT *, DSDP_INT *, DSDP_INT *, DSDP_INT *,
+                          double   *, DSDP_INT    *, DSDP_INT *, DSDP_INT *, DSDP_INT *, DSDP_INT *,
+                          DSDP_INT *, double      *, double   *, DSDP_INT * );
+
+extern void pardiso_getdiag ( const void     * pt[64],
+                              void           * df,
+                              void           * da,
+                              const DSDP_INT * mnum,
+                              DSDP_INT       * error );
 
 #endif

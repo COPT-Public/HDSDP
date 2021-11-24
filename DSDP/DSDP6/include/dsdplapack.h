@@ -5,6 +5,7 @@
 #include "Accelerate/Accelerate.h"
 #endif
 
+#include "dsdphsd.h"
 
 /*
 Declaration of Lapack and Blas routines in the implemenatation of the
@@ -49,6 +50,9 @@ CAPBLAS  : Whether routines are given by ROUTINENAME(params) or routinename(para
 #define computeols DGELS_
 #define eigs DSYEVX_
 #define eigs2 DSYEVR_
+#define fnorm DLANSP_
+#define packchol DPPTRF_
+#define packsolve DPPTRS_
 
 #endif
 
@@ -57,6 +61,7 @@ CAPBLAS  : Whether routines are given by ROUTINENAME(params) or routinename(para
 /* Blas */
 #define dot DDOT
 #define axpy DAXPY
+#define copy DCOPY
 #define norm DNRM2
 #define solve DTRSV
 #define matvec DGEMV
@@ -73,6 +78,9 @@ CAPBLAS  : Whether routines are given by ROUTINENAME(params) or routinename(para
 #define computeols DGELS
 #define eigs DSYEVX
 #define eigs2 DSYEVR
+#define fnorm DLANSP
+#define packchol DPPTRF
+#define packsolve DPPTRS
 
 #endif
 
@@ -81,6 +89,7 @@ CAPBLAS  : Whether routines are given by ROUTINENAME(params) or routinename(para
 /* Blas */
 #define dot ddot_
 #define axpy daxpy_
+#define copy dcopy_
 #define norm dnrm2_
 #define solve dtrsv_
 #define matvec dgemv_
@@ -97,6 +106,9 @@ CAPBLAS  : Whether routines are given by ROUTINENAME(params) or routinename(para
 #define computeols dgels_
 #define eigs dsyevx_
 #define eigs2 dsyevr_
+#define fnorm dlansp_
+#define packchol dpptrf_
+#define packsolve dpptrs_
 
 #endif
 
@@ -105,6 +117,7 @@ CAPBLAS  : Whether routines are given by ROUTINENAME(params) or routinename(para
 /* Blas */
 #define dot ddot
 #define axpy daxpy
+#define copy dcopy
 #define norm dnrm2
 #define solve dtrsv
 #define matvec dgemv
@@ -121,6 +134,9 @@ CAPBLAS  : Whether routines are given by ROUTINENAME(params) or routinename(para
 #define computeols dgels
 #define eigs dsyevx
 #define eigs2 dsyevr
+#define fnorm dlansp
+#define packchol dpptrf
+#define packsolve dpptrs
 
 #endif
 
@@ -168,6 +184,12 @@ extern void axpy( const DSDP_INT *n,
 extern double norm( const DSDP_INT *n,
                     const double   *x,
                     const DSDP_INT *incx );
+
+extern double fnorm(  const char      *nrm,
+                      const char      *uplo,
+                      const DSDP_INT  *n,
+                      const double    *ap,
+                      double          *work );
 
 /*
  DNRM2 returns the euclidean norm of a vector via the function
@@ -431,6 +453,15 @@ extern void eigs2( const char     *jobz,
  manner.
 */
 
+extern void packchol( const char *uplo, const DSDP_INT *n, double *ap, DSDP_INT *info );
+extern void packsolve ( const char      *uplo,
+                        const DSDP_INT  *n,
+                        const DSDP_INT  *nrhs,
+                        const double    *ap,
+                        const double    *b,
+                        const DSDP_INT  *ldb,
+                        const DSDP_INT  *info );
+
 /* The routines below are depreciated currently */
 extern void computescal( const DSDP_INT *m,
                          const DSDP_INT *n,
@@ -462,7 +493,11 @@ void matscal( const DSDP_INT *m,
 /* Define macros related to parameter */
 #define DSDP_MAT_UP ('U')
 #define DSDP_MAT_LOW ('L')
+#define DSDP_MAT_FNORM ('F')
 #define DSDP_MAT_NOTRANSPOSE ('N')
 #define DSDP_MAT_TRANSPOSE ('T')
+
+/* Other utilities */
+#define nsym(x) ((DSDP_INT) (((x) + 1 ) * (x)))
 
 #endif /* dsdplapack_h */

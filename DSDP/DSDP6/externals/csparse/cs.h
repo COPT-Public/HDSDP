@@ -25,12 +25,17 @@
 #include <limits.h>
 #include <math.h>
 #include <stdio.h>
+#include "dsdphsd.h"
 
 #ifdef MATLAB_MEX_FILE
 #include "mex.h"
 #endif
 
 #define NCOMPLEX
+
+#ifdef DSDP64
+#define CS_LONG
+#endif
 
 #ifdef __cplusplus
 extern "C" {
@@ -48,11 +53,8 @@ extern "C" {
 #define cs_long_t_id    SuiteSparse_long_id
 #define cs_long_t_max   SuiteSparse_long_max
 
-/* -------------------------------------------------------------------------- */
-/* double/int version of CXSparse */
-/* -------------------------------------------------------------------------- */
 
-/* --- primary CSparse routines and data structures ------------------------- */
+#ifndef CS_LONG
 
 typedef struct cs_di_sparse  /* matrix in compressed-column or triplet form */
 {
@@ -66,6 +68,7 @@ typedef struct cs_di_sparse  /* matrix in compressed-column or triplet form */
 } cs_di ;
 
 cs_di *cs_di_add (const cs_di *A, const cs_di *B, double alpha, double beta) ;
+cs_di *cs_di_sadd (const cs_di *A, const cs_di *B, double alpha, double beta) ;
 int cs_di_cholsol (int order, const cs_di *A, double *b) ;
 int cs_di_dupl (cs_di *A) ;
 int cs_di_entry (cs_di *T, int i, int j, double x) ;
@@ -181,10 +184,7 @@ int *cs_di_idone (int *p, cs_di *C, void *w, int ok) ;
 cs_din *cs_di_ndone (cs_din *N, cs_di *C, void *w, void *x, int ok) ;
 cs_did *cs_di_ddone (cs_did *D, cs_di *C, void *w, int ok) ;
 
-
-/* -------------------------------------------------------------------------- */
-/* double/cs_long_t version of CXSparse */
-/* -------------------------------------------------------------------------- */
+#else
 
 /* --- primary CSparse routines and data structures ------------------------- */
 
@@ -200,6 +200,7 @@ typedef struct cs_dl_sparse  /* matrix in compressed-column or triplet form */
 } cs_dl ;
 
 cs_dl *cs_dl_add (const cs_dl *A, const cs_dl *B, double alpha, double beta) ;
+cs_dl *cs_dl_sadd (const cs_dl *A, const cs_dl *B, double alpha, double beta) ;
 cs_long_t cs_dl_cholsol (cs_long_t order, const cs_dl *A, double *b) ;
 cs_long_t cs_dl_dupl (cs_dl *A) ;
 cs_long_t cs_dl_entry (cs_dl *T, cs_long_t i, cs_long_t j, double x) ;
@@ -319,15 +320,17 @@ cs_long_t *cs_dl_idone (cs_long_t *p, cs_dl *C, void *w, cs_long_t ok) ;
 cs_dln *cs_dl_ndone (cs_dln *N, cs_dl *C, void *w, void *x, cs_long_t ok) ;
 cs_dld *cs_dl_ddone (cs_dld *D, cs_dl *C, void *w, cs_long_t ok) ;
 
-
+#endif
 /* -------------------------------------------------------------------------- */
 /* Macros for constructing each version of CSparse */
 /* -------------------------------------------------------------------------- */
 
 #ifdef CS_LONG
+
 #define CS_INT cs_long_t
 #define CS_INT_MAX cs_long_t_max
 #define CS_ID cs_long_t_id
+
 #ifdef CS_COMPLEX
 #define CS_ENTRY cs_complex_t
 #define CS_NAME(nm) cs_cl ## nm
@@ -337,7 +340,9 @@ cs_dld *cs_dl_ddone (cs_dld *D, cs_dl *C, void *w, cs_long_t ok) ;
 #define CS_NAME(nm) cs_dl ## nm
 #define cs cs_dl
 #endif
+
 #else
+
 #define CS_INT int
 #define CS_INT_MAX INT_MAX
 #define CS_ID "%d"
@@ -350,6 +355,7 @@ cs_dld *cs_dl_ddone (cs_dld *D, cs_dl *C, void *w, cs_long_t ok) ;
 #define CS_NAME(nm) cs_di ## nm
 #define cs cs_di
 #endif
+
 #endif
 
 #ifdef CS_COMPLEX
@@ -376,6 +382,7 @@ cs_dld *cs_dl_ddone (cs_dld *D, cs_dl *C, void *w, cs_long_t ok) ;
 /* --- primary CSparse routines and data structures ------------------------- */
 
 #define cs_add CS_NAME (_add)
+#define cs_sadd CS_NAME (_sadd)
 #define cs_cholsol CS_NAME (_cholsol)
 #define cs_dupl CS_NAME (_dupl)
 #define cs_entry CS_NAME (_entry)

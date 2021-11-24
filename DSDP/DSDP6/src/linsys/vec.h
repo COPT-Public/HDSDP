@@ -7,39 +7,35 @@
 #include "dsdphsd.h"
 #include "dsdplapack.h"
 
-// Define constants involving Lapack and Blas
-static DSDP_INT one = 1;
 
 typedef struct {
 
-    DSDP_INT     dim;  // Dimension of the vectorß
-    double        *x;  // Array storing the data
+    DSDP_INT dim;  // Dimension of the vectorß
+    double   *x;   // Array storing the data
     
 } vec;
 
-DSDP_INT vec_copy( vec * src, vec * dst ) {
-    // Copy src to dst
-    assert( (src->dim == dst->dim) && (src && dst) );
-    
-    
-    
-    return DSDP_RETCODE_OK;
+#ifdef __cplusplus
+extern "C" {
+#endif
+
+extern DSDP_INT vec_init  ( vec *x );
+extern DSDP_INT vec_alloc ( vec *x, const DSDP_INT n );
+extern DSDP_INT vec_copy  ( vec *src, vec *dst );
+extern DSDP_INT vec_axpy  ( double alpha, vec *x, vec *y );
+extern DSDP_INT vec_axpby ( double alpha, vec *x, double beta, vec *y );
+extern DSDP_INT vec_zaxpby( vec *z, double alpha, vec *x, double beta, vec *y );
+extern DSDP_INT vec_set   ( vec *x, double val);
+extern DSDP_INT vec_inv   ( vec *xinv, vec *x );
+extern DSDP_INT vec_invsqr( vec *xinvsq, vec *x );
+extern DSDP_INT vec_reset ( vec *x );
+extern DSDP_INT vec_print ( vec *x );
+extern DSDP_INT vec_free  ( vec *x );
+
+#ifdef __cplusplus
 }
-
-DSDP_INT vec_axpy( double alpha, vec * x, double beta, vec * y, vec * z ) {
-    // Compute y = alpha * x + beta * y
-    
-    if (z) {
-        
-    }
-    
-    
-    return DSDP_RETCODE_OK;
-}
-
-
-
-
-
+#endif
 
 #endif /* vec_h */
+
+
