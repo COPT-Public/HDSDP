@@ -24,12 +24,8 @@ static DSDP_INT packFactorize( dsMat *S ) {
     
     if (info < 0) {
         error(etype, "Illegal value detected in packed dense format. \n");
-        retcode = DSDP_RETCODE_FAILED;
-        return retcode;
     } else if (info > 0) {
         error(etype, "The matrix is non-PSD. \n");
-        retcode = DSDP_RETCODE_FAILED;
-        return retcode;
     }
     
     S->isFactorized = TRUE;
@@ -44,8 +40,6 @@ static DSDP_INT packSolve( dsMat *S, DSDP_INT nrhs, double *B, double *X ) {
     
     if (!S->isFactorized) {
         error(etype, "Matrix is not yet factorized. \n");
-        retcode = DSDP_RETCODE_FAILED;
-        return retcode;
     }
     
     char uplo     = DSDP_MAT_LOW;
@@ -60,7 +54,6 @@ static DSDP_INT packSolve( dsMat *S, DSDP_INT nrhs, double *B, double *X ) {
     
     if (info < 0) {
         error(etype, "Packed linear system solution failed. \n");
-        retcode = DSDP_RETCODE_FAILED;
     }
     
     return retcode;
@@ -116,8 +109,6 @@ extern DSDP_INT denseMataXpY( double alpha, dsMat *dXMat, double beta, dsMat *dY
     
     if (dXMat->isFactorized || dYMat->isFactorized) {
         error(etype, "Adding a factorized matrix. \n");
-        retcode = DSDP_RETCODE_FAILED;
-        return retcode;
     }
     
     DSDP_INT dim = dXMat->dim;
@@ -266,7 +257,6 @@ extern DSDP_INT denseSpsTrace( dsMat *dAMat, spsMat *sBMat, double *trace ) {
     DSDP_INT *Bi = sBMat->cscMat->i;
     double   *Bx = sBMat->cscMat->x;
     DSDP_INT   s = 0;
-    
     
     for (DSDP_INT i = 0; i < n; ++i) {
         for (DSDP_INT k = Bp[i]; k < Bp[i + 1]; ++i) {

@@ -2,10 +2,19 @@
 #define dsdpdata_h
 
 /* Implement problem data interface of DSDP-HSD solver */
-
 #include <stdio.h>
 #include "dsdphsd.h"
+#include "sparsemat.h"
+#include "densemat.h"
+#include "rankonemat.h"
 #include "vec.h"
+#include "cs.h"
+
+#define MAT_TYPE_UNKNOWN 0
+#define MAT_TYPE_SPARSE  1
+#define MAT_TYPE_DENSE   2
+#define MAT_TYPE_RANK1   3
+#define MAT_TYPE_ZERO    4
 
 /*
  SDP data stucture
@@ -18,22 +27,21 @@
 
 typedef struct {
     
-    DSDP_INT dimy;       // Dimension of dual variable y
-    DSDP_INT dimS;       // Dimension of dual variable S
+    DSDP_INT  blockId;       // Index of the block
+    DSDP_INT  dimy;          // Dimension of dual variable y
+    DSDP_INT  dimS;          // Dimension of dual variable S
     
     // Sparse SDP data transpose( A ) in CSC format
-    DSDP_INT  nSpMat;    // Number of sparse matrices
-    DSDP_INT *ASDPspBeg; // Beginning column index
-    DSDP_INT *ASDPspIdx; // Row index
-    double   *ASDPspVal; // Values
+    DSDP_INT  nspsMat;      // Number of sparse matrices
+    DSDP_INT  *spsMatIdx;   // Index of the sparse matrices
+    DSDP_INT  ndenseMat;    // Number of dense matrices
+    DSDP_INT  *denseMatIdx; // Index of the dense matrices
+    DSDP_INT  nr1Mat;       // Number of rank 1 matrices
+    DSDP_INT  *r1MatIdx;    // Index of rank1 matrices
     
-    // Dense SDP data A
-    DSDP_INT  nDsMat;    // Number of dense matrices
-    double   *ASDPds;    // Array representing dense matrices
-    
-    // Rank 1 SDP data A
-    DSDP_INT  nR1Mat;    // Number of rank-one matrices
-    double   *ASDPr1;    // Rank 1 data
+    DSDP_INT  *types;       // Types of matrices
+    void      **sdpData;    // Data of different types
+    double    scaler;       // Scaler for presolving
     
 } sdpMat;
 
@@ -50,10 +58,28 @@ typedef struct {
     DSDP_INT dims;       // Dimension of dual variable s
     
     // Sparse LP data in CSC format
-    DSDP_INT *ALPBeg;
-    DSDP_INT *ALPIdx;
-    double   *ALPVal;
+    cs       *lpdata;
+    double   *xscale;    // Scaler for presolving
     
 } lpMat;
+
+
+#ifdef __cplusplus
+extern "C" {
+#endif
+
+extern DSDP_INT lpMatInit     ( lpMat  *lpData );
+extern DSDP_INT lpMatSetDim   ( lpMat  *lpData, DSDP_INT dimy, DSDP_INT dims );
+extern DSDP_INT lpMatSetData  ( lpMat *lpData, DSDP_INT *Ap, DSDP_INT *Ai, double *Ax );
+
+extern DSDP_INT sdpMatInit    ( sdpMat *sdpData );
+extern DSDP_INT sdpMatSetDim  ( sdpMat *sdpData, DSDP_INT dimy, DSDP_INT dimS, DSDP_INT blockId );
+extern DSDP_INT sdpMatSetHint ( sdpMat *sdpData, DSDP_INT *hint );
+extern DSDP_INT sdpMatSetData ( sdpMat *sdpData, DSDP_INT *Ap, DSDP_INT *Ai, double *Ax );
+
+#ifdef __cplusplus
+}
+#endif
+
 
 #endif /* dsdpdata_h */

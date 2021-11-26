@@ -33,6 +33,7 @@ extern "C" {
 /* Structure operations */
 extern DSDP_INT spsMatInit         ( spsMat *sMat );
 extern DSDP_INT spsMatAlloc        ( spsMat *sMat, DSDP_INT dim );
+extern DSDP_INT spsMatAllocData    ( spsMat *sMat, DSDP_INT dim, DSDP_INT nna );
 extern DSDP_INT spsMatFree         ( spsMat *sMat );
 
 /* Basic operations */

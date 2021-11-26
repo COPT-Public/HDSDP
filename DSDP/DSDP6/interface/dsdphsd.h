@@ -44,10 +44,11 @@ typedef struct HSDSolver Solver;
 #define FALSE                   0
 
 // Solver return code
-#define DSDP_RETCODE_OK         98
-#define DSDP_RETCODE_FAILED     99
+#define DSDP_RETCODE_OK         2
+#define DSDP_RETCODE_FAILED     3
 
 // Algorithm status
+#define DSDP_UNKNOWN            99
 #define DSDP_OPTIMAL            100
 #define DSDP_MAXITER            101
 #define DSDP_INTERNAL_ERROR     102
@@ -56,9 +57,10 @@ typedef struct HSDSolver Solver;
 
 // Solver status
 #define DSDP_STATUS_UNINIT      105
-#define DSDP_STATUS_UNSOLVED    106
-#define DSDP_STATUS_SOLVED      107
-#define DSDP_STATUS_FAILED      108
+#define DSDP_STATUS_INIT_UNSET  106
+#define DSDP_STATUS_SET         107
+#define DSDP_STATUS_SOLVED      108
+#define DSDP_STATUS_FAILED      109
 
 // Memory strategy
 #define DSDP_MEMORY_THRESHOLD   10000
@@ -68,6 +70,8 @@ typedef struct HSDSolver Solver;
 #define MINOR_VERSION            1
 
 // Error log
-#define error(etype, x)         printf("[%s]: %s", (etype), (x))
+#define error(etype, x)          printf("[%s]: %s", (etype), (x)); \
+                                 retcode = DSDP_RETCODE_FAILED; return retcode;
+#define checkCode                if (retcode != DSDP_RETCODE_OK) return retcode;
 
 #endif /* dsdphsd_h */

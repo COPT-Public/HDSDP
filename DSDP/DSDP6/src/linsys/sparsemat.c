@@ -1,6 +1,8 @@
 #include "sparsemat.h"
 #include "densemat.h"
 
+static char *etype = "Sparse matrix";
+
 /* Internal Pardiso Wrapper */
 static DSDP_INT pardisoFactorize( spsMat *S ) {
     
@@ -27,8 +29,7 @@ static DSDP_INT pardisoFactorize( spsMat *S ) {
     if (error) {
         printf("[Pardiso Error]: Matrix factorization failed."
                " Error code: "ID" \n", error);
-        retcode = DSDP_RETCODE_FAILED;
-        return retcode;
+        error(etype, "Pardiso failes to factorize. \n");
     }
     
     // Complete the factorization
@@ -56,8 +57,7 @@ static DSDP_INT pardisoSolve( spsMat *S, DSDP_INT nrhs, double *B, double *X ) {
     if (error) {
         printf("[Pardiso Error]: Matrix solution failed."
                " Error code: "ID" \n", error);
-        retcode = DSDP_RETCODE_FAILED;
-        return retcode;
+        error(etype, "Pardiso failes to solve system. \n");
     }
     
     return retcode;
@@ -82,8 +82,7 @@ static DSDP_INT pardisoFree( spsMat *S ) {
     if (error) {
         printf("[Pardiso Error]: Pardiso free failed."
                " Error code: "ID" \n", error);
-        retcode = DSDP_RETCODE_FAILED;
-        return retcode;
+        error(etype, "Pardiso failes to free. \n");
     }
     
     return retcode;
@@ -104,12 +103,24 @@ extern DSDP_INT spsMatInit( spsMat *sMat ) {
 
 extern DSDP_INT spsMatAlloc( spsMat *sMat, DSDP_INT dim ) {
     
+    // Allocate memory for sparse matrix variable
+    DSDP_INT retcode = DSDP_RETCODE_OK;
+    assert( sMat->dim == 0 );
+    
+    sMat->dim = dim;
+    sMat->cscMat = cs_spalloc(dim, dim, nsym(dim), TRUE, FALSE);
+    
+    return retcode;
+}
+
+extern DSDP_INT spsMatAllocData( spsMat *sMat, DSDP_INT dim, DSDP_INT nnz ) {
+    
     // Allocate memory for sparse matrix data
     DSDP_INT retcode = DSDP_RETCODE_OK;
     assert( sMat->dim == 0 );
     
     sMat->dim = dim;
-    sMat->cscMat = cs_spalloc(dim, dim, nsym(dim), TRUE, TRUE);
+    sMat->cscMat = cs_spalloc(dim, dim, nnz, TRUE, FALSE);
     
     return retcode;
 }
@@ -141,7 +152,7 @@ extern DSDP_INT spsMataXpbY( double alpha, spsMat *sXMat, double beta, spsMat *s
     assert ( sXMat->dim == sYMat->dim );
     assert ((!sXMat->isFactorized) && (!sYMat->isFactorized));
     if (sXMat->isFactorized || sYMat->isFactorized) {
-        printf("[Sparse Operation Error]: Adding a factorized matrix. \n");
+        error(etype, "Adding a factorized matrix. \n");
     }
     
     // Case if alpha = 0.0
@@ -160,9 +171,11 @@ extern DSDP_INT spsMataXpbY( double alpha, spsMat *sXMat, double beta, spsMat *s
         aXpY = cs_spalloc(n, n, sXMat->cscMat->nz, TRUE, FALSE);
         memcpy(aXpY->i, Xmat->i, sizeof(DSDP_INT) * nnz);
         memcpy(aXpY->p, Xmat->p, sizeof(DSDP_INT) * (n + 1));
+        
         for (DSDP_INT i = 0; i < nnz; ++i) {
             aXpY->x[i] = alpha * aXpY->x[i];
         }
+        
     } else {
         // General case with modified cs_add
         aXpY = cs_sadd(sXMat->cscMat, sYMat->cscMat, alpha, beta);
@@ -280,8 +293,8 @@ extern DSDP_INT spsDsSolve( spsMat *sAMat, dsMat *sBMat, double *AinvB ) {
         /* Violent parallel solve */
         double *B = NULL;
         B = (double *) calloc(n * n, sizeof(double));
-        retcode = denseMatFill(sBMat, B);
-        retcode = pardisoSolve(sAMat, n, B, AinvB);
+        retcode = denseMatFill(sBMat, B); checkCode;
+        retcode = pardisoSolve(sAMat, n, B, AinvB); checkCode;
         DSDP_FREE(B);
     }
     
