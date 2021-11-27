@@ -39,6 +39,7 @@ extern DSDP_INT spsMatFree         ( spsMat *sMat );
 /* Basic operations */
 extern DSDP_INT spsMataXpbY        ( double alpha, spsMat *sXMat, double beta, spsMat *sYMat );
 extern DSDP_INT spsMatFnorm        ( spsMat *sMat, double *fnrm );
+extern DSDP_INT spsMatRscale       ( spsMat *sXMat, double r );
 
 /* Factorization and linear system solver */
 extern DSDP_INT spFactorize        ( spsMat *sAMat );

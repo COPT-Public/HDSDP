@@ -3,6 +3,7 @@
 
 // Error type
 static char etype[] = "Dense Operation Error";
+static DSDP_INT one = 1;
 
 /* Internal Lapack Wrapper */
 static DSDP_INT packFactorize( dsMat *S ) {
@@ -94,14 +95,14 @@ extern DSDP_INT denseMatFree( dsMat *dMat ) {
     dMat->dim = 0;
     DSDP_FREE(dMat->array);
     DSDP_FREE(dMat->lfactor);
-    
+        
     return retcode;
 }
 
 /* Basic operations */
-extern DSDP_INT denseMataXpY( double alpha, dsMat *dXMat, double beta, dsMat *dYMat ) {
+extern DSDP_INT denseMataXpbY( double alpha, dsMat *dXMat, double beta, dsMat *dYMat ) {
     
-    // Matrix operation. Let sYMat = alpha * dXMat + beta * dYMat
+    // Matrix operation. Let dYMat = alpha * dXMat + beta * dYMat
     DSDP_INT retcode = DSDP_RETCODE_OK;
     
     assert( dXMat->dim == dYMat->dim );
@@ -112,7 +113,6 @@ extern DSDP_INT denseMataXpY( double alpha, dsMat *dXMat, double beta, dsMat *dY
     }
     
     DSDP_INT dim = dXMat->dim;
-    DSDP_INT incx = 1;
     
     if (beta == 0.0) {
         if (alpha == 0.0) {
@@ -120,18 +120,30 @@ extern DSDP_INT denseMataXpY( double alpha, dsMat *dXMat, double beta, dsMat *dY
         } else {
             memcpy(dYMat->array, dXMat->array, sizeof(double) * dim);
             if (alpha != 1.0) {
-                vecscal(&dim, &alpha, dYMat->array, &incx);
+                vecscal(&dim, &alpha, dYMat->array, &one);
             }
         }
     } else {
         
         if (beta != 1.0) {
-            vecscal(&dim, &beta, dYMat->array, &incx);
+            vecscal(&dim, &beta, dYMat->array, &one);
         }
         if (alpha != 0.0) {
-            axpy(&dim, &alpha, dXMat->array, &incx, dYMat->array, &incx);
+            axpy(&dim, &alpha, dXMat->array, &one, dYMat->array, &one);
         }
     }
+    
+    return retcode;
+}
+
+extern DSDP_INT denseMatRscale( dsMat *dXMat, double r ) {
+    // Scale a matrix by reciprocical without over/under flow
+    
+    DSDP_INT retcode = DSDP_RETCODE_OK;
+    
+    assert( dXMat->dim );
+    double *array = dXMat->array;
+    vecdiv(&dXMat->dim, &r, array, &one);
     
     return retcode;
 }

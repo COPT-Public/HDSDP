@@ -9,7 +9,7 @@ extern "C" {
 
 /* Vector utility */
 DSDP_INT test_vec(void);
-
+DSDP_INT test_pardiso(void);
 
 #ifdef __cplusplus
 }

@@ -6,6 +6,8 @@
 
 #define PARDISO_OK      ( 0)
 #define PARDISOINDEX    (64)      // Pardiso working array length
+#define PARDISO_SYM     (11)      // Pardiso symbolic analysis
+#define PARDISO_FAC     (22)      // Pardiso numerical factorization
 #define PARDISO_SYM_FAC (12)      // Symbolic analysis and factorization
 #define PARDISO_SOLVE   (33)      // Solve linear system
 #define PARDISO_FREE    (-1)      // Free internal data structure
@@ -23,7 +25,7 @@ static DSDP_INT PARDISO_PARAMS_CHOLESKY[PARDISOINDEX] = {
     
     1, /* Non-default value */ 3, /* P Nested dissection */ 0, /* Reserved          */
     0, /* No CG             */ 0, /* No user permutation */ 0, /* No overwriting    */
-    0, /* Refinement report */ 0, /* Two steps of ItRef  */ 0, /* Reserved          */
+    0, /* Refinement report */ 3, /* Three ItRef steps   */ 0, /* Reserved          */
     100,/* NO perturb       */ 1, /* Disable scaling     */ 0, /* No transpose      */
     1, /* Disable matching  */ 0, /* Report on pivots    */ 0, /* Output            */
     0, /* Output            */ 0, /* Output              */-1, /* No report         */
@@ -78,7 +80,7 @@ extern void pardiso     ( void     *, DSDP_INT    *, DSDP_INT *, DSDP_INT *, DSD
                           double   *, DSDP_INT    *, DSDP_INT *, DSDP_INT *, DSDP_INT *, DSDP_INT *,
                           DSDP_INT *, double      *, double   *, DSDP_INT * );
 
-extern void pardiso_getdiag ( const void     * pt[64],
+extern void pardiso_getdiag ( const void     * pt[PARDISOINDEX],
                               void           * df,
                               void           * da,
                               const DSDP_INT * mnum,

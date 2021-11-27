@@ -37,8 +37,8 @@ static DSDP_INT sdpMatIAlloc( sdpMat *sdpData ) {
         error(etype, "Incorrect size for SDP data matrix for allocation. \n");
     }
     
-    sdpData->types   = (DSDP_INT *) calloc(sdpData->dimy, sizeof(DSDP_INT));
-    sdpData->sdpData = (void **) calloc(sdpData->dimy, sizeof(void *));
+    sdpData->types   = (DSDP_INT *) calloc(sdpData->dimy + 1, sizeof(DSDP_INT));
+    sdpData->sdpData = (void **) calloc(sdpData->dimy + 1, sizeof(void *));
     
     for (DSDP_INT i = 0; i < sdpData->dimy; ++i) {
         sdpData->types = MAT_TYPE_UNKNOWN;
@@ -57,7 +57,7 @@ static DSDP_INT sdpMatIAllocByType( sdpMat *sdpData, DSDP_INT k, DSDP_INT *Ai,
     
     DSDP_INT m = sdpData->dimy;
     DSDP_INT n = sdpData->dimS;
-    assert( k < m );
+    assert( k < m + 1 );
     
     void *userdata = NULL;
     
@@ -69,8 +69,8 @@ static DSDP_INT sdpMatIAllocByType( sdpMat *sdpData, DSDP_INT k, DSDP_INT *Ai,
         sdpData->nr1Mat += 1;
         r1Mat *data = NULL;
         data = (r1Mat *) calloc(1, sizeof(r1Mat));
-        retcode = vec_init(data); checkCode;
-        retcode = vec_alloc(data, m); checkCode;
+        retcode = r1MatInit(data); checkCode;
+        retcode = r1MatAlloc(data, m); checkCode;
         
         for (DSDP_INT i = 0; i < nnz; ++i) {
             if (Ai[i] >= m) {
@@ -198,6 +198,19 @@ extern DSDP_INT lpMatSetData( lpMat *lpData, DSDP_INT *Ap, DSDP_INT *Ai, double 
     return retcode;
 }
 
+extern DSDP_INT lpMatFree( lpMat *lpData ) {
+    
+    // Free the lpData structure
+    DSDP_INT retcode = DSDP_RETCODE_OK;
+    lpData->dimy = 0;
+    lpData->dims = 0;
+    
+    cs_free(lpData->lpdata);
+    DSDP_FREE(lpData->xscale);
+    
+    return retcode;
+}
+
 /* SDP public methods */
 extern DSDP_INT sdpMatInit( sdpMat *sdpData ) {
     
@@ -240,8 +253,7 @@ extern DSDP_INT sdpMatSetHint( sdpMat *sdpData, DSDP_INT *hint ) {
     // Set type hint for matrix type
     DSDP_INT retcode = DSDP_RETCODE_OK;
     
-    for (DSDP_INT i = 0; i < sdpData->dimy; ++i) {
-        
+    for (DSDP_INT i = 0; i < sdpData->dimy + 1; ++i) {
         switch (hint[i]) {
             case MAT_TYPE_RANK1:
                 sdpData->types[i] = MAT_TYPE_RANK1;
@@ -267,7 +279,7 @@ extern DSDP_INT sdpMatSetData( sdpMat *sdpData, DSDP_INT *Ap, DSDP_INT *Ai, doub
     DSDP_INT retcode = DSDP_RETCODE_OK;
     retcode = sdpMatIAlloc(sdpData); checkCode;
     
-    for (DSDP_INT i = 0; i < sdpData->dimy; ++i) {
+    for (DSDP_INT i = 0; i < sdpData->dimy + 1; ++i) {
         retcode = sdpMatIAllocByType(sdpData, i, &Ai[Ap[i]],
                                      &Ax[Ap[i]], Ap[i + 1] - Ap[i]);
         checkCode;
@@ -275,3 +287,45 @@ extern DSDP_INT sdpMatSetData( sdpMat *sdpData, DSDP_INT *Ap, DSDP_INT *Ai, doub
         
     return retcode;
 }
+
+extern DSDP_INT sdpMatFree( sdpMat *sdpData ) {
+    
+    // Free SDP data
+    DSDP_INT retcode = DSDP_RETCODE_OK;
+    
+    sdpData->nspsMat   = 0;
+    sdpData->ndenseMat = 0;
+    sdpData->nspsMat   = 0;
+    
+    DSDP_FREE(sdpData->spsMatIdx);
+    DSDP_FREE(sdpData->denseMatIdx);
+    DSDP_FREE(sdpData->r1MatIdx);
+    
+    void *data = NULL;
+    
+    for (DSDP_INT i = 0; i < sdpData->dimy + 1; ++i) {
+        data = sdpData->sdpData[i];
+        
+        switch (sdpData->types[i]) {
+            case MAT_TYPE_ZERO:
+                break;
+            case MAT_TYPE_DENSE:
+                retcode = denseMatFree((dsMat *) data); checkCode;
+            case MAT_TYPE_SPARSE:
+                retcode = spsMatFree((spsMat *) data); checkCode;
+            case MAT_TYPE_RANK1:
+                retcode = r1MatFree((r1Mat *) data); checkCode;
+            default:
+                error(etype, "Unknown matrix type. \n");
+                break;
+        }
+    }
+        
+    DSDP_FREE(sdpData->types);
+    sdpData->blockId = 0;
+    sdpData->dimy    = 0;
+    sdpData->dimS    = 0;
+    
+    return retcode;
+}
+

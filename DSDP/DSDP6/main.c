@@ -35,8 +35,10 @@
 #include "dsdppardiso.h"
 #include "test.h"
 
+
 int main (void)
 {
     test_vec();
+    // test_pardiso();
     return 0;
 }

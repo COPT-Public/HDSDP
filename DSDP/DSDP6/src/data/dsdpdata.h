@@ -32,16 +32,16 @@ typedef struct {
     DSDP_INT  dimS;          // Dimension of dual variable S
     
     // Sparse SDP data transpose( A ) in CSC format
-    DSDP_INT  nspsMat;      // Number of sparse matrices
-    DSDP_INT  *spsMatIdx;   // Index of the sparse matrices
-    DSDP_INT  ndenseMat;    // Number of dense matrices
-    DSDP_INT  *denseMatIdx; // Index of the dense matrices
-    DSDP_INT  nr1Mat;       // Number of rank 1 matrices
-    DSDP_INT  *r1MatIdx;    // Index of rank1 matrices
+    DSDP_INT  nspsMat;       // Number of sparse matrices
+    DSDP_INT  *spsMatIdx;    // Index of the sparse matrices
+    DSDP_INT  ndenseMat;     // Number of dense matrices
+    DSDP_INT  *denseMatIdx;  // Index of the dense matrices
+    DSDP_INT  nr1Mat;        // Number of rank 1 matrices
+    DSDP_INT  *r1MatIdx;     // Index of rank1 matrices
     
-    DSDP_INT  *types;       // Types of matrices
-    void      **sdpData;    // Data of different types
-    double    scaler;       // Scaler for presolving
+    DSDP_INT  *types;        // Types of matrices
+    void      **sdpData;     // Data of different types
+    double    scaler;        // Scaler for presolving
     
 } sdpMat;
 
@@ -71,11 +71,13 @@ extern "C" {
 extern DSDP_INT lpMatInit     ( lpMat  *lpData );
 extern DSDP_INT lpMatSetDim   ( lpMat  *lpData, DSDP_INT dimy, DSDP_INT dims );
 extern DSDP_INT lpMatSetData  ( lpMat *lpData, DSDP_INT *Ap, DSDP_INT *Ai, double *Ax );
+extern DSDP_INT lpMatFree     ( lpMat *lpData );
 
 extern DSDP_INT sdpMatInit    ( sdpMat *sdpData );
 extern DSDP_INT sdpMatSetDim  ( sdpMat *sdpData, DSDP_INT dimy, DSDP_INT dimS, DSDP_INT blockId );
 extern DSDP_INT sdpMatSetHint ( sdpMat *sdpData, DSDP_INT *hint );
 extern DSDP_INT sdpMatSetData ( sdpMat *sdpData, DSDP_INT *Ap, DSDP_INT *Ai, double *Ax );
+extern DSDP_INT sdpMatFree    ( sdpMat *sdpData );
 
 #ifdef __cplusplus
 }

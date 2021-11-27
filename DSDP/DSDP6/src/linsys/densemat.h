@@ -23,8 +23,9 @@ extern DSDP_INT denseMatAlloc    ( dsMat *dMat, DSDP_INT dim, DSDP_INT doFactor 
 extern DSDP_INT denseMatFree     ( dsMat *dMat );
 
 /* Basic operations */
-extern DSDP_INT denseMataXpY     ( double alpha, dsMat *dXMat, double beta, dsMat *dYMat );
+extern DSDP_INT denseMataXpbY    ( double alpha, dsMat *dXMat, double beta, dsMat *dYMat );
 extern DSDP_INT denseMatFnorm    ( dsMat  *dMat, double *fnrm );
+extern DSDP_INT denseMatRscale   ( dsMat *dXMat, double r );
 
 /* Factorization and linear system solver */
 extern DSDP_INT denseFactorize   ( dsMat * dAMat );

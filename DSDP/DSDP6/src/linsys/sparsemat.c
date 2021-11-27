@@ -2,6 +2,7 @@
 #include "densemat.h"
 
 static char *etype = "Sparse matrix";
+static DSDP_INT one = 1;
 
 /* Internal Pardiso Wrapper */
 static DSDP_INT pardisoFactorize( spsMat *S ) {
@@ -34,6 +35,43 @@ static DSDP_INT pardisoFactorize( spsMat *S ) {
     
     // Complete the factorization
     S->isFactorized = TRUE;
+    return retcode;
+}
+
+/* Internal Pardiso Wrapper */
+static DSDP_INT pardisoNumFactorize( spsMat *S ) {
+    
+    /*
+     Numerically factorize the spsMat matrix
+     Reuse symbolic ordering after the second iteration
+     */
+    
+    DSDP_INT retcode = DSDP_RETCODE_OK;
+    assert( S->isFactorized == TRUE );
+    
+    // Extract the lower triangular part from CSparse structure
+    DSDP_INT *Sp = S->cscMat->p;
+    DSDP_INT *Si = S->cscMat->i;
+    double   *Sx = S->cscMat->x;
+    
+    // Get the pardiso parameter
+    DSDP_INT phase = PARDISO_FAC;
+    DSDP_INT error = 0;
+    DSDP_INT n     = S->dim;
+    
+    // Invoke pardiso to do symbolic analysis and Cholesky factorization
+    pardiso(S->pdsWorker, &maxfct, &mnum, &mtype, &phase, &n,
+            Sx, Sp, Si, &idummy, &idummy, PARDISO_PARAMS_CHOLESKY,
+            &msglvl, NULL, NULL, &error);
+    
+    assert( error == PARDISO_OK );
+    
+    if (error) {
+        printf("[Pardiso Error]: Matrix factorization failed."
+               " Error code: "ID" \n", error);
+        error(etype, "Pardiso failes to factorize. \n");
+    }
+    
     return retcode;
 }
 
@@ -138,7 +176,7 @@ extern DSDP_INT spsMatFree( spsMat *sMat ) {
     if (sMat->isFactorized) {
         sMat->isFactorized = FALSE;
     }
-    
+        
     return retcode;
 }
 
@@ -186,13 +224,26 @@ extern DSDP_INT spsMataXpbY( double alpha, spsMat *sXMat, double beta, spsMat *s
     return retcode;
 }
 
+extern DSDP_INT spsMatRscale( spsMat *sXMat, double r ) {
+    // Scale a sparse matrix by the reciprocical of some number. No overflow or under flow
+    DSDP_INT retcode = DSDP_RETCODE_OK;
+    assert( sXMat->dim );
+    
+    if (r == 0) {
+        error(etype, "Dividing a matrix by 0. \n");
+    }
+    
+    double *x = sXMat->cscMat->x;
+    dscal(&sXMat->cscMat->nz, &r, x, &one);
+    return retcode;
+}
+
 extern DSDP_INT spsMatFnorm( spsMat *sMat, double *fnorm ) {
     
     // Matrix Fronenius norm
     DSDP_INT retcode = DSDP_RETCODE_OK;
     assert( sMat->dim > 0 );
-    DSDP_INT incx = 1;
-    *fnorm = norm(&sMat->cscMat->nz, sMat->cscMat->x, &incx);
+    *fnorm = norm(&sMat->cscMat->nz, sMat->cscMat->x, &one);
     
     return retcode;
 }
@@ -215,8 +266,8 @@ extern DSDP_INT spsVecSolve( spsMat *sAMat, vec *sbVec, double *Ainvb ) {
     // A full dense matrix inv(A) * B is returned
     DSDP_INT retcode = DSDP_RETCODE_OK;
     // A is factorized and its size must agree with b
-    assert( (sAMat->dim == sbVec->dim) );
-    assert( (sAMat->isFactorized) );
+    assert( sAMat->dim == sbVec->dim );
+    assert( sAMat->isFactorized );
     
     retcode = pardisoSolve(sAMat, 1, sbVec->x, Ainvb);
     
@@ -230,8 +281,8 @@ extern DSDP_INT spsSpSolve( spsMat *sAMat, spsMat *sBMat, double *AinvB ) {
     DSDP_INT retcode = DSDP_RETCODE_OK;
     
     // A is factorized, B is not and sizes must agree
-    assert( (sAMat->dim == sAMat->dim) );
-    assert( (sAMat->isFactorized) );
+    assert( sAMat->dim == sAMat->dim );
+    assert( sAMat->isFactorized );
     
     DSDP_INT n = sAMat->dim;
     
@@ -450,4 +501,3 @@ extern DSDP_INT spsMatView( spsMat *sMat ) {
     
     return retcode;
 }
-

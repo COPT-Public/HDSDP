@@ -59,8 +59,9 @@ typedef struct HSDSolver Solver;
 #define DSDP_STATUS_UNINIT      105
 #define DSDP_STATUS_INIT_UNSET  106
 #define DSDP_STATUS_SET         107
-#define DSDP_STATUS_SOLVED      108
-#define DSDP_STATUS_FAILED      109
+#define DSDP_STATUS_PRESOLVED   108
+#define DSDP_STATUS_SOLVED      109
+#define DSDP_STATUS_FAILED      110
 
 // Memory strategy
 #define DSDP_MEMORY_THRESHOLD   10000

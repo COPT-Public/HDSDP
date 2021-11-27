@@ -52,6 +52,13 @@ extern DSDP_INT vec_zaxpby( vec *z, double alpha, vec *x, double beta, vec *y ) 
     return DSDP_RETCODE_OK;
 }
 
+extern DSDP_INT vec_rscale( vec *x, double r ) {
+    // Compute x = x / r; No over or under flow.
+    assert( x->dim );
+    vecdiv(&x->dim, &r, x->x, &one);
+    return DSDP_RETCODE_OK;
+}
+
 extern DSDP_INT vec_set( vec *x, double val) {
     // Set x = val
     for (int i = 0; i < x->dim; ++i) {
@@ -81,6 +88,12 @@ extern DSDP_INT vec_invsqr( vec *xinvsq, vec *x ) {
 extern DSDP_INT vec_reset( vec *x ) {
     // Set x = 0
     memset(x->x, 0, sizeof(double) * x->dim);
+    return DSDP_RETCODE_OK;
+}
+
+extern DSDP_INT vec_norm( vec *x, double *nrm ) {
+    // Compute norm(x)
+    *nrm = norm(&x->dim, x->x, &one);
     return DSDP_RETCODE_OK;
 }
 
