@@ -74,5 +74,6 @@ typedef struct HSDSolver Solver;
 #define error(etype, x)          printf("[%s]: %s", (etype), (x)); \
                                  retcode = DSDP_RETCODE_FAILED; return retcode;
 #define checkCode                if (retcode != DSDP_RETCODE_OK) return retcode;
+#define checkCodeFree            if (retcode != DSDP_RETCODE_OK) goto clean_up;
 
 #endif /* dsdphsd_h */

@@ -79,10 +79,10 @@ extern DSDP_INT denseMatAlloc( dsMat *dMat, DSDP_INT dim, DSDP_INT doFactor ) {
     assert( dMat->dim == 0 );
     
     dMat->dim   = dim;
-    dMat->array = (double *) calloc((DSDP_INT) ((dim + 1) * dim / 2), sizeof(double));
+    dMat->array = (double *) calloc((DSDP_INT) nsym(dim), sizeof(double));
     
     if (doFactor) {
-        dMat->lfactor = (double *) calloc((DSDP_INT) ((dim + 1) * dim / 2), sizeof(double));
+        dMat->lfactor = (double *) calloc((DSDP_INT) nsym(dim), sizeof(double));
     }
     
     return retcode;
@@ -92,10 +92,13 @@ extern DSDP_INT denseMatFree( dsMat *dMat ) {
     
     // Free memory allocated
     DSDP_INT retcode = DSDP_RETCODE_OK;
-    dMat->dim = 0;
-    DSDP_FREE(dMat->array);
-    DSDP_FREE(dMat->lfactor);
-        
+    
+    if (dMat) {
+        dMat->dim = 0;
+        DSDP_FREE(dMat->array);
+        DSDP_FREE(dMat->lfactor);
+    }
+    
     return retcode;
 }
 
@@ -143,7 +146,9 @@ extern DSDP_INT denseMatRscale( dsMat *dXMat, double r ) {
     
     assert( dXMat->dim );
     double *array = dXMat->array;
-    vecdiv(&dXMat->dim, &r, array, &one);
+    DSDP_INT n = nsym(dXMat->dim);
+    
+    vecdiv(&n, &r, array, &one);
     
     return retcode;
 }
@@ -162,7 +167,7 @@ extern DSDP_INT denseMatFnorm( dsMat *dMat, double *fnrm ) {
 }
 
 /* Factorization and linear system solver */
-extern DSDP_INT denseFactorize( dsMat * dAMat ) {
+extern DSDP_INT denseMatFactorize( dsMat * dAMat ) {
     
     // Dense packed matrix cholesky factorization
     DSDP_INT retcode = DSDP_RETCODE_OK;
@@ -316,10 +321,11 @@ extern DSDP_INT denseMatFill( dsMat *dMat, double *fulldMat ) {
     
     for (DSDP_INT k = 0; k < n; ++k) {
         idx = (DSDP_INT) (2 * n - k + 1) * k / 2;
-        x = &(fulldMat[k * n]);
+        x = &(fulldMat[k * n + k]);
         memcpy(x, &dMat->array[idx], sizeof(double) * (n - k));
         idx = k;
         
+        x = &(fulldMat[k * n]);
         for (DSDP_INT i = 0; i < k; ++i) {
             x[i] = dMat->array[idx];
             idx += n - i - 1;
@@ -361,13 +367,12 @@ extern DSDP_INT denseMatView( dsMat *dMat ) {
     printf("Matrix view: \n");
     
     for (DSDP_INT i = 0; i < n; ++i) {
-        printf("R "ID , i);
+        printf("R"ID": " , i);
         for (DSDP_INT j = 0; j < i; ++j) {
-            printf("%3.3e ", 0.0);
+            printf("%-10.3g ", 0.0);
         }
         for (DSDP_INT j = i; j < n; ++j) {
-            printf("%3.3e ",
-                   dMat->array[j + (DSDP_INT) (i * (2 * n - i - 1) / 2)]);
+            printf("%-10.3g ", packIdx(dMat->array, n, j, i));
         }
         printf("\n");
     }

@@ -1,9 +1,5 @@
 #include "dsdppresolve.h"
-#include "dsdphsd.h"
-#include "sparsemat.h"
-#include "densemat.h"
-#include "rankonemat.h"
-#include "dsdpdata.h"
+
 /*
  TODO: Matrix rank-one structure detector
  TODO: Matrix coefficient scaling
@@ -11,10 +7,96 @@
 
 static char *etype = "Presolving operations";
 
-static DSDP_INT isDenseRank1( dsMat *dataMat, DSDP_INT *isRank1 ) {
+static DSDP_INT isDenseRank1InAcc( dsMat *dataMat, DSDP_INT *isRank1 ) {
     // Check if a dense matrix is rank-one
     DSDP_INT retcode = DSDP_RETCODE_OK;
+    double *A    = dataMat->array;
+    DSDP_INT n   = dataMat->dim;
+    DSDP_INT r1  = TRUE;
+    DSDP_INT col = 0;
+    double benchCol = 0.0;
+    double scaleCol = 0.0;
+    double benchCol2 = 0.0;
+    double scaleCol2 = 0.0;
     
+    // Get the first column that contains non-zero elements
+    for (DSDP_INT i = 0; i < n; ++i) {
+        if (packIdx(A, n, i, i) > 0) {
+            col = i;
+            break;
+        }
+    }
+    
+    assert( col != n - 1 ); // or it is a zero matrix
+    
+    // Check the scaling coefficient
+    for (DSDP_INT i = col + 1; i < n; ++i) {
+        scaleCol = packIdx(A, n, i, col);
+        for (DSDP_INT j = col; j < n; ++j) {
+            benchCol2 = packIdx(A, n, j, col);
+            if (i <= j) {
+                scaleCol2 = packIdx(A, n, j, i);
+            } else {
+                scaleCol2 = packIdx(A, n, i, j);
+            }
+            if (fabs(benchCol * scaleCol2 - benchCol2 * scaleCol) > 1e-04 * MAX(1, benchCol)) {
+                r1 = FALSE;
+                break;
+            }
+        }
+    }
+    
+    *isRank1 = r1;
+    
+    return retcode;
+}
+
+static DSDP_INT isDenseRank1Acc( dsMat *dataMat, DSDP_INT *isRank1 ) {
+    // Detect if a dense matrix is rank one by directly computing the  outer product
+    DSDP_INT retcode = DSDP_RETCODE_OK;
+    
+    double *A    = dataMat->array;
+    double *a    = NULL;
+    DSDP_INT n   = dataMat->dim;
+    DSDP_INT r1  = TRUE;
+    DSDP_INT col = 0;
+    
+    // Get the first column that contains non-zero elements
+    for (DSDP_INT i = 0; i < n; ++i) {
+        if (packIdx(A, n, i, i) > 0) {
+            col = i;
+            break;
+        }
+    }
+    
+    assert( col != n - 1 ); // or it is a zero matrix
+    a = (double *) calloc(n, sizeof(double));
+    double adiag = sqrt(packIdx(A, n, col, col));
+    
+    for (DSDP_INT i = col; i < n; ++i) {
+        a[i] = packIdx(A, n, i, col) / adiag;
+    }
+    
+    // Check if A = a * a' by computing ||A - a * a'||_F
+    double *start = NULL;
+    double err    = 0.0;
+    double diff   = 0.0;
+    DSDP_INT idx  = 0;
+    for (DSDP_INT i = 0; i < n; ++i) {
+        start = &A[idx];
+        for (DSDP_INT j = 0; j < n - i; ++j) {
+            diff = start[j] - a[i] * a[i + j];
+            err += diff * diff;
+        }
+        idx += n - i;
+        if (err > 1e-08) {
+            r1 = FALSE;
+            break;
+        }
+    }
+    
+    *isRank1 = r1;
+    DSDP_FREE(a);
     
     return retcode;
 }
@@ -26,7 +108,6 @@ static DSDP_INT isSparseRank1( spsMat *dataMat, DSDP_INT *isRank1 ) {
     
     return retcode;
 }
-
 
 extern DSDP_INT preRank1Rdc( sdpMat *dataMat ) {
     // Detect rank-one structure in SDP data

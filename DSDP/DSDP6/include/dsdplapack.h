@@ -498,6 +498,6 @@ void matscal( const DSDP_INT *m,
 #define DSDP_MAT_TRANSPOSE ('T')
 
 /* Other utilities */
-#define nsym(x) ((DSDP_INT) (((x) + 1 ) * (x)))
+#define nsym(x) ((DSDP_INT) (((x) + 1 ) * (x) / 2))
 
 #endif /* dsdplapack_h */

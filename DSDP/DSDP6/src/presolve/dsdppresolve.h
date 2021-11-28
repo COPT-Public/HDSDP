@@ -7,6 +7,11 @@
  
 */
 #include <stdio.h>
+#include "dsdphsd.h"
+#include "sparsemat.h"
+#include "densemat.h"
+#include "rankonemat.h"
+#include "dsdpdata.h"
 
 
 #ifdef __cplusplus

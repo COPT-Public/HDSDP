@@ -72,11 +72,33 @@ static DSDP_INT sdpMatIAllocByType( sdpMat *sdpData, DSDP_INT k, DSDP_INT *Ai,
         retcode = r1MatInit(data); checkCode;
         retcode = r1MatAlloc(data, m); checkCode;
         
-        for (DSDP_INT i = 0; i < nnz; ++i) {
-            if (Ai[i] >= m) {
-                break;
+        DSDP_INT rowidx    = 0;
+        DSDP_INT where     = 0;
+        DSDP_INT idxthresh = n;
+        DSDP_INT diff      = n;
+        
+        if (Ax[0] > 0) {
+            double adiag = sqrt(Ax[0]);
+            rowidx = 0;
+            for (DSDP_INT i = 0; i < nnz; ++i) {
+                rowidx = Ai[i];
+                if (rowidx >= n) {
+                    break;
+                }
+                data->x[rowidx] = Ax[i] / adiag;
             }
-            data->x[Ai[i]] = Ax[i];
+        } else {
+            for (DSDP_INT i = 0; i < nnz; ++i) {
+                rowidx = Ai[i];
+                if (rowidx >= idxthresh) {
+                    where += 1;
+                    diff = n - where;
+                    idxthresh += diff;
+                }
+                if (rowidx == where) {
+                    data->x[rowidx] = sqrt(Ax[i]);
+                }
+            }
         }
         
         userdata = (void *) data;

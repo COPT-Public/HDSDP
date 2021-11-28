@@ -86,6 +86,8 @@
 		19BACAF3274EBC1900E987FD /* test_sparse.c in Sources */ = {isa = PBXBuildFile; fileRef = 19BACAF2274EBC1900E987FD /* test_sparse.c */; };
 		19BACAF5274EBC2D00E987FD /* test_dense.c in Sources */ = {isa = PBXBuildFile; fileRef = 19BACAF4274EBC2D00E987FD /* test_dense.c */; };
 		19BACAF727521A7800E987FD /* test_pardiso.c in Sources */ = {isa = PBXBuildFile; fileRef = 19BACAF627521A7800E987FD /* test_pardiso.c */; };
+		19BACAFA2753C0D600E987FD /* test_presolve.c in Sources */ = {isa = PBXBuildFile; fileRef = 19BACAF92753C0D600E987FD /* test_presolve.c */; };
+		19BACAFD2753C17500E987FD /* gen_test_data.c in Sources */ = {isa = PBXBuildFile; fileRef = 19BACAFC2753C17500E987FD /* gen_test_data.c */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXCopyFilesBuildPhase section */
@@ -209,6 +211,8 @@
 		19BACAF2274EBC1900E987FD /* test_sparse.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = test_sparse.c; sourceTree = "<group>"; };
 		19BACAF4274EBC2D00E987FD /* test_dense.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = test_dense.c; sourceTree = "<group>"; };
 		19BACAF627521A7800E987FD /* test_pardiso.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = test_pardiso.c; sourceTree = "<group>"; };
+		19BACAF92753C0D600E987FD /* test_presolve.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = test_presolve.c; sourceTree = "<group>"; };
+		19BACAFC2753C17500E987FD /* gen_test_data.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = gen_test_data.c; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -394,6 +398,8 @@
 				19BACAF2274EBC1900E987FD /* test_sparse.c */,
 				19BACAF4274EBC2D00E987FD /* test_dense.c */,
 				19BACAF627521A7800E987FD /* test_pardiso.c */,
+				19BACAF92753C0D600E987FD /* test_presolve.c */,
+				19BACAFC2753C17500E987FD /* gen_test_data.c */,
 			);
 			path = test;
 			sourceTree = "<group>";
@@ -499,6 +505,7 @@
 			files = (
 				19808F4327380A990014086F /* dsdppresolve.c in Sources */,
 				19118E002737B72800D51D03 /* cs_dupl.c in Sources */,
+				19BACAFA2753C0D600E987FD /* test_presolve.c in Sources */,
 				19118DEC2737B72800D51D03 /* densemat.c in Sources */,
 				19118DF72737B72800D51D03 /* cs_qrsol.c in Sources */,
 				19118DEB2737B72800D51D03 /* vec.c in Sources */,
@@ -552,6 +559,7 @@
 				19118E0A2737B72800D51D03 /* cs_maxtrans.c in Sources */,
 				19118DE72737B72800D51D03 /* hsd.c in Sources */,
 				19118E112737B72800D51D03 /* cs_fkeep.c in Sources */,
+				19BACAFD2753C17500E987FD /* gen_test_data.c in Sources */,
 				19118E1A2737B72800D51D03 /* cs_house.c in Sources */,
 				19118DFE2737B72800D51D03 /* cs_leaf.c in Sources */,
 				19118E192737B72800D51D03 /* cs_permute.c in Sources */,

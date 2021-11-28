@@ -24,6 +24,12 @@ typedef struct {
     
 } dsMat;
 
+typedef struct {
+
+    DSDP_INT dim;  // Dimension of the vectorß
+    double   *x;   // Array storing the data
+    
+} vec;
 
 /* In DSDP rank-1 matrix is represented by a * a' and a is used to represent the matrix */
 typedef vec r1Mat;

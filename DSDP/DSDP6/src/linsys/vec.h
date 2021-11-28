@@ -6,14 +6,7 @@
 #include <stdio.h>
 #include "dsdphsd.h"
 #include "dsdplapack.h"
-
-
-typedef struct {
-
-    DSDP_INT dim;  // Dimension of the vectorß
-    double   *x;   // Array storing the data
-    
-} vec;
+#include "structs.h"
 
 #ifdef __cplusplus
 extern "C" {

@@ -28,7 +28,7 @@ extern DSDP_INT denseMatFnorm    ( dsMat  *dMat, double *fnrm );
 extern DSDP_INT denseMatRscale   ( dsMat *dXMat, double r );
 
 /* Factorization and linear system solver */
-extern DSDP_INT denseFactorize   ( dsMat * dAMat );
+extern DSDP_INT denseMatFactorize   ( dsMat * dAMat );
 extern DSDP_INT denseVecSolve    ( dsMat *dAMat, vec    *dbVec, double *Ainvb );
 extern DSDP_INT denseSpsSolve    ( dsMat *dAMat, spsMat *sBMat, double *AinvB );
 extern DSDP_INT denseDsSolve     ( dsMat *dAMat, dsMat  *dBMat, double *AinvB );
@@ -41,6 +41,8 @@ extern DSDP_INT denseMatScatter  ( dsMat *dMat, vec *b, DSDP_INT k );
 extern DSDP_INT denseMatFill     ( dsMat *dMat, double *fulldMat );
 extern DSDP_INT denseMatGetdiag  ( dsMat *dMat, vec *diag );
 extern DSDP_INT denseMatView     ( dsMat *dMat );
+
+#define packIdx(P, n, i, j) (P[(DSDP_INT)((2 * (n) - (j) - 1) * (j) / 2) + (i)])
 
 #ifdef __cplusplus
 }
