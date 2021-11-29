@@ -72,35 +72,30 @@ static DSDP_INT sdpMatIAllocByType( sdpMat *sdpData, DSDP_INT k, DSDP_INT *Ai,
         retcode = r1MatInit(data); checkCode;
         retcode = r1MatAlloc(data, m); checkCode;
         
-        DSDP_INT rowidx    = 0;
-        DSDP_INT where     = 0;
-        DSDP_INT idxthresh = n;
-        DSDP_INT diff      = n;
+        // The first non-zero element must be a diagonal element
+        double adiag    = Ax[0];
+        DSDP_INT isNeg  = FALSE;
+        DSDP_INT rowidx = 0;
         
-        if (Ax[0] > 0) {
-            double adiag = sqrt(Ax[0]);
-            rowidx = 0;
-            for (DSDP_INT i = 0; i < nnz; ++i) {
-                rowidx = Ai[i];
-                if (rowidx >= n) {
-                    break;
-                }
-                data->x[rowidx] = Ax[i] / adiag;
-            }
+        if (adiag > 0) {
+            adiag = sqrt(adiag);
+            data->sign = 1.0;
         } else {
-            for (DSDP_INT i = 0; i < nnz; ++i) {
-                rowidx = Ai[i];
-                if (rowidx >= idxthresh) {
-                    where += 1;
-                    diff = n - where;
-                    idxthresh += diff;
-                }
-                if (rowidx == where) {
-                    data->x[rowidx] = sqrt(Ax[i]);
-                }
-            }
+            data->sign = - 1.0;
+            adiag = - sqrt(-adiag);
+            isNeg = TRUE;
         }
         
+        for (DSDP_INT i = 0; i < n; ++i) {
+            rowidx = Ai[i];
+            // The compressed matrix has n * (n + 1) / 2 rows and one column
+            if (rowidx >= n) {
+                break;
+            }
+            data->x[rowidx] = Ax[i] / adiag;
+        }
+        
+        retcode = r1MatCountNnz(data); checkCode;
         userdata = (void *) data;
         
     } else if (((nnz <= nsym(n) / 10) && (sdpData->types[k] == MAT_TYPE_UNKNOWN)) ||

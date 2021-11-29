@@ -9,15 +9,18 @@ static char *etype = "Presolving operations";
 
 static DSDP_INT isDenseRank1InAcc( dsMat *dataMat, DSDP_INT *isRank1 ) {
     // Check if a dense matrix is rank-one
+    // This version is fast but not accurate due to potential numerical error
     DSDP_INT retcode = DSDP_RETCODE_OK;
     double *A    = dataMat->array;
     DSDP_INT n   = dataMat->dim;
     DSDP_INT r1  = TRUE;
     DSDP_INT col = 0;
-    double benchCol = 0.0;
-    double scaleCol = 0.0;
+    
+    double benchCol  = 0.0;
+    double scaleCol  = 0.0;
     double benchCol2 = 0.0;
     double scaleCol2 = 0.0;
+    double diff      = 0.0;
     
     // Get the first column that contains non-zero elements
     for (DSDP_INT i = 0; i < n; ++i) {
@@ -39,7 +42,8 @@ static DSDP_INT isDenseRank1InAcc( dsMat *dataMat, DSDP_INT *isRank1 ) {
             } else {
                 scaleCol2 = packIdx(A, n, i, j);
             }
-            if (fabs(benchCol * scaleCol2 - benchCol2 * scaleCol) > 1e-04 * MAX(1, benchCol)) {
+            diff = benchCol * scaleCol2 - benchCol2 * scaleCol;
+            if (fabs(diff) > 1e-04 * MAX(1, benchCol)) {
                 r1 = FALSE;
                 break;
             }
@@ -52,7 +56,8 @@ static DSDP_INT isDenseRank1InAcc( dsMat *dataMat, DSDP_INT *isRank1 ) {
 }
 
 static DSDP_INT isDenseRank1Acc( dsMat *dataMat, DSDP_INT *isRank1 ) {
-    // Detect if a dense matrix is rank one by directly computing the  outer product
+    // Detect if a dense matrix is rank one by directly computing the outer product
+    // Slower but accurate
     DSDP_INT retcode = DSDP_RETCODE_OK;
     
     double *A    = dataMat->array;
@@ -102,10 +107,69 @@ static DSDP_INT isDenseRank1Acc( dsMat *dataMat, DSDP_INT *isRank1 ) {
 }
 
 static DSDP_INT isSparseRank1( spsMat *dataMat, DSDP_INT *isRank1 ) {
-    // TODO: Check if a sparse matrix is rank-one
+    // Check if a sparse matrix is rank-one
     DSDP_INT retcode = DSDP_RETCODE_OK;
+    DSDP_INT isR1 = TRUE;
     
+    DSDP_INT *Ap   = dataMat->cscMat->p;
+    DSDP_INT *Ai   = dataMat->cscMat->i;
+    double   *Ax   = dataMat->cscMat->x;
+    DSDP_INT n     = dataMat->dim;
+    DSDP_INT col   = 0;
+    DSDP_INT isNeg = FALSE;
+    double   err   = 0.0;
+    double   diff  = 0.0;
     
+    // First detect the first column containing nonzeros
+    for (DSDP_INT i = 0; i < n; ++i) {
+        if (Ap[i + 1] - Ap[i] > 0) {
+            col = i;
+            break;
+        }
+    }
+    
+    assert( col < n - 1 ); // Otherwise the matrix is empty
+    
+    if (Ai[col] != col) {
+        isR1 = FALSE;
+        *isRank1 = isR1;
+        return retcode;
+    }
+    
+    double *a = NULL;
+    double adiag = 0.0;
+    a = (double *) calloc(n, sizeof(double));
+    
+    adiag = Ax[Ai[col]];
+        
+    if (adiag < 0) {
+        isNeg = TRUE;
+        adiag = - sqrt(-adiag);
+    } else {
+        adiag = sqrt(adiag);
+    }
+    
+    // Get the sparse rank 1 matrix
+    for (DSDP_INT j = Ap[col]; j < Ap[col + 1]; ++j) {
+        // If the diagonal is zero but other rows contain non-zeros
+        a[Ai[j]] = Ax[j] / adiag;
+    }
+    
+    // Ready to check rank-one property
+    for (DSDP_INT i = 0; i < n; ++i) {
+        for (DSDP_INT j = Ap[i]; j < Ap[i + 1]; ++j) {
+            diff = Ax[Ai[j]] - a[i] * a[j];
+            err += diff * diff;
+        }
+        if (err > 1e-06) {
+            isR1 = FALSE;
+            break;
+        }
+    }
+    
+    DSDP_FREE(a);
+    
+    *isRank1 = isR1;
     return retcode;
 }
 
@@ -199,7 +263,7 @@ extern DSDP_INT preSDPMatDScale( sdpMat *dataMat ) {
     
     dataMat->scaler = sqrt(maxNrm * minNrm);
     
-    if (dataMat->scaler < 1.2 && dataMat->scaler > 0.8) {
+    if (dataMat->scaler < 1.05 && dataMat->scaler > 0.95) {
         dataMat->scaler = 1.0;
     } else {
         

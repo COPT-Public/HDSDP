@@ -24,14 +24,22 @@ typedef struct {
     
 } dsMat;
 
+/* In DSDP rank-1 matrix is represented by 1 or -1 * a * a' and a is used to represent the matrix */
+typedef struct {
+    
+    double   sign;   // The sign before the vector
+    DSDP_INT dim;    // Dimension of the rank 1 matrix
+    double   *x;     // Vector a
+    DSDP_INT *nzIdx; // Index of nonzero elements
+    DSDP_INT nnz;    // Number of nonzero elements in a
+    
+} r1Mat;
+
 typedef struct {
 
     DSDP_INT dim;  // Dimension of the vectorß
     double   *x;   // Array storing the data
     
 } vec;
-
-/* In DSDP rank-1 matrix is represented by a * a' and a is used to represent the matrix */
-typedef vec r1Mat;
 
 #endif /* structs_h */

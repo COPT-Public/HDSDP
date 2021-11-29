@@ -79,6 +79,19 @@ sol =
 -0.4077   -0.1999   -0.4530   -0.4108   -0.3889   -0.2573   -0.0854   -0.2316    0.0512    0.1739
 -0.2186   -0.1910   -0.1992   -0.2710   -0.2078   -0.1086   -0.0754   -0.1770   -0.0749    0.0029
  
+ 0.8 * A - 0.2 * B
+ 
+ 115.7959   87.0915    0.3047    0.2486   -7.7928    9.3065  112.3666  153.1879   19.9216   67.2624
+  87.0915  396.8499   28.6134   21.7998    4.8471    4.2269  155.0299  100.5973   65.3965    0.2556
+   0.3047   28.6134   24.1469   11.2141   13.1997   11.3909    2.2267    3.6404   21.1175    0.6467
+   0.2486   21.7998   11.2141   69.4023   57.8753    6.3007    5.7399    6.1737    5.1234    3.0112
+  -7.7928    4.8471   13.1997   57.8753  203.8928   36.9956    3.2089   36.2473    2.6118    9.2456
+   9.3065    4.2269   11.3909    6.3007   36.9956   57.0354    4.4649   56.1856    3.0578   15.3176
+ 112.3666  155.0299    2.2267    5.7399    3.2089    4.4649  139.3741  152.6697   21.5095   35.0556
+ 153.1879  100.5973    3.6404    6.1737   36.2473   56.1856  152.6697  326.4952    8.7580  173.8951
+  19.9216   65.3965   21.1175    5.1234    2.6118    3.0578   21.5095    8.7580   49.9395  -16.8572
+  67.2624    0.2556    0.6467    3.0112    9.2456   15.3176   35.0556  173.8951  -16.8572  279.5336
+ 
  */
 double rhs[] = {0.9619,  0.0046, 0.7749, 0.8173, 0.8687, 0.0844, 0.3998,  0.2599, 0.8001, 0.4314};
 double sol[] = {0.0241, -0.0042, 0.0293, 0.0051, 0.0033, -0.0011, -0.0027, -0.0094, 0.0012, 0.0020};
@@ -109,6 +122,13 @@ double Bsol[] = {0.841, 0.487, 0.281, 0.643, 0.411, 0.246, -0.107, -0.008, 0.040
     0.321, 0.234, 0.097, 0.143, 0.332, 0.167, 0.1086, -0.407, -0.199, -0.453, -0.410, -0.388, -0.257,
     -0.085, -0.231, 0.051, 0.1739, -0.218, -0.191, -0.199, -0.271, -0.207, -0.108, -0.075, -0.177,
     -0.074, 0.0029};
+
+double aApbB[] = {115.7959, 87.0915, 0.3047, 0.2486, -7.7928, 9.3065, 112.3666, 153.1879, 19.9216,
+    67.2624, 396.8499, 28.6134, 21.7998, 4.8471, 4.2269, 155.0299, 100.5973, 65.3965, 0.2556,
+    24.1469, 11.2141, 13.1997, 11.3909, 2.2267, 3.6404, 21.1175, 0.6467, 69.4023, 57.8753,
+    6.3007, 5.7399, 6.1737, 5.1234, 3.0112, 203.8928, 36.9956, 3.2089, 36.2473, 2.6118,
+    9.2456, 57.0354, 4.4649, 56.1856, 3.0578, 15.3176, 139.3741, 152.6697, 21.5095, 35.0556,
+    326.4952, 8.7580, 173.8951, 49.9395, -16.8572, 279.5336};
 
 /* Utility functions */
 DSDP_INT genDenseMatfromVec1( double *x, dsMat *A );
@@ -216,12 +236,56 @@ DSDP_INT test_dense(void) {
         passed("vector solve");
     }
     
-    /* Dense matrix solve */
+    
     err = 0;
     B = (dsMat *) calloc(1, sizeof(dsMat));
     retcode = denseMatInit(B); checkCodeFree;
     retcode = denseMatAlloc(B, packAdim, FALSE); checkCodeFree;
     memcpy(B->array, BRHS, sizeof(double) * nsym(packAdim));
+    
+    
+    /* Dense matrix AXPBY */
+    double alpha = 0.8;
+    double beta  = -0.2;
+    data->isFactorized = FALSE;
+    retcode = denseMataXpbY(alpha, data, beta, B); checkCodeFree;
+    
+    err = 0.0;
+    
+    for (DSDP_INT i = 0; i < nsym(packAdim); ++i) {
+        diff = B->array[i] - aApbB[i];
+        err += diff * diff;
+    }
+    
+    retcode = denseMataXpbY(0.0, data, 0.0, B); checkCodeFree;
+    
+    for (DSDP_INT i = 0; i < nsym(packAdim); ++i) {
+        diff = B->array[i];
+        err += diff * diff;
+    }
+    
+    retcode = denseMataXpbY(1.0, data, 0.0, B); checkCodeFree;
+    
+    for (DSDP_INT i = 0; i < nsym(packAdim); ++i) {
+        diff = B->array[i] - packA[i];
+        err += diff * diff;
+    }
+    
+    memcpy(B->array, BRHS, sizeof(double) * nsym(packAdim));
+    retcode = denseMataXpbY(0.0, data, 0.5, B); checkCodeFree; 
+    
+    for (DSDP_INT i = 0; i < nsym(packAdim); ++i) {
+        diff = B->array[i] - 0.5 * BRHS[i];
+        err += diff * diff;
+    }
+    
+    if (sqrt(err) / fnrm < 1e-05) {
+        passed("Matrix AXPBY");
+    }
+    
+    data->isFactorized = TRUE;
+    
+    /* Dense matrix solve */
     retcode = denseDsSolve(data, B, fullA); checkCodeFree;
     
     for (DSDP_INT i = 0; i < packAdim; ++i) {

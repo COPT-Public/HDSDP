@@ -115,7 +115,7 @@ extern DSDP_INT denseMataXpbY( double alpha, dsMat *dXMat, double beta, dsMat *d
         error(etype, "Adding a factorized matrix. \n");
     }
     
-    DSDP_INT dim = dXMat->dim;
+    DSDP_INT dim = nsym(dXMat->dim);
     
     if (beta == 0.0) {
         if (alpha == 0.0) {
