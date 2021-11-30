@@ -32,6 +32,7 @@ typedef struct {
     DSDP_INT  dimS;          // Dimension of dual variable S
     
     // Sparse SDP data transpose( A ) in CSC format
+    DSDP_INT  nzeroMat;      // Number of zero matrices
     DSDP_INT  nspsMat;       // Number of sparse matrices
     DSDP_INT  *spsMatIdx;    // Index of the sparse matrices
     DSDP_INT  ndenseMat;     // Number of dense matrices

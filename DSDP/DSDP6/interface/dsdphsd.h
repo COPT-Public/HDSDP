@@ -30,7 +30,11 @@
 typedef mwSignedIndex DSDP_INT;
 #else
 #include <stdint.h>
+#ifdef DSDP64
 typedef long int DSDP_INT;
+#else
+typedef int DSDP_INT;
+#endif
 #define ID "%ld"
 #endif
 

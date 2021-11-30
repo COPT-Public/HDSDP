@@ -238,6 +238,7 @@ extern DSDP_INT sdpMatInit( sdpMat *sdpData ) {
     sdpData->dimy        = 0;
     sdpData->dimS        = 0;
     
+    sdpData->nzeroMat    = 0;
     sdpData->nspsMat     = 0;
     sdpData->spsMatIdx   = NULL;
     sdpData->ndenseMat   = 0;
@@ -312,7 +313,8 @@ extern DSDP_INT sdpMatFree( sdpMat *sdpData ) {
     
     sdpData->nspsMat   = 0;
     sdpData->ndenseMat = 0;
-    sdpData->nspsMat   = 0;
+    sdpData->nr1Mat    = 0;
+    sdpData->nzeroMat  = 0;
     
     DSDP_FREE(sdpData->spsMatIdx);
     DSDP_FREE(sdpData->denseMatIdx);
@@ -328,10 +330,13 @@ extern DSDP_INT sdpMatFree( sdpMat *sdpData ) {
                 break;
             case MAT_TYPE_DENSE:
                 retcode = denseMatFree((dsMat *) data); checkCode;
+                break;
             case MAT_TYPE_SPARSE:
                 retcode = spsMatFree((spsMat *) data); checkCode;
+                break;
             case MAT_TYPE_RANK1:
                 retcode = r1MatFree((r1Mat *) data); checkCode;
+                break;
             default:
                 error(etype, "Unknown matrix type. \n");
                 break;

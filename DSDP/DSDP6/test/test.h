@@ -14,6 +14,7 @@ extern "C" {
 
 /* Vector utility */
 DSDP_INT test_vec(void);
+DSDP_INT test_sparse(void);
 DSDP_INT test_dense(void);
 DSDP_INT test_pardiso(void);
 DSDP_INT test_presolve(void);

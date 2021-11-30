@@ -74,6 +74,10 @@ static DSDP_INT PARDISO_PARAMS_CG[PARDISOINDEX] = {
     0
 };
 
+#ifdef DSDP64
+#define pardiso pardiso_64
+#endif
+
 extern void pardisoinit ( void *, const DSDP_INT *, DSDP_INT * );
 
 extern void pardiso     ( void     *, DSDP_INT    *, DSDP_INT *, DSDP_INT *, DSDP_INT *, DSDP_INT *,

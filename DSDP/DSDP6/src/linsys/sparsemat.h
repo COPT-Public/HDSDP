@@ -33,7 +33,7 @@ extern "C" {
 /* Structure operations */
 extern DSDP_INT spsMatInit         ( spsMat *sMat );
 extern DSDP_INT spsMatAlloc        ( spsMat *sMat, DSDP_INT dim );
-extern DSDP_INT spsMatAllocData    ( spsMat *sMat, DSDP_INT dim, DSDP_INT nna );
+extern DSDP_INT spsMatAllocData    ( spsMat *sMat, DSDP_INT dim, DSDP_INT nnz );
 extern DSDP_INT spsMatFree         ( spsMat *sMat );
 
 /* Basic operations */
@@ -42,11 +42,11 @@ extern DSDP_INT spsMatFnorm        ( spsMat *sMat, double *fnrm );
 extern DSDP_INT spsMatRscale       ( spsMat *sXMat, double r );
 
 /* Factorization and linear system solver */
-extern DSDP_INT spFactorize        ( spsMat *sAMat );
-extern DSDP_INT spsVecSolve        ( spsMat *sAMat, vec    *sbVec, double *Ainvb );
-extern DSDP_INT spsSpSolve         ( spsMat *sAMat, spsMat *sBMat, double *AinvB );
-extern DSDP_INT spsDsSolve         ( spsMat *sAMat, dsMat  *sBMat, double *AinvB );
-extern DSDP_INT spsR1Solve         ( spsMat *sAMat, r1Mat  *sBMat, double *AinvB );
+extern DSDP_INT spsMatFactorize    ( spsMat *sAMat );
+extern DSDP_INT spsMatVecSolve     ( spsMat *sAMat, vec    *sbVec, double *Ainvb );
+extern DSDP_INT spsMatSpSolve      ( spsMat *sAMat, spsMat *sBMat, double *AinvB );
+extern DSDP_INT spsMatDsSolve      ( spsMat *sAMat, dsMat  *sBMat, double *AinvB );
+extern DSDP_INT spsMatR1Solve      ( spsMat *sAMat, r1Mat  *sBMat, double *AinvB );
 
 /* Schur matrix assembly */
 extern DSDP_INT spsSinvSpSinvSolve ( spsMat *S, spsMat *A, dsMat *SinvASinv, double *asinv );

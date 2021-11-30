@@ -5,7 +5,7 @@ DSDP_INT genDenseMatfromVec1( double *x, dsMat *A ) {
     double *array = A->array;
     for (DSDP_INT i = 0; i < n; ++i) {
         for (DSDP_INT j = 0; j <= i; ++j) {
-            packIdx(array, n, i, j) = x[i] * x[j];
+            packIdx(array, n, i, j) = - x[i] * x[j];
         }
     }
     

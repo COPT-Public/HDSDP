@@ -87,7 +87,7 @@ static DSDP_INT pardisoSolve( spsMat *S, DSDP_INT nrhs, double *B, double *X ) {
     // Invoke pardiso to perform solution
     pardiso(S->pdsWorker, &maxfct, &mnum, &mtype, &phase, &n,
             S->cscMat->x, S->cscMat->p, S->cscMat->i, &idummy,
-            &idummy, PARDISO_PARAMS_CHOLESKY, &msglvl,
+            &nrhs, PARDISO_PARAMS_CHOLESKY, &msglvl,
             B, X, &error);
     
     assert( error == PARDISO_OK );
@@ -171,9 +171,9 @@ extern DSDP_INT spsMatFree( spsMat *sMat ) {
     
     // Note that we first free p, i and x before calling pardiso to destroy the working array
     cs_spfree(sMat->cscMat);
-    pardisoFree(sMat);
     
     if (sMat->isFactorized) {
+        retcode = pardisoFree(sMat);
         sMat->isFactorized = FALSE;
     }
         
@@ -202,11 +202,11 @@ extern DSDP_INT spsMataXpbY( double alpha, spsMat *sXMat, double beta, spsMat *s
     cs *aXpY     = NULL;
     DSDP_INT n   = sXMat->dim;
     cs *Xmat     = sXMat->cscMat;
-    DSDP_INT nnz = sXMat->cscMat->nz;
+    DSDP_INT nnz = sXMat->cscMat->p[n];
     
     // Case if beta = 0.0
     if (beta == 0.0) {
-        aXpY = cs_spalloc(n, n, sXMat->cscMat->nz, TRUE, FALSE);
+        aXpY = cs_spalloc(n, n, sXMat->cscMat->p[n], TRUE, FALSE);
         memcpy(aXpY->i, Xmat->i, sizeof(DSDP_INT) * nnz);
         memcpy(aXpY->p, Xmat->p, sizeof(DSDP_INT) * (n + 1));
         
@@ -234,24 +234,25 @@ extern DSDP_INT spsMatRscale( spsMat *sXMat, double r ) {
     }
     
     double *x = sXMat->cscMat->x;
-    dscal(&sXMat->cscMat->nz, &r, x, &one);
+    vecdiv(&sXMat->cscMat->p[sXMat->dim], &r, x, &one);
     return retcode;
 }
 
-extern DSDP_INT spsMatFnorm( spsMat *sMat, double *fnorm ) {
+extern DSDP_INT spsMatFnorm( spsMat *sMat, double *fnrm ) {
     
     // Matrix Fronenius norm
     DSDP_INT retcode = DSDP_RETCODE_OK;
     assert( sMat->dim > 0 );
-    *fnorm = norm(&sMat->cscMat->nz, sMat->cscMat->x, &one);
+    *fnrm = norm(&sMat->cscMat->p[sMat->dim], sMat->cscMat->x, &one);
     
     return retcode;
 }
 
 /* Factorization and linear system solver */
-extern DSDP_INT spsFactorize( spsMat *sAMat ) {
+extern DSDP_INT spsMatFactorize( spsMat *sAMat ) {
     
     // Sparse matrix Cholesky decomposition
+    // We allow consecutive factorizations involving iteration variables
     DSDP_INT retcode = DSDP_RETCODE_OK;
     
     // Call the internal method
@@ -260,7 +261,7 @@ extern DSDP_INT spsFactorize( spsMat *sAMat ) {
     return retcode;
 }
 
-extern DSDP_INT spsVecSolve( spsMat *sAMat, vec *sbVec, double *Ainvb ) {
+extern DSDP_INT spsMatVecSolve( spsMat *sAMat, vec *sbVec, double *Ainvb ) {
     
     // Sparse matrix operation X = A \ B = inv(A) * B for sparse A and B
     // A full dense matrix inv(A) * B is returned
@@ -274,7 +275,7 @@ extern DSDP_INT spsVecSolve( spsMat *sAMat, vec *sbVec, double *Ainvb ) {
     return retcode;
 }
 
-extern DSDP_INT spsSpSolve( spsMat *sAMat, spsMat *sBMat, double *AinvB ) {
+extern DSDP_INT spsMatSpSolve( spsMat *sAMat, spsMat *sBMat, double *AinvB ) {
     
     // Sparse matrix operation X = A \ B = inv(A) * B for sparse A and B
     // A full dense matrix inv(A) * B is returned
@@ -296,7 +297,7 @@ extern DSDP_INT spsSpSolve( spsMat *sAMat, spsMat *sBMat, double *AinvB ) {
         for (DSDP_INT k = 0; k < n; ++k) {
             // Fill b by the k th column of sBMat
             retcode = spsMatScatter(sAMat, pb, k);
-            retcode = spsVecSolve(sAMat, pb, &AinvB[k * n]);
+            retcode = spsMatVecSolve(sAMat, pb, &AinvB[k * n]);
         }
         
         vec_free(pb);
@@ -313,7 +314,7 @@ extern DSDP_INT spsSpSolve( spsMat *sAMat, spsMat *sBMat, double *AinvB ) {
     return retcode;
 }
 
-extern DSDP_INT spsDsSolve( spsMat *sAMat, dsMat *sBMat, double *AinvB ) {
+extern DSDP_INT spsMatDsSolve( spsMat *sAMat, dsMat *sBMat, double *AinvB ) {
     
     // Matrix operation X = A \ B = inv(A) * B for sparse A and dense B
     // A full dense matrix inv(A) * B is returned
@@ -335,7 +336,7 @@ extern DSDP_INT spsDsSolve( spsMat *sAMat, dsMat *sBMat, double *AinvB ) {
         for (DSDP_INT k = 0; k < n; ++k) {
             // Fill b by the k th column of sBMat
             retcode = denseMatScatter(sBMat, pb, k);
-            retcode = spsVecSolve(sAMat, pb, &AinvB[k * n]);
+            retcode = spsMatVecSolve(sAMat, pb, &AinvB[k * n]);
         }
         
         vec_free(pb);
@@ -352,7 +353,7 @@ extern DSDP_INT spsDsSolve( spsMat *sAMat, dsMat *sBMat, double *AinvB ) {
     return retcode;
 }
 
-extern DSDP_INT spsR1Solve( spsMat *sAMat, r1Mat *sBMat, double *AinvB ) {
+extern DSDP_INT spsMatR1Solve( spsMat *sAMat, r1Mat *sBMat, double *AinvB ) {
     
     // Matrix operation X = A \ B = inv(A) * B for sparse A and dense B
     // A full dense matrix inv(A) * B is returned
@@ -387,13 +388,13 @@ extern DSDP_INT spsSinvSpSinvSolve( spsMat *S, spsMat *A, dsMat *SinvASinv, doub
     fSinvASinv = (double *) calloc(n * n, sizeof(double));
     
     // Solve to get inv(S) * A
-    retcode    = spsSpSolve(S, A, SinvA);
+    retcode    = spsMatSpSolve(S, A, SinvA);
     double tmp = 0.0;
     
     // Transpose
     *asinv = 0.0;
     for (DSDP_INT i = 0; i < n; ++i) {
-        for (DSDP_INT j = 0; j < n; ++j) {
+        for (DSDP_INT j = 0; j <= i; ++j) {
             if (i == j) {
                 *asinv += SinvA[n * i + i];
             } else {
@@ -437,17 +438,20 @@ extern DSDP_INT spsSinvDsSinvSolve( spsMat *S, dsMat *A, dsMat *SinvASinv, doubl
     return retcode;
 }
 
-
 /* Other utilities */
 extern DSDP_INT spsMatScatter( spsMat *sMat, vec *b, DSDP_INT k ) {
     
     // Let b = sMat(:, k)
     DSDP_INT retcode = DSDP_RETCODE_OK;
-    assert( sMat->dim == b->dim );
+    DSDP_INT dim = sMat->dim;
+    
+    assert( dim == b->dim );
     
     DSDP_INT *Ap = sMat->cscMat->p;
     DSDP_INT *Ai = sMat->cscMat->i;
     double   *Ax = sMat->cscMat->x;
+    
+    memset(b->x, 0, sizeof(double) * dim);
     
     // Copy the lower triangular part of sMat(:, k) to x
     for (DSDP_INT i = Ap[k]; i < Ap[k + 1]; ++i) {
@@ -484,7 +488,7 @@ extern DSDP_INT spsMatFill( spsMat *sMat, double *fulldMat ) {
     vec_alloc(pb, n);
     
     for (DSDP_INT k = 0; k < n; ++k) {
-        spsMatScatter(sMat, pb, k);
+        retcode = spsMatScatter(sMat, pb, k); checkCode;
         memcpy(&(fulldMat[k * n]), pb->x, sizeof(double) * n);
     }
     

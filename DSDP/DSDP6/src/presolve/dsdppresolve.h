@@ -21,6 +21,9 @@ extern "C" {
 
 extern DSDP_INT preSDPMatPScale( sdpMat *dataMat, vec *pScaler );
 extern DSDP_INT preSDPMatDScale( sdpMat *dataMat );
+extern DSDP_INT preLPMatScale  ( lpMat  *lpData, vec *lpObj, vec *pScaler );
+extern DSDP_INT preRank1Rdc    ( sdpMat *dataMat );
+extern DSDP_INT getMatIdx      ( sdpMat *sdpData );
 
 
 #ifdef __cplusplus

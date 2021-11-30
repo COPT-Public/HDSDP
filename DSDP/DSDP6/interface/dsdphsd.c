@@ -21,7 +21,7 @@ typedef struct {
     DSDP_INT *isSDPset;
     
     lpMat    *lpData;     // LP data A after transformation
-    vec      *clp;        // Linear coefficient
+    vec      *lpObj;        // Linear coefficient
     DSDP_INT isLPset;
     
     vec      *dObj;       // Dual objective b
@@ -91,7 +91,7 @@ static DSDP_INT DSDPIInit( HSDSolver *dsdpSolver ) {
     
     // Problem data
     dsdpSolver->sdpData = NULL;
-    dsdpSolver->clp     = NULL;
+    dsdpSolver->lpObj     = NULL;
     dsdpSolver->lpData  = NULL;
     dsdpSolver->dObj    = NULL;
     
@@ -163,7 +163,7 @@ static DSDP_INT DSDPIAlloc( HSDSolver *dsdpSolver ) {
     
     dsdpSolver->sdpData   = (sdpMat **)  calloc(nblock, sizeof(sdpMat *));
     dsdpSolver->lpData    = (lpMat   *)  calloc(1,      sizeof(lpMat   ));
-    dsdpSolver->clp       = (vec     *)  calloc(1,      sizeof(vec     ));
+    dsdpSolver->lpObj       = (vec     *)  calloc(1,      sizeof(vec     ));
     dsdpSolver->S         = (spsMat **)  calloc(nblock, sizeof(spsMat *));
     dsdpSolver->dS        = (spsMat **)  calloc(nblock, sizeof(spsMat *));
     dsdpSolver->SinvASinv = (dsMat  **)  calloc(nblock, sizeof(dsMat  *));
@@ -334,9 +334,9 @@ static DSDP_INT DSDPIFreeCleanUp( HSDSolver *dsdpSolver ) {
     // isSDPset
     DSDP_FREE(dsdpSolver->isSDPset);
     
-    // clp
+    // lpObj
     if (dsdpSolver->isLPset) {
-        retcode = vec_free(dsdpSolver->clp); checkCode;
+        retcode = vec_free(dsdpSolver->lpObj); checkCode;
     }
     
     // dObj
@@ -413,7 +413,7 @@ static DSDP_INT DSDPIPresolve( HSDSolver *dsdpSolver ) {
         
         pScalFact = maxNrm * minNrm;
         
-        if (pScalFact < 3 && pScalFact > 0.8) {
+        if (pScalFact < 1.2 && pScalFact > 0.8) {
             pScalFact = 1.0;
         } else {
             dsdpSolver->pScaler->x[i] = sqrt(pScalFact);
@@ -425,12 +425,22 @@ static DSDP_INT DSDPIPresolve( HSDSolver *dsdpSolver ) {
     for (DSDP_INT j = 0; j < nblock; ++j) {
         cone = dsdpSolver->sdpData[j];
         // Rank-1 detection
-        
-        
+        retcode = preRank1Rdc(cone); checkCode;
         // Primal coefficient scaling
         retcode = preSDPMatPScale(cone, dsdpSolver->pScaler); checkCode;
         // Dual coefficient scaling
         retcode = preSDPMatDScale(cone); checkCode;
+    }
+    
+    // LP coefficient scaling
+    retcode = preLPMatScale(dsdpSolver->lpData,
+                            dsdpSolver->lpObj,
+                            dsdpSolver->pScaler); checkCode;
+    
+    // Count index and end presolving
+    for (DSDP_INT j = 0; j < nblock; ++j) {
+        cone = dsdpSolver->sdpData[j];
+        retcode = getMatIdx(cone); checkCode;
     }
     
     return retcode;
@@ -527,6 +537,7 @@ extern DSDP_INT DSDPSetLPData( HSDSolver *dsdpSolver,
     retcode = lpMatInit(dsdpSolver->lpData); checkCode;
     retcode = lpMatSetDim(dsdpSolver->lpData, dsdpSolver->m, nCol); checkCode;
     retcode = lpMatSetData(dsdpSolver->lpData, Ap, Ai, Ax); checkCode;
+    memcpy(dsdpSolver->lpObj->x, lpObj, sizeof(double) * nCol);
     
     if (dsdpSolver->verbosity) {
         printf("LP data is set. \n");

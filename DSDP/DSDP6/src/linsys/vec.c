@@ -104,7 +104,7 @@ extern DSDP_INT vec_print( vec *x ) {
         if ((i + 1) % 11 == 0) {
             printf("\n");
         }
-        printf("%2.2e ", x->x[i]);
+        printf("%-10.3g ", x->x[i]);
     }
     printf("\n\n");
     return DSDP_RETCODE_OK;
