@@ -1,7 +1,9 @@
 #include "residualsetup.h"
 #include "dsdpdata.h"
 #include "structs.h"
-#include "hsd.c"
+#include "dsdpsolver.h"
+#include "hsd.h"
+
 // Setup all the residuals for the dual scaling algorithm to work
 // We also note that the dual residual is not contained in the solver since
 // we will eliminate it as soon as possible

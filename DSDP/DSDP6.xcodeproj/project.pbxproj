@@ -218,6 +218,7 @@
 		19BEEC202756065600C36C9E /* cs_lusol.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = cs_lusol.c; sourceTree = "<group>"; };
 		19BEEC272757EA7D00C36C9E /* obj.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = obj.h; sourceTree = "<group>"; };
 		19BEEC282757EA7D00C36C9E /* obj.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = obj.c; sourceTree = "<group>"; };
+		19BEEC2A2757F14A00C36C9E /* dsdpsolver.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = dsdpsolver.h; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -418,6 +419,7 @@
 				19118DE42737B72800D51D03 /* dsdphsd.c */,
 				19118DE52737B72800D51D03 /* dsdphsd.h */,
 				19808F47273833760014086F /* dsdpparam.h */,
+				19BEEC2A2757F14A00C36C9E /* dsdpsolver.h */,
 			);
 			path = interface;
 			sourceTree = "<group>";

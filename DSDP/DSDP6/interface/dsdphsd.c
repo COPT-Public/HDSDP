@@ -8,9 +8,9 @@
 #include "rankonemat.h"
 #include "dsdppresolve.h"
 #include "dsdpparam.h"
-#include "hsd.c"
+#include "dsdpsolver.h"
 
-static char *etype = "DSDP Interface";
+static char etype[] = "DSDP Interface";
 
 /* DSDP internal methods */
 static DSDP_INT DSDPIInit( HSDSolver *dsdpSolver ) {

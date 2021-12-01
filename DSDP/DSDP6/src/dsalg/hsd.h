@@ -2,6 +2,7 @@
 #define hsd_h
 
 #include "dsdphsd.h"
+#include "dsdpsolver.h"
 
 // Iteration monitor
 #define ITER_LOGGING           0
@@ -35,5 +36,6 @@
 #define EVENT_STEP_TOO_SMALL 7  // Step taken is too small
 #define EVENT_ITERTION_END   8  // Iteration stops
 
+extern DSDP_INT checkIterProgress( HSDSolver *dsdpSolver, DSDP_INT iter );
 
 #endif /* hsd_h */

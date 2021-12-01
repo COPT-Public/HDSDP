@@ -38,7 +38,7 @@ typedef int DSDP_INT;
 #define ID "%ld"
 #endif
 
-typedef struct HSDSolver Solver;
+// typedef struct HSDSolver Solver;
 
 // Memory handler
 #define DSDP_FREE(var) do {free((var)); (var) = NULL;} while (0)
