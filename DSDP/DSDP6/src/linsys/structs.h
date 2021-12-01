@@ -42,4 +42,6 @@ typedef struct {
     
 } vec;
 
+#define packIdx(P, n, i, j) (P[(DSDP_INT)((2 * (n) - (j) - 1) * (j) / 2) + (i)])
+
 #endif /* structs_h */

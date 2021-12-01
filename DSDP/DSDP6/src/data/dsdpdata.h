@@ -72,6 +72,7 @@ extern "C" {
 extern DSDP_INT lpMatInit     ( lpMat  *lpData );
 extern DSDP_INT lpMatSetDim   ( lpMat  *lpData, DSDP_INT dimy, DSDP_INT dims );
 extern DSDP_INT lpMatSetData  ( lpMat *lpData, DSDP_INT *Ap, DSDP_INT *Ai, double *Ax );
+extern DSDP_INT lpMataATy     ( double alpha, lpMat *lpData, vec *y, double *ATy );
 extern DSDP_INT lpMatFree     ( lpMat *lpData );
 
 extern DSDP_INT sdpMatInit    ( sdpMat *sdpData );

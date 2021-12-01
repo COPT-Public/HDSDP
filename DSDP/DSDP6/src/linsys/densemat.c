@@ -167,7 +167,7 @@ extern DSDP_INT denseMatFnorm( dsMat *dMat, double *fnrm ) {
 }
 
 /* Factorization and linear system solver */
-extern DSDP_INT denseMatFactorize( dsMat * dAMat ) {
+extern DSDP_INT denseMatFactorize( dsMat *dAMat ) {
     
     // Dense packed matrix cholesky factorization
     DSDP_INT retcode = DSDP_RETCODE_OK;

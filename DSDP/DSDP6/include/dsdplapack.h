@@ -41,6 +41,7 @@ CAPBLAS  : Whether routines are given by ROUTINENAME(params) or routinename(para
 #define vecscal DSCAL_
 #define vecdiv DRSCL_
 #define maxidx IDAMAX_
+#define packr1update DSPR_
 
 /* Lapack */
 #define chol DPOTRF_
@@ -69,6 +70,7 @@ CAPBLAS  : Whether routines are given by ROUTINENAME(params) or routinename(para
 #define vecscal DSCAL
 #define vecdiv DRSCL
 #define maxidx IDAMAX
+#define packr1update DSPR
 
 /* Lapack */
 #define chol DPOTRF
@@ -97,6 +99,7 @@ CAPBLAS  : Whether routines are given by ROUTINENAME(params) or routinename(para
 #define vecscal dscal_
 #define vecdiv drscl_
 #define maxidx idamax_
+#define packr1update dspr_
 
 /* Lapack */
 #define chol dpotrf_
@@ -125,6 +128,7 @@ CAPBLAS  : Whether routines are given by ROUTINENAME(params) or routinename(para
 #define vecscal dscal
 #define vecdiv drscl
 #define maxidx idamax
+#define packr1update dspr
 
 /* Lapack */
 #define chol dpotrf
@@ -454,13 +458,20 @@ extern void eigs2( const char     *jobz,
 */
 
 extern void packchol( const char *uplo, const DSDP_INT *n, double *ap, DSDP_INT *info );
-extern void packsolve ( const char      *uplo,
-                        const DSDP_INT  *n,
-                        const DSDP_INT  *nrhs,
-                        const double    *ap,
-                        const double    *b,
-                        const DSDP_INT  *ldb,
-                        const DSDP_INT  *info );
+extern void packsolve( const char      *uplo,
+                       const DSDP_INT  *n,
+                       const DSDP_INT  *nrhs,
+                       const double    *ap,
+                       const double    *b,
+                       const DSDP_INT  *ldb,
+                       const DSDP_INT  *info );
+
+void packr1update( const char *uplo,
+           const DSDP_INT *n,
+           const double *alpha,
+           const double *x,
+           const DSDP_INT *incx,
+           double *ap );
 
 /* The routines below are depreciated currently */
 extern void computescal( const DSDP_INT *m,

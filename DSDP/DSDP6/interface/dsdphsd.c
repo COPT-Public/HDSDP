@@ -8,75 +8,9 @@
 #include "rankonemat.h"
 #include "dsdppresolve.h"
 #include "dsdpparam.h"
+#include "hsd.c"
 
 static char *etype = "DSDP Interface";
-
-#define IterStep 20
-
-/* The data structure of DSDP-HSD solver */
-typedef struct {
-    
-    // Problem data
-    sdpMat   **sdpData;   // SDP data A after transformation.
-    DSDP_INT *isSDPset;
-    
-    lpMat    *lpData;     // LP data A after transformation
-    vec      *lpObj;        // Linear coefficient
-    DSDP_INT isLPset;
-    
-    vec      *dObj;       // Dual objective b
-    
-    // Dimension data
-    DSDP_INT m;           // Dimension of dual
-    DSDP_INT nBlock;      // Number of SDP blocks ( = 1) currently
-    DSDP_INT lpDim;       // Dimension of LP
-    
-    // Iteration Monitor
-    DSDP_INT iterProgress[IterStep];
-    
-    // Iterator
-    spsMat   **S;         // SDP dual iteration matrix
-    vec      *s;          // LP dual iteration matrix
-    vec      *x;          // LP primal iteration matrix
-    
-    dsMat    **SinvASinv; // Store Sinv * A * Sinv for different A_i
-    vec      **asinv;     // Store trace(A * Sinv) for different A_i (including C),
-                          // setup as a by product
-    
-    dsMat    *M;          // Schur matrix
-    vec      *u;          // A_ls^(-2)c + AS^(-1)CS^(-1)
-    vec      *d1;         // Temporary iteration array
-    vec      *d2;         // Temporary iteration array
-    
-    vec      *yp;         // Full iteration for y
-    double   taup;        // Full iteration for tau
-    
-    double   alpha;       // Stepsize
-    
-    // Step matrix
-    spsMat   **dS;        // SDP step matrix
-    vec      *ds;         // LP step matrix
-    double   dtau;        // Tau step
-    double   dkappa;      // Kappa step
-    
-    // Solver parameter
-    hsdParam *param;      // Solver parameters
-    
-    // Solver status
-    DSDP_INT insStatus;   // Solver instance status
-    DSDP_INT solStatus;   // Solver solution status
-    
-    // Logging
-    DSDP_INT verbosity;   // Solver information
-    
-    // Primal variable
-    vec      *pScaler;    // Primal scaling coefficient
-    dsMat    **X;         // Primal solution matrix
-    DSDP_INT isXComputed; // Whether X has been computed
-    
-    
-} HSDSolver;
-
 
 /* DSDP internal methods */
 static DSDP_INT DSDPIInit( HSDSolver *dsdpSolver ) {
@@ -91,7 +25,7 @@ static DSDP_INT DSDPIInit( HSDSolver *dsdpSolver ) {
     
     // Problem data
     dsdpSolver->sdpData = NULL;
-    dsdpSolver->lpObj     = NULL;
+    dsdpSolver->lpObj   = NULL;
     dsdpSolver->lpData  = NULL;
     dsdpSolver->dObj    = NULL;
     
@@ -104,6 +38,8 @@ static DSDP_INT DSDPIInit( HSDSolver *dsdpSolver ) {
     dsdpSolver->lpDim  = 0;
     
     // IterProgress monitor
+    memset(dsdpSolver->eventMonitor, 0,
+           sizeof(DSDP_INT) * nEvent);
     memset(dsdpSolver->iterProgress, 0,
            sizeof(DSDP_INT) * IterStep);
     
@@ -112,23 +48,29 @@ static DSDP_INT DSDPIInit( HSDSolver *dsdpSolver ) {
     dsdpSolver->s = NULL;
     dsdpSolver->x = NULL;
     
+    dsdpSolver->pObjVal = 0.0;
+    dsdpSolver->dObjVal = 0.0;
+    dsdpSolver->mu      = 0.0;
+    
     dsdpSolver->SinvASinv = NULL;
     dsdpSolver->asinv     = NULL;
+    dsdpSolver->csinv     = NULL;
     
-    dsdpSolver->M      = NULL;
+    dsdpSolver->Msdp   = NULL;
+    dsdpSolver->Mlp    = NULL;
     dsdpSolver->u      = NULL;
     dsdpSolver->d1     = NULL;
     dsdpSolver->d2     = NULL;
     
-    dsdpSolver->yp     = NULL;
-    dsdpSolver->taup   = 0.0;
+    dsdpSolver->y      = NULL;
+    dsdpSolver->tau    = 0.0;
     dsdpSolver->alpha  = 0.0;
     
     // Step matrix
     dsdpSolver->dS     = NULL;
     dsdpSolver->ds     = NULL;
-    dsdpSolver->dkappa = 0.0;
     dsdpSolver->dtau   = 0.0;
+    dsdpSolver->dkappa = 0.0;
     
     dsdpSolver->param     = &defaultParam;
     dsdpSolver->insStatus = DSDP_STATUS_INIT_UNSET;
@@ -140,7 +82,7 @@ static DSDP_INT DSDPIInit( HSDSolver *dsdpSolver ) {
     // Primal variable
     dsdpSolver->pScaler     = NULL;
     dsdpSolver->X           = NULL;
-    dsdpSolver->isXComputed = 0;
+    dsdpSolver->isXComputed = FALSE;
     
     return retcode;
 }
@@ -148,8 +90,8 @@ static DSDP_INT DSDPIInit( HSDSolver *dsdpSolver ) {
 static DSDP_INT DSDPIAlloc( HSDSolver *dsdpSolver ) {
     
     // Allocate memory for the internal solver (level 1)
-    // Level 1 allocation only involves pointer/indicator arrays and the rest of memory will be
-    // allocated when setting the problem data
+    // Level 1 allocation only involves data/indicator arrays and the rest of memory will be
+    // allocated when setting the problem data or starting to optimize
     DSDP_INT retcode = DSDP_RETCODE_OK;
     assert( dsdpSolver->insStatus == DSDP_STATUS_INIT_UNSET );
     
@@ -161,15 +103,10 @@ static DSDP_INT DSDPIAlloc( HSDSolver *dsdpSolver ) {
     
     DSDP_INT nblock = dsdpSolver->nBlock;
     
-    dsdpSolver->sdpData   = (sdpMat **)  calloc(nblock, sizeof(sdpMat *));
-    dsdpSolver->lpData    = (lpMat   *)  calloc(1,      sizeof(lpMat   ));
-    dsdpSolver->lpObj       = (vec     *)  calloc(1,      sizeof(vec     ));
-    dsdpSolver->S         = (spsMat **)  calloc(nblock, sizeof(spsMat *));
-    dsdpSolver->dS        = (spsMat **)  calloc(nblock, sizeof(spsMat *));
-    dsdpSolver->SinvASinv = (dsMat  **)  calloc(nblock, sizeof(dsMat  *));
-    dsdpSolver->asinv     = (vec    **)  calloc(nblock, sizeof(vec    *));
+    dsdpSolver->sdpData   = (sdpMat  **) calloc(nblock, sizeof(sdpMat *));
+    dsdpSolver->lpData    = (lpMat    *) calloc(1,      sizeof(lpMat   ));
+    dsdpSolver->lpObj     = (vec      *) calloc(1,      sizeof(vec     ));
     dsdpSolver->isSDPset  = (DSDP_INT *) calloc(nblock, sizeof(DSDP_INT));
-    dsdpSolver->pScaler   = (vec     *)  calloc(1,      sizeof(vec     ));
     
     for (DSDP_INT i = 0; i < nblock; ++i) {
         retcode = sdpMatInit(dsdpSolver->sdpData[i]); checkCode;
@@ -182,9 +119,116 @@ static DSDP_INT DSDPIAlloc( HSDSolver *dsdpSolver ) {
     return retcode;
 }
 
+static DSDP_INT DSDPIAllocIter( HSDSolver *dsdpSolver ) {
+    
+    // Allocate memory for the iterates
+    DSDP_INT retcode = DSDP_RETCODE_OK;
+    DSDP_INT nblock  = dsdpSolver->nBlock;
+    DSDP_INT dim     = 0;
+    DSDP_INT m       = dsdpSolver->m;
+    
+    spsMat *spsIter = NULL;
+    dsMat *dsIter   = NULL;
+    vec *vecIter    = NULL;
+    
+    // Allocate S
+    dsdpSolver->S = (spsMat **) calloc(nblock, sizeof(spsMat *));
+    for (DSDP_INT i = 0; i < nblock; ++i) {
+        dim = dsdpSolver->sdpData[i]->dimS;
+        dsdpSolver->S[i] = (spsMat *) calloc(1, sizeof(spsMat));
+        retcode = spsMatInit(dsdpSolver->S[i]); checkCode;
+        retcode = spsMatAlloc(dsdpSolver->S[i], dim); checkCode;
+    }
+    
+    // Allocate s
+    vecIter = (vec *) calloc(1, sizeof(vec));
+    dsdpSolver->s = vecIter;
+    retcode = vec_init(vecIter); checkCode;
+    retcode = vec_alloc(vecIter, dsdpSolver->lpDim); checkCode;
+    
+    // Allocate x
+    vecIter = (vec *) calloc(1, sizeof(vec));
+    dsdpSolver->x = vecIter;
+    retcode = vec_init(vecIter); checkCode;
+    retcode = vec_alloc(vecIter, dsdpSolver->lpDim); checkCode;
+    
+    // Allocate SinvASinv
+    dsdpSolver->SinvASinv = (dsMat **) calloc(nblock, sizeof(dsMat *));
+    for (DSDP_INT i = 0; i < nblock; ++i) {
+        dim = dsdpSolver->sdpData[i]->dimS;
+        dsdpSolver->SinvASinv[i] = (dsMat *) calloc(1, sizeof(dsMat));
+        retcode = denseMatInit(dsdpSolver->SinvASinv[i]);
+        retcode = denseMatAlloc(dsdpSolver->SinvASinv[i], dim, FALSE);
+    }
+    
+    // Allocate asinv
+    dsdpSolver->asinv = (vec **) calloc(nblock, sizeof(vec *));
+    for (DSDP_INT i = 0; i < nblock; ++i) {
+        dsdpSolver->asinv[i] = (vec *) calloc(1, sizeof(vec));
+        retcode = vec_init(dsdpSolver->asinv[i]);
+        retcode = vec_alloc(dsdpSolver->asinv[i], m);
+    }
+    
+    // Allocate csinv
+    dsdpSolver->csinv = (double *) calloc(nblock, sizeof(double));
+    
+    // Allocate Msdp
+    dsIter = (dsMat *) calloc(1, sizeof(dsMat));
+    dsdpSolver->Msdp = dsIter;
+    retcode = denseMatInit(dsIter); checkCode;
+    retcode = denseMatAlloc(dsIter, m, TRUE); checkCode;
+    
+    // Allocate Mlp
+    spsIter = (spsMat *) calloc(1, sizeof(spsMat));
+    dsdpSolver->Mlp = spsIter;
+    retcode = spsMatInit(spsIter);
+    retcode = spsMatAlloc(spsIter, m);
+    
+    // Allocate u, d1 and d2
+    vecIter = (vec *) calloc(1, sizeof(vec));
+    dsdpSolver->u = vecIter;
+    retcode = vec_init(vecIter); checkCode;
+    retcode = vec_alloc(vecIter, m); checkCode;
+    
+    vecIter = (vec *) calloc(1, sizeof(vec));
+    dsdpSolver->d1 = vecIter;
+    retcode = vec_init(vecIter); checkCode;
+    retcode = vec_alloc(vecIter, m); checkCode;
+    
+    vecIter = (vec *) calloc(1, sizeof(vec));
+    dsdpSolver->d2 = vecIter;
+    retcode = vec_init(vecIter); checkCode;
+    retcode = vec_alloc(vecIter, m); checkCode;
+    
+    // Allocate y
+    vecIter = (vec *) calloc(1, sizeof(vec));
+    dsdpSolver->y = vecIter;
+    retcode = vec_init(vecIter); checkCode;
+    retcode = vec_alloc(vecIter, m); checkCode;
+    
+    // Allocate dS
+    dsdpSolver->dS = (spsMat **) calloc(nblock, sizeof(spsMat *));
+    for (DSDP_INT i = 0; i < nblock; ++i) {
+        dim = dsdpSolver->sdpData[i]->dimS;
+        dsdpSolver->dS[i] = (spsMat *) calloc(1, sizeof(spsMat));
+        retcode = spsMatInit(dsdpSolver->dS[i]); checkCode;
+        retcode = spsMatAlloc(dsdpSolver->dS[i], dim); checkCode;
+    }
+    
+    // Allocate ds
+    vecIter = (vec *) calloc(1, sizeof(vec));
+    dsdpSolver->ds = vecIter;
+    retcode = vec_init(vecIter); checkCode;
+    retcode = vec_alloc(vecIter, dsdpSolver->lpDim); checkCode;
+    
+    return retcode;
+}
+
 static DSDP_INT DSDPICheckData( HSDSolver *dsdpSolver ) {
     
     // Check whether problem data is alreay set up
+    // Begin presolving after this step
+    
     DSDP_INT retcode = DSDP_RETCODE_OK;
     DSDP_INT nblock = dsdpSolver->nBlock;
     DSDP_INT nblockSet = 0;
@@ -283,20 +327,27 @@ static DSDP_INT DSDPIFreeAlgIter( HSDSolver *dsdpSolver ) {
     
     DSDP_FREE(dsdpSolver->asinv);
     
-    // M
-    retcode = denseMatFree(dsdpSolver->M);
-    DSDP_FREE(dsdpSolver->M);
+    // csinv
+    DSDP_FREE(dsdpSolver->csinv);
+    
+    // Msdp
+    retcode = denseMatFree(dsdpSolver->Msdp);
+    DSDP_FREE(dsdpSolver->Msdp);
+    
+    // Mlp
+    retcode = spsMatFree(dsdpSolver->Mlp);
+    DSDP_FREE(dsdpSolver->Mlp);
     
     // u, d1, d2, yp
     retcode = vec_free(dsdpSolver->u ); checkCode;
     retcode = vec_free(dsdpSolver->d1); checkCode;
     retcode = vec_free(dsdpSolver->d2); checkCode;
-    retcode = vec_free(dsdpSolver->yp); checkCode;
+    retcode = vec_free(dsdpSolver->y); checkCode;
     
     DSDP_FREE(dsdpSolver->u );
     DSDP_FREE(dsdpSolver->d1);
     DSDP_FREE(dsdpSolver->d2);
-    DSDP_FREE(dsdpSolver->yp);
+    DSDP_FREE(dsdpSolver->y);
 
     // dS
     for (DSDP_INT i = 0; i < nblock; ++i) {
@@ -338,19 +389,26 @@ static DSDP_INT DSDPIFreeCleanUp( HSDSolver *dsdpSolver ) {
     if (dsdpSolver->isLPset) {
         retcode = vec_free(dsdpSolver->lpObj); checkCode;
     }
+    DSDP_FREE(dsdpSolver->lpObj);
     
     // dObj
     retcode = vec_free(dsdpSolver->dObj); checkCode;
     DSDP_FREE(dsdpSolver->dObj);
     
     // Other data
+    dsdpSolver->param  = NULL;
     dsdpSolver->m      = 0;
     dsdpSolver->nBlock = 0;
     dsdpSolver->lpDim  = 0;
-    dsdpSolver->taup   = 0.0;
+    dsdpSolver->mu     = 0.0;
+    dsdpSolver->tau    = 0.0;
     dsdpSolver->alpha  = 0.0;
     dsdpSolver->dtau   = 0.0;
     dsdpSolver->dkappa = 0.0;
+    dsdpSolver->isXComputed = FALSE;
+    
+    dsdpSolver->insStatus = 0;
+    dsdpSolver->solStatus = 0;
     
     return retcode;
 }
@@ -366,6 +424,7 @@ static DSDP_INT DSDPIPresolve( HSDSolver *dsdpSolver ) {
     }
     
     // Round 1: scale the primal pairs {b_i, A_ip} across different blocks
+    dsdpSolver->pScaler = (vec *) calloc(1, sizeof(vec));
     retcode = vec_init(dsdpSolver->pScaler); checkCode;
     retcode = vec_alloc(dsdpSolver->pScaler, dsdpSolver->m); checkCode;
     
@@ -567,7 +626,7 @@ extern DSDP_INT DSDPSetSDPConeData( HSDSolver *dsdpSolver,
     } else if ((blockid >= dsdpSolver->nBlock) || (blockid < 0)) {
         error(etype, "Invalid block id. \n");
     } else if (dsdpSolver->isSDPset[blockid]) {
-        error(etype, "SDP block is already set");
+        error(etype, "SDP block is already set. \n");
     }
     
     retcode = sdpMatSetDim(dsdpSolver->sdpData[blockid],
@@ -597,7 +656,7 @@ extern DSDP_INT DSDPDestroy( HSDSolver *dsdpSolver ) {
     retcode = DSDPIFreeLPData (dsdpSolver); checkCode;
     retcode = DSDPIFreeSDPData(dsdpSolver); checkCode;
     retcode = DSDPIFreeAlgIter(dsdpSolver); checkCode;
-    retcode = DSDPIFreeCleanUp(dsdpSolver); checkCode
+    retcode = DSDPIFreeCleanUp(dsdpSolver); checkCode;
     
     DSDP_FREE(dsdpSolver);
     

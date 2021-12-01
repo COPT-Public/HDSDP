@@ -215,8 +215,32 @@ extern DSDP_INT lpMatSetData( lpMat *lpData, DSDP_INT *Ap, DSDP_INT *Ai, double 
     return retcode;
 }
 
-extern DSDP_INT lpMatFree( lpMat *lpData ) {
+extern DSDP_INT lpMataATy( double alpha, lpMat *lpData, vec *y, double *ATy ) {
     
+    // Compute A' * y
+    DSDP_INT retcode = DSDP_RETCODE_OK;
+    DSDP_INT m = lpData->dimy;
+    DSDP_INT n = lpData->dims;
+
+    DSDP_INT *Ap  = lpData->lpdata->p;
+    DSDP_INT *Ai  = lpData->lpdata->i;
+    double   *Ax  = lpData->lpdata->x;
+    double *ydata = y->x;
+    
+    assert( m == y->dim );
+    memset(ATy, 0, sizeof(double) * n);
+    
+    for (DSDP_INT i = 0; i < n; ++i) {
+        for (DSDP_INT j = Ap[i]; j < Ap[i + 1]; ++i) {
+            ATy[i] += alpha * Ax[Ai[j]] * ydata[Ai[j]];
+        }
+    }
+    
+    return retcode;
+}
+
+extern DSDP_INT lpMatFree( lpMat *lpData ) {
+
     // Free the lpData structure
     DSDP_INT retcode = DSDP_RETCODE_OK;
     lpData->dimy = 0;
@@ -350,4 +374,3 @@ extern DSDP_INT sdpMatFree( sdpMat *sdpData ) {
     
     return retcode;
 }
-

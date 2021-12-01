@@ -89,6 +89,7 @@
 		19BEEC242756065600C36C9E /* cs_qrsol.c in Sources */ = {isa = PBXBuildFile; fileRef = 19BEEC1E2756065600C36C9E /* cs_qrsol.c */; };
 		19BEEC252756065600C36C9E /* cs_schol.c in Sources */ = {isa = PBXBuildFile; fileRef = 19BEEC1F2756065600C36C9E /* cs_schol.c */; };
 		19BEEC262756065600C36C9E /* cs_lusol.c in Sources */ = {isa = PBXBuildFile; fileRef = 19BEEC202756065600C36C9E /* cs_lusol.c */; };
+		19BEEC292757EA7D00C36C9E /* obj.c in Sources */ = {isa = PBXBuildFile; fileRef = 19BEEC282757EA7D00C36C9E /* obj.c */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXCopyFilesBuildPhase section */
@@ -215,6 +216,8 @@
 		19BEEC1E2756065600C36C9E /* cs_qrsol.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = cs_qrsol.c; sourceTree = "<group>"; };
 		19BEEC1F2756065600C36C9E /* cs_schol.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = cs_schol.c; sourceTree = "<group>"; };
 		19BEEC202756065600C36C9E /* cs_lusol.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = cs_lusol.c; sourceTree = "<group>"; };
+		19BEEC272757EA7D00C36C9E /* obj.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = obj.h; sourceTree = "<group>"; };
+		19BEEC282757EA7D00C36C9E /* obj.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = obj.c; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -284,6 +287,8 @@
 				19118D962737B72800D51D03 /* residualsetup.c */,
 				19118D972737B72800D51D03 /* stepheur.c */,
 				19118D982737B72800D51D03 /* hsd.h */,
+				19BEEC272757EA7D00C36C9E /* obj.h */,
+				19BEEC282757EA7D00C36C9E /* obj.c */,
 			);
 			path = dsalg;
 			sourceTree = "<group>";
@@ -539,6 +544,7 @@
 				19118E242737B72800D51D03 /* dsdphsd.c in Sources */,
 				19118E0B2737B72800D51D03 /* cs_print.c in Sources */,
 				19118DFC2737B72800D51D03 /* cs_randperm.c in Sources */,
+				19BEEC292757EA7D00C36C9E /* obj.c in Sources */,
 				19118E102737B72800D51D03 /* cs_usolve.c in Sources */,
 				19118E0C2737B72800D51D03 /* cs_lu.c in Sources */,
 				19118E0F2737B72800D51D03 /* cs_ltsolve.c in Sources */,

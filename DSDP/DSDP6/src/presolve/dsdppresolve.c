@@ -281,7 +281,7 @@ static DSDP_INT extractR1fromSps ( spsMat *dataMat, double *a, DSDP_INT isNeg ) 
     }
     
     if (adiag != adiag) {
-        error(etype, "NAN encountered when extracting rank-1 vector.");
+        error(etype, "NAN encountered when extracting rank-1 vector. \n");
     }
     
     // Get the sparse rank 1 matrix
@@ -350,7 +350,7 @@ extern DSDP_INT preRank1Rdc( sdpMat *dataMat ) {
             case MAT_TYPE_RANK1:
                 break;
             default:
-                error(etype, "Unknown matrix type.");
+                error(etype, "Unknown matrix type. \n");
                 break;
         }
         
@@ -532,7 +532,7 @@ extern DSDP_INT preLPMatScale( lpMat *lpData, vec *lpObj, vec *pScaler ) {
     assert( n == lpObj->dim );
     
     if ( (m != pScaler->dim) || (n != pScaler->dim) ) {
-        error(etype, "Presolver and problem dimension mismatch");
+        error(etype, "Presolver and problem dimension mismatch. \n");
     }
     
     DSDP_INT *Ap = lpData->lpdata->p;
@@ -614,7 +614,7 @@ extern DSDP_INT getMatIdx( sdpMat *sdpData ) {
                 nr1Mat += 1;
                 break;
             default:
-                error(etype, "Unknown matrix type.");
+                error(etype, "Unknown matrix type. \n");
                 break;
         }
     }

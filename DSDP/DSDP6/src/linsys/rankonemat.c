@@ -23,6 +23,41 @@ extern DSDP_INT r1MatAlloc( r1Mat *x, const DSDP_INT n ) {
     return DSDP_RETCODE_OK;
 }
 
+extern DSDP_INT r1denseSpsUpdate( spsMat *sAMat, double alpha, r1Mat *r1BMat ) {
+    // Compute A = A + alpha * B where B is a rank-one matrix.
+    // A is a sparse matrix that is known to be dense later
+    // Also this routine DOES NOT update Ap and Ai
+    DSDP_INT retcode = DSDP_RETCODE_OK;
+    DSDP_INT n = sAMat->dim;
+    
+    assert( n == r1BMat->dim );
+    assert( !sAMat->isFactorized );
+    assert( sAMat->cscMat->nzmax == nsym(n) );
+    
+    if (fabs(alpha) < 1e-10) {
+        return retcode;
+    }
+    
+    double sign = (double) r1BMat->sign;
+    alpha = alpha * sign;
+    
+    double *array = sAMat->cscMat->x;
+    if (r1BMat->nnz > 0.8 * n) {
+        char uplo = DSDP_MAT_LOW;
+        packr1update(&uplo, &n, &alpha, r1BMat->x, &one, array);
+    } else {
+        double *r1x = r1BMat->x;
+        DSDP_INT *nzIdx = r1BMat->nzIdx;
+        for (DSDP_INT i = 0; i < r1BMat->nnz; ++i) {
+            for (DSDP_INT j = 0; j <= i; ++j) {
+                packIdx(array, n, nzIdx[i], nzIdx[j]) += r1x[nzIdx[i]] * r1x[nzIdx[j]];
+            }
+        }
+    }
+    
+    return retcode;
+}
+
 extern DSDP_INT r1MatCountNnz( r1Mat *x ) {
     // Count the number of nonzero elements and setup nzIdx
     assert ( (x->x) && (x->dim) && (!x->nzIdx));

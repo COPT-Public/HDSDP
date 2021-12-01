@@ -42,8 +42,6 @@ extern DSDP_INT denseMatFill     ( dsMat *dMat, double *fulldMat );
 extern DSDP_INT denseMatGetdiag  ( dsMat *dMat, vec *diag );
 extern DSDP_INT denseMatView     ( dsMat *dMat );
 
-#define packIdx(P, n, i, j) (P[(DSDP_INT)((2 * (n) - (j) - 1) * (j) / 2) + (i)])
-
 #ifdef __cplusplus
 }
 #endif
