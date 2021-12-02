@@ -26,15 +26,12 @@ static DSDP_INT getSDPBlockResidualRy( HSDSolver *dsdpSolver, spsMat *Ry, DSDP_I
      
      1. Add all the sparse matrices to the residual
      2. Add rank-1 matrices to the residual
+     
+     Note that this routine is also used for recovering dual step dS
     */
     
     // Setup the dual infeasibility of some block
     DSDP_INT retcode = DSDP_RETCODE_OK;
-    
-    assert( !dsdpSolver->iterProgress[ITER_SDP_DUAL_RESIDUAL] );
-    if (dsdpSolver->iterProgress[ITER_SDP_DUAL_RESIDUAL]) {
-        error(etype, "SDP residual has been setup for the current block. \n");
-    }
     
     DSDP_INT nblock = dsdpSolver->nBlock;
     DSDP_INT m = dsdpSolver->m;
@@ -300,12 +297,6 @@ static DSDP_INT getLPResidualry( HSDSolver *dsdpSolver, vec *ry ) {
     // Compute ry = - A' * y + c * tau - s
     DSDP_INT retcode = DSDP_RETCODE_OK;
     
-    assert( !dsdpSolver->iterProgress[ITER_LP_DUAL_RESIDUAL] );
-    
-    if (dsdpSolver->iterProgress[ITER_LP_DUAL_RESIDUAL]) {
-        error(etype, "LP dual residual ry is already set. \n");
-    }
-    
     lpMat *Adata = dsdpSolver->lpData;
     DSDP_INT m   = Adata->dimy;
     
@@ -327,7 +318,60 @@ static DSDP_INT getLPResidualry( HSDSolver *dsdpSolver, vec *ry ) {
     // Get - A' * y + c * tau - s
     retcode = vec_axpy(alpha, s, ry);
     
-    dsdpSolver->iterProgress[ITER_LP_DUAL_RESIDUAL] = TRUE;
+    return retcode;
+}
+
+static DSDP_INT getRkappaTau( HSDSolver *dsdpSolver, double *rtk ) {
+    // Setup the complementarity residual rtk
+    DSDP_INT retcode = DSDP_RETCODE_OK;
+    
+    *rtk = dsdpSolver->tau * dsdpSolver->kappa - dsdpSolver->mu;
+    
+    return retcode;
+}
+
+extern DSDP_INT setupRes( HSDSolver *dsdpSolver ) {
+    
+    // Setup residuals used for LP and SDP
+    DSDP_INT retcode = DSDP_RETCODE_OK;
+    
+    spsMat **Rys = dsdpSolver->Rys;
+    vec *ry = dsdpSolver->ry;
+    
+    assert( !dsdpSolver->iterProgress[ITER_LP_RESIDUAL] );
+    if (dsdpSolver->iterProgress[ITER_LP_RESIDUAL]) {
+        error(etype, "LP residual has been setup. \n");
+    }
+    
+    retcode = checkIterProgress(dsdpSolver, ITER_LP_RESIDUAL);
+    checkCode;
+    
+    if (!dsdpSolver->eventMonitor[EVENT_LP_NO_RY]) {
+        retcode = getLPResidualry(dsdpSolver, ry); checkCode;
+    }
+    
+    dsdpSolver->iterProgress[ITER_LP_RESIDUAL] = TRUE;
+    
+    // Set up SDP residual
+    assert( !dsdpSolver->iterProgress[ITER_SDP_RESIDUAL] );
+    if (dsdpSolver->iterProgress[ITER_SDP_RESIDUAL]) {
+        error(etype, "SDP residual has been setup for the current block. \n");
+    }
+    
+    retcode = checkIterProgress(dsdpSolver, ITER_SDP_RESIDUAL);
+    checkCode;
+    
+    DSDP_INT nblock = dsdpSolver->nBlock;
+    
+    if (!dsdpSolver->eventMonitor[EVENT_SDP_NO_RY]) {
+        for (DSDP_INT i = 0; i < nblock; ++i) {
+            retcode = getSDPBlockResidualRy(dsdpSolver, Rys[i], i);
+        }
+    }
+    
+    // Setup rtk
+    retcode = getRkappaTau(dsdpSolver, &dsdpSolver->rtk);
+    dsdpSolver->iterProgress[ITER_SDP_RESIDUAL] = TRUE;
     
     return retcode;
 }

@@ -6,12 +6,12 @@
 
 // Iteration monitor
 #define ITER_LOGGING           0
-#define ITER_LP_DUAL_RESIDUAL  1
-#define ITER_SDP_DUAL_RESIDUAL 2
+#define ITER_LP_RESIDUAL       1
+#define ITER_SDP_RESIDUAL      2
 #define ITER_DUAL_OBJ          3
-#define ITER_AUX_ARRAY         4
-#define ITER_LP_SCHUR          5
-#define ITER_SDP_SCHUR         6
+#define ITER_LP_SCHUR          4
+#define ITER_SDP_SCHUR         5
+#define ITER_AUX_ARRAY         6
 #define ITER_STEP_DIRECTION    7
 #define ITER_RECOVER_LP_DIR    8
 #define ITER_RECOVER_SDP_DIR   9

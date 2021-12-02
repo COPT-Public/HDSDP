@@ -282,6 +282,8 @@
 		19118D912737B72800D51D03 /* dsalg */ = {
 			isa = PBXGroup;
 			children = (
+				19118D942737B72800D51D03 /* schurmat.c */,
+				19118D992737B72800D51D03 /* schurmat.h */,
 				19118D922737B72800D51D03 /* residualsetup.h */,
 				19118D932737B72800D51D03 /* stepheur.h */,
 				19118D952737B72800D51D03 /* hsd.c */,
@@ -298,8 +300,6 @@
 			isa = PBXGroup;
 			children = (
 				19118DA42737B72800D51D03 /* dsdppardiso.h */,
-				19118D942737B72800D51D03 /* schurmat.c */,
-				19118D992737B72800D51D03 /* schurmat.h */,
 				19118D9C2737B72800D51D03 /* vec.h */,
 				19118D9D2737B72800D51D03 /* sparsemat.h */,
 				19118D9E2737B72800D51D03 /* densemat.h */,

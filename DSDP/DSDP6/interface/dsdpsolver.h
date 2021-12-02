@@ -40,7 +40,6 @@ typedef struct {
     vec      *s;          // LP dual iteration matrix
     vec      *x;          // LP primal iteration vector
     
-    dsMat    **SinvASinv; // Store Sinv * A * Sinv for different A_i
     vec      **asinv;     // Store trace(A * Sinv) for different A_i (including C),
                           // setup as a by product
     double   *csinv;      // Store csinv for different C_i and Sinv_i
@@ -50,11 +49,18 @@ typedef struct {
     vec      *u;          // A_ls^(-2)c + AS^(-1)CS^(-1)
     vec      *d1;         // Temporary iteration array
     vec      *d2;         // Temporary iteration array
+    vec      *d3;         // Temporary iteration array
     
     vec      *y;          // y
     double   tau;         // tau
+    double   kappa;       // kappa
     
     double   alpha;       // Stepsize
+    
+    // Residuals
+    double   rtk;         // Complementarity residual
+    spsMat   **Rys;       // SDP Dual infeasibility
+    vec      *ry;         // LP dual infeasibility
     
     // Step matrix
     spsMat   **dS;        // SDP step matrix

@@ -46,11 +46,11 @@ extern DSDP_INT spsMatFactorize    ( spsMat *sAMat );
 extern DSDP_INT spsMatVecSolve     ( spsMat *sAMat, vec    *sbVec, double *Ainvb );
 extern DSDP_INT spsMatSpSolve      ( spsMat *sAMat, spsMat *sBMat, double *AinvB );
 extern DSDP_INT spsMatDsSolve      ( spsMat *sAMat, dsMat  *sBMat, double *AinvB );
-extern DSDP_INT spsMatR1Solve      ( spsMat *sAMat, r1Mat  *sBMat, double *AinvB );
 
 /* Schur matrix assembly */
 extern DSDP_INT spsSinvSpSinvSolve ( spsMat *S, spsMat *A, dsMat *SinvASinv, double *asinv );
 extern DSDP_INT spsSinvDsSinvSolve ( spsMat *S, dsMat  *A, dsMat *SinvASinv, double *asinv );
+extern DSDP_INT spsSinvR1SinvSolve ( spsMat *S, r1Mat  *A, r1Mat *SinvASinv, double *asinv );
 
 /* Utilities */
 extern DSDP_INT spsMatScatter      ( spsMat *sMat, vec *b, DSDP_INT k );

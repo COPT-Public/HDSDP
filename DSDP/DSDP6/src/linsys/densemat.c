@@ -290,6 +290,34 @@ extern DSDP_INT denseSpsTrace( dsMat *dAMat, spsMat *sBMat, double *trace ) {
     return retcode;
 }
 
+extern DSDP_INT denseDsTrace( dsMat *dAMat, dsMat *dBMat, double *trace ) {
+    
+    // Compute trace (A * B) for dense A and dense B
+    DSDP_INT retcode = DSDP_RETCODE_OK;
+    assert( dAMat->dim == dBMat->dim );
+    assert((!dAMat->isFactorized) && (!dBMat->isFactorized));
+    
+    DSDP_INT n = dAMat->dim;
+    double *A = dAMat->array;
+    double *B = dBMat->array;
+    double res = 0.0;
+    DSDP_INT nmat = nsym(n);
+    
+    // Take care of the diagonal elements
+    res = ddot(&nmat, A, &one, B, &one);
+    
+    // Subtract half of diagonal off
+    DSDP_INT idx = 0;
+    for (DSDP_INT i = 0; i < n; ++i) {
+        res -= 0.5 * A[idx] * B[idx];
+        idx += n - i;
+    }
+    
+    *trace = 2.0 * res;
+    
+    return retcode;
+}
+
 /* Utilities */
 extern DSDP_INT denseMatScatter( dsMat *dMat, vec *b, DSDP_INT k ) {
     

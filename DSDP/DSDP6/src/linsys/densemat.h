@@ -28,13 +28,14 @@ extern DSDP_INT denseMatFnorm    ( dsMat  *dMat, double *fnrm );
 extern DSDP_INT denseMatRscale   ( dsMat *dXMat, double r );
 
 /* Factorization and linear system solver */
-extern DSDP_INT denseMatFactorize   ( dsMat * dAMat );
+extern DSDP_INT denseMatFactorize( dsMat * dAMat );
 extern DSDP_INT denseVecSolve    ( dsMat *dAMat, vec    *dbVec, double *Ainvb );
 extern DSDP_INT denseSpsSolve    ( dsMat *dAMat, spsMat *sBMat, double *AinvB );
 extern DSDP_INT denseDsSolve     ( dsMat *dAMat, dsMat  *dBMat, double *AinvB );
 
 /* Schur matrix assembly */
 extern DSDP_INT denseSpsTrace    ( dsMat *dAMat, spsMat *sBMat, double *trace );
+extern DSDP_INT denseDsTrace     ( dsMat *dAMat, dsMat *dBMat, double *trace );
 
 /* Utilities */
 extern DSDP_INT denseMatScatter  ( dsMat *dMat, vec *b, DSDP_INT k );

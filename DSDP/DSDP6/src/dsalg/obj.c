@@ -8,17 +8,10 @@ extern DSDP_INT getDualObj( HSDSolver *dsdpSolver ) {
     // Event prerequisite    : none
     DSDP_INT retcode = DSDP_RETCODE_OK;
     DSDP_INT m = dsdpSolver->m;
-    
-    double dObj = 0.0;
+    DSDP_INT incx = 1;
     double *ydata = dsdpSolver->y->x;
     double *bdata = dsdpSolver->dObj->x;
-    
-    for (DSDP_INT i = 0; i < (DSDP_INT) m / 4; i+=4) {
-        dObj += ydata[i    ] * bdata[i    ];
-        dObj += ydata[i + 1] * bdata[i + 1];
-        dObj += ydata[i + 2] * bdata[i + 2];
-        dObj += ydata[i + 3] * bdata[i + 3];
-    }
+    dsdpSolver->dObjVal = dot(&m, bdata, &incx, ydata, &incx);
     
     return retcode;
 }
@@ -37,9 +30,10 @@ extern DSDP_INT getSDPPrimalObj( HSDSolver *dsdpSolver ) {
     DSDP_INT m  = dsdpSolver->m;
     double n    = 0.0;
     double mu   = dsdpSolver->mu;
+    DSDP_INT incx = 1;
     
     vec **asinv = dsdpSolver->asinv;
-    
+
     double *x1 = NULL;
     double *d2 = dsdpSolver->d2->x;
     
@@ -47,12 +41,7 @@ extern DSDP_INT getSDPPrimalObj( HSDSolver *dsdpSolver ) {
         n = (double) dsdpSolver->S[i]->dim;
         pObjVal += n * mu;
         x1 = asinv[i]->x;
-        for (DSDP_INT i = 0; i < (DSDP_INT) m / 4; i+=4) {
-            pObjVal += d2[i    ] * x1[i    ];
-            pObjVal += d2[i + 1] * x1[i + 1];
-            pObjVal += d2[i + 2] * x1[i + 2];
-            pObjVal += d2[i + 3] * x1[i + 3];
-        }
+        pObjVal += dot(&m, x1, &incx, d2, &incx);
     }
     
     dsdpSolver->pObjVal = pObjVal * mu + dsdpSolver->dObjVal;

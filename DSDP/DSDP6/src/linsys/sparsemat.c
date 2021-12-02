@@ -353,21 +353,6 @@ extern DSDP_INT spsMatDsSolve( spsMat *sAMat, dsMat *sBMat, double *AinvB ) {
     return retcode;
 }
 
-extern DSDP_INT spsMatR1Solve( spsMat *sAMat, r1Mat *sBMat, double *AinvB ) {
-    
-    // Matrix operation X = A \ B = inv(A) * B for sparse A and dense B
-    // A full dense matrix inv(A) * B is returned
-    DSDP_INT retcode = DSDP_RETCODE_OK;
-    
-    // A is factorized, B is not and sizes must agree
-    assert( sAMat->dim == sBMat->dim );
-    assert( sAMat->isFactorized );
-    
-    // TODO: Implement the sparse \ rank 1 operation
-    
-    return retcode;
-}
-
 extern DSDP_INT spsSinvSpSinvSolve( spsMat *S, spsMat *A, dsMat *SinvASinv, double *asinv ) {
     
     // Routine for setting up the Schur matrix
@@ -432,9 +417,76 @@ extern DSDP_INT spsSinvDsSinvSolve( spsMat *S, dsMat *A, dsMat *SinvASinv, doubl
     
     DSDP_INT retcode = DSDP_RETCODE_OK;
     
-    // TODO: Implement the SinvASinv operation for packed dense A
+    assert( S->dim == A->dim );
+    assert( S->dim == SinvASinv->dim );
+    assert( S->isFactorized );
     
+    DSDP_INT n          = S->dim;
+    double *SinvA       = NULL;
+    double *fSinvASinv  = NULL;
+    SinvA               = (double *) calloc(n * n, sizeof(double));
+    fSinvASinv          = (double *) calloc(n * n, sizeof(double));
+    retcode             = spsMatDsSolve(S, A, SinvA);
+    double tmp          = 0.0;
+    *asinv              = 0.0;
+    
+    for (DSDP_INT i = 0; i < n; ++i) {
+        for (DSDP_INT j = 0; j <= i; ++j) {
+            if (i == j) {
+                *asinv += SinvA[n * i + i];
+            } else {
+                tmp = SinvA[i * n + j];
+                SinvA[i * n + j] = SinvA[j * n + i];
+                SinvA[j * n + i] = tmp;
+            }
+        }
+    }
+    
+    retcode = pardisoSolve(S, n, SinvA, fSinvASinv);
+    DSDP_INT idx = 0;
+    for (DSDP_INT k = 0; k < n; ++k) {
+        memcpy(&(SinvASinv->array[idx]), &(fSinvASinv[k * n + k]),
+               sizeof(double) * (n - k));
+        idx += n - k;
+    }
+    DSDP_FREE(SinvA);
+    DSDP_FREE(fSinvASinv);
         
+    return retcode;
+}
+
+extern DSDP_INT spsSinvR1SinvSolve( spsMat *S, r1Mat *A, r1Mat *SinvASinv, double *asinv ) {
+    
+    // Routine for setting up the Schur matrix
+    DSDP_INT retcode = DSDP_RETCODE_OK;
+    
+    assert( S->dim == A->dim );
+    assert( SinvASinv->dim == S->dim );
+    
+    if (S->dim != A->dim) {
+        error(etype, "Matrix size mismatch. \n");
+    }
+    
+    double *xSinvASinv = SinvASinv->x;
+    double *xA = A->x;
+    
+    retcode = pardisoSolve(S, 1, xA, xSinvASinv); checkCode;
+    
+    double res = 0.0;
+    
+    for (DSDP_INT i = 0; i < (DSDP_INT) S->dim / 4; i+=4) {
+        res += xA[i    ] * xSinvASinv[i    ];
+        res += xA[i + 1] * xSinvASinv[i + 1];
+        res += xA[i + 2] * xSinvASinv[i + 2];
+        res += xA[i + 3] * xSinvASinv[i + 3];
+    }
+    
+    for (DSDP_INT i = ((DSDP_INT) S->dim / 4) * 4; i < S->dim; ++i) {
+        res += xA[i] * xSinvASinv[i];
+    }
+    
+    *asinv = res;
+    
     return retcode;
 }
 

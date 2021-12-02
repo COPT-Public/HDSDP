@@ -38,6 +38,7 @@ CAPBLAS  : Whether routines are given by ROUTINENAME(params) or routinename(para
 #define solve DTRSV_
 #define matvec DGEMV_
 #define symatvec DSYMV_
+#define packmatvec DSPMV_
 #define vecscal DSCAL_
 #define vecdiv DRSCL_
 #define maxidx IDAMAX_
@@ -67,6 +68,7 @@ CAPBLAS  : Whether routines are given by ROUTINENAME(params) or routinename(para
 #define solve DTRSV
 #define matvec DGEMV
 #define symatvec DSYMV
+#define packmatvec DSPMV
 #define vecscal DSCAL
 #define vecdiv DRSCL
 #define maxidx IDAMAX
@@ -96,6 +98,7 @@ CAPBLAS  : Whether routines are given by ROUTINENAME(params) or routinename(para
 #define solve dtrsv_
 #define matvec dgemv_
 #define symatvec dsymv_
+#define packmatvec dspmv_
 #define vecscal dscal_
 #define vecdiv drscl_
 #define maxidx idamax_
@@ -125,6 +128,7 @@ CAPBLAS  : Whether routines are given by ROUTINENAME(params) or routinename(para
 #define solve dtrsv
 #define matvec dgemv
 #define symatvec dsymv
+#define packmatvec dspmv
 #define vecscal dscal
 #define vecdiv drscl
 #define maxidx idamax
@@ -263,7 +267,17 @@ extern void symatvec( const char     *uplo,
  A is an n by n symmetric matrix.
 */
 
-DSDP_INT maxidx( const DSDP_INT *n, const double *x, const DSDP_INT *incx );
+extern void packmatvec( const char *uplo,
+                        const DSDP_INT *n,
+                        const double *alpha,
+                        const double *ap,
+                        const double *x,
+                        const DSDP_INT *incx,
+                        const double *beta,
+                        double *y,
+                        const DSDP_INT *incy );
+
+extern DSDP_INT maxidx( const DSDP_INT *n, const double *x, const DSDP_INT *incx );
 /*
  IDAMAX finds the index of the first element having maximum absolute value.
 */

@@ -9,6 +9,7 @@
 #include "dsdppresolve.h"
 #include "dsdpparam.h"
 #include "dsdpsolver.h"
+#include "hsd.h"
 
 static char etype[] = "DSDP Interface";
 
@@ -43,16 +44,19 @@ static DSDP_INT DSDPIInit( HSDSolver *dsdpSolver ) {
     memset(dsdpSolver->iterProgress, 0,
            sizeof(DSDP_INT) * IterStep);
     
-    // Iterator
-    dsdpSolver->S = NULL;
-    dsdpSolver->s = NULL;
-    dsdpSolver->x = NULL;
+    // Residuals
+    dsdpSolver->Rys = NULL;
+    dsdpSolver->ry  = NULL;
     
+    // Iterator
     dsdpSolver->pObjVal = 0.0;
     dsdpSolver->dObjVal = 0.0;
     dsdpSolver->mu      = 0.0;
     
-    dsdpSolver->SinvASinv = NULL;
+    dsdpSolver->S = NULL;
+    dsdpSolver->s = NULL;
+    dsdpSolver->x = NULL;
+    
     dsdpSolver->asinv     = NULL;
     dsdpSolver->csinv     = NULL;
     
@@ -61,9 +65,11 @@ static DSDP_INT DSDPIInit( HSDSolver *dsdpSolver ) {
     dsdpSolver->u      = NULL;
     dsdpSolver->d1     = NULL;
     dsdpSolver->d2     = NULL;
+    dsdpSolver->d3     = NULL;
     
     dsdpSolver->y      = NULL;
     dsdpSolver->tau    = 0.0;
+    dsdpSolver->kappa  = 0.0;
     dsdpSolver->alpha  = 0.0;
     
     // Step matrix
@@ -119,6 +125,31 @@ static DSDP_INT DSDPIAlloc( HSDSolver *dsdpSolver ) {
     return retcode;
 }
 
+static DSDP_INT DSDPIAllocResi( HSDSolver *dsdpSolver ) {
+    
+    // Allocate memory for residuals
+    DSDP_INT retcode = DSDP_RETCODE_OK;
+    DSDP_INT nblock  = dsdpSolver->nBlock;
+    DSDP_INT dim     = 0;
+    DSDP_INT lpdim = dsdpSolver->lpDim;
+    
+    // Allocate Rys
+    dsdpSolver->Rys = (spsMat **) calloc(nblock, sizeof(spsMat *));
+    for (DSDP_INT i = 0; i < nblock; ++i) {
+        dim = dsdpSolver->sdpData[i]->dimS;
+        dsdpSolver->Rys[i] = (spsMat *) calloc(1, sizeof(spsMat));
+        retcode = spsMatInit(dsdpSolver->Rys[i]); checkCode;
+        retcode = spsMatAlloc(dsdpSolver->Rys[i], dim); checkCode;
+    }
+    
+    // Allocate ry
+    dsdpSolver->ry = (vec *) calloc(1, sizeof(vec));
+    retcode = vec_init(dsdpSolver->ry);
+    retcode = vec_alloc(dsdpSolver->ry, lpdim);
+    
+    return retcode;
+}
+
 static DSDP_INT DSDPIAllocIter( HSDSolver *dsdpSolver ) {
     
     // Allocate memory for the iterates
@@ -152,15 +183,6 @@ static DSDP_INT DSDPIAllocIter( HSDSolver *dsdpSolver ) {
     retcode = vec_init(vecIter); checkCode;
     retcode = vec_alloc(vecIter, dsdpSolver->lpDim); checkCode;
     
-    // Allocate SinvASinv
-    dsdpSolver->SinvASinv = (dsMat **) calloc(nblock, sizeof(dsMat *));
-    for (DSDP_INT i = 0; i < nblock; ++i) {
-        dim = dsdpSolver->sdpData[i]->dimS;
-        dsdpSolver->SinvASinv[i] = (dsMat *) calloc(1, sizeof(dsMat));
-        retcode = denseMatInit(dsdpSolver->SinvASinv[i]);
-        retcode = denseMatAlloc(dsdpSolver->SinvASinv[i], dim, FALSE);
-    }
-    
     // Allocate asinv
     dsdpSolver->asinv = (vec **) calloc(nblock, sizeof(vec *));
     for (DSDP_INT i = 0; i < nblock; ++i) {
@@ -184,7 +206,7 @@ static DSDP_INT DSDPIAllocIter( HSDSolver *dsdpSolver ) {
     retcode = spsMatInit(spsIter);
     retcode = spsMatAlloc(spsIter, m);
     
-    // Allocate u, d1 and d2
+    // Allocate u, d1, d2 and d3
     vecIter = (vec *) calloc(1, sizeof(vec));
     dsdpSolver->u = vecIter;
     retcode = vec_init(vecIter); checkCode;
@@ -197,6 +219,11 @@ static DSDP_INT DSDPIAllocIter( HSDSolver *dsdpSolver ) {
     
     vecIter = (vec *) calloc(1, sizeof(vec));
     dsdpSolver->d2 = vecIter;
+    retcode = vec_init(vecIter); checkCode;
+    retcode = vec_alloc(vecIter, m); checkCode;
+    
+    vecIter = (vec *) calloc(1, sizeof(vec));
+    dsdpSolver->d3 = vecIter;
     retcode = vec_init(vecIter); checkCode;
     retcode = vec_alloc(vecIter, m); checkCode;
     
@@ -283,6 +310,39 @@ static DSDP_INT DSDPIFreeSDPData( HSDSolver *dsdpSolver ) {
     return retcode;
 }
 
+// Ry is freed once ||Ry||_F < tol
+static DSDP_INT DSDPIFreeRy( HSDSolver *dsdpSolver ) {
+    
+    DSDP_INT retcode = DSDP_RETCODE_OK;
+    
+    if (dsdpSolver->eventMonitor[EVENT_SDP_NO_RY]) {
+        return retcode;
+    }
+    
+    DSDP_INT nblock = dsdpSolver->nBlock;
+    
+    for (DSDP_INT i = 0; i < nblock; ++i) {
+        retcode = spsMatFree(dsdpSolver->Rys[i]); checkCode;
+        DSDP_FREE(dsdpSolver->Rys[i]);
+    }
+    
+    DSDP_FREE(dsdpSolver->Rys);
+    
+    return retcode;
+}
+
+static DSDP_INT DSDPIFreeResi( HSDSolver *dsdpSolver ) {
+    
+    // Free the internal residual data
+    DSDP_INT retcode = DSDP_RETCODE_OK;
+    
+    retcode = DSDPIFreeRy(dsdpSolver); checkCode;
+    retcode = vec_free(dsdpSolver->ry); checkCode;
+    DSDP_FREE(dsdpSolver->ry);
+    
+    return retcode;
+}
+
 static DSDP_INT DSDPIFreeAlgIter( HSDSolver *dsdpSolver ) {
     
     // Free the internal iteration data
@@ -311,14 +371,6 @@ static DSDP_INT DSDPIFreeAlgIter( HSDSolver *dsdpSolver ) {
     retcode = vec_free(dsdpSolver->x); checkCode;
     DSDP_FREE(dsdpSolver->x);
     
-    // SinvASinv
-    for (DSDP_INT i = 0; i < nblock; ++i) {
-        retcode = denseMatFree(dsdpSolver->SinvASinv[i]); checkCode;
-        DSDP_FREE(dsdpSolver->SinvASinv[i]);
-    }
-    
-    DSDP_FREE(dsdpSolver->SinvASinv);
-    
     // asinv
     for (DSDP_INT i = 0; i < nblock; ++i) {
         retcode = vec_free(dsdpSolver->asinv[i]); checkCode;
@@ -342,11 +394,13 @@ static DSDP_INT DSDPIFreeAlgIter( HSDSolver *dsdpSolver ) {
     retcode = vec_free(dsdpSolver->u ); checkCode;
     retcode = vec_free(dsdpSolver->d1); checkCode;
     retcode = vec_free(dsdpSolver->d2); checkCode;
+    retcode = vec_free(dsdpSolver->d3); checkCode;
     retcode = vec_free(dsdpSolver->y); checkCode;
     
     DSDP_FREE(dsdpSolver->u );
     DSDP_FREE(dsdpSolver->d1);
     DSDP_FREE(dsdpSolver->d2);
+    DSDP_FREE(dsdpSolver->d3);
     DSDP_FREE(dsdpSolver->y);
 
     // dS
@@ -401,7 +455,9 @@ static DSDP_INT DSDPIFreeCleanUp( HSDSolver *dsdpSolver ) {
     dsdpSolver->nBlock = 0;
     dsdpSolver->lpDim  = 0;
     dsdpSolver->mu     = 0.0;
+    dsdpSolver->rtk    = 0.0;
     dsdpSolver->tau    = 0.0;
+    dsdpSolver->kappa  = 0.0;
     dsdpSolver->alpha  = 0.0;
     dsdpSolver->dtau   = 0.0;
     dsdpSolver->dkappa = 0.0;
@@ -655,6 +711,7 @@ extern DSDP_INT DSDPDestroy( HSDSolver *dsdpSolver ) {
     
     retcode = DSDPIFreeLPData (dsdpSolver); checkCode;
     retcode = DSDPIFreeSDPData(dsdpSolver); checkCode;
+    retcode = DSDPIFreeResi(dsdpSolver);    checkCode;
     retcode = DSDPIFreeAlgIter(dsdpSolver); checkCode;
     retcode = DSDPIFreeCleanUp(dsdpSolver); checkCode;
     
