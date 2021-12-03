@@ -162,8 +162,8 @@ extern DSDP_INT r1MatFree( r1Mat *x ) {
 extern DSDP_INT r1MatFnorm( r1Mat *x, double *fnrm ) {
     
     assert( x->dim );
-    norm(&x->dim, x->x, &one);
-    assert(fnrm > 0);
+    *fnrm = norm(&x->dim, x->x, &one);
+    assert(*fnrm > 0);
     
     return DSDP_RETCODE_OK;
 }

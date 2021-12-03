@@ -20,3 +20,17 @@ CS_INT cs_scatter (const cs *A, CS_INT j, CS_ENTRY beta, CS_INT *w, CS_ENTRY *x,
     }
     return (nz) ;
 }
+
+CS_INT cs_scatter2 (const cs *A, DSDP_INT i, double *Arow) {
+    // Scatter some column of the CSC matrix
+    DSDP_INT retcode = DSDP_RETCODE_OK;
+    
+    double *Ax   = A->x;
+    DSDP_INT *Ai = A->i;
+    
+    for (DSDP_INT j = A->p[i]; j < A->p[i + 1]; ++j ) {
+        Arow[Ai[j]] = Ax[j];
+    }
+    
+    return retcode;
+}

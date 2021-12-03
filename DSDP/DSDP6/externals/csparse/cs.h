@@ -167,6 +167,7 @@ int *cs_di_post (const int *parent, int n) ;
 cs_did *cs_di_scc (cs_di *A) ;
 int cs_di_scatter (const cs_di *A, int j, double beta, int *w, double *x,
     int mark, cs_di *C, int nz) ;
+int cs_di_scatter2 (const cs *A, int i, double *Arow);
 int cs_di_tdfs (int j, int k, int *head, const int *next, int *post,
     int *stack) ;
 int cs_di_leaf (int i, int j, const int *first, int *maxfirst, int *prevleaf,
@@ -301,6 +302,7 @@ cs_long_t *cs_dl_post (const cs_long_t *parent, cs_long_t n) ;
 cs_dld *cs_dl_scc (cs_dl *A) ;
 cs_long_t cs_dl_scatter (const cs_dl *A, cs_long_t j, double beta, cs_long_t *w,
     double *x, cs_long_t mark,cs_dl *C, cs_long_t nz) ;
+cs_long_t cs_dl_scatter2 (const cs_dl *A, cs_long_t i, double *Arow);
 cs_long_t cs_dl_tdfs (cs_long_t j, cs_long_t k, cs_long_t *head, const cs_long_t *next,
     cs_long_t *post, cs_long_t *stack) ;
 cs_long_t cs_dl_leaf (cs_long_t i, cs_long_t j, const cs_long_t *first,
@@ -448,6 +450,7 @@ cs_dld *cs_dl_ddone (cs_dld *D, cs_dl *C, void *w, cs_long_t ok) ;
 #define cs_post CS_NAME (_post)
 #define cs_scc CS_NAME (_scc)
 #define cs_scatter CS_NAME (_scatter)
+#define cs_scatter2 CS_NAME (_scatter2)
 #define cs_tdfs CS_NAME (_tdfs)
 #define cs_reach CS_NAME (_reach)
 #define cs_spsolve CS_NAME (_spsolve)

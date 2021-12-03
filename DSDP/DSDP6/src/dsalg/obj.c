@@ -20,6 +20,7 @@ extern DSDP_INT getSDPPrimalObj( HSDSolver *dsdpSolver ) {
     // Compute primal objective given primal feasible projection
     // Iteration prerequisite: normal
     // Event prerequisite: EVENT_SDP_NO_RY, EVENT_PFEAS_FOUND
+    
     DSDP_INT retcode = DSDP_RETCODE_OK;
     
     assert( dsdpSolver->eventMonitor[EVENT_SDP_NO_RY] &&
@@ -32,18 +33,17 @@ extern DSDP_INT getSDPPrimalObj( HSDSolver *dsdpSolver ) {
     double mu   = dsdpSolver->mu;
     DSDP_INT incx = 1;
     
-    vec **asinv = dsdpSolver->asinv;
+    vec *asinv = dsdpSolver->asinv;
 
-    double *x1 = NULL;
+    double *x1 = asinv->x;
     double *d2 = dsdpSolver->d2->x;
-    
+        
+    // TODO: Save \sum n_k and avoid the repeating summation
     for (DSDP_INT i = 0; i < nblock; ++i) {
         n = (double) dsdpSolver->S[i]->dim;
-        pObjVal += n * mu;
-        x1 = asinv[i]->x;
-        pObjVal += dot(&m, x1, &incx, d2, &incx);
+        pObjVal += n;
     }
-    
+    pObjVal += dot(&m, x1, &incx, d2, &incx);
     dsdpSolver->pObjVal = pObjVal * mu + dsdpSolver->dObjVal;
     
     return retcode;

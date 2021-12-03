@@ -90,6 +90,7 @@
 		19BEEC252756065600C36C9E /* cs_schol.c in Sources */ = {isa = PBXBuildFile; fileRef = 19BEEC1F2756065600C36C9E /* cs_schol.c */; };
 		19BEEC262756065600C36C9E /* cs_lusol.c in Sources */ = {isa = PBXBuildFile; fileRef = 19BEEC202756065600C36C9E /* cs_lusol.c */; };
 		19BEEC292757EA7D00C36C9E /* obj.c in Sources */ = {isa = PBXBuildFile; fileRef = 19BEEC282757EA7D00C36C9E /* obj.c */; };
+		19F1195B275A627B0051D808 /* stepdirection.c in Sources */ = {isa = PBXBuildFile; fileRef = 19F1195A275A627B0051D808 /* stepdirection.c */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXCopyFilesBuildPhase section */
@@ -219,6 +220,8 @@
 		19BEEC272757EA7D00C36C9E /* obj.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = obj.h; sourceTree = "<group>"; };
 		19BEEC282757EA7D00C36C9E /* obj.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = obj.c; sourceTree = "<group>"; };
 		19BEEC2A2757F14A00C36C9E /* dsdpsolver.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = dsdpsolver.h; sourceTree = "<group>"; };
+		19F11959275A627B0051D808 /* stepdirection.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = stepdirection.h; sourceTree = "<group>"; };
+		19F1195A275A627B0051D808 /* stepdirection.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = stepdirection.c; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -292,6 +295,8 @@
 				19118D982737B72800D51D03 /* hsd.h */,
 				19BEEC272757EA7D00C36C9E /* obj.h */,
 				19BEEC282757EA7D00C36C9E /* obj.c */,
+				19F11959275A627B0051D808 /* stepdirection.h */,
+				19F1195A275A627B0051D808 /* stepdirection.c */,
 			);
 			path = dsalg;
 			sourceTree = "<group>";
@@ -536,6 +541,7 @@
 				19BACAF3274EBC1900E987FD /* test_sparse.c in Sources */,
 				19118E222737B72800D51D03 /* cs_util.c in Sources */,
 				19118DF82737B72800D51D03 /* cs_symperm.c in Sources */,
+				19F1195B275A627B0051D808 /* stepdirection.c in Sources */,
 				19118E0D2737B72800D51D03 /* cs_multiply.c in Sources */,
 				19118E212737B72800D51D03 /* cs_counts.c in Sources */,
 				19118DFD2737B72800D51D03 /* cs_scatter.c in Sources */,

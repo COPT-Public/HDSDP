@@ -186,6 +186,31 @@ extern DSDP_INT denseVecSolve( dsMat *dAMat, vec *dbVec, double *Ainvb ) {
     return retcode;
 }
 
+extern DSDP_INT denseArrSolveInp( dsMat *S, DSDP_INT nrhs, double *B ) {
+    
+    /* Solve the linear system S * X = B using Lapack packed format */
+    DSDP_INT retcode = DSDP_RETCODE_OK;
+    assert( (S->isFactorized) && (S->dim > 0) && (nrhs > 0));
+    
+    if (!S->isFactorized) {
+        error(etype, "Matrix is not yet factorized. \n");
+    }
+    
+    char uplo     = DSDP_MAT_LOW;
+    DSDP_INT n    = S->dim;
+    DSDP_INT ldb  = S->dim;
+    DSDP_INT info = 0;
+    
+    dpptrs(&uplo, &n, &nrhs, S->lfactor, B, &ldb, &info);
+    
+    if (info < 0) {
+        error(etype, "Packed linear system solution failed. \n");
+        retcode = DSDP_RETCODE_FAILED;
+    }
+    
+    return retcode;
+}
+
 extern DSDP_INT denseSpsSolve( dsMat *dAMat, spsMat *sBMat, double *AinvB ) {
     
     // Solve a dense system A * X = B for sparse B

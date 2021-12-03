@@ -78,6 +78,10 @@ static DSDP_INT PARDISO_PARAMS_CG[PARDISOINDEX] = {
 #define pardiso pardiso_64
 #endif
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 extern void pardisoinit ( void *, const DSDP_INT *, DSDP_INT * );
 
 extern void pardiso     ( void     *, DSDP_INT    *, DSDP_INT *, DSDP_INT *, DSDP_INT *, DSDP_INT *,
@@ -90,4 +94,7 @@ extern void pardiso_getdiag ( const void     * pt[PARDISOINDEX],
                               const DSDP_INT * mnum,
                               DSDP_INT       * error );
 
+#ifdef __cplusplus
+}
+#endif
 #endif

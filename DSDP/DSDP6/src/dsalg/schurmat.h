@@ -17,7 +17,29 @@
   
  */
 #include "dsdphsd.h"
+#include "residualsetup.h"
+#include "dsdpdata.h"
+#include "structs.h"
+#include "dsdpsolver.h"
+#include "hsd.h"
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
+extern DSDP_INT setupSchur   ( HSDSolver *dsdpSolver );
+extern DSDP_INT setupAux     ( HSDSolver *dsdpSolver,
+                               vec       *RM,
+                               double    *rM,
+                               vec       *b1,
+                               vec       *b2          );
+
+extern DSDP_INT schurMatSolve( HSDSolver *dsdpSolver, vec *b1, vec *RM );
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif /* schurmat_h */
+
 

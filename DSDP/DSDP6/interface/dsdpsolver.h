@@ -40,12 +40,13 @@ typedef struct {
     vec      *s;          // LP dual iteration matrix
     vec      *x;          // LP primal iteration vector
     
-    vec      **asinv;     // Store trace(A * Sinv) for different A_i (including C),
+    vec      *asinv;      // Store the sum of trace(A * Sinv) for different A_i (including C),
                           // setup as a by product
-    double   *csinv;      // Store csinv for different C_i and Sinv_i
+    double   csinvcsinv;  // Store trace(C * Sinv * C * Sinv)
+    double   csinv;       // Store csinv
+    double   csinvrysinv; // Store
     
     dsMat    *Msdp;       // Schur matrix for SDP (dense)
-    spsMat   *Mlp;        // Schur matrix for LP  (sparse)
     vec      *u;          // A_ls^(-2)c + AS^(-1)CS^(-1)
     vec      *d1;         // Temporary iteration array
     vec      *d2;         // Temporary iteration array

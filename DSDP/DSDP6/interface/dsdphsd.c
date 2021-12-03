@@ -57,11 +57,12 @@ static DSDP_INT DSDPIInit( HSDSolver *dsdpSolver ) {
     dsdpSolver->s = NULL;
     dsdpSolver->x = NULL;
     
-    dsdpSolver->asinv     = NULL;
-    dsdpSolver->csinv     = NULL;
+    dsdpSolver->asinv       = NULL;
+    dsdpSolver->csinv       = 0.0;
+    dsdpSolver->csinvcsinv  = 0.0;
+    dsdpSolver->csinvrysinv = 0.0;
     
     dsdpSolver->Msdp   = NULL;
-    dsdpSolver->Mlp    = NULL;
     dsdpSolver->u      = NULL;
     dsdpSolver->d1     = NULL;
     dsdpSolver->d2     = NULL;
@@ -184,27 +185,15 @@ static DSDP_INT DSDPIAllocIter( HSDSolver *dsdpSolver ) {
     retcode = vec_alloc(vecIter, dsdpSolver->lpDim); checkCode;
     
     // Allocate asinv
-    dsdpSolver->asinv = (vec **) calloc(nblock, sizeof(vec *));
-    for (DSDP_INT i = 0; i < nblock; ++i) {
-        dsdpSolver->asinv[i] = (vec *) calloc(1, sizeof(vec));
-        retcode = vec_init(dsdpSolver->asinv[i]);
-        retcode = vec_alloc(dsdpSolver->asinv[i], m);
-    }
-    
-    // Allocate csinv
-    dsdpSolver->csinv = (double *) calloc(nblock, sizeof(double));
-    
+    dsdpSolver->asinv = (vec *) calloc(1, sizeof(vec));
+    retcode = vec_init(dsdpSolver->asinv);
+    retcode = vec_alloc(dsdpSolver->asinv, m);
+        
     // Allocate Msdp
     dsIter = (dsMat *) calloc(1, sizeof(dsMat));
     dsdpSolver->Msdp = dsIter;
     retcode = denseMatInit(dsIter); checkCode;
     retcode = denseMatAlloc(dsIter, m, TRUE); checkCode;
-    
-    // Allocate Mlp
-    spsIter = (spsMat *) calloc(1, sizeof(spsMat));
-    dsdpSolver->Mlp = spsIter;
-    retcode = spsMatInit(spsIter);
-    retcode = spsMatAlloc(spsIter, m);
     
     // Allocate u, d1, d2 and d3
     vecIter = (vec *) calloc(1, sizeof(vec));
@@ -372,23 +361,12 @@ static DSDP_INT DSDPIFreeAlgIter( HSDSolver *dsdpSolver ) {
     DSDP_FREE(dsdpSolver->x);
     
     // asinv
-    for (DSDP_INT i = 0; i < nblock; ++i) {
-        retcode = vec_free(dsdpSolver->asinv[i]); checkCode;
-        DSDP_FREE(dsdpSolver->asinv[i]);
-    }
-    
+    retcode = vec_free(dsdpSolver->asinv); checkCode;
     DSDP_FREE(dsdpSolver->asinv);
-    
-    // csinv
-    DSDP_FREE(dsdpSolver->csinv);
     
     // Msdp
     retcode = denseMatFree(dsdpSolver->Msdp);
     DSDP_FREE(dsdpSolver->Msdp);
-    
-    // Mlp
-    retcode = spsMatFree(dsdpSolver->Mlp);
-    DSDP_FREE(dsdpSolver->Mlp);
     
     // u, d1, d2, yp
     retcode = vec_free(dsdpSolver->u ); checkCode;
@@ -455,6 +433,7 @@ static DSDP_INT DSDPIFreeCleanUp( HSDSolver *dsdpSolver ) {
     dsdpSolver->nBlock = 0;
     dsdpSolver->lpDim  = 0;
     dsdpSolver->mu     = 0.0;
+    dsdpSolver->csinvrysinv = 0.0;
     dsdpSolver->rtk    = 0.0;
     dsdpSolver->tau    = 0.0;
     dsdpSolver->kappa  = 0.0;
