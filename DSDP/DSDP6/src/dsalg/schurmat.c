@@ -397,6 +397,27 @@ static DSDP_INT setupb( HSDSolver *dsdpSolver, vec *b1, vec *b2 ) {
     return retcode;
 }
 
+extern DSDP_INT setupFactorize( HSDSolver *dsdpSolver ) {
+    // Factorize all the dual solutions
+    DSDP_INT retcode = DSDP_RETCODE_OK;
+    
+    retcode = checkIterProgress(dsdpSolver, ITER_DUAL_FACTORIZE);
+    assert( !dsdpSolver->iterProgress[ITER_DUAL_FACTORIZE] );
+    
+    if (dsdpSolver->iterProgress[ITER_DUAL_FACTORIZE]) {
+        error(etype, "Dual variables have been factorized. \n");
+    }
+    
+    DSDP_INT nblock = dsdpSolver->nBlock;
+    
+    for (DSDP_INT i = 0; i < nblock; ++i) {
+        retcode = spsMatFactorize(dsdpSolver->S[i]);
+        checkCode
+    }
+    
+    return retcode;
+}
+
 extern DSDP_INT setupSchur( HSDSolver *dsdpSolver ) {
     // Setup the schur matrix Msdp and some of the temporary arrays
     DSDP_INT retcode = DSDP_RETCODE_OK;

@@ -9,21 +9,22 @@
 #define ITER_LP_RESIDUAL       1
 #define ITER_SDP_RESIDUAL      2
 #define ITER_DUAL_OBJ          3
-#define ITER_LP_SCHUR          4
-#define ITER_SDP_SCHUR         5
-#define ITER_AUX_ARRAY         6
-#define ITER_SCHUR_SOLVE       7
-#define ITER_STEP_DIRECTION    8
-#define ITER_RECOVER_LP_DIR    9
-#define ITER_RECOVER_SDP_DIR   10
-#define ITER_COMPUTE_LP_STEP   11
-#define ITER_COMPUTE_SDP_STEP  12
-#define ITER_TAKE_STEP         13
-#define ITER_PRIMAL_PROJ       14
-#define ITER_COMPUTE_POBJ      15
-#define ITER_CORRECTOR         16
-#define ITER_DECREASE_MU       17
-#define ITER_NEXT_ITERATION    18
+#define ITER_DUAL_FACTORIZE    4
+#define ITER_LP_SCHUR          5
+#define ITER_SDP_SCHUR         6
+#define ITER_AUX_ARRAY         7
+#define ITER_SCHUR_SOLVE       8
+#define ITER_STEP_DIRECTION    9
+#define ITER_RECOVER_LP_DIR    10
+#define ITER_RECOVER_SDP_DIR   11
+#define ITER_COMPUTE_LP_STEP   12
+#define ITER_COMPUTE_SDP_STEP  13
+#define ITER_TAKE_STEP         14
+#define ITER_PRIMAL_PROJ       15
+#define ITER_COMPUTE_POBJ      16
+#define ITER_CORRECTOR         17
+#define ITER_DECREASE_MU       18
+#define ITER_NEXT_ITERATION    19
 
 // Special events
 #define EVENT_INIT_ITER    (-1) // Initial iteration

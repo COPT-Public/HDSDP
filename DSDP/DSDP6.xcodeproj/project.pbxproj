@@ -222,6 +222,7 @@
 		19BEEC2A2757F14A00C36C9E /* dsdpsolver.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = dsdpsolver.h; sourceTree = "<group>"; };
 		19F11959275A627B0051D808 /* stepdirection.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = stepdirection.h; sourceTree = "<group>"; };
 		19F1195A275A627B0051D808 /* stepdirection.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = stepdirection.c; sourceTree = "<group>"; };
+		19F1195C275A9A260051D808 /* dsdpfeast.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = dsdpfeast.h; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -315,6 +316,7 @@
 				19808F45273817510014086F /* rankonemat.c */,
 				19808F4A2738FC1F0014086F /* dsdppardiso.c */,
 				19BACAF1274EAE4500E987FD /* structs.h */,
+				19F1195C275A9A260051D808 /* dsdpfeast.h */,
 			);
 			path = linsys;
 			sourceTree = "<group>";

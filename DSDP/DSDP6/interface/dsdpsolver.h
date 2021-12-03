@@ -66,6 +66,7 @@ typedef struct {
     // Step matrix
     spsMat   **dS;        // SDP step matrix
     vec      *ds;         // LP step matrix
+    vec      *dy;         // Dual step matrix
     double   dtau;        // Tau step
     double   dkappa;      // Kappa step
     

@@ -256,7 +256,11 @@ extern DSDP_INT spsMatFactorize( spsMat *sAMat ) {
     DSDP_INT retcode = DSDP_RETCODE_OK;
     
     // Call the internal method
-    retcode = pardisoFactorize(sAMat);
+    if (sAMat->isFactorized) {
+        retcode = pardisoNumFactorize(sAMat);
+    } else {
+        retcode = pardisoFactorize(sAMat);
+    }
     
     return retcode;
 }
@@ -545,6 +549,16 @@ extern DSDP_INT spsMatFill( spsMat *sMat, double *fulldMat ) {
     }
     
     vec_free(pb);
+    return retcode;
+}
+ 
+extern DSDP_INT spsMatMaxEig( spsMat *sMat, double *maxEig ) {
+    // Eigen value utility: compute the maximum eigenvalue of a matrix
+    DSDP_INT retcode = DSDP_RETCODE_OK;
+    
+    
+    
+    
     return retcode;
 }
 

@@ -73,10 +73,18 @@ static DSDP_INT getSDPBlockResidualRy( HSDSolver *dsdpSolver, spsMat *Ry, DSDP_I
     double coeff      = 0.0;
     double sign       = 0.0;
     
-    if (ndsMat > 0) {
-        planA = TRUE;
-    } else {
+    // TODO: save the plan to avoid computing again
+    for (DSDP_INT i = 0; i < ndsMat; ++i) {
+        if (fabs(y->x[dsMatIdx[i]]) > 1e-12) {
+            planA = TRUE;
+        }
+    }
+    
+    if (!planA) {
         for (DSDP_INT i = 0; i < nr1Mat; ++i) {
+            if (fabs(y->x[r1MatIdx[i]]) > 1e-12) {
+                continue;
+            }
             maxR1nnz = MAX(maxR1nnz,
                            ((r1Mat *) conedata[r1MatIdx[i]])->nnz);
         }

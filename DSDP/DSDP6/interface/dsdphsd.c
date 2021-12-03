@@ -76,6 +76,7 @@ static DSDP_INT DSDPIInit( HSDSolver *dsdpSolver ) {
     // Step matrix
     dsdpSolver->dS     = NULL;
     dsdpSolver->ds     = NULL;
+    dsdpSolver->dy     = NULL;
     dsdpSolver->dtau   = 0.0;
     dsdpSolver->dkappa = 0.0;
     
@@ -159,7 +160,6 @@ static DSDP_INT DSDPIAllocIter( HSDSolver *dsdpSolver ) {
     DSDP_INT dim     = 0;
     DSDP_INT m       = dsdpSolver->m;
     
-    spsMat *spsIter = NULL;
     dsMat *dsIter   = NULL;
     vec *vecIter    = NULL;
     
@@ -236,6 +236,12 @@ static DSDP_INT DSDPIAllocIter( HSDSolver *dsdpSolver ) {
     dsdpSolver->ds = vecIter;
     retcode = vec_init(vecIter); checkCode;
     retcode = vec_alloc(vecIter, dsdpSolver->lpDim); checkCode;
+    
+    // Allocate dy
+    vecIter = (vec *) calloc(1, sizeof(vec));
+    dsdpSolver->dy = vecIter;
+    retcode = vec_init(vecIter); checkCode;
+    retcode = vec_alloc(vecIter, m); checkCode;
     
     return retcode;
 }
@@ -392,6 +398,10 @@ static DSDP_INT DSDPIFreeAlgIter( HSDSolver *dsdpSolver ) {
     // ds
     retcode = vec_free(dsdpSolver->ds);
     DSDP_FREE(dsdpSolver->ds);
+    
+    // dy
+    retcode = vec_free(dsdpSolver->dy);
+    DSDP_FREE(dsdpSolver->dy);
     
     // pScaler
     retcode = vec_free(dsdpSolver->pScaler);
