@@ -17,14 +17,13 @@
 #define ITER_STEP_DIRECTION    9
 #define ITER_RECOVER_LP_DIR    10
 #define ITER_RECOVER_SDP_DIR   11
-#define ITER_COMPUTE_LP_STEP   12
-#define ITER_COMPUTE_SDP_STEP  13
-#define ITER_TAKE_STEP         14
-#define ITER_PRIMAL_PROJ       15
-#define ITER_COMPUTE_POBJ      16
-#define ITER_CORRECTOR         17
-#define ITER_DECREASE_MU       18
-#define ITER_NEXT_ITERATION    19
+#define ITER_COMPUTE_STEP      12
+#define ITER_TAKE_STEP         13
+#define ITER_PRIMAL_PROJ       14
+#define ITER_COMPUTE_POBJ      15
+#define ITER_CORRECTOR         16
+#define ITER_DECREASE_MU       17
+#define ITER_NEXT_ITERATION    18
 
 // Special events
 #define EVENT_INIT_ITER    (-1) // Initial iteration
@@ -43,7 +42,6 @@ extern "C" {
 #endif
 
 extern DSDP_INT checkIterProgress( HSDSolver *dsdpSolver, DSDP_INT iter );
-
 
 
 #ifdef __cplusplus

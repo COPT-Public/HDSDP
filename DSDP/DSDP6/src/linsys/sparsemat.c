@@ -1,5 +1,6 @@
 #include "sparsemat.h"
 #include "densemat.h"
+#include "dsdpfeast.h"
 
 static char *etype = "Sparse matrix";
 static DSDP_INT one = 1;
@@ -68,6 +69,70 @@ static DSDP_INT pardisoNumFactorize( spsMat *S ) {
     
     if (error) {
         printf("[Pardiso Error]: Matrix factorization failed."
+               " Error code: "ID" \n", error);
+        error(etype, "Pardiso failes to factorize. \n");
+    }
+    
+    return retcode;
+}
+
+static DSDP_INT pardisoForwardSolve( spsMat *S, DSDP_INT nrhs, double *B ) {
+    // pardiso forward solve
+    DSDP_INT retcode = DSDP_RETCODE_OK;
+    
+    assert( S->isFactorized == TRUE );
+    
+    // Extract the lower triangular part from CSparse structure
+    DSDP_INT *Sp = S->cscMat->p;
+    DSDP_INT *Si = S->cscMat->i;
+    double   *Sx = S->cscMat->x;
+    
+    // Get the pardiso parameter
+    DSDP_INT phase = PARDISO_FORWARD;
+    DSDP_INT error = 0;
+    DSDP_INT n     = S->dim;
+    
+    // Invoke pardiso to do symbolic analysis and Cholesky factorization
+    pardiso(S->pdsWorker, &maxfct, &mnum, &mtype, &phase, &n,
+            Sx, Sp, Si, &idummy, &idummy, PARDISO_PARAMS_CHOLESKY,
+            &msglvl, NULL, NULL, &error);
+    
+    assert( error == PARDISO_OK );
+    
+    if (error) {
+        printf("[Pardiso Error]: Matrix forward solve failed."
+               " Error code: "ID" \n", error);
+        error(etype, "Pardiso failes to factorize. \n");
+    }
+    
+    return retcode;
+}
+
+static DSDP_INT pardisoBackwardSolve( spsMat *S, DSDP_INT nrhs, double *B ) {
+    // pardiso forward solve
+    DSDP_INT retcode = DSDP_RETCODE_OK;
+    
+    assert( S->isFactorized == TRUE );
+    
+    // Extract the lower triangular part from CSparse structure
+    DSDP_INT *Sp = S->cscMat->p;
+    DSDP_INT *Si = S->cscMat->i;
+    double   *Sx = S->cscMat->x;
+    
+    // Get the pardiso parameter
+    DSDP_INT phase = PARDISO_BACKWARD;
+    DSDP_INT error = 0;
+    DSDP_INT n     = S->dim;
+    
+    // Invoke pardiso to do symbolic analysis and Cholesky factorization
+    pardiso(S->pdsWorker, &maxfct, &mnum, &mtype, &phase, &n,
+            Sx, Sp, Si, &idummy, &idummy, PARDISO_PARAMS_CHOLESKY,
+            &msglvl, NULL, NULL, &error);
+    
+    assert( error == PARDISO_OK );
+    
+    if (error) {
+        printf("[Pardiso Error]: Matrix backward solve failed."
                " Error code: "ID" \n", error);
         error(etype, "Pardiso failes to factorize. \n");
     }
@@ -357,6 +422,59 @@ extern DSDP_INT spsMatDsSolve( spsMat *sAMat, dsMat *sBMat, double *AinvB ) {
     return retcode;
 }
 
+extern DSDP_INT spsMatLspLSolve( spsMat *S, spsMat *dS, spsMat *LdSLT ) {
+    // Routine for computing SDP cone maximum stepsize
+    DSDP_INT retcode = DSDP_RETCODE_OK;
+    
+    DSDP_INT n = S->dim;
+    assert( dS->dim == n );
+    assert( LdSLT->dim == n);
+    
+    double *fulldS = (double *) calloc(n * n, sizeof(double));
+    
+    // L^-1 dS
+    retcode = spsMatFill(dS, fulldS);
+    retcode = pardisoForwardSolve(S, n, fulldS);
+    
+    // Transpose
+    double tmp = 0.0;
+    for (DSDP_INT i = 0; i < n; ++i) {
+        for (DSDP_INT j = 0; j <= i; ++j) {
+            tmp = fulldS[i * n + j];
+            fulldS[i * n + j] = fulldS[j * n + i];
+            fulldS[j * n + i] = tmp;
+        }
+    }
+    
+    // L^-T (L^-1 dS)
+    // TODO: write a Lanczos algorithm to compute the minimum eigenvalue
+    // Currently FEAST is used by transferring the matrix into dense format and is INEFFICIENT
+    DSDP_INT *Ap = LdSLT->cscMat->p;
+    DSDP_INT *Ai = LdSLT->cscMat->i;
+    double   *Ax = LdSLT->cscMat->x;
+    
+    retcode = pardisoBackwardSolve(S, n, fulldS);
+    DSDP_INT nnz = 0;
+    DSDP_INT start = 0;
+    for (DSDP_INT i = 0; i < n; ++i) {
+        start = i * n;
+        nnz = 0;
+        for (DSDP_INT j = 0; j <= i; ++j) {
+            tmp = fulldS[start + j];
+            if (fabs(tmp) > 1e-12) {
+                Ax[nnz] = tmp;
+                Ai[nnz] = j;
+                nnz += 1;
+            }
+        }
+        Ap[i + 1] = nnz;
+    }
+    
+    DSDP_FREE(fulldS);
+    
+    return retcode;
+}
+
 extern DSDP_INT spsSinvSpSinvSolve( spsMat *S, spsMat *A, dsMat *SinvASinv, double *asinv ) {
     
     // Routine for setting up the Schur matrix
@@ -494,6 +612,55 @@ extern DSDP_INT spsSinvR1SinvSolve( spsMat *S, r1Mat *A, r1Mat *SinvASinv, doubl
     return retcode;
 }
 
+/* Eigen value routines */
+extern DSDP_INT spsMatMaxEig( spsMat *sMat, double *maxEig ) {
+    // Eigen value utility: compute the maximum eigenvalue of a matrix
+    DSDP_INT retcode = DSDP_RETCODE_OK;
+    DSDP_INT n = sMat->dim;
+    DSDP_INT info = 0;
+    
+    double *eigvec = (double *) calloc(n, sizeof(double));
+    
+    sparse_matrix_t A = NULL;
+    
+    mkl_sparse_d_create_csc(&A, SPARSE_INDEX_BASE_ZERO,
+                            n, n, sMat->cscMat->p, sMat->cscMat->p + 1,
+                            sMat->cscMat->i, sMat->cscMat->x);
+    
+    info = mkl_sparse_d_ev(&MAX_EIG, pm, A, dsdp_descr,
+                           k0, &k, maxEig, eigvec, &resi);
+    
+    if (info != SPARSE_SUCCESS) {
+        error(etype, "Maximum eigen value computation failed. \n");
+    }
+    
+    return retcode;
+}
+
+extern DSDP_INT spsMatMinEig( spsMat *sMat, double *minEig ) {
+    // Eigen value utility: compute the minimum eigenvalue of a matrix
+    DSDP_INT retcode = DSDP_RETCODE_OK;
+    DSDP_INT n = sMat->dim;
+    DSDP_INT info = 0;
+    
+    double *eigvec = (double *) calloc(n, sizeof(double));
+    
+    sparse_matrix_t A = NULL;
+    
+    mkl_sparse_d_create_csc(&A, SPARSE_INDEX_BASE_ZERO,
+                            n, n, sMat->cscMat->p, sMat->cscMat->p + 1,
+                            sMat->cscMat->i, sMat->cscMat->x);
+    
+    info = mkl_sparse_d_ev(&MIN_EIG, pm, A, dsdp_descr,
+                           k0, &k, minEig, eigvec, &resi);
+    
+    if (info != SPARSE_SUCCESS) {
+        error(etype, "Minimum eigen value computation failed. \n");
+    }
+    
+    return retcode;
+}
+
 /* Other utilities */
 extern DSDP_INT spsMatScatter( spsMat *sMat, vec *b, DSDP_INT k ) {
     
@@ -549,16 +716,6 @@ extern DSDP_INT spsMatFill( spsMat *sMat, double *fulldMat ) {
     }
     
     vec_free(pb);
-    return retcode;
-}
- 
-extern DSDP_INT spsMatMaxEig( spsMat *sMat, double *maxEig ) {
-    // Eigen value utility: compute the maximum eigenvalue of a matrix
-    DSDP_INT retcode = DSDP_RETCODE_OK;
-    
-    
-    
-    
     return retcode;
 }
 

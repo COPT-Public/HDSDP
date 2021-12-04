@@ -1,8 +1,6 @@
 #ifndef dsdpsolver_h
 #define dsdpsolver_h
 
-#include "stepheur.h"
-#include "residualsetup.h"
 #include "structs.h"
 #include "dsdpdata.h"
 #include "dsdpparam.h"
@@ -65,6 +63,7 @@ typedef struct {
     
     // Step matrix
     spsMat   **dS;        // SDP step matrix
+    spsMat   **LdSL;      // Used for maximum step computation
     vec      *ds;         // LP step matrix
     vec      *dy;         // Dual step matrix
     double   dtau;        // Tau step

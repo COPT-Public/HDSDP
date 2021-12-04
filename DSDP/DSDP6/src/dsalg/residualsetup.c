@@ -1,8 +1,4 @@
 #include "residualsetup.h"
-#include "dsdpdata.h"
-#include "structs.h"
-#include "dsdpsolver.h"
-#include "hsd.h"
 
 // Setup all the residuals for the dual scaling algorithm to work
 // We also note that the dual residual is not contained in the solver since
@@ -286,7 +282,7 @@ static DSDP_INT getSDPBlockResidualRy( HSDSolver *dsdpSolver, spsMat *Ry, DSDP_I
             
             nnz = 0;
             for (DSDP_INT j = 0; j < n; ++j) {
-                if (colNnzs[j] > 0) {
+                if (colNnzs[j] != 0) {
                     Ryi[nnz] = j;
                     Ryx[nnz] = colNnzs[j];
                     nnz += 1;

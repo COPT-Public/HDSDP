@@ -75,6 +75,7 @@ static DSDP_INT DSDPIInit( HSDSolver *dsdpSolver ) {
     
     // Step matrix
     dsdpSolver->dS     = NULL;
+    dsdpSolver->LdSL   = NULL;
     dsdpSolver->ds     = NULL;
     dsdpSolver->dy     = NULL;
     dsdpSolver->dtau   = 0.0;
@@ -229,6 +230,15 @@ static DSDP_INT DSDPIAllocIter( HSDSolver *dsdpSolver ) {
         dsdpSolver->dS[i] = (spsMat *) calloc(1, sizeof(spsMat));
         retcode = spsMatInit(dsdpSolver->dS[i]); checkCode;
         retcode = spsMatAlloc(dsdpSolver->dS[i], dim); checkCode;
+    }
+    
+    // Allocate LdSL
+    dsdpSolver->LdSL = (spsMat **) calloc(nblock, sizeof(spsMat *));
+    for (DSDP_INT i = 0; i < nblock; ++i) {
+        dim = dsdpSolver->sdpData[i]->dimS;
+        dsdpSolver->LdSL[i] = (spsMat *) calloc(1, sizeof(spsMat));
+        retcode = spsMatInit(dsdpSolver->LdSL[i]); checkCode;
+        retcode = spsMatAlloc(dsdpSolver->LdSL[i], dim); checkCode;
     }
     
     // Allocate ds
@@ -394,6 +404,14 @@ static DSDP_INT DSDPIFreeAlgIter( HSDSolver *dsdpSolver ) {
     }
     
     DSDP_FREE(dsdpSolver->dS);
+    
+    // LdSLT
+    for (DSDP_INT i = 0; i < nblock; ++i) {
+        retcode = spsMatFree(dsdpSolver->LdSL[i]); checkCode;
+        DSDP_FREE(dsdpSolver->LdSL[i]);
+    }
+    
+    DSDP_FREE(dsdpSolver->LdSL);
     
     // ds
     retcode = vec_free(dsdpSolver->ds);
