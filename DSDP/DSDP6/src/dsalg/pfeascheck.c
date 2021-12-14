@@ -1,8 +1,17 @@
-//
-//  pfeascheck.c
-//  DSDP6
-//
-//  Created by 高文智 on 2021/12/5.
-//
-
 #include "pfeascheck.h"
+
+static char etype[] = "Primal feasibility check";
+
+static DSDP_INT blockFeasCheck( HSDSolver *dsdpSolver, DSDP_INT k ) {
+    // Check if some SDP block is primal feasible by projection
+    DSDP_INT retcode = DSDP_RETCODE_OK;
+    
+    assert( k < dsdpSolver->nBlock );
+    
+    
+    
+    
+    
+    
+    return retcode;
+}

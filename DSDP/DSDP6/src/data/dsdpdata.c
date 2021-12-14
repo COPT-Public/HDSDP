@@ -41,7 +41,7 @@ static DSDP_INT sdpMatIAlloc( sdpMat *sdpData ) {
     sdpData->sdpData = (void **) calloc(sdpData->dimy + 1, sizeof(void *));
     
     for (DSDP_INT i = 0; i < sdpData->dimy; ++i) {
-        sdpData->types = MAT_TYPE_UNKNOWN;
+        sdpData->types[i] = MAT_TYPE_UNKNOWN;
     }
     
     return retcode;
@@ -61,16 +61,24 @@ static DSDP_INT sdpMatIAllocByType( sdpMat *sdpData, DSDP_INT k, DSDP_INT *Ai,
     
     void *userdata = NULL;
     
+#ifdef SHOWALL
+        printf("Block "ID" \n", k);
+#endif
+    
     // Check sparsity
     if (nnz == 0) {
+        sdpData->nzeroMat += 1;
         sdpData->types[k] = MAT_TYPE_ZERO;
+#ifdef SHOWALL
+        printf("Zero Matrix \n");
+#endif
     } else if (sdpData->types[k] == MAT_TYPE_RANK1) {
         // Rank 1
         sdpData->nr1Mat += 1;
         r1Mat *data = NULL;
         data = (r1Mat *) calloc(1, sizeof(r1Mat));
         retcode = r1MatInit(data); checkCode;
-        retcode = r1MatAlloc(data, m); checkCode;
+        retcode = r1MatAlloc(data, n); checkCode;
         
         // The first non-zero element must be a diagonal element
         double adiag    = Ax[0];
@@ -96,6 +104,9 @@ static DSDP_INT sdpMatIAllocByType( sdpMat *sdpData, DSDP_INT k, DSDP_INT *Ai,
         }
         
         retcode = r1MatCountNnz(data); checkCode;
+#ifdef SHOWALL
+        r1MatView(data);
+#endif
         userdata = (void *) data;
         
     } else if (((nnz <= nsym(n) / 10) && (sdpData->types[k] == MAT_TYPE_UNKNOWN)) ||
@@ -134,6 +145,9 @@ static DSDP_INT sdpMatIAllocByType( sdpMat *sdpData, DSDP_INT k, DSDP_INT *Ai,
             data->cscMat->i[i] = rowidx - idxthresh + diff;
         }
         
+#ifdef SHOWALL
+        spsMatView(data);
+#endif
         userdata = (void *) data;
         
     } else {
@@ -146,20 +160,20 @@ static DSDP_INT sdpMatIAllocByType( sdpMat *sdpData, DSDP_INT k, DSDP_INT *Ai,
         retcode = denseMatInit(data); checkCode;
         retcode = denseMatAlloc(data, n, FALSE); checkCode;
         
-        DSDP_INT rowidx    = 0;
-        DSDP_INT where     = 0;
-        DSDP_INT idxthresh = n;
-        DSDP_INT diff      = n;
-        
-        for (DSDP_INT i = 0; i < nnz; ++i) {
-            rowidx = Ai[i];
-            if (rowidx >= idxthresh) {
-                where += 1;
-                diff = n - where;
-                idxthresh += diff;
-            }
-            data->array[rowidx - idxthresh + diff] = Ax[i];
+        for (DSDP_INT i = 0; i < nnz - nnz % 4; i+=4) {
+            data->array[Ai[i    ]] = Ax[i    ];
+            data->array[Ai[i + 1]] = Ax[i + 1];
+            data->array[Ai[i + 2]] = Ax[i + 2];
+            data->array[Ai[i + 3]] = Ax[i + 3];
         }
+        
+        for (DSDP_INT i = nnz - nnz % 4; i < nnz; ++i) {
+            data->array[Ai[i]] = Ax[i];
+        }
+        
+#ifdef SHOWALL
+        denseMatView(data);
+#endif
         
         userdata = (void *) data;
     }

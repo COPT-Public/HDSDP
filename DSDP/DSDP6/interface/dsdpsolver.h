@@ -63,7 +63,7 @@ typedef struct {
     
     // Step matrix
     spsMat   **dS;        // SDP step matrix
-    spsMat   **LdSL;      // Used for maximum step computation
+    spsMat   **spaux;      // Used for maximum step computation
     vec      *ds;         // LP step matrix
     vec      *dy;         // Dual step matrix
     double   dtau;        // Tau step
@@ -86,6 +86,32 @@ typedef struct {
     
 } HSDSolver;
 
+typedef HSDSolver Solver;
+
+// Solver interface
+extern DSDP_INT DSDPCreate( Solver **dsdpSolver );
+
+extern DSDP_INT DSDPSetDim( Solver    *dsdpSolver,
+                            DSDP_INT  nBlock,
+                            DSDP_INT  nConstrs,
+                            DSDP_INT  lpDim );
+
+extern DSDP_INT DSDPSetLPData( Solver    *dsdpSolver,
+                               DSDP_INT  nCol,
+                               DSDP_INT  *Ap,
+                               DSDP_INT  *Ai,
+                               double    *Ax,
+                               double    *lpObj );
+
+extern DSDP_INT DSDPSetSDPConeData( Solver    *dsdpSolver,
+                                    DSDP_INT  blockid,
+                                    DSDP_INT  coneSize,
+                                    DSDP_INT  *typehint,
+                                    DSDP_INT  *Asdpp,
+                                    DSDP_INT  *Asdpi,
+                                    double    *Asdpx );
+
+extern DSDP_INT DSDPDestroy( Solver *dsdpSolver );
 
 
 #endif /* dsdpsolver_h */

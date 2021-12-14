@@ -1,6 +1,7 @@
 #ifndef stepheur_h
 #define stepheur_h
 
+/* Implement step-size related routines */
 #include "dsdphsd.h"
 #include "dsdpdata.h"
 #include "structs.h"

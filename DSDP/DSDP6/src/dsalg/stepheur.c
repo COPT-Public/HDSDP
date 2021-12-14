@@ -106,8 +106,8 @@ static DSDP_INT getBlockSDPSStep( HSDSolver *dsdpSolver, DSDP_INT k, double *SkS
     spsMat *S  = dsdpSolver->S[k];
     
     double res = 0.0;
-    retcode = spsMatLspLSolve(S, dS, dsdpSolver->LdSL[k]);
-    retcode = spsMatMinEig(dsdpSolver->LdSL[k], &res);
+    retcode = spsMatLspLSolve(S, dS, dsdpSolver->spaux[k]);
+    retcode = spsMatMinEig(dsdpSolver->spaux[k], &res);
     *SkStep = - 1.0 / res;
     
     return retcode;

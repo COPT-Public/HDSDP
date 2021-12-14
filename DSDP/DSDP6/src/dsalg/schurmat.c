@@ -307,14 +307,14 @@ static DSDP_INT setupLPSchur( HSDSolver *dsdpSolver ) {
     
     // Update u
     retcode = vec_invsqr(sinv, s);
-    for (DSDP_INT i = 0; i < (DSDP_INT) n / 4; i+=4) {
+    for (DSDP_INT i = 0; i < n - n % 4; i+=4) {
         sdata[i    ] = sdata[i    ] * cdata[i    ];
         sdata[i + 1] = sdata[i + 1] * cdata[i + 1];
         sdata[i + 2] = sdata[i + 2] * cdata[i + 2];
         sdata[i + 3] = sdata[i + 3] * cdata[i + 3];
     }
     
-    for (DSDP_INT i = 4 * ((DSDP_INT) n / 4); i < n; ++i) {
+    for (DSDP_INT i = n - n % 4; i < n; ++i) {
         sdata[i] = sdata[i] * cdata[i];
     }
     
@@ -325,15 +325,22 @@ static DSDP_INT setupLPSchur( HSDSolver *dsdpSolver ) {
     
     // Update d3
     retcode = vec_invsqr(sinv, s);
-    for (DSDP_INT i = 0; i < (DSDP_INT) n / 4; i+=4) {
-        sdata[i    ] = sdata[i    ] * rydata[i    ];
-        sdata[i + 1] = sdata[i + 1] * rydata[i + 1];
-        sdata[i + 2] = sdata[i + 2] * rydata[i + 2];
-        sdata[i + 3] = sdata[i + 3] * rydata[i + 3];
-    }
     
-    for (DSDP_INT i = 4 * ((DSDP_INT) n / 4); i < n; ++i) {
-        sdata[i] = sdata[i] * rydata[i];
+    if (n > 64) {
+        for (DSDP_INT i = 0; i < n - n % 4; i+=4) {
+            sdata[i    ] = sdata[i    ] * rydata[i    ];
+            sdata[i + 1] = sdata[i + 1] * rydata[i + 1];
+            sdata[i + 2] = sdata[i + 2] * rydata[i + 2];
+            sdata[i + 3] = sdata[i + 3] * rydata[i + 3];
+        }
+        
+        for (DSDP_INT i = n - n % 4; i < n; ++i) {
+            sdata[i] = sdata[i] * rydata[i];
+        }
+    } else {
+        for (DSDP_INT i = 0; i < n; ++i) {
+            sdata[i] = sdata[i] * rydata[i];
+        }
     }
     
     cs_gaxpy(A, sdata, d3->x);

@@ -398,15 +398,21 @@ extern DSDP_INT denseMatGetdiag( dsMat *dMat, vec *diag ) {
     double *x     = diag->x;
     double *array = dMat->array;
         
-    for (DSDP_INT i = 0; i < n; i+=4) {
-        x[i    ] = array[(DSDP_INT) (2 * n - i + 1) * (i    ) / 2];
-        x[i + 1] = array[(DSDP_INT) (2 * n - i    ) * (i + 1) / 2];
-        x[i + 2] = array[(DSDP_INT) (2 * n - i - 1) * (i + 2) / 2];
-        x[i + 3] = array[(DSDP_INT) (2 * n - i - 2) * (i + 3) / 2];
-    }
-    
-    for (DSDP_INT i = 4 * (DSDP_INT) (n / 4); i < n; ++i) {
-        x[i] = array[(DSDP_INT) (2 * n - i + 1) * i / 2];
+    if (n > 64) {
+        for (DSDP_INT i = 0; i < n - n % 4; i+=4) {
+            x[i    ] = array[(DSDP_INT) (2 * n - i + 1) * (i    ) / 2];
+            x[i + 1] = array[(DSDP_INT) (2 * n - i    ) * (i + 1) / 2];
+            x[i + 2] = array[(DSDP_INT) (2 * n - i - 1) * (i + 2) / 2];
+            x[i + 3] = array[(DSDP_INT) (2 * n - i - 2) * (i + 3) / 2];
+        }
+        
+        for (DSDP_INT i = n - n % 4; i < n; ++i) {
+            x[i] = array[(DSDP_INT) (2 * n - i + 1) * i / 2];
+        }
+    } else {
+        for (DSDP_INT i = 0; i < n; ++i) {
+            x[i] = array[(DSDP_INT) (2 * n - i + 1) * i / 2];
+        }
     }
     
     return retcode;

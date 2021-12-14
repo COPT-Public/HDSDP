@@ -62,6 +62,7 @@
 		19118E222737B72800D51D03 /* cs_util.c in Sources */ = {isa = PBXBuildFile; fileRef = 19118DE02737B72800D51D03 /* cs_util.c */; };
 		19118E232737B72800D51D03 /* main.c in Sources */ = {isa = PBXBuildFile; fileRef = 19118DE22737B72800D51D03 /* main.c */; };
 		19118E242737B72800D51D03 /* dsdphsd.c in Sources */ = {isa = PBXBuildFile; fileRef = 19118DE42737B72800D51D03 /* dsdphsd.c */; };
+		192B24B22768D1A900F5C7C0 /* test_data.c in Sources */ = {isa = PBXBuildFile; fileRef = 192B24B12768D1A900F5C7C0 /* test_data.c */; };
 		19808F382737EEA60014086F /* test_vec.c in Sources */ = {isa = PBXBuildFile; fileRef = 19808F372737EEA60014086F /* test_vec.c */; };
 		19808F3F273807770014086F /* dsdpdata.c in Sources */ = {isa = PBXBuildFile; fileRef = 19808F3E273807770014086F /* dsdpdata.c */; };
 		19808F4327380A990014086F /* dsdppresolve.c in Sources */ = {isa = PBXBuildFile; fileRef = 19808F4227380A990014086F /* dsdppresolve.c */; };
@@ -189,6 +190,7 @@
 		19118DE22737B72800D51D03 /* main.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = main.c; sourceTree = "<group>"; };
 		19118DE42737B72800D51D03 /* dsdphsd.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = dsdphsd.c; sourceTree = "<group>"; };
 		19118DE52737B72800D51D03 /* dsdphsd.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = dsdphsd.h; sourceTree = "<group>"; };
+		192B24B12768D1A900F5C7C0 /* test_data.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = test_data.c; sourceTree = "<group>"; };
 		19808F372737EEA60014086F /* test_vec.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = test_vec.c; sourceTree = "<group>"; };
 		19808F392737FEDA0014086F /* test.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = test.h; sourceTree = "<group>"; };
 		19808F3D273807770014086F /* dsdpdata.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = dsdpdata.h; sourceTree = "<group>"; };
@@ -221,6 +223,7 @@
 		19BEEC272757EA7D00C36C9E /* obj.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = obj.h; sourceTree = "<group>"; };
 		19BEEC282757EA7D00C36C9E /* obj.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = obj.c; sourceTree = "<group>"; };
 		19BEEC2A2757F14A00C36C9E /* dsdpsolver.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = dsdpsolver.h; sourceTree = "<group>"; };
+		19C1E9D42768E707000FCBF9 /* SDPdata.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = SDPdata.h; sourceTree = "<group>"; };
 		19F11959275A627B0051D808 /* stepdirection.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = stepdirection.h; sourceTree = "<group>"; };
 		19F1195A275A627B0051D808 /* stepdirection.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = stepdirection.c; sourceTree = "<group>"; };
 		19F1195C275A9A260051D808 /* dsdpfeast.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = dsdpfeast.h; sourceTree = "<group>"; };
@@ -411,6 +414,7 @@
 		19118DE12737B72800D51D03 /* test */ = {
 			isa = PBXGroup;
 			children = (
+				19C1E9D42768E707000FCBF9 /* SDPdata.h */,
 				19808F372737EEA60014086F /* test_vec.c */,
 				19808F392737FEDA0014086F /* test.h */,
 				19BACAF2274EBC1900E987FD /* test_sparse.c */,
@@ -418,6 +422,7 @@
 				19BACAF627521A7800E987FD /* test_pardiso.c */,
 				19BACAF92753C0D600E987FD /* test_presolve.c */,
 				19BACAFC2753C17500E987FD /* gen_test_data.c */,
+				192B24B12768D1A900F5C7C0 /* test_data.c */,
 			);
 			path = test;
 			sourceTree = "<group>";
@@ -579,6 +584,7 @@
 				19118DF22737B72800D51D03 /* cs_reach.c in Sources */,
 				19118E132737B72800D51D03 /* cs_happly.c in Sources */,
 				19118E0A2737B72800D51D03 /* cs_maxtrans.c in Sources */,
+				192B24B22768D1A900F5C7C0 /* test_data.c in Sources */,
 				19118DE72737B72800D51D03 /* hsd.c in Sources */,
 				19BEEC232756065600C36C9E /* cs_chol.c in Sources */,
 				19118E112737B72800D51D03 /* cs_fkeep.c in Sources */,

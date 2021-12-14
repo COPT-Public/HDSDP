@@ -75,7 +75,7 @@ static DSDP_INT DSDPIInit( HSDSolver *dsdpSolver ) {
     
     // Step matrix
     dsdpSolver->dS     = NULL;
-    dsdpSolver->LdSL   = NULL;
+    dsdpSolver->spaux  = NULL;
     dsdpSolver->ds     = NULL;
     dsdpSolver->dy     = NULL;
     dsdpSolver->dtau   = 0.0;
@@ -86,7 +86,7 @@ static DSDP_INT DSDPIInit( HSDSolver *dsdpSolver ) {
     dsdpSolver->solStatus = DSDP_UNKNOWN;
     
     // Verbosity
-    dsdpSolver->verbosity = 0;
+    dsdpSolver->verbosity = TRUE;
     
     // Primal variable
     dsdpSolver->pScaler     = NULL;
@@ -99,7 +99,7 @@ static DSDP_INT DSDPIInit( HSDSolver *dsdpSolver ) {
 static DSDP_INT DSDPIAlloc( HSDSolver *dsdpSolver ) {
     
     // Allocate memory for the internal solver (level 1)
-    // Level 1 allocation only involves data/indicator arrays and the rest of memory will be
+    // The allocation only involves data/indicator arrays and the rest of memory will be
     // allocated when setting the problem data or starting to optimize
     DSDP_INT retcode = DSDP_RETCODE_OK;
     assert( dsdpSolver->insStatus == DSDP_STATUS_INIT_UNSET );
@@ -118,6 +118,7 @@ static DSDP_INT DSDPIAlloc( HSDSolver *dsdpSolver ) {
     dsdpSolver->isSDPset  = (DSDP_INT *) calloc(nblock, sizeof(DSDP_INT));
     
     for (DSDP_INT i = 0; i < nblock; ++i) {
+        dsdpSolver->sdpData[i] = (sdpMat *) calloc(1, sizeof(sdpMat));
         retcode = sdpMatInit(dsdpSolver->sdpData[i]); checkCode;
     }
     
@@ -232,13 +233,13 @@ static DSDP_INT DSDPIAllocIter( HSDSolver *dsdpSolver ) {
         retcode = spsMatAlloc(dsdpSolver->dS[i], dim); checkCode;
     }
     
-    // Allocate LdSL
-    dsdpSolver->LdSL = (spsMat **) calloc(nblock, sizeof(spsMat *));
+    // Allocate spaux
+    dsdpSolver->spaux = (spsMat **) calloc(nblock, sizeof(spsMat *));
     for (DSDP_INT i = 0; i < nblock; ++i) {
         dim = dsdpSolver->sdpData[i]->dimS;
-        dsdpSolver->LdSL[i] = (spsMat *) calloc(1, sizeof(spsMat));
-        retcode = spsMatInit(dsdpSolver->LdSL[i]); checkCode;
-        retcode = spsMatAlloc(dsdpSolver->LdSL[i], dim); checkCode;
+        dsdpSolver->spaux[i] = (spsMat *) calloc(1, sizeof(spsMat));
+        retcode = spsMatInit(dsdpSolver->spaux[i]); checkCode;
+        retcode = spsMatAlloc(dsdpSolver->spaux[i], dim); checkCode;
     }
     
     // Allocate ds
@@ -303,7 +304,7 @@ static DSDP_INT DSDPIFreeSDPData( HSDSolver *dsdpSolver ) {
     // Free the internal SDP data. Not responsible for isSDPSet
     DSDP_INT retcode = DSDP_RETCODE_OK;
     
-    for (DSDP_INT i = 0; i < dsdpSolver->nBlock + 1; ++i) {
+    for (DSDP_INT i = 0; i < dsdpSolver->nBlock; ++i) {
         if (dsdpSolver->isSDPset[i]) {
             retcode = sdpMatFree(dsdpSolver->sdpData[i]); checkCode;
             DSDP_FREE(dsdpSolver->sdpData[i]);
@@ -320,7 +321,7 @@ static DSDP_INT DSDPIFreeRy( HSDSolver *dsdpSolver ) {
     
     DSDP_INT retcode = DSDP_RETCODE_OK;
     
-    if (dsdpSolver->eventMonitor[EVENT_SDP_NO_RY]) {
+    if (dsdpSolver->eventMonitor[EVENT_SDP_NO_RY] || (!dsdpSolver->Rys)) {
         return retcode;
     }
     
@@ -341,8 +342,10 @@ static DSDP_INT DSDPIFreeResi( HSDSolver *dsdpSolver ) {
     // Free the internal residual data
     DSDP_INT retcode = DSDP_RETCODE_OK;
     
-    retcode = DSDPIFreeRy(dsdpSolver); checkCode;
-    retcode = vec_free(dsdpSolver->ry); checkCode;
+    if (dsdpSolver->insStatus >= DSDP_STATUS_PRESOLVED) {
+        retcode = DSDPIFreeRy(dsdpSolver); checkCode;
+        retcode = vec_free(dsdpSolver->ry); checkCode;
+    }
     DSDP_FREE(dsdpSolver->ry);
     
     return retcode;
@@ -405,13 +408,13 @@ static DSDP_INT DSDPIFreeAlgIter( HSDSolver *dsdpSolver ) {
     
     DSDP_FREE(dsdpSolver->dS);
     
-    // LdSLT
+    // spaux
     for (DSDP_INT i = 0; i < nblock; ++i) {
-        retcode = spsMatFree(dsdpSolver->LdSL[i]); checkCode;
-        DSDP_FREE(dsdpSolver->LdSL[i]);
+        retcode = spsMatFree(dsdpSolver->spaux[i]); checkCode;
+        DSDP_FREE(dsdpSolver->spaux[i]);
     }
     
-    DSDP_FREE(dsdpSolver->LdSL);
+    DSDP_FREE(dsdpSolver->spaux);
     
     // ds
     retcode = vec_free(dsdpSolver->ds);
@@ -452,8 +455,10 @@ static DSDP_INT DSDPIFreeCleanUp( HSDSolver *dsdpSolver ) {
     DSDP_FREE(dsdpSolver->lpObj);
     
     // dObj
-    retcode = vec_free(dsdpSolver->dObj); checkCode;
-    DSDP_FREE(dsdpSolver->dObj);
+    if (dsdpSolver->dObj) {
+        retcode = vec_free(dsdpSolver->dObj); checkCode;
+        DSDP_FREE(dsdpSolver->dObj);
+    }
     
     // Other data
     dsdpSolver->param  = NULL;
@@ -555,9 +560,11 @@ static DSDP_INT DSDPIPresolve( HSDSolver *dsdpSolver ) {
     }
     
     // LP coefficient scaling
-    retcode = preLPMatScale(dsdpSolver->lpData,
-                            dsdpSolver->lpObj,
-                            dsdpSolver->pScaler); checkCode;
+    if (dsdpSolver->isLPset) {
+        retcode = preLPMatScale(dsdpSolver->lpData,
+                                dsdpSolver->lpObj,
+                                dsdpSolver->pScaler); checkCode;
+    }
     
     // Count index and end presolving
     for (DSDP_INT j = 0; j < nblock; ++j) {
@@ -583,6 +590,7 @@ extern DSDP_INT DSDPCreate( HSDSolver **dsdpSolver ) {
     HSDSolver *solver = NULL;
     solver = (HSDSolver *) calloc(1, sizeof(HSDSolver));
     retcode = DSDPIInit(solver);
+    *dsdpSolver = solver;
     return retcode;
 }
 
@@ -692,20 +700,23 @@ extern DSDP_INT DSDPSetSDPConeData( HSDSolver *dsdpSolver,
         error(etype, "SDP block is already set. \n");
     }
     
-    retcode = sdpMatSetDim(dsdpSolver->sdpData[blockid],
-                           dsdpSolver->m, coneSize, blockid); checkCode;
     if (typehint) {
         retcode = sdpMatSetHint(dsdpSolver->sdpData[blockid], typehint);
         checkCode;
     }
     
+    retcode = sdpMatSetDim(dsdpSolver->sdpData[blockid],
+                           dsdpSolver->m, coneSize, blockid); checkCode;
+    
     retcode = sdpMatSetData(dsdpSolver->sdpData[blockid],
                             Asdpp, Asdpi, Asdpx); checkCode;
+    
     
     if (dsdpSolver->verbosity) {
         printf("SDP block "ID" is set. \n", blockid);
     }
     
+    dsdpSolver->isSDPset[blockid] = TRUE;
     DSDPICheckData(dsdpSolver);
     
     return retcode;

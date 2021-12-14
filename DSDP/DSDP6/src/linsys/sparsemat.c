@@ -422,13 +422,13 @@ extern DSDP_INT spsMatDsSolve( spsMat *sAMat, dsMat *sBMat, double *AinvB ) {
     return retcode;
 }
 
-extern DSDP_INT spsMatLspLSolve( spsMat *S, spsMat *dS, spsMat *LdSLT ) {
+extern DSDP_INT spsMatLspLSolve( spsMat *S, spsMat *dS, spsMat *spaux ) {
     // Routine for computing SDP cone maximum stepsize
     DSDP_INT retcode = DSDP_RETCODE_OK;
     
     DSDP_INT n = S->dim;
     assert( dS->dim == n );
-    assert( LdSLT->dim == n);
+    assert( spaux->dim == n);
     
     double *fulldS = (double *) calloc(n * n, sizeof(double));
     
@@ -449,9 +449,9 @@ extern DSDP_INT spsMatLspLSolve( spsMat *S, spsMat *dS, spsMat *LdSLT ) {
     // L^-T (L^-1 dS)
     // TODO: write a Lanczos algorithm to compute the minimum eigenvalue
     // Currently FEAST is used by transferring the matrix into dense format and is INEFFICIENT
-    DSDP_INT *Ap = LdSLT->cscMat->p;
-    DSDP_INT *Ai = LdSLT->cscMat->i;
-    double   *Ax = LdSLT->cscMat->x;
+    DSDP_INT *Ap = spaux->cscMat->p;
+    DSDP_INT *Ai = spaux->cscMat->i;
+    double   *Ax = spaux->cscMat->x;
     
     retcode = pardisoBackwardSolve(S, n, fulldS);
     DSDP_INT nnz = 0;
@@ -585,6 +585,8 @@ extern DSDP_INT spsSinvR1SinvSolve( spsMat *S, r1Mat *A, r1Mat *SinvASinv, doubl
     assert( S->dim == A->dim );
     assert( SinvASinv->dim == S->dim );
     
+    DSDP_INT n = S->dim;
+    
     if (S->dim != A->dim) {
         error(etype, "Matrix size mismatch. \n");
     }
@@ -596,15 +598,22 @@ extern DSDP_INT spsSinvR1SinvSolve( spsMat *S, r1Mat *A, r1Mat *SinvASinv, doubl
     
     double res = 0.0;
     
-    for (DSDP_INT i = 0; i < (DSDP_INT) S->dim / 4; i+=4) {
-        res += xA[i    ] * xSinvASinv[i    ];
-        res += xA[i + 1] * xSinvASinv[i + 1];
-        res += xA[i + 2] * xSinvASinv[i + 2];
-        res += xA[i + 3] * xSinvASinv[i + 3];
-    }
-    
-    for (DSDP_INT i = ((DSDP_INT) S->dim / 4) * 4; i < S->dim; ++i) {
-        res += xA[i] * xSinvASinv[i];
+    if (n > 64) {
+        for (DSDP_INT i = 0; i < n - n % 4; i+=4) {
+            res += xA[i    ] * xSinvASinv[i    ];
+            res += xA[i + 1] * xSinvASinv[i + 1];
+            res += xA[i + 2] * xSinvASinv[i + 2];
+            res += xA[i + 3] * xSinvASinv[i + 3];
+        }
+        
+        for (DSDP_INT i = n - n % 4; i < n; ++i) {
+            res += xA[i] * xSinvASinv[i];
+        }
+    } else {
+        for (DSDP_INT i = 0; i < n; ++i) {
+            res += xA[i] * xSinvASinv[i];
+        }
+
     }
     
     *asinv = res;

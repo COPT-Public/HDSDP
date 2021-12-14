@@ -175,3 +175,16 @@ extern DSDP_INT r1MatRscale( r1Mat *x, double r ) {
     
     return DSDP_RETCODE_OK;
 }
+
+extern DSDP_INT r1MatView( r1Mat *x ) {
+    
+    assert( x->dim && x->sign );
+    
+    printf("Matrix View: \n");
+    for (DSDP_INT i = 0; i < x->dim; ++i) {
+        printf("-10.3%g, ", x->x[i] * x->sign);
+    }
+    
+    printf("\n");
+    return DSDP_RETCODE_OK;
+}

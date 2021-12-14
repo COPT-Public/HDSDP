@@ -16,6 +16,10 @@
  
 */
 
+#ifndef SHOWALL
+#define SHOWALL
+#endif
+
 #define DSDP64
 
 #ifdef COMPMEX
@@ -38,7 +42,7 @@ typedef int DSDP_INT;
 #define ID "%ld"
 #endif
 
-// typedef struct HSDSolver Solver;
+//typedef HSDSolver Solver;
 
 // Memory handler
 #define DSDP_FREE(var) do {free((var)); (var) = NULL;} while (0)
@@ -60,12 +64,12 @@ typedef int DSDP_INT;
 #define DSDP_PD_INFEASIBLE      104
 
 // Solver status
-#define DSDP_STATUS_UNINIT      105
-#define DSDP_STATUS_INIT_UNSET  106
-#define DSDP_STATUS_SET         107
-#define DSDP_STATUS_PRESOLVED   108
-#define DSDP_STATUS_SOLVED      109
-#define DSDP_STATUS_FAILED      110
+#define DSDP_STATUS_UNINIT      0
+#define DSDP_STATUS_INIT_UNSET  1
+#define DSDP_STATUS_SET         2
+#define DSDP_STATUS_PRESOLVED   3
+#define DSDP_STATUS_SOLVED      4
+#define DSDP_STATUS_FAILED      5
 
 // Memory strategy
 #define DSDP_MEMORY_THRESHOLD   10000
@@ -79,5 +83,8 @@ typedef int DSDP_INT;
                                  retcode = DSDP_RETCODE_FAILED; return retcode;
 #define checkCode                if (retcode != DSDP_RETCODE_OK) return retcode;
 #define checkCodeFree            if (retcode != DSDP_RETCODE_OK) goto clean_up;
+
+
+
 
 #endif /* dsdphsd_h */
