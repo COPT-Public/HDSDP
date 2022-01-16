@@ -12,9 +12,9 @@ static DSDP_INT pardisoFactorize( spsMat *S ) {
     DSDP_INT retcode = DSDP_RETCODE_OK;
     
     // Extract the lower triangular part from CSparse structure
-    DSDP_INT *Sp = S->cscMat->p;
-    DSDP_INT *Si = S->cscMat->i;
-    double   *Sx = S->cscMat->x;
+    DSDP_INT *Sp = S->p;
+    DSDP_INT *Si = S->i;
+    double   *Sx = S->x;
     
     // Get the pardiso parameter
     DSDP_INT phase = PARDISO_SYM_FAC;
@@ -51,9 +51,9 @@ static DSDP_INT pardisoNumFactorize( spsMat *S ) {
     assert( S->isFactorized == TRUE );
     
     // Extract the lower triangular part from CSparse structure
-    DSDP_INT *Sp = S->cscMat->p;
-    DSDP_INT *Si = S->cscMat->i;
-    double   *Sx = S->cscMat->x;
+    DSDP_INT *Sp = S->p;
+    DSDP_INT *Si = S->i;
+    double   *Sx = S->x;
     
     // Get the pardiso parameter
     DSDP_INT phase = PARDISO_FAC;
@@ -83,9 +83,9 @@ static DSDP_INT pardisoForwardSolve( spsMat *S, DSDP_INT nrhs, double *B ) {
     assert( S->isFactorized == TRUE );
     
     // Extract the lower triangular part from CSparse structure
-    DSDP_INT *Sp = S->cscMat->p;
-    DSDP_INT *Si = S->cscMat->i;
-    double   *Sx = S->cscMat->x;
+    DSDP_INT *Sp = S->p;
+    DSDP_INT *Si = S->i;
+    double   *Sx = S->x;
     
     // Get the pardiso parameter
     DSDP_INT phase = PARDISO_FORWARD;
@@ -115,9 +115,9 @@ static DSDP_INT pardisoBackwardSolve( spsMat *S, DSDP_INT nrhs, double *B ) {
     assert( S->isFactorized == TRUE );
     
     // Extract the lower triangular part from CSparse structure
-    DSDP_INT *Sp = S->cscMat->p;
-    DSDP_INT *Si = S->cscMat->i;
-    double   *Sx = S->cscMat->x;
+    DSDP_INT *Sp = S->p;
+    DSDP_INT *Si = S->i;
+    double   *Sx = S->x;
     
     // Get the pardiso parameter
     DSDP_INT phase = PARDISO_BACKWARD;
@@ -151,7 +151,7 @@ static DSDP_INT pardisoSolve( spsMat *S, DSDP_INT nrhs, double *B, double *X ) {
     
     // Invoke pardiso to perform solution
     pardiso(S->pdsWorker, &maxfct, &mnum, &mtype, &phase, &n,
-            S->cscMat->x, S->cscMat->p, S->cscMat->i, &idummy,
+            S->x, S->p, S->i, &idummy,
             &nrhs, PARDISO_PARAMS_CHOLESKY, &msglvl,
             B, X, &error);
     
@@ -177,7 +177,7 @@ static DSDP_INT pardisoFree( spsMat *S ) {
     DSDP_INT n     = S->dim;
     
     pardiso(S->pdsWorker, &maxfct, &mnum, &mtype, &phase, &n,
-            S->cscMat->x, S->cscMat->p, S->cscMat->i, &idummy, &idummy,
+            S->x, S->p, S->i, &idummy, &idummy,
             PARDISO_PARAMS_CHOLESKY, &msglvl, NULL, NULL, &error);
     
     assert( error == PARDISO_OK );
@@ -196,9 +196,15 @@ extern DSDP_INT spsMatInit( spsMat *sMat ) {
     
     // Initialize sparse matrix structure
     DSDP_INT retcode   = DSDP_RETCODE_OK;
+    
     sMat->dim          = 0;
-    sMat->cscMat       = NULL;
+    sMat->p            = NULL;
+    sMat->i            = NULL;
+    sMat->x            = NULL;
     sMat->isFactorized = FALSE;
+    sMat->isSum        = FALSE;
+    sMat->sumHash      = NULL;
+    
     memset(sMat->pdsWorker, 0, PARDISOINDEX * sizeof(void *));
     
     return retcode;
@@ -211,8 +217,10 @@ extern DSDP_INT spsMatAlloc( spsMat *sMat, DSDP_INT dim ) {
     assert( sMat->dim == 0 );
     
     sMat->dim = dim;
-    sMat->cscMat = cs_spalloc(dim, dim, nsym(dim), TRUE, FALSE);
-    
+    sMat->p = (DSDP_INT *) calloc(dim + 1, sizeof(DSDP_INT));
+    sMat->i = (DSDP_INT *) calloc(nsym(dim), sizeof(DSDP_INT));
+    sMat->x = (double *) calloc(nsym(dim), sizeof(double));
+        
     return retcode;
 }
 
@@ -221,9 +229,35 @@ extern DSDP_INT spsMatAllocData( spsMat *sMat, DSDP_INT dim, DSDP_INT nnz ) {
     // Allocate memory for sparse matrix data
     DSDP_INT retcode = DSDP_RETCODE_OK;
     assert( sMat->dim == 0 );
+    assert( nnz <= nsym(dim));
     
     sMat->dim = dim;
-    sMat->cscMat = cs_spalloc(dim, dim, nnz, TRUE, FALSE);
+    sMat->nnz = nnz;
+    
+    // Currently do nothing here. TODO: Do Optimization if S is dense
+    if (nnz < nsym(dim)) {
+        sMat->p = (DSDP_INT *) calloc(dim + 1, sizeof(DSDP_INT));
+        sMat->i = (DSDP_INT *) calloc(nsym(dim), sizeof(DSDP_INT));
+    } else {
+        sMat->p = (DSDP_INT *) calloc(dim + 1, sizeof(DSDP_INT));
+        sMat->i = (DSDP_INT *) calloc(nsym(dim), sizeof(DSDP_INT));
+    }
+    
+    sMat->x = (double *) calloc(nnz, sizeof(double));
+    
+    return retcode;
+}
+
+extern DSDP_INT spsMatAllocSumMat( spsMat *sMat ) {
+    
+    // Allocate memory for symbolic hash table
+    DSDP_INT retcode = DSDP_RETCODE_OK;
+    
+    assert( sMat->nnz > 0 );
+    assert( sMat->dim > 0 );
+    assert( sMat->isSum == FALSE );
+    sMat->sumHash = (DSDP_INT *) calloc(nsym(sMat->dim), sizeof(DSDP_INT));
+    sMat->isSum = TRUE;
     
     return retcode;
 }
@@ -233,9 +267,12 @@ extern DSDP_INT spsMatFree( spsMat *sMat ) {
     // Free memory allocated
     DSDP_INT retcode = DSDP_RETCODE_OK;
     sMat->dim = 0;
+    sMat->nnz = 0;
     
     // Note that we first free p, i and x before calling pardiso to destroy the working array
-    cs_spfree(sMat->cscMat);
+    DSDP_FREE(sMat->p);
+    DSDP_FREE(sMat->i);
+    DSDP_FREE(sMat->x);
     
     if (sMat->isFactorized) {
         retcode = pardisoFree(sMat);
@@ -248,14 +285,20 @@ extern DSDP_INT spsMatFree( spsMat *sMat ) {
 /* Basic operations */
 extern DSDP_INT spsMataXpbY( double alpha, spsMat *sXMat, double beta, spsMat *sYMat ) {
     
-    // Matrix axpy operation: let sYMat = alpha * sXMat + sYMat
+    // Matrix axpy operation: let sYMat = alpha * sXMat + beta * sYMat
+    // Note that sYMat must have a hash table
     DSDP_INT retcode = DSDP_RETCODE_OK;
 
     // Two matrices for adding are NEVER factorized since they purely serve as constant data
     assert ( sXMat->dim == sYMat->dim );
     assert ((!sXMat->isFactorized) && (!sYMat->isFactorized));
+    assert ( sYMat->isSum );
     if (sXMat->isFactorized || sYMat->isFactorized) {
         error(etype, "Adding a factorized matrix. \n");
+    }
+    
+    if (beta != 1.0) {
+        retcode = spsMatScale(sXMat, beta);
     }
     
     // Case if alpha = 0.0
@@ -263,29 +306,27 @@ extern DSDP_INT spsMataXpbY( double alpha, spsMat *sXMat, double beta, spsMat *s
         return retcode;
     }
     
-    // Declare a place holder
-    cs *aXpY     = NULL;
-    DSDP_INT n   = sXMat->dim;
-    cs *Xmat     = sXMat->cscMat;
-    DSDP_INT nnz = sXMat->cscMat->p[n];
+    DSDP_INT dim = sXMat->dim;
+    DSDP_INT *Ap = sXMat->p;
+    DSDP_INT *Ai = sXMat->i;
+    double   *Ax = sXMat->x;
+    double   *Bx = sYMat->x;
     
-    // Case if beta = 0.0
-    if (beta == 0.0) {
-        aXpY = cs_spalloc(n, n, sXMat->cscMat->p[n], TRUE, FALSE);
-        memcpy(aXpY->i, Xmat->i, sizeof(DSDP_INT) * nnz);
-        memcpy(aXpY->p, Xmat->p, sizeof(DSDP_INT) * (n + 1));
-        
-        for (DSDP_INT i = 0; i < nnz; ++i) {
-            aXpY->x[i] = alpha * aXpY->x[i];
+    for (DSDP_INT i = 0; i < dim; ++i) {
+        for (DSDP_INT j = Ap[i]; j < Ap[i + 1]; ++j) {
+            Bx[packIdx(sYMat->sumHash, dim, Ai[j], i)] += alpha * Ax[j];
         }
-        
-    } else {
-        // General case with modified cs_add
-        aXpY = cs_sadd(sXMat->cscMat, sYMat->cscMat, alpha, beta);
     }
-    
-    cs_spfree(sYMat->cscMat);
-    sYMat->cscMat = aXpY;
+
+    return retcode;
+}
+
+extern DSDP_INT spsMatScale( spsMat *sXMat, double alpha ) {
+    // Scale a sparse matrix by some number.
+    DSDP_INT retcode = DSDP_RETCODE_OK;
+    assert( sXMat->dim );
+    double *x = sXMat->x;
+    vecscal(&sXMat->nnz, &alpha, x, &one);
     return retcode;
 }
 
@@ -294,21 +335,21 @@ extern DSDP_INT spsMatRscale( spsMat *sXMat, double r ) {
     DSDP_INT retcode = DSDP_RETCODE_OK;
     assert( sXMat->dim );
     
-    if (r == 0) {
+    if (fabs(r) < 1e-10) {
         error(etype, "Dividing a matrix by 0. \n");
     }
     
-    double *x = sXMat->cscMat->x;
-    vecdiv(&sXMat->cscMat->p[sXMat->dim], &r, x, &one);
+    double *x = sXMat->x;
+    vecdiv(&sXMat->p[sXMat->dim], &r, x, &one);
     return retcode;
 }
 
 extern DSDP_INT spsMatFnorm( spsMat *sMat, double *fnrm ) {
     
-    // Matrix Fronenius norm
+    // Matrix (Approximate) Fronenius norm
     DSDP_INT retcode = DSDP_RETCODE_OK;
     assert( sMat->dim > 0 );
-    *fnrm = norm(&sMat->cscMat->p[sMat->dim], sMat->cscMat->x, &one);
+    *fnrm = norm(&sMat->p[sMat->dim], sMat->x, &one);
     
     return retcode;
 }
@@ -449,9 +490,9 @@ extern DSDP_INT spsMatLspLSolve( spsMat *S, spsMat *dS, spsMat *spaux ) {
     // L^-T (L^-1 dS)
     // TODO: write a Lanczos algorithm to compute the minimum eigenvalue
     // Currently FEAST is used by transferring the matrix into dense format and is INEFFICIENT
-    DSDP_INT *Ap = spaux->cscMat->p;
-    DSDP_INT *Ai = spaux->cscMat->i;
-    double   *Ax = spaux->cscMat->x;
+    DSDP_INT *Ap = spaux->p;
+    DSDP_INT *Ai = spaux->i;
+    double   *Ax = spaux->x;
     
     retcode = pardisoBackwardSolve(S, n, fulldS);
     DSDP_INT nnz = 0;
@@ -633,8 +674,8 @@ extern DSDP_INT spsMatMaxEig( spsMat *sMat, double *maxEig ) {
     sparse_matrix_t A = NULL;
     
     mkl_sparse_d_create_csc(&A, SPARSE_INDEX_BASE_ZERO,
-                            n, n, sMat->cscMat->p, sMat->cscMat->p + 1,
-                            sMat->cscMat->i, sMat->cscMat->x);
+                            n, n, sMat->p, sMat->p + 1,
+                            sMat->i, sMat->x);
     
     info = mkl_sparse_d_ev(&MAX_EIG, pm, A, dsdp_descr,
                            k0, &k, maxEig, eigvec, &resi);
@@ -657,8 +698,8 @@ extern DSDP_INT spsMatMinEig( spsMat *sMat, double *minEig ) {
     sparse_matrix_t A = NULL;
     
     mkl_sparse_d_create_csc(&A, SPARSE_INDEX_BASE_ZERO,
-                            n, n, sMat->cscMat->p, sMat->cscMat->p + 1,
-                            sMat->cscMat->i, sMat->cscMat->x);
+                            n, n, sMat->p, sMat->p + 1,
+                            sMat->i, sMat->x);
     
     info = mkl_sparse_d_ev(&MIN_EIG, pm, A, dsdp_descr,
                            k0, &k, minEig, eigvec, &resi);
@@ -679,9 +720,9 @@ extern DSDP_INT spsMatScatter( spsMat *sMat, vec *b, DSDP_INT k ) {
     
     assert( dim == b->dim );
     
-    DSDP_INT *Ap = sMat->cscMat->p;
-    DSDP_INT *Ai = sMat->cscMat->i;
-    double   *Ax = sMat->cscMat->x;
+    DSDP_INT *Ap = sMat->p;
+    DSDP_INT *Ai = sMat->i;
+    double   *Ax = sMat->x;
     
     memset(b->x, 0, sizeof(double) * dim);
     
@@ -733,7 +774,8 @@ extern DSDP_INT spsMatView( spsMat *sMat ) {
     // View a sparse matrix by calling CXSparse cs_print
     DSDP_INT retcode = DSDP_RETCODE_OK;
     assert( sMat->dim > 0 );
-    cs_print(sMat->cscMat, TRUE);
+    
+    // cs_print(sMat->cscMat, TRUE);
     
     return retcode;
 }

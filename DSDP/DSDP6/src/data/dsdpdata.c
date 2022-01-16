@@ -27,26 +27,6 @@ static DSDP_INT lpMatIAlloc( lpMat *lpData, DSDP_INT nnz ) {
 }
 
 /* SDP internal methods */
-static DSDP_INT sdpMatIAlloc( sdpMat *sdpData ) {
-    
-    // Allocate memory for internal SDP matrix
-    DSDP_INT retcode = DSDP_RETCODE_OK;
-    assert( (sdpData->dimy > 0) && (sdpData->dimS > 0) );
-    
-    if ((sdpData->dimy <= 0) || (sdpData->dimS <= 0)) {
-        error(etype, "Incorrect size for SDP data matrix for allocation. \n");
-    }
-    
-    sdpData->types   = (DSDP_INT *) calloc(sdpData->dimy + 1, sizeof(DSDP_INT));
-    sdpData->sdpData = (void **) calloc(sdpData->dimy + 1, sizeof(void *));
-    
-    for (DSDP_INT i = 0; i < sdpData->dimy; ++i) {
-        sdpData->types[i] = MAT_TYPE_UNKNOWN;
-    }
-    
-    return retcode;
-}
-
 static DSDP_INT sdpMatIAllocByType( sdpMat *sdpData, DSDP_INT k, DSDP_INT *Ai,
                                     double *Ax, DSDP_INT nnz ) {
     
@@ -83,7 +63,7 @@ static DSDP_INT sdpMatIAllocByType( sdpMat *sdpData, DSDP_INT k, DSDP_INT *Ai,
         // The first non-zero element must be a diagonal element
         double adiag    = Ax[0];
         DSDP_INT isNeg  = FALSE;
-        DSDP_INT rowidx = 0;
+        DSDP_INT rowidx = Ai[0];
         
         if (adiag > 0) {
             adiag = sqrt(adiag);
@@ -94,13 +74,28 @@ static DSDP_INT sdpMatIAllocByType( sdpMat *sdpData, DSDP_INT k, DSDP_INT *Ai,
             isNeg = TRUE;
         }
         
+        // Seek which column is correct
+        DSDP_INT where = 0;
+        DSDP_INT diagidx = 0;
         for (DSDP_INT i = 0; i < n; ++i) {
-            rowidx = Ai[i];
-            // The compressed matrix has n * (n + 1) / 2 rows and one column
-            if (rowidx >= n) {
+            if (rowidx == diagidx) {
                 break;
             }
-            data->x[rowidx] = Ax[i] / adiag;
+            diagidx += n - where;
+            where += 1;
+        }
+        
+        if (where == n) {
+            error(etype, "The matrix is not rank-one. \n");
+        }
+        
+        for (DSDP_INT i = 0; i < n - where; ++i) {
+            rowidx = Ai[i];
+            // The compressed matrix has n * (n + 1) / 2 rows and one column
+            if (rowidx >= diagidx + n - where) {
+                break;
+            }
+            data->x[rowidx - diagidx + where] = Ax[i] / adiag;
         }
         
         retcode = r1MatCountNnz(data); checkCode;
@@ -120,29 +115,29 @@ static DSDP_INT sdpMatIAllocByType( sdpMat *sdpData, DSDP_INT k, DSDP_INT *Ai,
         retcode = spsMatAllocData(data, n, nnz); checkCode;
         
         for (DSDP_INT i = 0; i < n; ++i) {
-            data->cscMat->p[i + 1] = nnz;
+            data->p[i + 1] = nnz;
         }
         
-        memcpy(data->cscMat->x, Ax, sizeof(double) * nnz);
+        memcpy(data->x, Ax, sizeof(double) * nnz);
         
         DSDP_INT rowidx    = 0;
         DSDP_INT where     = 0;
         DSDP_INT colnnz    = 0;
         DSDP_INT idxthresh = n;
         DSDP_INT diff      = n;
-        data->cscMat->p[0] = 0;
+        data->p[0] = 0;
         
         for (DSDP_INT i = 0; i < nnz; ++i) {
             rowidx = Ai[i];
             if (rowidx >= idxthresh) {
                 where += 1;
-                data->cscMat->p[where] = colnnz;
+                data->p[where] = colnnz;
                 diff = n - where;
                 idxthresh += diff;
                 colnnz = 0;
             }
             colnnz += 1;
-            data->cscMat->i[i] = rowidx - idxthresh + diff;
+            data->i[i] = rowidx - idxthresh + diff;
         }
         
 #ifdef SHOWALL
@@ -267,6 +262,26 @@ extern DSDP_INT lpMatFree( lpMat *lpData ) {
 }
 
 /* SDP public methods */
+extern DSDP_INT sdpMatAlloc( sdpMat *sdpData ) {
+    
+    // Allocate memory for internal SDP matrix
+    DSDP_INT retcode = DSDP_RETCODE_OK;
+    assert( (sdpData->dimy > 0) && (sdpData->dimS > 0) );
+    
+    if ((sdpData->dimy <= 0) || (sdpData->dimS <= 0)) {
+        error(etype, "Incorrect size for SDP data matrix for allocation. \n");
+    }
+    
+    sdpData->types   = (DSDP_INT *) calloc(sdpData->dimy + 1, sizeof(DSDP_INT));
+    sdpData->sdpData = (void **) calloc(sdpData->dimy + 1, sizeof(void *));
+    
+    for (DSDP_INT i = 0; i < sdpData->dimy; ++i) {
+        sdpData->types[i] = MAT_TYPE_UNKNOWN;
+    }
+    
+    return retcode;
+}
+
 extern DSDP_INT sdpMatInit( sdpMat *sdpData ) {
     
     // Initialize SDP data
@@ -320,6 +335,9 @@ extern DSDP_INT sdpMatSetHint( sdpMat *sdpData, DSDP_INT *hint ) {
             case MAT_TYPE_SPARSE:
                 sdpData->types[i] = MAT_TYPE_SPARSE;
                 break;
+            case MAT_TYPE_UNKNOWN:
+                sdpData->types[i] = MAT_TYPE_ZERO;
+                break;
             default:
                 sdpData->types[i] = MAT_TYPE_UNKNOWN;
                 break;
@@ -333,7 +351,6 @@ extern DSDP_INT sdpMatSetData( sdpMat *sdpData, DSDP_INT *Ap, DSDP_INT *Ai, doub
     
     // Set SDP data
     DSDP_INT retcode = DSDP_RETCODE_OK;
-    retcode = sdpMatIAlloc(sdpData); checkCode;
     
     for (DSDP_INT i = 0; i < sdpData->dimy + 1; ++i) {
         retcode = sdpMatIAllocByType(sdpData, i, &Ai[Ap[i]],

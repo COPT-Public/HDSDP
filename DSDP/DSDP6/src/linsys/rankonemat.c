@@ -1,4 +1,6 @@
+#include <stdio.h>
 #include "rankonemat.h"
+#include "dsdplapack.h"
 
 // Define constants involving Lapack and Blas
 static DSDP_INT one = 1;
@@ -32,7 +34,7 @@ extern DSDP_INT r1denseSpsUpdate( spsMat *sAMat, double alpha, r1Mat *r1BMat ) {
     
     assert( n == r1BMat->dim );
     assert( !sAMat->isFactorized );
-    assert( sAMat->cscMat->nzmax == nsym(n) );
+    assert( sAMat->nnz > 0 );
     
     if (fabs(alpha) < 1e-10) {
         return retcode;
@@ -41,7 +43,7 @@ extern DSDP_INT r1denseSpsUpdate( spsMat *sAMat, double alpha, r1Mat *r1BMat ) {
     double sign = (double) r1BMat->sign;
     alpha = alpha * sign;
     
-    double *array = sAMat->cscMat->x;
+    double *array = sAMat->x;
     if (r1BMat->nnz > 0.8 * n) {
         char uplo = DSDP_MAT_LOW;
         packr1update(&uplo, &n, &alpha, r1BMat->x, &one, array);
@@ -99,9 +101,9 @@ extern DSDP_INT r1MatspsTrace( r1Mat *x, spsMat *A, double *trace ) {
     
     double *datax = x->x;
     double *Atimesx = (double *) calloc(n, sizeof(double));
-    DSDP_INT *Ap = A->cscMat->p;
-    DSDP_INT *Ai = A->cscMat->i;
-    double *Ax = A->cscMat->x;
+    DSDP_INT *Ap = A->p;
+    DSDP_INT *Ai = A->i;
+    double *Ax = A->x;
     
     for (DSDP_INT i = 0; i < n; ++i) {
         if (Ap[i] == i) {
@@ -114,6 +116,17 @@ extern DSDP_INT r1MatspsTrace( r1Mat *x, spsMat *A, double *trace ) {
     
     *trace = 2.0 * dot(&n, Atimesx, &one, datax, &one);
     DSDP_FREE(Atimesx);
+    
+    return retcode;
+}
+
+extern DSDP_INT r1MatdiagTrace( r1Mat *x, double diag, double *trace ) {
+    // Compute trace(a * a' * diag * I) = diag * norm(a)^2
+    DSDP_INT retcode = DSDP_RETCODE_OK;
+    
+    double nrm = 0.0;
+    retcode = r1MatFnorm(x, &nrm);
+    *trace = diag * nrm * nrm;
     
     return retcode;
 }
@@ -143,6 +156,7 @@ extern DSDP_INT r1MatCountNnz( r1Mat *x ) {
         }
     }
     
+    x->nnz = nnz;
     return DSDP_RETCODE_OK;
 }
 
@@ -182,7 +196,7 @@ extern DSDP_INT r1MatView( r1Mat *x ) {
     
     printf("Matrix View: \n");
     for (DSDP_INT i = 0; i < x->dim; ++i) {
-        printf("-10.3%g, ", x->x[i] * x->sign);
+        printf("%10.3g, ", x->x[i] * x->sign);
     }
     
     printf("\n");

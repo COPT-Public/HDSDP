@@ -36,7 +36,8 @@ extern DSDP_INT denseDsSolve     ( dsMat *dAMat, dsMat  *dBMat, double *AinvB );
 
 /* Schur matrix assembly */
 extern DSDP_INT denseSpsTrace    ( dsMat *dAMat, spsMat *sBMat, double *trace );
-extern DSDP_INT denseDsTrace     ( dsMat *dAMat, dsMat *dBMat, double *trace );
+extern DSDP_INT denseDsTrace     ( dsMat *dAMat, dsMat *dBMat,  double *trace );
+extern DSDP_INT denseDiagTrace   ( dsMat *dAMat, double diag,   double *trace );
 
 /* Utilities */
 extern DSDP_INT denseMatScatter  ( dsMat *dMat, vec *b, DSDP_INT k );

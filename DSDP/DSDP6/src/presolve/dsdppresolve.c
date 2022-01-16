@@ -141,9 +141,9 @@ static DSDP_INT isSparseRank1( spsMat *dataMat, DSDP_INT *isRank1 ) {
     DSDP_INT retcode = DSDP_RETCODE_OK;
     DSDP_INT isR1 = TRUE;
     
-    DSDP_INT *Ap   = dataMat->cscMat->p;
-    DSDP_INT *Ai   = dataMat->cscMat->i;
-    double   *Ax   = dataMat->cscMat->x;
+    DSDP_INT *Ap   = dataMat->p;
+    DSDP_INT *Ai   = dataMat->i;
+    double   *Ax   = dataMat->x;
     DSDP_INT n     = dataMat->dim;
     DSDP_INT col   = 0;
     DSDP_INT isNeg = FALSE;
@@ -257,9 +257,9 @@ static DSDP_INT extractR1fromSps ( spsMat *dataMat, double *a, DSDP_INT isNeg ) 
     DSDP_INT retcode = DSDP_RETCODE_OK;
     
     DSDP_INT n     = dataMat->dim;
-    DSDP_INT *Ap   = dataMat->cscMat->p;
-    DSDP_INT *Ai   = dataMat->cscMat->i;
-    double   *Ax   = dataMat->cscMat->x;
+    DSDP_INT *Ap   = dataMat->p;
+    DSDP_INT *Ai   = dataMat->i;
+    double   *Ax   = dataMat->x;
     DSDP_INT col   = 0;
     double adiag   = 0.0;
     

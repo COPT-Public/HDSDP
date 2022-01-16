@@ -171,13 +171,13 @@ DSDP_INT test_sparse(void) {
     retcode = denseMatInit(dataInvBdataInv);
     retcode = denseMatAlloc(dataInvBdataInv, spsAdim, FALSE);
     
-    memcpy(data->cscMat->p, packAp, sizeof(DSDP_INT) * (spsAdim + 1));
-    memcpy(data->cscMat->i, packAi, sizeof(DSDP_INT) * packAnnz);
-    memcpy(data->cscMat->x, packAx, sizeof(double)   * packAnnz);
+    memcpy(data->p, packAp, sizeof(DSDP_INT) * (spsAdim + 1));
+    memcpy(data->i, packAi, sizeof(DSDP_INT) * packAnnz);
+    memcpy(data->x, packAx, sizeof(double)   * packAnnz);
     
-    memcpy(B->cscMat->p, packBp, sizeof(DSDP_INT) * (spsAdim + 1));
-    memcpy(B->cscMat->i, packBi, sizeof(DSDP_INT) * packBnnz);
-    memcpy(B->cscMat->x, packBx, sizeof(double)   * packBnnz);
+    memcpy(B->p, packBp, sizeof(DSDP_INT) * (spsAdim + 1));
+    memcpy(B->i, packBi, sizeof(DSDP_INT) * packBnnz);
+    memcpy(B->x, packBx, sizeof(double)   * packBnnz);
     
     double diff = 0.0;
     double err  = 0.0;

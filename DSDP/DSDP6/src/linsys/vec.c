@@ -1,4 +1,7 @@
+#include <stdio.h>
+#include "dsdplapack.h"
 #include "vec.h"
+
 
 #define CHECKVEC(x, y) assert( ((x)->dim == (y)->dim) && ((x) && (y)) )
 

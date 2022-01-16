@@ -17,6 +17,7 @@ extern DSDP_INT r1denseSpsUpdate ( spsMat *sAMat, double alpha, r1Mat *r1BMat );
 extern DSDP_INT r1Matr1Trace     ( r1Mat *x, r1Mat  *y, double *trace );
 extern DSDP_INT r1MatdenseTrace  ( r1Mat *x, dsMat  *A, double *trace );
 extern DSDP_INT r1MatspsTrace    ( r1Mat *x, spsMat *A, double *trace );
+extern DSDP_INT r1MatdiagTrace   ( r1Mat *x, double diag, double *trace );
 extern DSDP_INT r1MatCountNnz    ( r1Mat *x                   );
 extern DSDP_INT r1MatFree        ( r1Mat *x                   );
 extern DSDP_INT r1MatFnorm       ( r1Mat *x, double *fnrm     );

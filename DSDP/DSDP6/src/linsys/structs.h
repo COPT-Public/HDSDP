@@ -9,7 +9,12 @@ typedef struct {
     
     DSDP_INT dim;                       // Dimension of the sparse matrix
     DSDP_INT isFactorized;              // Whether the sparse matrix has been factorized
-    cs_dl    *cscMat;                   // CSC matrix data using CXSparse
+    DSDP_INT isSum;                     // Whether the matrix is used as a sum of matrices
+    DSDP_INT *sumHash;                  // Hash table for taking summation
+    DSDP_INT *p;                        // Column pointer
+    DSDP_INT *i;                        // Row index
+    double   *x;                        // Sparse data
+    DSDP_INT nnz;                       // Nonzeros entries
     void     *pdsWorker[PARDISOINDEX];  // Pardiso working array
     
 } spsMat;

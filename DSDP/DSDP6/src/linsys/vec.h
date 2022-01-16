@@ -3,9 +3,7 @@
 
 /* Implement vector operations for DSDP-HSD */
 
-#include <stdio.h>
 #include "dsdphsd.h"
-#include "dsdplapack.h"
 #include "structs.h"
 
 #ifdef __cplusplus

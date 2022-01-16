@@ -295,9 +295,9 @@ extern DSDP_INT denseSpsTrace( dsMat *dAMat, spsMat *sBMat, double *trace ) {
     
     // Get sparse data structure
     double   *A  = dAMat->array;
-    DSDP_INT *Bp = sBMat->cscMat->p;
-    DSDP_INT *Bi = sBMat->cscMat->i;
-    double   *Bx = sBMat->cscMat->x;
+    DSDP_INT *Bp = sBMat->p;
+    DSDP_INT *Bi = sBMat->i;
+    double   *Bx = sBMat->x;
     DSDP_INT   s = 0;
     
     for (DSDP_INT i = 0; i < n; ++i) {
@@ -339,6 +339,38 @@ extern DSDP_INT denseDsTrace( dsMat *dAMat, dsMat *dBMat, double *trace ) {
     }
     
     *trace = 2.0 * res;
+    
+    return retcode;
+}
+
+extern DSDP_INT denseDiagTrace( dsMat *dAMat, double diag, double *trace ) {
+    
+    // Compute trace( A * diag * I ) = diag * trace( A )
+    DSDP_INT retcode = DSDP_RETCODE_OK;
+        
+    DSDP_INT n = dAMat->dim;
+    double *array = dAMat->array;
+    double mattrace = 0.0;
+    
+    if (n > 64) {
+        for (DSDP_INT i = 0; i < n - n % 4; i+=4) {
+            mattrace += array[(DSDP_INT) (2 * n - i + 1) * (i    ) / 2];
+            mattrace += array[(DSDP_INT) (2 * n - i    ) * (i + 1) / 2];
+            mattrace += array[(DSDP_INT) (2 * n - i - 1) * (i + 2) / 2];
+            mattrace += array[(DSDP_INT) (2 * n - i - 2) * (i + 3) / 2];
+        }
+        
+        for (DSDP_INT i = n - n % 4; i < n; ++i) {
+            mattrace += array[(DSDP_INT) (2 * n - i + 1) * i / 2];
+        }
+        
+    } else {
+        for (DSDP_INT i = 0; i < n; ++i) {
+            mattrace += array[(DSDP_INT) (2 * n - i + 1) * i / 2];
+        }
+    }
+    
+    *trace = mattrace;
     
     return retcode;
 }

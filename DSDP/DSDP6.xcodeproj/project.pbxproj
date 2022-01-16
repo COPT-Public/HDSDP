@@ -91,6 +91,7 @@
 		19BEEC252756065600C36C9E /* cs_schol.c in Sources */ = {isa = PBXBuildFile; fileRef = 19BEEC1F2756065600C36C9E /* cs_schol.c */; };
 		19BEEC262756065600C36C9E /* cs_lusol.c in Sources */ = {isa = PBXBuildFile; fileRef = 19BEEC202756065600C36C9E /* cs_lusol.c */; };
 		19BEEC292757EA7D00C36C9E /* obj.c in Sources */ = {isa = PBXBuildFile; fileRef = 19BEEC282757EA7D00C36C9E /* obj.c */; };
+		19C3BBDA2794032000F0331B /* dsdplog.c in Sources */ = {isa = PBXBuildFile; fileRef = 19C3BBD92794032000F0331B /* dsdplog.c */; };
 		19F1195B275A627B0051D808 /* stepdirection.c in Sources */ = {isa = PBXBuildFile; fileRef = 19F1195A275A627B0051D808 /* stepdirection.c */; };
 /* End PBXBuildFile section */
 
@@ -224,6 +225,8 @@
 		19BEEC282757EA7D00C36C9E /* obj.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = obj.c; sourceTree = "<group>"; };
 		19BEEC2A2757F14A00C36C9E /* dsdpsolver.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = dsdpsolver.h; sourceTree = "<group>"; };
 		19C1E9D42768E707000FCBF9 /* SDPdata.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = SDPdata.h; sourceTree = "<group>"; };
+		19C3BBD82794032000F0331B /* dsdplog.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = dsdplog.h; sourceTree = "<group>"; };
+		19C3BBD92794032000F0331B /* dsdplog.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = dsdplog.c; sourceTree = "<group>"; };
 		19F11959275A627B0051D808 /* stepdirection.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = stepdirection.h; sourceTree = "<group>"; };
 		19F1195A275A627B0051D808 /* stepdirection.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = stepdirection.c; sourceTree = "<group>"; };
 		19F1195C275A9A260051D808 /* dsdpfeast.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = dsdpfeast.h; sourceTree = "<group>"; };
@@ -434,6 +437,8 @@
 				19118DE52737B72800D51D03 /* dsdphsd.h */,
 				19808F47273833760014086F /* dsdpparam.h */,
 				19BEEC2A2757F14A00C36C9E /* dsdpsolver.h */,
+				19C3BBD82794032000F0331B /* dsdplog.h */,
+				19C3BBD92794032000F0331B /* dsdplog.c */,
 			);
 			path = interface;
 			sourceTree = "<group>";
@@ -534,6 +539,7 @@
 				19118DEB2737B72800D51D03 /* vec.c in Sources */,
 				19118E152737B72800D51D03 /* cs_sqr.c in Sources */,
 				19118E172737B72800D51D03 /* cs_cumsum.c in Sources */,
+				19C3BBDA2794032000F0331B /* dsdplog.c in Sources */,
 				19118E022737B72800D51D03 /* cs_dfs.c in Sources */,
 				198AF5DE275BDE54007A38C9 /* pfeascheck.c in Sources */,
 				19BACAF727521A7800E987FD /* test_pardiso.c in Sources */,

@@ -42,13 +42,14 @@ typedef struct {
                           // setup as a by product
     double   csinvcsinv;  // Store trace(C * Sinv * C * Sinv)
     double   csinv;       // Store csinv
-    double   csinvrysinv; // Store
+    double   csinvrysinv; // Store trace(C * Sinv * Ry * Sinv)
     
     dsMat    *Msdp;       // Schur matrix for SDP (dense)
     vec      *u;          // A_ls^(-2)c + AS^(-1)CS^(-1)
-    vec      *d1;         // Temporary iteration array
-    vec      *d2;         // Temporary iteration array
-    vec      *d3;         // Temporary iteration array
+    vec      *d1;         // Embedding
+    vec      *d2;         // Affine scaling
+    vec      *d3;         // Dual centering
+    vec      *d4;         // Dual infeasibility
     
     vec      *y;          // y
     double   tau;         // tau
@@ -58,7 +59,7 @@ typedef struct {
     
     // Residuals
     double   rtk;         // Complementarity residual
-    spsMat   **Rys;       // SDP Dual infeasibility
+    double   *Rys;        // SDP Dual infeasibility
     vec      *ry;         // LP dual infeasibility
     
     // Step matrix

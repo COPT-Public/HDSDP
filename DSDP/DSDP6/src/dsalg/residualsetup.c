@@ -1,8 +1,6 @@
 #include "residualsetup.h"
 
 // Setup all the residuals for the dual scaling algorithm to work
-// We also note that the dual residual is not contained in the solver since
-// we will eliminate it as soon as possible
 static char etype[] = "Residual setup";
 
 static DSDP_INT getSDPBlockResidualRy( HSDSolver *dsdpSolver, spsMat *Ry, DSDP_INT blockid ) {
@@ -39,8 +37,8 @@ static DSDP_INT getSDPBlockResidualRy( HSDSolver *dsdpSolver, spsMat *Ry, DSDP_I
     vec *y = dsdpSolver->y;
     DSDP_INT n = cone->dimS;
     
-    assert( Ry->cscMat->nzmax == nsym(n) );
-    assert( Ry->cscMat->n == n );
+    assert( Ry->nnz == nsym(n) );
+    assert( Ry->dim == n );
     
     DSDP_INT nspsMat  = cone->nspsMat;
     DSDP_INT ndsMat   = cone->ndenseMat;
@@ -52,9 +50,9 @@ static DSDP_INT getSDPBlockResidualRy( HSDSolver *dsdpSolver, spsMat *Ry, DSDP_I
     
     void **conedata = cone->sdpData;
     
-    DSDP_INT *Ryp = Ry->cscMat->p;
-    DSDP_INT *Ryi = Ry->cscMat->i;
-    double   *Ryx = Ry->cscMat->x;
+    DSDP_INT *Ryp = Ry->p;
+    DSDP_INT *Ryi = Ry->i;
+    double   *Ryx = Ry->x;
     
     dsMat  *dsdata = NULL;
     spsMat *spdata = NULL;
@@ -158,9 +156,9 @@ static DSDP_INT getSDPBlockResidualRy( HSDSolver *dsdpSolver, spsMat *Ry, DSDP_I
             
             spdata = (spsMat *) conedata[spsMatIdx[k]];
             row    = 0;
-            spp    = spdata->cscMat->p;
-            spi    = spdata->cscMat->i;
-            spx    = spdata->cscMat->x;
+            spp    = spdata->p;
+            spi    = spdata->i;
+            spx    = spdata->x;
             
             // We take summation column-wise
             for (DSDP_INT i = 0; i < n; ++i) {
@@ -175,9 +173,9 @@ static DSDP_INT getSDPBlockResidualRy( HSDSolver *dsdpSolver, spsMat *Ry, DSDP_I
         coeff  = - 1.0;
         spdata = dsdpSolver->S[blockid];
         row    = 0;
-        spp    = spdata->cscMat->p;
-        spi    = spdata->cscMat->i;
-        spx    = spdata->cscMat->x;
+        spp    = spdata->p;
+        spi    = spdata->i;
+        spx    = spdata->x;
         
         for (DSDP_INT i = 0; i < n; ++i) {
             for (DSDP_INT j = spp[i]; j < spp[i + 1]; ++j) {
@@ -198,7 +196,7 @@ static DSDP_INT getSDPBlockResidualRy( HSDSolver *dsdpSolver, spsMat *Ry, DSDP_I
         }
         
         // Clear the zero elements
-        cs_dropzeros(Ry->cscMat);
+        // cs_dropzeros(Ry->cscMat);
         
     } else {
         // Plan B
@@ -232,11 +230,11 @@ static DSDP_INT getSDPBlockResidualRy( HSDSolver *dsdpSolver, spsMat *Ry, DSDP_I
                 }
                 
                 spdata = (spsMat *) conedata[spsMatIdx[k]];
-                spp = spdata->cscMat->p;
-                spi = spdata->cscMat->i;
-                spx = spdata->cscMat->x;
+                spp = spdata->p;
+                spi = spdata->i;
+                spx = spdata->x;
                 
-                for (DSDP_INT j = spdata->cscMat->p[i]; j < spdata->cscMat->p[i + 1]; ++j) {
+                for (DSDP_INT j = spdata->p[i]; j < spdata->p[i + 1]; ++j) {
                     colNnzs[spi[j]] += coeff * spx[j];
                 }
             }
@@ -244,11 +242,11 @@ static DSDP_INT getSDPBlockResidualRy( HSDSolver *dsdpSolver, spsMat *Ry, DSDP_I
             // Sparse column from S
             coeff  = - 1.0;
             spdata = dsdpSolver->S[blockid];
-            spp    = spdata->cscMat->p;
-            spi    = spdata->cscMat->i;
-            spx    = spdata->cscMat->x;
+            spp    = spdata->p;
+            spi    = spdata->i;
+            spx    = spdata->x;
             
-            for (DSDP_INT j = spdata->cscMat->p[i]; j < spdata->cscMat->p[i + 1]; ++j) {
+            for (DSDP_INT j = spdata->p[i]; j < spdata->p[i + 1]; ++j) {
                 colNnzs[spi[j]] += coeff * spx[j];
             }
             
@@ -328,9 +326,7 @@ static DSDP_INT getLPResidualry( HSDSolver *dsdpSolver, vec *ry ) {
 static DSDP_INT getRkappaTau( HSDSolver *dsdpSolver, double *rtk ) {
     // Setup the complementarity residual rtk
     DSDP_INT retcode = DSDP_RETCODE_OK;
-    
     *rtk = dsdpSolver->tau * dsdpSolver->kappa - dsdpSolver->mu;
-    
     return retcode;
 }
 
@@ -339,7 +335,7 @@ extern DSDP_INT setupRes( HSDSolver *dsdpSolver ) {
     // Setup residuals used for LP and SDP
     DSDP_INT retcode = DSDP_RETCODE_OK;
     
-    spsMat **Rys = dsdpSolver->Rys;
+    double *Rys = dsdpSolver->Rys;
     vec *ry = dsdpSolver->ry;
     
     assert( !dsdpSolver->iterProgress[ITER_LP_RESIDUAL] );
@@ -359,7 +355,7 @@ extern DSDP_INT setupRes( HSDSolver *dsdpSolver ) {
     // Set up SDP residual
     assert( !dsdpSolver->iterProgress[ITER_SDP_RESIDUAL] );
     if (dsdpSolver->iterProgress[ITER_SDP_RESIDUAL]) {
-        error(etype, "SDP residual has been setup for the current block. \n");
+        error(etype, "SDP residual has been set up. \n");
     }
     
     retcode = checkIterProgress(dsdpSolver, ITER_SDP_RESIDUAL);
@@ -369,7 +365,7 @@ extern DSDP_INT setupRes( HSDSolver *dsdpSolver ) {
     
     if (!dsdpSolver->eventMonitor[EVENT_SDP_NO_RY]) {
         for (DSDP_INT i = 0; i < nblock; ++i) {
-            retcode = getSDPBlockResidualRy(dsdpSolver, Rys[i], i);
+            Rys[i] *= (1 - dsdpSolver->alpha);
         }
     }
     

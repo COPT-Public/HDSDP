@@ -14,11 +14,16 @@ DSDP_INT test_data(void) {
     retcode = DSDPCreate(phsdSolver);
     retcode = DSDPSetDim(hsdSolver, ncones, m, 0);
     
-    retcode = DSDPSetSDPConeData(hsdSolver, 0, cdim1, NULL, Ap_1, Ai_1, Ax_1);
+    DSDP_INT typehint[11] = {
+        MAT_TYPE_RANK1, MAT_TYPE_UNKNOWN, MAT_TYPE_UNKNOWN, MAT_TYPE_UNKNOWN, MAT_TYPE_UNKNOWN,
+        MAT_TYPE_UNKNOWN, MAT_TYPE_UNKNOWN, MAT_TYPE_UNKNOWN, MAT_TYPE_UNKNOWN, MAT_TYPE_UNKNOWN,
+        MAT_TYPE_UNKNOWN};
+    
+    retcode = DSDPSetSDPConeData(hsdSolver, 0, cdim1, typehint, Ap_1, Ai_1, Ax_1);
     retcode = DSDPSetSDPConeData(hsdSolver, 1, cdim2, NULL, Ap_2, Ai_2, Ax_2);
     retcode = DSDPSetSDPConeData(hsdSolver, 2, cdim3, NULL, Ap_3, Ai_3, Ax_3);
     
-exit_cleanup:
+cleanup:
     
     retcode = DSDPDestroy(hsdSolver);
     

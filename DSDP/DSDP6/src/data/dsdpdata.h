@@ -31,7 +31,6 @@ typedef struct {
     DSDP_INT  dimy;          // Dimension of dual variable y
     DSDP_INT  dimS;          // Dimension of dual variable S
     
-    // Sparse SDP data transpose( A ) in CSC format
     DSDP_INT  nzeroMat;      // Number of zero matrices
     DSDP_INT  nspsMat;       // Number of sparse matrices
     DSDP_INT  *spsMatIdx;    // Index of the sparse matrices
@@ -76,6 +75,7 @@ extern DSDP_INT lpMataATy     ( double alpha, lpMat *lpData, vec *y, double *ATy
 extern DSDP_INT lpMatFree     ( lpMat *lpData );
 
 extern DSDP_INT sdpMatInit    ( sdpMat *sdpData );
+extern DSDP_INT sdpMatAlloc   ( sdpMat *sdpData );
 extern DSDP_INT sdpMatSetDim  ( sdpMat *sdpData, DSDP_INT dimy, DSDP_INT dimS, DSDP_INT blockId );
 extern DSDP_INT sdpMatSetHint ( sdpMat *sdpData, DSDP_INT *hint );
 extern DSDP_INT sdpMatSetData ( sdpMat *sdpData, DSDP_INT *Ap, DSDP_INT *Ai, double *Ax );

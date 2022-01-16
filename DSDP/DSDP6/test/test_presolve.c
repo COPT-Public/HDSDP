@@ -139,9 +139,9 @@ static DSDP_INT isSparseRank1( spsMat *dataMat, DSDP_INT *isRank1 ) {
     DSDP_INT retcode = DSDP_RETCODE_OK;
     DSDP_INT isR1 = TRUE;
     
-    DSDP_INT *Ap   = dataMat->cscMat->p;
-    DSDP_INT *Ai   = dataMat->cscMat->i;
-    double   *Ax   = dataMat->cscMat->x;
+    DSDP_INT *Ap   = dataMat->p;
+    DSDP_INT *Ai   = dataMat->i;
+    double   *Ax   = dataMat->x;
     DSDP_INT n     = dataMat->dim;
     DSDP_INT col   = 0;
     DSDP_INT isNeg = FALSE;
@@ -237,9 +237,9 @@ DSDP_INT test_presolve(void) {
     retcode = spsMatInit(spdata); checkCodeFree;
     retcode = spsMatAllocData(spdata, r1adim, spr1Ap[r1adim]); checkCodeFree;
     
-    memcpy(spdata->cscMat->p, spr1Ap, sizeof(DSDP_INT) * (r1adim + 1));
-    memcpy(spdata->cscMat->i, spr1Ai, sizeof(DSDP_INT) * spr1Ap[r1adim]);
-    memcpy(spdata->cscMat->x, spr1Ax, sizeof(double) * spr1Ap[r1adim]);
+    memcpy(spdata->p, spr1Ap, sizeof(DSDP_INT) * (r1adim + 1));
+    memcpy(spdata->i, spr1Ai, sizeof(DSDP_INT) * spr1Ap[r1adim]);
+    memcpy(spdata->x, spr1Ax, sizeof(double) * spr1Ap[r1adim]);
     
     DSDP_INT isRank1 = FALSE;
     retcode = isDenseRank1Acc(data, &isRank1); checkCodeFree;

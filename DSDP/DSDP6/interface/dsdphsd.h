@@ -84,7 +84,12 @@ typedef int DSDP_INT;
 #define checkCode                if (retcode != DSDP_RETCODE_OK) return retcode;
 #define checkCodeFree            if (retcode != DSDP_RETCODE_OK) goto clean_up;
 
+// Parameters
 
+// Initialization
+#define DSDP_INITMETHOD_FRO     105
+#define DSDP_INITMETHOD_EIGS    106
+#define DSDP_INITMETHOD_LINE    107
 
 
 #endif /* dsdphsd_h */

@@ -58,7 +58,7 @@ extern DSDP_INT test_vec(void) {
     vec_axpby(0.5, px, 2.0, pz);
     vec_print(pz);
     
-exit_cleanup:
+cleanup:
     
     vec_free(px);
     vec_free(py);
