@@ -321,6 +321,75 @@ extern DSDP_INT spsMataXpbY( double alpha, spsMat *sXMat, double beta, spsMat *s
     return retcode;
 }
 
+extern DSDP_INT spsMatAdddiag( spsMat *sMat, double d ) {
+    
+    // Add a diagonal element to a sparse matrix with hash table
+    DSDP_INT retcode = DSDP_RETCODE_OK;
+    
+    assert( sMat->isSum );
+    assert( sMat->dim );
+    
+    if (d == 0.0) {
+        return retcode;
+    }
+    
+    DSDP_INT *hash = sMat->sumHash;
+    DSDP_INT dim = sMat->dim;
+    
+    for (DSDP_INT i = 0; i < dim; ++i) {
+        sMat->x[packIdx(hash, dim, i, i)] += d;
+    }
+    
+    return retcode;
+}
+
+extern DSDP_INT spsMatAddds( spsMat *sXMat, double alpha, dsMat *dsYMat ) {
+    
+    // Add a dense matrix to a nominally sparse matrix
+    DSDP_INT retcode = DSDP_RETCODE_OK;
+    
+    assert( sXMat->isSum );
+    assert( sXMat->nnz == nsym(sXMat->dim) );
+    assert( sXMat->dim == dsYMat->dim );
+    
+    if (alpha == 0.0) {
+        return retcode;
+    }
+    
+    DSDP_INT dim = sXMat->dim;
+    axpy(&dim, &alpha, dsYMat->array, &one, sXMat->x, &one);
+    
+    return retcode;
+}
+
+extern DSDP_INT spsMatAddr1( spsMat *sXMat, double alpha, r1Mat *r1YMat ) {
+    
+    // Add a rank 1 matrix to a sparse matrix
+    DSDP_INT retcode = DSDP_RETCODE_OK;
+    
+    assert( sXMat->isSum );
+    assert( sXMat->dim == r1YMat->dim);
+    
+    if (alpha == 0.0) {
+        return retcode;
+    }
+    
+    DSDP_INT dim = sXMat->dim;
+    DSDP_INT *hash = sXMat->sumHash;
+    DSDP_INT *nzIdx = r1YMat->nzIdx;
+    
+    double sign = (double) r1YMat->sign;
+    double *rx = r1YMat->x;
+    
+    for (DSDP_INT i = 0; i < r1YMat->nnz; ++i) {
+        for (DSDP_INT j = 0; j <= i; ++j) {
+            sXMat->x[packIdx(hash, dim, nzIdx[i], nzIdx[j])] += alpha * sign * rx[i] * rx[j];
+        }
+    }
+    
+    return retcode;
+}
+
 extern DSDP_INT spsMatScale( spsMat *sXMat, double alpha ) {
     // Scale a sparse matrix by some number.
     DSDP_INT retcode = DSDP_RETCODE_OK;
@@ -349,8 +418,19 @@ extern DSDP_INT spsMatFnorm( spsMat *sMat, double *fnrm ) {
     // Matrix (Approximate) Fronenius norm
     DSDP_INT retcode = DSDP_RETCODE_OK;
     assert( sMat->dim > 0 );
-    *fnrm = norm(&sMat->p[sMat->dim], sMat->x, &one);
     
+    double nrm = 0.0;
+    nrm = norm(&sMat->p[sMat->dim], sMat->x, &one);
+    nrm = 2 * nrm * nrm;
+    
+    // Retrieve the diagonal elements
+    for (DSDP_INT i = 0; i < sMat->dim; ++i) {
+        if (sMat->i[sMat->p[i]] == i) {
+            nrm -= sMat->x[sMat->p[i]] * sMat->x[sMat->p[i]];
+        }
+    }
+    
+    *fnrm = sqrt(nrm);
     return retcode;
 }
 
@@ -766,6 +846,15 @@ extern DSDP_INT spsMatFill( spsMat *sMat, double *fulldMat ) {
     }
     
     vec_free(pb);
+    return retcode;
+}
+
+extern DSDP_INT spsMatReset( spsMat *sMat ) {
+    
+    // Reset a sparse matrix to be 0
+    DSDP_INT retcode = DSDP_RETCODE_OK;
+    assert( sMat->dim > 0 );
+    memset(sMat->x, 0, sizeof(double) * sMat->nnz);
     return retcode;
 }
 

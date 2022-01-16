@@ -68,7 +68,7 @@ static DSDP_INT setupSDPSchurBlock( HSDSolver *dsdpSolver, DSDP_INT blockid ) {
     sdpMat *sdpData = dsdpSolver->sdpData[blockid];
     spsMat *S       = dsdpSolver->S[blockid];
     vec    *asinv   = dsdpSolver->asinv;
-    double Ry       = dsdpSolver->Rys[blockid];
+    double Ry       = dsdpSolver->Ry;
     
     dsMat  *Msdp    = dsdpSolver->Msdp;
     vec    *u       = dsdpSolver->u;

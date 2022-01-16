@@ -21,6 +21,7 @@ typedef struct {
     vec      *dObj;       // Dual objective b
     
     // Dimension data
+    DSDP_INT n;           // Total number of variables
     DSDP_INT m;           // Dimension of dual
     DSDP_INT nBlock;      // Number of SDP blocks ( = 1) currently
     DSDP_INT lpDim;       // Dimension of LP
@@ -59,7 +60,7 @@ typedef struct {
     
     // Residuals
     double   rtk;         // Complementarity residual
-    double   *Rys;        // SDP Dual infeasibility
+    double    Ry;         // SDP Dual infeasibility
     vec      *ry;         // LP dual infeasibility
     
     // Step matrix
@@ -93,6 +94,7 @@ typedef HSDSolver Solver;
 extern DSDP_INT DSDPCreate( Solver **dsdpSolver );
 
 extern DSDP_INT DSDPSetDim( Solver    *dsdpSolver,
+                            DSDP_INT  nVars,
                             DSDP_INT  nBlock,
                             DSDP_INT  nConstrs,
                             DSDP_INT  lpDim );

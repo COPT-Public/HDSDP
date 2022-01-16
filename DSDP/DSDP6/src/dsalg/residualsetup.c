@@ -335,7 +335,7 @@ extern DSDP_INT setupRes( HSDSolver *dsdpSolver ) {
     // Setup residuals used for LP and SDP
     DSDP_INT retcode = DSDP_RETCODE_OK;
     
-    double *Rys = dsdpSolver->Rys;
+    double Ry = dsdpSolver->Ry;
     vec *ry = dsdpSolver->ry;
     
     assert( !dsdpSolver->iterProgress[ITER_LP_RESIDUAL] );
@@ -364,9 +364,7 @@ extern DSDP_INT setupRes( HSDSolver *dsdpSolver ) {
     DSDP_INT nblock = dsdpSolver->nBlock;
     
     if (!dsdpSolver->eventMonitor[EVENT_SDP_NO_RY]) {
-        for (DSDP_INT i = 0; i < nblock; ++i) {
-            Rys[i] *= (1 - dsdpSolver->alpha);
-        }
+        Ry *= (1 - dsdpSolver->alpha);
     }
     
     // Setup rtk

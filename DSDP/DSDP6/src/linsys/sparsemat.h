@@ -25,7 +25,6 @@
  
 */
 
-
 #ifdef __cplusplus
 extern "C" {
 #endif
@@ -39,6 +38,9 @@ extern DSDP_INT spsMatFree         ( spsMat *sMat );
 
 /* Basic operations */
 extern DSDP_INT spsMataXpbY        ( double alpha, spsMat *sXMat, double beta, spsMat *sYMat );
+extern DSDP_INT spsMatAdddiag      ( spsMat *sMat, double d );
+extern DSDP_INT spsMatAddds        ( spsMat *sXMat, double alpha, dsMat *sYMat );
+extern DSDP_INT spsMatAddr1        ( spsMat *sXMat, double alpha, r1Mat *r1YMat );
 extern DSDP_INT spsMatFnorm        ( spsMat *sMat, double *fnrm );
 extern DSDP_INT spsMatScale        ( spsMat *sXMat, double alpha );
 extern DSDP_INT spsMatRscale       ( spsMat *sXMat, double r );
@@ -62,6 +64,7 @@ extern DSDP_INT spsMatMinEig       ( spsMat *sMat, double *minEig );
 /* Utilities */
 extern DSDP_INT spsMatScatter      ( spsMat *sMat, vec *b, DSDP_INT k );
 extern DSDP_INT spsMatFill         ( spsMat *sMat, double *fulldMat );
+extern DSDP_INT spsMatReset        ( spsMat *sMat );
 extern DSDP_INT spsMatView         ( spsMat *sMat );
 
 #ifdef __cplusplus

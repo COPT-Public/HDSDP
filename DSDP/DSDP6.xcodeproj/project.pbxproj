@@ -90,8 +90,10 @@
 		19BEEC242756065600C36C9E /* cs_qrsol.c in Sources */ = {isa = PBXBuildFile; fileRef = 19BEEC1E2756065600C36C9E /* cs_qrsol.c */; };
 		19BEEC252756065600C36C9E /* cs_schol.c in Sources */ = {isa = PBXBuildFile; fileRef = 19BEEC1F2756065600C36C9E /* cs_schol.c */; };
 		19BEEC262756065600C36C9E /* cs_lusol.c in Sources */ = {isa = PBXBuildFile; fileRef = 19BEEC202756065600C36C9E /* cs_lusol.c */; };
-		19BEEC292757EA7D00C36C9E /* obj.c in Sources */ = {isa = PBXBuildFile; fileRef = 19BEEC282757EA7D00C36C9E /* obj.c */; };
 		19C3BBDA2794032000F0331B /* dsdplog.c in Sources */ = {isa = PBXBuildFile; fileRef = 19C3BBD92794032000F0331B /* dsdplog.c */; };
+		19C3BBDD2794539600F0331B /* dsdpdinfeas.c in Sources */ = {isa = PBXBuildFile; fileRef = 19C3BBDC2794539600F0331B /* dsdpdinfeas.c */; };
+		19C3BBE0279453F200F0331B /* dsdpinitializer.c in Sources */ = {isa = PBXBuildFile; fileRef = 19C3BBDF279453F200F0331B /* dsdpinitializer.c */; };
+		19C3BBE3279454D600F0331B /* dsdputils.c in Sources */ = {isa = PBXBuildFile; fileRef = 19C3BBE2279454D600F0331B /* dsdputils.c */; };
 		19F1195B275A627B0051D808 /* stepdirection.c in Sources */ = {isa = PBXBuildFile; fileRef = 19F1195A275A627B0051D808 /* stepdirection.c */; };
 /* End PBXBuildFile section */
 
@@ -221,12 +223,16 @@
 		19BEEC1E2756065600C36C9E /* cs_qrsol.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = cs_qrsol.c; sourceTree = "<group>"; };
 		19BEEC1F2756065600C36C9E /* cs_schol.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = cs_schol.c; sourceTree = "<group>"; };
 		19BEEC202756065600C36C9E /* cs_lusol.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = cs_lusol.c; sourceTree = "<group>"; };
-		19BEEC272757EA7D00C36C9E /* obj.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = obj.h; sourceTree = "<group>"; };
-		19BEEC282757EA7D00C36C9E /* obj.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = obj.c; sourceTree = "<group>"; };
 		19BEEC2A2757F14A00C36C9E /* dsdpsolver.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = dsdpsolver.h; sourceTree = "<group>"; };
 		19C1E9D42768E707000FCBF9 /* SDPdata.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = SDPdata.h; sourceTree = "<group>"; };
 		19C3BBD82794032000F0331B /* dsdplog.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = dsdplog.h; sourceTree = "<group>"; };
 		19C3BBD92794032000F0331B /* dsdplog.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = dsdplog.c; sourceTree = "<group>"; };
+		19C3BBDB2794539600F0331B /* dsdpdinfeas.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = dsdpdinfeas.h; sourceTree = "<group>"; };
+		19C3BBDC2794539600F0331B /* dsdpdinfeas.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = dsdpdinfeas.c; sourceTree = "<group>"; };
+		19C3BBDE279453F200F0331B /* dsdpinitializer.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = dsdpinitializer.h; sourceTree = "<group>"; };
+		19C3BBDF279453F200F0331B /* dsdpinitializer.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = dsdpinitializer.c; sourceTree = "<group>"; };
+		19C3BBE1279454D600F0331B /* dsdputils.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = dsdputils.h; sourceTree = "<group>"; };
+		19C3BBE2279454D600F0331B /* dsdputils.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = dsdputils.c; sourceTree = "<group>"; };
 		19F11959275A627B0051D808 /* stepdirection.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = stepdirection.h; sourceTree = "<group>"; };
 		19F1195A275A627B0051D808 /* stepdirection.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = stepdirection.c; sourceTree = "<group>"; };
 		19F1195C275A9A260051D808 /* dsdpfeast.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = dsdpfeast.h; sourceTree = "<group>"; };
@@ -301,12 +307,16 @@
 				19118D962737B72800D51D03 /* residualsetup.c */,
 				19118D972737B72800D51D03 /* stepheur.c */,
 				19118D982737B72800D51D03 /* hsd.h */,
-				19BEEC272757EA7D00C36C9E /* obj.h */,
-				19BEEC282757EA7D00C36C9E /* obj.c */,
 				19F11959275A627B0051D808 /* stepdirection.h */,
 				19F1195A275A627B0051D808 /* stepdirection.c */,
 				198AF5DC275BDE54007A38C9 /* pfeascheck.h */,
 				198AF5DD275BDE54007A38C9 /* pfeascheck.c */,
+				19C3BBDB2794539600F0331B /* dsdpdinfeas.h */,
+				19C3BBDC2794539600F0331B /* dsdpdinfeas.c */,
+				19C3BBDE279453F200F0331B /* dsdpinitializer.h */,
+				19C3BBDF279453F200F0331B /* dsdpinitializer.c */,
+				19C3BBE1279454D600F0331B /* dsdputils.h */,
+				19C3BBE2279454D600F0331B /* dsdputils.c */,
 			);
 			path = dsalg;
 			sourceTree = "<group>";
@@ -568,7 +578,6 @@
 				19118E242737B72800D51D03 /* dsdphsd.c in Sources */,
 				19118E0B2737B72800D51D03 /* cs_print.c in Sources */,
 				19118DFC2737B72800D51D03 /* cs_randperm.c in Sources */,
-				19BEEC292757EA7D00C36C9E /* obj.c in Sources */,
 				19118E102737B72800D51D03 /* cs_usolve.c in Sources */,
 				19118E0C2737B72800D51D03 /* cs_lu.c in Sources */,
 				19118E0F2737B72800D51D03 /* cs_ltsolve.c in Sources */,
@@ -591,6 +600,7 @@
 				19118E132737B72800D51D03 /* cs_happly.c in Sources */,
 				19118E0A2737B72800D51D03 /* cs_maxtrans.c in Sources */,
 				192B24B22768D1A900F5C7C0 /* test_data.c in Sources */,
+				19C3BBDD2794539600F0331B /* dsdpdinfeas.c in Sources */,
 				19118DE72737B72800D51D03 /* hsd.c in Sources */,
 				19BEEC232756065600C36C9E /* cs_chol.c in Sources */,
 				19118E112737B72800D51D03 /* cs_fkeep.c in Sources */,
@@ -599,10 +609,12 @@
 				19118DFE2737B72800D51D03 /* cs_leaf.c in Sources */,
 				19118E192737B72800D51D03 /* cs_permute.c in Sources */,
 				19808F382737EEA60014086F /* test_vec.c in Sources */,
+				19C3BBE3279454D600F0331B /* dsdputils.c in Sources */,
 				19BEEC212756065600C36C9E /* cs_entry.c in Sources */,
 				19118DF42737B72800D51D03 /* cs_pvec.c in Sources */,
 				19118E092737B72800D51D03 /* cs_transpose.c in Sources */,
 				19118E012737B72800D51D03 /* cs_malloc.c in Sources */,
+				19C3BBE0279453F200F0331B /* dsdpinitializer.c in Sources */,
 				19118DE92737B72800D51D03 /* stepheur.c in Sources */,
 				19118E1C2737B72800D51D03 /* cs_pinv.c in Sources */,
 				19118E072737B72800D51D03 /* cs_cholsol.c in Sources */,

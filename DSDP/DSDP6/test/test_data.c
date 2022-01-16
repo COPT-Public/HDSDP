@@ -12,7 +12,7 @@ DSDP_INT test_data(void) {
     Solver **phsdSolver = &hsdSolver;
     
     retcode = DSDPCreate(phsdSolver);
-    retcode = DSDPSetDim(hsdSolver, ncones, m, 0);
+    retcode = DSDPSetDim(hsdSolver, cdim1 + cdim2 + cdim3, ncones, m, 0);
     
     DSDP_INT typehint[11] = {
         MAT_TYPE_RANK1, MAT_TYPE_UNKNOWN, MAT_TYPE_UNKNOWN, MAT_TYPE_UNKNOWN, MAT_TYPE_UNKNOWN,

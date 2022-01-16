@@ -34,6 +34,7 @@ static DSDP_INT DSDPIInit( HSDSolver *dsdpSolver ) {
     dsdpSolver->isSDPset = NULL;
     
     // Dimension data
+    dsdpSolver->n      = 0;
     dsdpSolver->m      = 0;
     dsdpSolver->nBlock = 0;
     dsdpSolver->lpDim  = 0;
@@ -45,8 +46,8 @@ static DSDP_INT DSDPIInit( HSDSolver *dsdpSolver ) {
            sizeof(DSDP_INT) * IterStep);
     
     // Residuals
-    dsdpSolver->Rys = NULL;
-    dsdpSolver->ry  = NULL;
+    dsdpSolver->Ry = 0.0;
+    dsdpSolver->ry = NULL;
     
     // Iterator
     dsdpSolver->pObjVal = 0.0;
@@ -134,12 +135,8 @@ static DSDP_INT DSDPIAllocResi( HSDSolver *dsdpSolver ) {
     
     // Allocate memory for residuals
     DSDP_INT retcode = DSDP_RETCODE_OK;
-    DSDP_INT nblock  = dsdpSolver->nBlock;
     DSDP_INT lpdim = dsdpSolver->lpDim;
-    
-    // Allocate Rys
-    dsdpSolver->Rys = (double *) calloc(nblock, sizeof(double));
-    
+
     // Allocate ry
     dsdpSolver->ry = (vec *) calloc(1, sizeof(vec));
     retcode = vec_init(dsdpSolver->ry);
@@ -424,13 +421,7 @@ static DSDP_INT DSDPIFreeResi( HSDSolver *dsdpSolver ) {
     
     // Free the internal residual data
     DSDP_INT retcode = DSDP_RETCODE_OK;
-    
-    if (dsdpSolver->insStatus >= DSDP_STATUS_PRESOLVED) {
-        DSDP_FREE(dsdpSolver->Rys);
-        retcode = vec_free(dsdpSolver->ry); checkCode;
-    }
     DSDP_FREE(dsdpSolver->ry);
-    
     return retcode;
 }
 
@@ -662,7 +653,7 @@ static DSDP_INT DSDPIPresolve( HSDSolver *dsdpSolver ) {
 static DSDP_INT DSDPIPostsolve( HSDSolver *dsdpSolver ) {
     
     DSDP_INT retcode = DSDP_RETCODE_OK;
-    // Post-solver
+    // TODO: Post-solver
     
     return retcode;
 }
@@ -679,13 +670,15 @@ extern DSDP_INT DSDPCreate( HSDSolver **dsdpSolver ) {
 }
 
 extern DSDP_INT DSDPSetDim( HSDSolver *dsdpSolver,
+                            DSDP_INT  sdpDim,
                             DSDP_INT  nBlock,
                             DSDP_INT  nConstrs,
                             DSDP_INT  lpDim ) {
     
     /* Set dimension of the DSDP problem instance
        
-       nBlock   is the number of SDP varaibles participating in the instance
+       nVars    is the total number of variables of the instance
+       nBlock   is the number of SDP blocks participating in the instance
        nConstrs is the dimension of the dual variable
        lpDim    is the dimension of the LP
      
@@ -700,7 +693,7 @@ extern DSDP_INT DSDPSetDim( HSDSolver *dsdpSolver,
         return retcode;
     }
     
-    if ((nBlock + lpDim) <= 0 || nConstrs < 0 || lpDim < 0 || nBlock < 0) {
+    if ((sdpDim + lpDim) <= 0 || nConstrs < 0 || lpDim < 0 || nBlock < 0 || sdpDim < 0) {
         error(etype, "Invalid dimension. \n");
     }
     
@@ -708,12 +701,15 @@ extern DSDP_INT DSDPSetDim( HSDSolver *dsdpSolver,
         printf("Dimension is successfully set. \n");
         printf("nSDPCones: "ID" "
                "nConstraints: "ID" "
-               "LPDim: "ID". \n", nBlock, nConstrs, lpDim);
+               "LPDim: "ID" "
+               "SDPDim: "ID". \n", nBlock, nConstrs, lpDim, sdpDim);
+        
     }
     
     dsdpSolver->nBlock = nBlock;
     dsdpSolver->m      = nConstrs;
     dsdpSolver->lpDim  = lpDim;
+    dsdpSolver->n      = sdpDim;
     
     retcode = DSDPIAlloc(dsdpSolver); checkCode;
     
