@@ -63,7 +63,7 @@ typedef struct {
     double   alpha;       // Stepsize
     
     // Proximity measure
-    double   Pnrm;          
+    double   Pnrm;
     
     // Residuals
     double   rtk;         // Complementarity residual
@@ -82,6 +82,8 @@ typedef struct {
     hsdParam *param;      // Solver parameters
     
     // Solver status
+    DSDP_INT iterA;       // Iteration in phase A
+    DSDP_INT iterB;       // Iteration in phase B
     DSDP_INT insStatus;   // Solver instance status
     DSDP_INT solStatus;   // Solver solution status
     

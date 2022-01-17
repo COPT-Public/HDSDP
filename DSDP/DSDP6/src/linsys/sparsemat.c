@@ -764,6 +764,8 @@ extern DSDP_INT spsMatMaxEig( spsMat *sMat, double *maxEig ) {
         error(etype, "Maximum eigen value computation failed. \n");
     }
     
+    mkl_sparse_destroy( A );
+    
     return retcode;
 }
 
@@ -787,6 +789,8 @@ extern DSDP_INT spsMatMinEig( spsMat *sMat, double *minEig ) {
     if (info != SPARSE_SUCCESS) {
         error(etype, "Minimum eigen value computation failed. \n");
     }
+    
+    mkl_sparse_destroy( A );
     
     return retcode;
 }

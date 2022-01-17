@@ -17,7 +17,8 @@ extern DSDP_INT getTraceASinvASinv ( HSDSolver *dsdpSolver, DSDP_INT blockid, DS
                                      DSDP_INT mattype, DSDP_INT constrid2, void *SinvASinv );
 
 /* Check definiteness of matrices */
-extern DSDP_INT getPhaseAS         ( HSDSolver *dsdpSolver, double *y, double tau );
+extern DSDP_INT getPhaseAS         ( HSDSolver *dsdpSolver, double *y,  double tau );
+extern DSDP_INT getPhaseAdS        ( HSDSolver *dsdpSolver, double *dy, double dtau );
 extern DSDP_INT dsdpInCone         ( HSDSolver *dsdpSolver, DSDP_INT *ispsd );
 
 /* Objective */
@@ -27,6 +28,7 @@ extern DSDP_INT getSDPPrimalObjB   ( HSDSolver *dsdpSolver );
 /* Other utilities */
 extern DSDP_INT getMatnrm          ( HSDSolver *dsdpSolver, DSDP_INT blockid, DSDP_INT constrid, double *nrm );
 extern DSDP_INT addMattoS          ( HSDSolver *dsdpSolver, DSDP_INT blockid, DSDP_INT constrid, double alpha );
+extern DSDP_INT addMattodS         ( HSDSolver *dsdpSolver, DSDP_INT blockid, DSDP_INT constrid, double alpha );
 
 
 #ifdef __cplusplus

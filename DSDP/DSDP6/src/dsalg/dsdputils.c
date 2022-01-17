@@ -149,6 +149,27 @@ extern DSDP_INT getPhaseAS( HSDSolver *dsdpSolver, double *y, double tau ) {
     return retcode;
 }
 
+/* Retrieve dS = Ry + C * dtau - ATdy across all the blocks */
+extern DSDP_INT getPhaseAdS( HSDSolver *dsdpSolver, double *dy, double dtau ) {
+    
+    DSDP_INT retcode = DSDP_RETCODE_OK;
+    spsMat *dS = NULL;
+    DSDP_INT m = dsdpSolver->m;
+    
+    for (DSDP_INT i = 0; i < dsdpSolver->nBlock; ++i) {
+        dS = dsdpSolver->dS[i];
+        retcode = spsMatReset(dS);
+        for (DSDP_INT j = 0; j < m; ++j) {
+            retcode = addMattodS(dsdpSolver, i, j, - dy[j]);
+        }
+        retcode = addMattodS(dsdpSolver, i, m + 1, dtau);
+    }
+    
+    retcode = spsMatAdddiag(dS, dsdpSolver->Ry);
+    checkCode;
+    return retcode;
+}
+
 /* DSDP routine for checking positive definite-ness of matrix */
 extern DSDP_INT dsdpInCone( HSDSolver *dsdpSolver, DSDP_INT *ispsd ) {
     // Determine whether the current dual variable lies in the cone
@@ -215,6 +236,34 @@ extern DSDP_INT addMattoS( HSDSolver *dsdpSolver, DSDP_INT blockid, DSDP_INT con
             break;
         case MAT_TYPE_RANK1:
             retcode = spsMatAddr1(dsdpSolver->S[blockid], alpha, data);
+            checkCode;
+            break;
+        default:
+            error(etype, "Unknown matrix type. \n");
+            break;
+    }
+    
+    return retcode;
+}
+
+extern DSDP_INT addMattodS( HSDSolver *dsdpSolver, DSDP_INT blockid, DSDP_INT constrid, double alpha ) {
+    
+    DSDP_INT retcode = DSDP_RETCODE_OK;
+    void *data = dsdpSolver->sdpData[blockid]->sdpData[constrid];
+    
+    switch (dsdpSolver->sdpData[blockid]->types[constrid]) {
+        case MAT_TYPE_ZERO:
+            break;
+        case MAT_TYPE_DENSE:
+            retcode = spsMatAddds(dsdpSolver->dS[blockid], alpha, data);
+            checkCode;
+            break;
+        case MAT_TYPE_SPARSE:
+            retcode = spsMataXpbY(alpha, data, 1.0, dsdpSolver->dS[blockid]);
+            checkCode;
+            break;
+        case MAT_TYPE_RANK1:
+            retcode = spsMatAddr1(dsdpSolver->dS[blockid], alpha, data);
             checkCode;
             break;
         default:

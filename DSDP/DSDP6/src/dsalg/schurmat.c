@@ -240,7 +240,7 @@ static DSDP_INT setupPhaseAdvecs( HSDSolver *dsdpSolver ) {
     return retcode;
 }
 
-extern DSDP_INT setupFactorize( HSDSolver *dsdpSolver ) {
+static DSDP_INT setupFactorize( HSDSolver *dsdpSolver ) {
     // Factorize all the dual solutions
     DSDP_INT retcode = DSDP_RETCODE_OK;
     
@@ -293,6 +293,7 @@ extern DSDP_INT setupPhaseASchur( HSDSolver *dsdpSolver ) {
     // Setup the schur matrix Msdp and some of the temporary arrays
     DSDP_INT retcode = DSDP_RETCODE_OK;
     
+    retcode = setupFactorize(dsdpSolver);
     retcode = setupSDPSchur(dsdpSolver);
     retcode = setupLPSchur(dsdpSolver);
     retcode = schurPhaseAMatSolve(dsdpSolver);

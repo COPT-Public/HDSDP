@@ -68,6 +68,8 @@ sparse_status_t mkl_sparse_d_ev( char                *which,
                                  double              *X,
                                  double              *res );
 
+sparse_status_t mkl_sparse_destroy( sparse_matrix_t  A );
+
 static struct matrix_descr dsdp_descr = {
     SPARSE_MATRIX_TYPE_SYMMETRIC,
     SPARSE_FILL_MODE_LOWER,

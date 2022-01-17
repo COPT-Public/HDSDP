@@ -1,4 +1,5 @@
 #include "stepheur.h"
+#include "dsdputils.h"
 /*
    Implement the strategies to choose the proper stepsize and update the
    dual iteration variables
@@ -26,9 +27,10 @@ static DSDP_INT getKappaTauStep( HSDSolver *dsdpSolver, double *kappatauStep ) {
     return retcode;
 }
 
-static DSDP_INT takeKappaTauStep( HSDSolver *dsdpSolver, double step ) {
+static DSDP_INT takeKappaTauStep( HSDSolver *dsdpSolver ) {
     // Take step in kappa and tau
     DSDP_INT retcode = DSDP_RETCODE_OK;
+    double step = dsdpSolver->alpha;
     
     dsdpSolver->tau = dsdpSolver->tau + step * dsdpSolver->dtau;
     dsdpSolver->kappa = dsdpSolver->kappa + step * dsdpSolver->dkappa;
@@ -36,10 +38,11 @@ static DSDP_INT takeKappaTauStep( HSDSolver *dsdpSolver, double step ) {
     return retcode;
 }
 
-static DSDP_INT takeyStep( HSDSolver *dsdpSolver, double step) {
+static DSDP_INT takeyStep( HSDSolver *dsdpSolver ) {
     // Take step in y
     DSDP_INT retcode = DSDP_RETCODE_OK;
     
+    double step = dsdpSolver->alpha;
     vec *y  = dsdpSolver->y;
     vec *dy = dsdpSolver->dy;
     retcode = vec_axpy(step, dy, y);
@@ -47,10 +50,11 @@ static DSDP_INT takeyStep( HSDSolver *dsdpSolver, double step) {
     return retcode;
 }
 
-static DSDP_INT takelpsStep( HSDSolver *dsdpSolver, double step ) {
+static DSDP_INT takelpsStep( HSDSolver *dsdpSolver ) {
     // Take step in LP s
     DSDP_INT retcode = DSDP_RETCODE_OK;
     
+    double step = dsdpSolver->alpha;
     vec *s  = dsdpSolver->s;
     vec *ds = dsdpSolver->ds;
     retcode = vec_axpy(step, ds, s);
@@ -58,20 +62,10 @@ static DSDP_INT takelpsStep( HSDSolver *dsdpSolver, double step ) {
     return retcode;
 }
 
-static DSDP_INT takeSDPSStep( HSDSolver *dsdpSolver, double step ) {
+static DSDP_INT takeSDPSStep( HSDSolver *dsdpSolver ) {
     // Take step in SDP S
     DSDP_INT retcode = DSDP_RETCODE_OK;
-    
-    DSDP_INT nblock = dsdpSolver->nBlock;
-    spsMat *S  = NULL;
-    spsMat *dS = NULL;
-    
-    for (DSDP_INT k = 0; k < nblock; ++k) {
-        S = dsdpSolver->S[k];
-        dS = dsdpSolver->dS[k];
-        retcode = spsMataXpbY(step, dS, 1.0, S);
-    }
-    
+    retcode = getPhaseAS(dsdpSolver, dsdpSolver->y->x, dsdpSolver->tau);
     return retcode;
 }
 
@@ -131,7 +125,7 @@ static DSDP_INT getSDPSStep( HSDSolver *dsdpSolver, double *SStep ) {
     return retcode;
 }
 
-extern DSDP_INT getMaxStep( HSDSolver *dsdpSolver, double *maxStep ) {
+extern DSDP_INT getMaxStep( HSDSolver *dsdpSolver ) {
     // Compute the maximum step size to take for one iteration
     DSDP_INT retcode = DSDP_RETCODE_OK;
     
@@ -149,16 +143,16 @@ extern DSDP_INT getMaxStep( HSDSolver *dsdpSolver, double *maxStep ) {
     retcode = getKappaTauStep(dsdpSolver, &stepkappatau);
     retcode = getLPsStep(dsdpSolver, &steplps);
     retcode = getSDPSStep(dsdpSolver, &sdpS); checkCode;
-    
     sdpS = MIN(sdpS, steplps);
-    *maxStep = MIN(sdpS, stepkappatau);
+    dsdpSolver->alpha = MIN(sdpS, stepkappatau);
+    dsdpSolver->alpha = MIN(dsdpSolver->param->Aalpha * dsdpSolver->alpha, 1.0);
     
     dsdpSolver->iterProgress[ITER_COMPUTE_STEP] = TRUE;
     
     return retcode;
 }
 
-extern DSDP_INT takeStep( HSDSolver *dsdpSolver, double step ) {
+extern DSDP_INT takeStep( HSDSolver *dsdpSolver ) {
     // Take step towards next iterate
     DSDP_INT retcode = DSDP_RETCODE_OK;
     
@@ -168,11 +162,10 @@ extern DSDP_INT takeStep( HSDSolver *dsdpSolver, double step ) {
         error(etype, "Step has been taken. \n");
     }
     
-    retcode = takeKappaTauStep(dsdpSolver, step);
-    retcode = takeyStep(dsdpSolver, step);
-    retcode = takelpsStep(dsdpSolver, step);
-    retcode = takeSDPSStep(dsdpSolver, step); checkCode;
-    
+    retcode = takeKappaTauStep(dsdpSolver);
+    retcode = takeyStep(dsdpSolver);
+    // retcode = takelpsStep(dsdpSolver, step);
+    retcode = takeSDPSStep(dsdpSolver); checkCode;
     dsdpSolver->iterProgress[ITER_TAKE_STEP] = TRUE;
     
     return retcode;

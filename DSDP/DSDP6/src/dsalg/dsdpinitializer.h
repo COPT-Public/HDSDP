@@ -10,6 +10,6 @@
 #include "dsdpsolver.h"
 #include "hsd.h"
 
-
+extern DSDP_INT dsdpInitialize( HSDSolver *dsdpSolver );
 
 #endif /* dsdpinitializer_h */

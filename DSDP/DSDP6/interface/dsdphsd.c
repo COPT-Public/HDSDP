@@ -90,6 +90,8 @@ static DSDP_INT DSDPIInit( HSDSolver *dsdpSolver ) {
     dsdpSolver->dkappa = 0.0;
     
     dsdpSolver->param     = &defaultParam;
+    dsdpSolver->iterA     = 0;
+    dsdpSolver->iterB     = 0;
     dsdpSolver->insStatus = DSDP_STATUS_INIT_UNSET;
     dsdpSolver->solStatus = DSDP_UNKNOWN;
     
@@ -574,6 +576,8 @@ static DSDP_INT DSDPIFreeCleanUp( HSDSolver *dsdpSolver ) {
     dsdpSolver->dkappa = 0.0;
     dsdpSolver->isXComputed = FALSE;
     
+    dsdpSolver->iterA     = 0;
+    dsdpSolver->iterB     = 0;
     dsdpSolver->insStatus = 0;
     dsdpSolver->solStatus = 0;
     

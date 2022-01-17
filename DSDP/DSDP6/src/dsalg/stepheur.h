@@ -12,8 +12,8 @@
 extern "C" {
 #endif
 
-extern DSDP_INT getMaxStep( HSDSolver *dsdpSolver, double *maxStep );
-extern DSDP_INT takeStep  ( HSDSolver *dsdpSolver, double step );
+extern DSDP_INT getMaxStep( HSDSolver *dsdpSolver );
+extern DSDP_INT takeStep  ( HSDSolver *dsdpSolver );
 
 #ifdef __cplusplus
 }

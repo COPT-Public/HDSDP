@@ -1,32 +1,58 @@
 #include "stepdirection.h"
+#include "dsdputils.h"
 /* Recover the steps to take after solving the Schur system */
 
 static char etype[] = "Stepsize recovery";
 
-static DSDP_INT getdTau( HSDSolver *dsdpSolver, double rM, vec *b2 ) {
+static DSDP_INT assembleArrs( HSDSolver *dsdpSolver ) {
+    // Assemble auxiliary arrays
+    /*
+     b1 = b - mu * u;
+     b2 = d2 * tau / mu - d3 + d4;
+     d11 = d2 / mu;
+     d1  = d11 + d12;
+    */
+    DSDP_INT retcode = DSDP_RETCODE_OK;
+    vec_zaxpby(dsdpSolver->b1, 1.0, dsdpSolver->dObj,
+               dsdpSolver->mu, dsdpSolver->u);
+    vec_zaxpby(dsdpSolver->b2, dsdpSolver->tau / dsdpSolver->mu,
+               dsdpSolver->d2, -1.0, dsdpSolver->d3);
+    vec_axpy(1.0, dsdpSolver->d4, dsdpSolver->b2);
+    vec_copy(dsdpSolver->d2, dsdpSolver->d1);
+    vec_rscale(dsdpSolver->d1, dsdpSolver->mu);
+    vec_axpy(1.0, dsdpSolver->d12, dsdpSolver->d1);
+    
+    return retcode;
+}
+
+static DSDP_INT getdTau( HSDSolver *dsdpSolver ) {
     
     DSDP_INT retcode = DSDP_RETCODE_OK;
     
+    vec *b1 = dsdpSolver->b1;
+    vec *b2 = dsdpSolver->b2;
     vec *d1 = dsdpSolver->d1;
-    vec *d2 = dsdpSolver->d2;
-    
-    DSDP_INT m = d1->dim;
-    DSDP_INT one = 1;
     
     double mu = dsdpSolver->mu;
-    double T = 0.0;
-    double b2dotd1 = 0.0;
-    double b2dotd2 = 0.0;
+    double tau = dsdpSolver->tau;
+    double kappa = dsdpSolver->kappa;
+    double taudenom = 0.0;
+    double csinv = dsdpSolver->csinv;
+    double csinvcsinv = dsdpSolver->csinvcsinv;
+    double csinvrysinv = dsdpSolver->csinvrysinv;
     
-    b2dotd1 = ddot(&m, b2->x, &one, d1->x, &one);
-    T = b2dotd1 + mu * dsdpSolver->csinvcsinv + dsdpSolver->kappa / dsdpSolver->tau;
-    if (fabs(T) < 1e-12) {
+    vec_dot(b1, d1, &taudenom);
+    taudenom += mu * csinvcsinv + kappa / tau;
+    
+    if (fabs(taudenom) < 1e-15) {
         dsdpSolver->dtau = 0.0;
     } else {
-        b2dotd2 = ddot(&m, b2->x, &one, d2->x, &one);
-        dsdpSolver->dtau = (rM - b2dotd2) / T;
+        dsdpSolver->dtau = - dsdpSolver->dObjVal;
+        vec_dot(b1, b2, &csinvcsinv);
+        dsdpSolver->dtau += mu * (1 / tau + csinv - csinvrysinv) - csinvcsinv;
+        dsdpSolver->dtau = dsdpSolver->dtau / taudenom;
     }
-    
+   
     return retcode;
 }
 
@@ -36,17 +62,9 @@ static DSDP_INT getdy( HSDSolver *dsdpSolver ) {
     
     vec *dy = dsdpSolver->dy;
     vec *d1 = dsdpSolver->d1;
-    vec *d2 = dsdpSolver->d2;
+    vec *b2 = dsdpSolver->b2;
     
-    retcode = vec_zaxpby(dy, dsdpSolver->dtau, d1, 1.0, d2);
-    
-    return retcode;
-}
-
-static DSDP_INT getBlockdS( HSDSolver *dsdpSolver, DSDP_INT blockid ) {
-    // Compute dS for some block (dS = Ry - ATdy + C * dtau)
-    // dS is computed exactly in the same way as Ry
-    DSDP_INT retcode = DSDP_RETCODE_OK;
+    retcode = vec_zaxpby(dy, dsdpSolver->dtau, d1, 1.0, b2);
     
     return retcode;
 }
@@ -54,11 +72,9 @@ static DSDP_INT getBlockdS( HSDSolver *dsdpSolver, DSDP_INT blockid ) {
 static DSDP_INT getdS( HSDSolver *dsdpSolver ) {
     
     DSDP_INT retcode = DSDP_RETCODE_OK;
-    DSDP_INT nblock = dsdpSolver->nBlock;
-    
-    for (DSDP_INT i = 0; i < nblock; ++i) {
-        retcode = getBlockdS(dsdpSolver, i); checkCode;
-    }
+    double *dy = dsdpSolver->dy->x;
+    double dtau = dsdpSolver->dtau;
+    retcode = getPhaseAdS(dsdpSolver, dy, dtau); checkCode;
     
     return retcode;
 }
@@ -110,7 +126,7 @@ static DSDP_INT getdsLP( HSDSolver *dsdpSolver ) {
     return retcode;
 }
 
-static DSDP_INT getSDPDirs( HSDSolver *dsdpSolver, double rM, vec *b2 ) {
+static DSDP_INT getSDPDirs( HSDSolver *dsdpSolver ) {
     
     DSDP_INT retcode = DSDP_RETCODE_OK;
     retcode = checkIterProgress(dsdpSolver, ITER_RECOVER_SDP_DIR);
@@ -120,8 +136,7 @@ static DSDP_INT getSDPDirs( HSDSolver *dsdpSolver, double rM, vec *b2 ) {
         error(etype, "SDP directions have been set up. \n");
     }
     
-    retcode = getdTau(dsdpSolver, rM, b2); checkCode;
-    retcode = getdy(dsdpSolver); checkCode;
+    retcode = getdTau(dsdpSolver); checkCode;
     retcode = getdS(dsdpSolver); checkCode;
     retcode = getdKappa(dsdpSolver); checkCode;
     
@@ -130,12 +145,13 @@ static DSDP_INT getSDPDirs( HSDSolver *dsdpSolver, double rM, vec *b2 ) {
     return retcode;
 }
 
-extern DSDP_INT getStepDirs( HSDSolver *dsdpSolver, double rM, vec *b2 ) {
+extern DSDP_INT getStepDirs( HSDSolver *dsdpSolver ) {
     
     DSDP_INT retcode = DSDP_RETCODE_OK;
     
-    retcode = getSDPDirs(dsdpSolver, rM, b2); checkCode;
-    retcode = getdsLP(dsdpSolver); checkCode;
+    retcode = assembleArrs(dsdpSolver);
+    retcode = getSDPDirs(dsdpSolver); checkCode;
+    // retcode = getdsLP(dsdpSolver); checkCode;
     
     return retcode;
 }

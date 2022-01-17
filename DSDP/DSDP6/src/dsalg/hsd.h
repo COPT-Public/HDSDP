@@ -30,15 +30,14 @@
 #define ITER_NEXT_ITERATION    18
 
 // Special events
-#define EVENT_INIT_ITER    (-1) // Initial iteration
 #define EVENT_NO_RY          0  // Dual infeasibility is eliminated
-#define EVENT_NO_RKAPPA      2  // Complementary infeasibility is eliminated
-#define EVENT_PFEAS_FOUND    3  // Projection finds a primal feasible solution
-#define EVENT_MU_QUALIFIES   4  // Duality gap is qualified by tolerance
-#define EVENT_BAD_SCHUR      5  // Bad schur matrix
-#define EVENT_NAN_IN_ITER    6  // Nan detected in iterations
-#define EVENT_STEP_TOO_SMALL 7  // Step taken is too small
-#define EVENT_ITERTION_END   8  // Iteration stops
+#define EVENT_DINFES         1
+#define EVENT_PFEAS_FOUND    2  // Projection finds a primal feasible solution
+#define EVENT_MU_QUALIFIES   3  // Duality gap is qualified by tolerance
+#define EVENT_BAD_SCHUR      4  // Bad schur matrix
+#define EVENT_NAN_IN_ITER    5  // Nan detected in iterations
+#define EVENT_STEP_TOO_SMALL 6  // Step taken is too small
+#define EVENT_ITERTION_END   7  // Iteration stops
 
 #ifdef __cplusplus
 extern "C" {
