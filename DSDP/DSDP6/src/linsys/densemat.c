@@ -139,6 +139,29 @@ extern DSDP_INT denseMataXpbY( double alpha, dsMat *dXMat, double beta, dsMat *d
     return retcode;
 }
 
+extern DSDP_INT denseMatxTAx( dsMat *dAMat, vec *x, double *xTAx ) {
+    
+    // Compute quadratic for m x' * A * x 
+    DSDP_INT retcode = DSDP_RETCODE_OK;
+    
+    assert( dAMat->dim == x->dim );
+    
+    char uplo    = DSDP_MAT_LOW;
+    DSDP_INT dim = dAMat->dim;
+    double alpha = 1.0;
+    double beta  = 0.0;
+    
+    double *y = (double *) calloc(dim, sizeof(double));
+    packmatvec(&uplo, &dim, &alpha, dAMat->array, x->x,
+               &one, &beta, y, &one);
+    
+    *xTAx = ddot(&dim, x->x, &one, y, &one);
+    DSDP_FREE(xTAx);
+    
+    return retcode;
+}
+
+
 extern DSDP_INT denseMatRscale( dsMat *dXMat, double r ) {
     // Scale a matrix by reciprocical without over/under flow
     

@@ -51,6 +51,9 @@ typedef int DSDP_INT;
 #define TRUE                    1
 #define FALSE                   0
 
+// Constants
+#define DSDP_INFINITY           1e+20
+
 // Solver return code
 #define DSDP_RETCODE_OK         2
 #define DSDP_RETCODE_FAILED     3

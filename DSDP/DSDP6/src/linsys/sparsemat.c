@@ -44,7 +44,7 @@ static DSDP_INT pardisoNumFactorize( spsMat *S ) {
     
     /*
      Numerically factorize the spsMat matrix
-     Reuse symbolic ordering after the second iteration
+     Reuse symbolic ordering after the first iteration
      */
     
     DSDP_INT retcode = DSDP_RETCODE_OK;
@@ -792,6 +792,31 @@ extern DSDP_INT spsMatMinEig( spsMat *sMat, double *minEig ) {
 }
 
 /* Other utilities */
+extern DSDP_INT spsMatIspd( spsMat *sMat, DSDP_INT *ispd ) {
+    // A critical routine that determines whether a matrix is positive definite
+    DSDP_INT retcode = DSDP_RETCODE_OK;
+    
+    // Get the pardiso parameter
+    DSDP_INT phase = PARDISO_SYM_FAC;
+    DSDP_INT error = 0;
+    
+    // Invoke pardiso to do symbolic analysis and Cholesky factorization
+    pardiso(sMat->pdsWorker, &maxfct, &mnum, &mtype, &phase, &sMat->dim,
+            sMat->x, sMat->p, sMat->i, &idummy, &idummy, PARDISO_PARAMS_CHOLESKY,
+            &msglvl, NULL, NULL, &error);
+        
+    if (error == 0) {
+        sMat->isFactorized = TRUE;
+        *ispd = TRUE;
+    } else if (error == -1) {
+        *ispd = FALSE;
+    } else {
+        error(etype, "Pardiso failes for some reason. \n");
+    }
+    
+    return retcode;
+}
+
 extern DSDP_INT spsMatScatter( spsMat *sMat, vec *b, DSDP_INT k ) {
     
     // Let b = sMat(:, k)
@@ -817,7 +842,6 @@ extern DSDP_INT spsMatScatter( spsMat *sMat, vec *b, DSDP_INT k ) {
             if (Ai[i] > k) {
                 break;
             }
-            
             if (Ai[i] == k) {
                 b->x[j] = Ax[i];
                 break;

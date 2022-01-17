@@ -128,6 +128,44 @@ extern DSDP_INT getTraceASinvASinv( HSDSolver *dsdpSolver, DSDP_INT blockid, DSD
     return retcode;
 }
 
+/* Retrieve S = - Ry + C * tau - ATy across all the blocks */
+extern DSDP_INT getPhaseAS( HSDSolver *dsdpSolver, double *y, double tau ) {
+    
+    DSDP_INT retcode = DSDP_RETCODE_OK;
+    spsMat *S = NULL;
+    DSDP_INT m = dsdpSolver->m;
+    
+    for (DSDP_INT i = 0; i < dsdpSolver->nBlock; ++i) {
+        S = dsdpSolver->S[i];
+        retcode = spsMatReset(S);
+        for (DSDP_INT j = 0; j < m; ++j) {
+            retcode = addMattoS(dsdpSolver, i, j, - y[j]);
+        }
+        retcode = addMattoS(dsdpSolver, i, m + 1, tau);
+    }
+    
+    retcode = spsMatAdddiag(S, - dsdpSolver->Ry);
+    checkCode;
+    return retcode;
+}
+
+/* DSDP routine for checking positive definite-ness of matrix */
+extern DSDP_INT dsdpInCone( HSDSolver *dsdpSolver, DSDP_INT *ispsd ) {
+    // Determine whether the current dual variable lies in the cone
+    DSDP_INT retcode = DSDP_RETCODE_OK;
+    DSDP_INT incone = FALSE;
+    
+    for (DSDP_INT i = 0; i < dsdpSolver->nBlock; ++i) {
+        spsMatIspd(dsdpSolver->S[i], &incone);
+        if (!incone) {
+            break;
+        }
+    }
+    
+    *ispsd = incone;
+    return retcode;
+}
+
 /* Coefficient norm computer */
 extern DSDP_INT getMatnrm( HSDSolver *dsdpSolver, DSDP_INT blockid, DSDP_INT constrid, double *nrm ) {
     

@@ -79,6 +79,7 @@ static DSDP_INT DSDPIInit( HSDSolver *dsdpSolver ) {
     dsdpSolver->tau    = 0.0;
     dsdpSolver->kappa  = 0.0;
     dsdpSolver->alpha  = 0.0;
+    dsdpSolver->Pnrm   = 0.0;
     
     // Step matrix
     dsdpSolver->dS     = NULL;
@@ -565,6 +566,7 @@ static DSDP_INT DSDPIFreeCleanUp( HSDSolver *dsdpSolver ) {
     dsdpSolver->mu     = 0.0;
     dsdpSolver->csinvrysinv = 0.0;
     dsdpSolver->rtk    = 0.0;
+    dsdpSolver->Pnrm   = 0.0;
     dsdpSolver->tau    = 0.0;
     dsdpSolver->kappa  = 0.0;
     dsdpSolver->alpha  = 0.0;

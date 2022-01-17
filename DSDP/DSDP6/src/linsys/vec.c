@@ -100,6 +100,13 @@ extern DSDP_INT vec_norm( vec *x, double *nrm ) {
     return DSDP_RETCODE_OK;
 }
 
+extern DSDP_INT vec_dot( vec *x, vec *y, double *xTy ) {
+    // Compute x' * y
+    assert( x->dim == y->dim );
+    *xTy = dot(&x->dim, x->x, &one, y->x, &one);
+    return DSDP_RETCODE_OK;
+}
+
 extern DSDP_INT vec_print( vec *x ) {
     // Print x
     printf("Vector dimension:"ID" \n", x->dim);

@@ -62,6 +62,9 @@ typedef struct {
     
     double   alpha;       // Stepsize
     
+    // Proximity measure
+    double   Pnrm;          
+    
     // Residuals
     double   rtk;         // Complementarity residual
     double    Ry;         // SDP Dual infeasibility
