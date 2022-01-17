@@ -10,17 +10,14 @@
 
 // Iteration monitor
 #define ITER_LOGGING           0
-#define ITER_LP_RESIDUAL       1
-#define ITER_SDP_RESIDUAL      2
-#define ITER_DUAL_OBJ          3
-#define ITER_DUAL_FACTORIZE    4
-#define ITER_LP_SCHUR          5
-#define ITER_SDP_SCHUR         6
-#define ITER_AUX_ARRAY         7
-#define ITER_SCHUR_SOLVE       8
-#define ITER_STEP_DIRECTION    9
-#define ITER_RECOVER_LP_DIR    10
-#define ITER_RECOVER_SDP_DIR   11
+#define ITER_DUAL_OBJ          1
+#define ITER_RESIDUAL          2
+#define ITER_DUAL_FACTORIZE    3
+#define ITER_SCHUR             5
+#define ITER_AUX_ARRAY         6
+#define ITER_SCHUR_SOLVE       7
+#define ITER_STEP_DIRECTION    8
+#define ITER_RECOVER_DIR       9
 #define ITER_COMPUTE_STEP      12
 #define ITER_TAKE_STEP         13
 #define ITER_PRIMAL_PROJ       14

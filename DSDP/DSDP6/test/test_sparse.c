@@ -135,7 +135,8 @@ double spsol[] = {-0.0825, -0.0374, -0.1554, 0.0707, 0.0005,
                0.0650, -0.0127, 0.0619, -0.1639, -0.0983};
 
 double spfnrm = 32.347300418814825;
-
+double refeigmax = 13.943109380013954;
+double refeigmin = 6.085048173386250;
 
 DSDP_INT test_sparse(void) {
     // Test the sparse routines
@@ -144,14 +145,16 @@ DSDP_INT test_sparse(void) {
     DSDP_INT packAnnz = packAp[spsAdim];
     DSDP_INT packBnnz = packBp[spsAdim];
     
-    spsMat *data = NULL;
-    spsMat *B    = NULL;
-    vec *rhs     = NULL;
-    vec *mysol   = NULL;
+    spsMat *data  = NULL;
+    spsMat *data2 = NULL;
+    spsMat *B     = NULL;
+    vec *rhs      = NULL;
+    vec *mysol    = NULL;
     double *fullSol = NULL;
     dsMat *dataInvBdataInv = NULL;
     
     data    = (spsMat *) calloc(1, sizeof(spsMat));
+    data2   = (spsMat *) calloc(1, sizeof(spsMat));
     B       = (spsMat *) calloc(1, sizeof(spsMat));
     rhs     = (vec *) calloc(1, sizeof(vec));
     mysol   = (vec *) calloc(1, sizeof(vec));
@@ -165,6 +168,8 @@ DSDP_INT test_sparse(void) {
     
     retcode = spsMatInit(data); checkCodeFree;
     retcode = spsMatAllocData(data, spsAdim, packAnnz);
+    retcode = spsMatInit(data2); checkCodeFree;
+    retcode = spsMatAllocData(data2, spsAdim, packAnnz);
     retcode = spsMatInit(B); checkCodeFree;
     retcode = spsMatAllocData(B, spsAdim, packBnnz);
     
@@ -174,6 +179,10 @@ DSDP_INT test_sparse(void) {
     memcpy(data->p, packAp, sizeof(DSDP_INT) * (spsAdim + 1));
     memcpy(data->i, packAi, sizeof(DSDP_INT) * packAnnz);
     memcpy(data->x, packAx, sizeof(double)   * packAnnz);
+    
+    memcpy(data2->p, packAp, sizeof(DSDP_INT) * (spsAdim + 1));
+    memcpy(data2->i, packAi, sizeof(DSDP_INT) * packAnnz);
+    memcpy(data2->x, packAx, sizeof(double)   * packAnnz);
     
     memcpy(B->p, packBp, sizeof(DSDP_INT) * (spsAdim + 1));
     memcpy(B->i, packBi, sizeof(DSDP_INT) * packBnnz);
@@ -244,11 +253,59 @@ DSDP_INT test_sparse(void) {
         passed("Spinv Sp Spinv");
     }
     
+    // Hash sum
+    retcode = spsMatAllocSumMat(data);
+    DSDP_INT idx = 0;
+    for (DSDP_INT i = 0; i < data->dim; ++i) {
+        for (DSDP_INT j = data->p[i]; j < data->p[i + 1]; ++j) {
+            packIdx(data->sumHash, data->dim, data->i[j], i) = idx;
+            idx += 1;
+        }
+    }
+    
+    retcode = spsMataXpbY(2.0, data2, -1.0, data); checkCodeFree;
+    retcode = spsMatFnorm(data, &myfnrm); checkCodeFree;
+    
+    if (myfnrm < 1e-15) {
+        passed("Hash sum");
+    }
+    
+    // Eigen value routines
+    double maxEig = 0.0;
+    double minEig = 0.0;
+    
+    retcode = spsMatMaxEig(data2, &maxEig);
+    retcode = spsMatMinEig(data2, &minEig);
+    
+    if (fabs(refeigmax - maxEig) < 1e-06) {
+        passed("Maximum eigenvalue");
+    }
+    
+    if (fabs(refeigmin - minEig) < 1e-06) {
+        passed("Minimum eigenvalue");
+    }
+    
+    // Check positive-definiteness
+    DSDP_INT ispd = FALSE;
+    spsMatIspd(data, &ispd);
+    if (!ispd) {
+        passed("PSD check 1");
+    }
+    spsMatIspd(data2, &ispd);
+    if (ispd) {
+        passed("PSD check 2");
+    }
+    
+    // Take SDP step
+    spsMatLspLSolve(data2, B, data);
     
 clean_up:
     
     spsMatFree(data);
     DSDP_FREE(data);
+    
+    spsMatFree(data2);
+    DSDP_FREE(data2);
     
     spsMatFree(B);
     DSDP_FREE(B);

@@ -34,7 +34,13 @@
 #define NCOMPLEX
 
 #ifdef DSDP64
+#ifndef
 #define CS_LONG
+#endif
+#else
+#ifdef CS_LONG
+#undef CS_LONG
+#endif
 #endif
 
 #ifdef __cplusplus
@@ -167,7 +173,7 @@ int *cs_di_post (const int *parent, int n) ;
 cs_did *cs_di_scc (cs_di *A) ;
 int cs_di_scatter (const cs_di *A, int j, double beta, int *w, double *x,
     int mark, cs_di *C, int nz) ;
-int cs_di_scatter2 (const cs *A, int i, double *Arow);
+int cs_di_scatter2 (const cs_di *A, int i, double *Arow);
 int cs_di_tdfs (int j, int k, int *head, const int *next, int *post,
     int *stack) ;
 int cs_di_leaf (int i, int j, const int *first, int *maxfirst, int *prevleaf,

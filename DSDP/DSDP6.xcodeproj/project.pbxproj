@@ -62,6 +62,8 @@
 		19118E222737B72800D51D03 /* cs_util.c in Sources */ = {isa = PBXBuildFile; fileRef = 19118DE02737B72800D51D03 /* cs_util.c */; };
 		19118E232737B72800D51D03 /* main.c in Sources */ = {isa = PBXBuildFile; fileRef = 19118DE22737B72800D51D03 /* main.c */; };
 		19118E242737B72800D51D03 /* dsdphsd.c in Sources */ = {isa = PBXBuildFile; fileRef = 19118DE42737B72800D51D03 /* dsdphsd.c */; };
+		1929CF1427959F1700981C20 /* memwatch.c in Sources */ = {isa = PBXBuildFile; fileRef = 1929CF1227959F1700981C20 /* memwatch.c */; };
+		1929CF162795B40400981C20 /* test_feast.c in Sources */ = {isa = PBXBuildFile; fileRef = 1929CF152795B40400981C20 /* test_feast.c */; };
 		192B24B22768D1A900F5C7C0 /* test_data.c in Sources */ = {isa = PBXBuildFile; fileRef = 192B24B12768D1A900F5C7C0 /* test_data.c */; };
 		19808F382737EEA60014086F /* test_vec.c in Sources */ = {isa = PBXBuildFile; fileRef = 19808F372737EEA60014086F /* test_vec.c */; };
 		19808F3F273807770014086F /* dsdpdata.c in Sources */ = {isa = PBXBuildFile; fileRef = 19808F3E273807770014086F /* dsdpdata.c */; };
@@ -194,6 +196,9 @@
 		19118DE22737B72800D51D03 /* main.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = main.c; sourceTree = "<group>"; };
 		19118DE42737B72800D51D03 /* dsdphsd.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = dsdphsd.c; sourceTree = "<group>"; };
 		19118DE52737B72800D51D03 /* dsdphsd.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = dsdphsd.h; sourceTree = "<group>"; };
+		1929CF1227959F1700981C20 /* memwatch.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = memwatch.c; sourceTree = "<group>"; };
+		1929CF1327959F1700981C20 /* memwatch.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = memwatch.h; sourceTree = "<group>"; };
+		1929CF152795B40400981C20 /* test_feast.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = test_feast.c; sourceTree = "<group>"; };
 		192B24B12768D1A900F5C7C0 /* test_data.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = test_data.c; sourceTree = "<group>"; };
 		19808F372737EEA60014086F /* test_vec.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = test_vec.c; sourceTree = "<group>"; };
 		19808F392737FEDA0014086F /* test.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = test.h; sourceTree = "<group>"; };
@@ -432,6 +437,8 @@
 		19118DE12737B72800D51D03 /* test */ = {
 			isa = PBXGroup;
 			children = (
+				1929CF1227959F1700981C20 /* memwatch.c */,
+				1929CF1327959F1700981C20 /* memwatch.h */,
 				19C1E9D42768E707000FCBF9 /* SDPdata.h */,
 				19808F372737EEA60014086F /* test_vec.c */,
 				19808F392737FEDA0014086F /* test.h */,
@@ -441,6 +448,7 @@
 				19BACAF92753C0D600E987FD /* test_presolve.c */,
 				19BACAFC2753C17500E987FD /* gen_test_data.c */,
 				192B24B12768D1A900F5C7C0 /* test_data.c */,
+				1929CF152795B40400981C20 /* test_feast.c */,
 			);
 			path = test;
 			sourceTree = "<group>";
@@ -615,6 +623,7 @@
 				19118DFE2737B72800D51D03 /* cs_leaf.c in Sources */,
 				19118E192737B72800D51D03 /* cs_permute.c in Sources */,
 				19808F382737EEA60014086F /* test_vec.c in Sources */,
+				1929CF1427959F1700981C20 /* memwatch.c in Sources */,
 				19C3BBE3279454D600F0331B /* dsdputils.c in Sources */,
 				19BEEC212756065600C36C9E /* cs_entry.c in Sources */,
 				19118DF42737B72800D51D03 /* cs_pvec.c in Sources */,
@@ -625,6 +634,7 @@
 				19118E1C2737B72800D51D03 /* cs_pinv.c in Sources */,
 				19118E072737B72800D51D03 /* cs_cholsol.c in Sources */,
 				19118E1D2737B72800D51D03 /* cs_scc.c in Sources */,
+				1929CF162795B40400981C20 /* test_feast.c in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

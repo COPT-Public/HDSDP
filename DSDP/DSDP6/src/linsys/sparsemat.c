@@ -278,6 +278,11 @@ extern DSDP_INT spsMatFree( spsMat *sMat ) {
         retcode = pardisoFree(sMat);
         sMat->isFactorized = FALSE;
     }
+    
+    if (sMat->isSum) {
+        DSDP_FREE(sMat->sumHash);
+        sMat->isSum = FALSE;
+    }
         
     return retcode;
 }
@@ -289,16 +294,16 @@ extern DSDP_INT spsMataXpbY( double alpha, spsMat *sXMat, double beta, spsMat *s
     // Note that sYMat must have a hash table
     DSDP_INT retcode = DSDP_RETCODE_OK;
 
-    // Two matrices for adding are NEVER factorized since they purely serve as constant data
+    // The matrices added is NEVER factorized since they purely serve as constant data
     assert ( sXMat->dim == sYMat->dim );
-    assert ((!sXMat->isFactorized) && (!sYMat->isFactorized));
+    assert ((!sXMat->isFactorized));
     assert ( sYMat->isSum );
-    if (sXMat->isFactorized || sYMat->isFactorized) {
+    if (sXMat->isFactorized) {
         error(etype, "Adding a factorized matrix. \n");
     }
     
     if (beta != 1.0) {
-        retcode = spsMatScale(sXMat, beta);
+        retcode = spsMatScale(sYMat, beta);
     }
     
     // Case if alpha = 0.0
@@ -311,10 +316,13 @@ extern DSDP_INT spsMataXpbY( double alpha, spsMat *sXMat, double beta, spsMat *s
     DSDP_INT *Ai = sXMat->i;
     double   *Ax = sXMat->x;
     double   *Bx = sYMat->x;
+    DSDP_INT hash = 0;
     
     for (DSDP_INT i = 0; i < dim; ++i) {
         for (DSDP_INT j = Ap[i]; j < Ap[i + 1]; ++j) {
-            Bx[packIdx(sYMat->sumHash, dim, Ai[j], i)] += alpha * Ax[j];
+            hash = packIdx(sYMat->sumHash, dim, Ai[j], i);
+            assert( hash > 0 || j == 0 );
+            Bx[hash] += alpha * Ax[j];
         }
     }
 
@@ -335,9 +343,12 @@ extern DSDP_INT spsMatAdddiag( spsMat *sMat, double d ) {
     
     DSDP_INT *hash = sMat->sumHash;
     DSDP_INT dim = sMat->dim;
+    DSDP_INT idx = 0;
     
     for (DSDP_INT i = 0; i < dim; ++i) {
-        sMat->x[packIdx(hash, dim, i, i)] += d;
+        idx = packIdx(hash, dim, i, i);
+        assert( idx > 0 || i == 0 );
+        sMat->x[idx] += d;
     }
     
     return retcode;
@@ -375,6 +386,7 @@ extern DSDP_INT spsMatAddr1( spsMat *sXMat, double alpha, r1Mat *r1YMat ) {
     }
     
     DSDP_INT dim = sXMat->dim;
+    DSDP_INT idx = 0;
     DSDP_INT *hash = sXMat->sumHash;
     DSDP_INT *nzIdx = r1YMat->nzIdx;
     
@@ -383,7 +395,9 @@ extern DSDP_INT spsMatAddr1( spsMat *sXMat, double alpha, r1Mat *r1YMat ) {
     
     for (DSDP_INT i = 0; i < r1YMat->nnz; ++i) {
         for (DSDP_INT j = 0; j <= i; ++j) {
-            sXMat->x[packIdx(hash, dim, nzIdx[i], nzIdx[j])] += alpha * sign * rx[i] * rx[j];
+            idx = packIdx(hash, dim, nzIdx[i], nzIdx[j]);
+            assert( idx > 0 || i == 0 );
+            sXMat->x[idx] += alpha * sign * rx[i] * rx[j];
         }
     }
     
@@ -753,7 +767,7 @@ extern DSDP_INT spsMatMaxEig( spsMat *sMat, double *maxEig ) {
     
     sparse_matrix_t A = NULL;
     
-    mkl_sparse_d_create_csc(&A, SPARSE_INDEX_BASE_ZERO,
+    mkl_sparse_d_create_csr(&A, SPARSE_INDEX_BASE_ZERO,
                             n, n, sMat->p, sMat->p + 1,
                             sMat->i, sMat->x);
     
@@ -779,7 +793,7 @@ extern DSDP_INT spsMatMinEig( spsMat *sMat, double *minEig ) {
     
     sparse_matrix_t A = NULL;
     
-    mkl_sparse_d_create_csc(&A, SPARSE_INDEX_BASE_ZERO,
+    mkl_sparse_d_create_csr(&A, SPARSE_INDEX_BASE_ZERO,
                             n, n, sMat->p, sMat->p + 1,
                             sMat->i, sMat->x);
     
@@ -812,7 +826,7 @@ extern DSDP_INT spsMatIspd( spsMat *sMat, DSDP_INT *ispd ) {
     if (error == 0) {
         sMat->isFactorized = TRUE;
         *ispd = TRUE;
-    } else if (error == -1) {
+    } else if (error == -4) {
         *ispd = FALSE;
     } else {
         error(etype, "Pardiso failes for some reason. \n");
@@ -892,7 +906,17 @@ extern DSDP_INT spsMatView( spsMat *sMat ) {
     DSDP_INT retcode = DSDP_RETCODE_OK;
     assert( sMat->dim > 0 );
     
-    // cs_print(sMat->cscMat, TRUE);
+    cs mat;
+    
+    mat.p = sMat->p;
+    mat.i = sMat->i;
+    mat.x = sMat->x;
+    mat.nz = -1;
+    mat.nzmax = sMat->nnz;
+    mat.m = sMat->dim;
+    mat.n = sMat->dim;
+    
+    cs_print(&mat, TRUE);
     
     return retcode;
 }

@@ -58,6 +58,15 @@ sparse_status_t mkl_sparse_d_create_csc( sparse_matrix_t           *A,
                                          DSDP_INT                  *row_indx,
                                          double                    *values );
 
+sparse_status_t mkl_sparse_d_create_csr( sparse_matrix_t           *A,
+                                         const sparse_index_base_t indexing, /* indexing: C-style or Fortran-style */
+                                         const DSDP_INT            rows,
+                                         const DSDP_INT            cols,
+                                         DSDP_INT                  *rows_start,
+                                         DSDP_INT                  *rows_end,
+                                         DSDP_INT                  *col_indx,
+                                         double                    *values );
+
 sparse_status_t mkl_sparse_d_ev( char                *which,
                                  DSDP_INT            *pm,
                                  sparse_matrix_t     A,
@@ -68,11 +77,13 @@ sparse_status_t mkl_sparse_d_ev( char                *which,
                                  double              *X,
                                  double              *res );
 
+sparse_status_t mkl_sparse_ee_init( DSDP_INT *pm);
+
 sparse_status_t mkl_sparse_destroy( sparse_matrix_t  A );
 
 static struct matrix_descr dsdp_descr = {
     SPARSE_MATRIX_TYPE_SYMMETRIC,
-    SPARSE_FILL_MODE_LOWER,
+    SPARSE_FILL_MODE_UPPER,
     SPARSE_DIAG_NON_UNIT
 };
 
@@ -84,7 +95,7 @@ static double resi  = 0.0; // Used to catch residual
 static DSDP_INT pm[128] = {
     0, 6 /* Stopping tolerance 1e-05 */,
           0 /* Decide algorithm one run time */,
-             0, 0, 0, 0 /* No eigen vectot (memory still needs allocation */,
+             0, 0, 0, 0 /* No eigen vector (memory still needs allocation */,
                          0,
     0, 0, 0, 0, 0, 0, 0, 0,
     0, 0, 0, 0, 0, 0, 0, 0,

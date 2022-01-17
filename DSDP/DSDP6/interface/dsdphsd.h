@@ -20,7 +20,7 @@
 #define SHOWALL
 #endif
 
-#define DSDP64
+// #define DSDP64
 
 #ifdef COMPMEX
 #include "mex.h"
@@ -36,10 +36,12 @@ typedef mwSignedIndex DSDP_INT;
 #include <stdint.h>
 #ifdef DSDP64
 typedef long int DSDP_INT;
+#define ID "%ld"
 #else
 typedef int DSDP_INT;
+#define ID "%d"
 #endif
-#define ID "%ld"
+
 #endif
 
 //typedef HSDSolver Solver;

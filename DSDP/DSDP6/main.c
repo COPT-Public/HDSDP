@@ -8,11 +8,14 @@
 int main (void)
 {
     
-    test_data();
-    // test_sparse();
-    // test_dense();
-    // test_presolve();
-    // test_vec();
-    // test_pardiso();
+    
+//    test_data();
+      test_sparse();
+//    test_dense();
+//    test_presolve();
+//    test_vec();
+//    test_pardiso();
+//    test_feast();
+    
     return 0;
 }

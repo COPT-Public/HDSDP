@@ -2,27 +2,6 @@
 #include "dsdputils.h"
 
 static char etype[] = "Schur matrix setup";
-/* Setup the auxiliary arrays as well as the schur matrix
- 
- In DSDP, we set up the schur matrix by
- 
- 
- for k = 1 : nblock
- 
-    Sk = S[k]
-    Ak = A[k]
- 
-    for i = 1 : m + 1
- 
-        X = Skinv * Ak[i] * Skinv
-        asinv[k][i] = trace(A[i] * Skinv)
- 
-        for j = 1 : i
-            M[i, j] = trace(X * A[j])
- 
-        u[i] = trace(X * A[m + 1])
-     
-*/
 
 static DSDP_INT setupSDPSchurBlock( HSDSolver *dsdpSolver, DSDP_INT blockid ) {
     /* Set up the schur matrix for a given block. This routine updates
@@ -300,4 +279,3 @@ extern DSDP_INT setupPhaseASchur( HSDSolver *dsdpSolver ) {
     
     return retcode;
 }
-
