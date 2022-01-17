@@ -124,7 +124,13 @@ extern DSDP_INT r1MatdiagTrace( r1Mat *x, double diag, double *trace ) {
     // Compute trace(a * a' * diag * I) = diag * norm(a)^2
     DSDP_INT retcode = DSDP_RETCODE_OK;
     
+    if (diag == 0.0) {
+        *trace = 0.0;
+        return retcode;
+    }
+    
     double nrm = 0.0;
+    
     retcode = r1MatFnorm(x, &nrm);
     *trace = diag * nrm * nrm;
     

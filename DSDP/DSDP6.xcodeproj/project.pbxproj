@@ -67,7 +67,6 @@
 		19808F3F273807770014086F /* dsdpdata.c in Sources */ = {isa = PBXBuildFile; fileRef = 19808F3E273807770014086F /* dsdpdata.c */; };
 		19808F4327380A990014086F /* dsdppresolve.c in Sources */ = {isa = PBXBuildFile; fileRef = 19808F4227380A990014086F /* dsdppresolve.c */; };
 		19808F46273817510014086F /* rankonemat.c in Sources */ = {isa = PBXBuildFile; fileRef = 19808F45273817510014086F /* rankonemat.c */; };
-		198AF5DE275BDE54007A38C9 /* pfeascheck.c in Sources */ = {isa = PBXBuildFile; fileRef = 198AF5DD275BDE54007A38C9 /* pfeascheck.c */; };
 		199220762737D86C00DD975D /* Accelerate.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 199220752737D86C00DD975D /* Accelerate.framework */; platformFilter = maccatalyst; };
 		1992207B2737D8A400DD975D /* libmkl_intel_thread.1.dylib in Frameworks */ = {isa = PBXBuildFile; fileRef = 199220772737D8A400DD975D /* libmkl_intel_thread.1.dylib */; };
 		1992207C2737D8A400DD975D /* libmkl_intel_thread.1.dylib in Embed Libraries */ = {isa = PBXBuildFile; fileRef = 199220772737D8A400DD975D /* libmkl_intel_thread.1.dylib */; settings = {ATTRIBUTES = (CodeSignOnCopy, ); }; };
@@ -94,6 +93,8 @@
 		19C3BBDD2794539600F0331B /* dsdpdinfeas.c in Sources */ = {isa = PBXBuildFile; fileRef = 19C3BBDC2794539600F0331B /* dsdpdinfeas.c */; };
 		19C3BBE0279453F200F0331B /* dsdpinitializer.c in Sources */ = {isa = PBXBuildFile; fileRef = 19C3BBDF279453F200F0331B /* dsdpinitializer.c */; };
 		19C3BBE3279454D600F0331B /* dsdputils.c in Sources */ = {isa = PBXBuildFile; fileRef = 19C3BBE2279454D600F0331B /* dsdputils.c */; };
+		19C3BBE62795054900F0331B /* dsdpproxmeasure.c in Sources */ = {isa = PBXBuildFile; fileRef = 19C3BBE52795054900F0331B /* dsdpproxmeasure.c */; };
+		19C3BC05279527BA00F0331B /* dsdppfeascheck.c in Sources */ = {isa = PBXBuildFile; fileRef = 19C3BC04279527BA00F0331B /* dsdppfeascheck.c */; };
 		19F1195B275A627B0051D808 /* stepdirection.c in Sources */ = {isa = PBXBuildFile; fileRef = 19F1195A275A627B0051D808 /* stepdirection.c */; };
 /* End PBXBuildFile section */
 
@@ -203,8 +204,6 @@
 		19808F44273817510014086F /* rankonemat.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = rankonemat.h; sourceTree = "<group>"; };
 		19808F45273817510014086F /* rankonemat.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = rankonemat.c; sourceTree = "<group>"; };
 		19808F47273833760014086F /* dsdpparam.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = dsdpparam.h; sourceTree = "<group>"; };
-		198AF5DC275BDE54007A38C9 /* pfeascheck.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = pfeascheck.h; sourceTree = "<group>"; };
-		198AF5DD275BDE54007A38C9 /* pfeascheck.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = pfeascheck.c; sourceTree = "<group>"; };
 		199220752737D86C00DD975D /* Accelerate.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = Accelerate.framework; path = System/Library/Frameworks/Accelerate.framework; sourceTree = SDKROOT; };
 		199220772737D8A400DD975D /* libmkl_intel_thread.1.dylib */ = {isa = PBXFileReference; lastKnownFileType = "compiled.mach-o.dylib"; name = libmkl_intel_thread.1.dylib; path = ../../../../../../opt/intel/oneapi/mkl/2021.2.0/lib/libmkl_intel_thread.1.dylib; sourceTree = "<group>"; };
 		199220782737D8A400DD975D /* libmkl_core.1.dylib */ = {isa = PBXFileReference; lastKnownFileType = "compiled.mach-o.dylib"; name = libmkl_core.1.dylib; path = ../../../../../../opt/intel/oneapi/mkl/2021.2.0/lib/libmkl_core.1.dylib; sourceTree = "<group>"; };
@@ -233,6 +232,10 @@
 		19C3BBDF279453F200F0331B /* dsdpinitializer.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = dsdpinitializer.c; sourceTree = "<group>"; };
 		19C3BBE1279454D600F0331B /* dsdputils.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = dsdputils.h; sourceTree = "<group>"; };
 		19C3BBE2279454D600F0331B /* dsdputils.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = dsdputils.c; sourceTree = "<group>"; };
+		19C3BBE42795054900F0331B /* dsdpproxmeasure.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = dsdpproxmeasure.h; sourceTree = "<group>"; };
+		19C3BBE52795054900F0331B /* dsdpproxmeasure.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = dsdpproxmeasure.c; sourceTree = "<group>"; };
+		19C3BC03279527BA00F0331B /* dsdppfeascheck.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = dsdppfeascheck.h; sourceTree = "<group>"; };
+		19C3BC04279527BA00F0331B /* dsdppfeascheck.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = dsdppfeascheck.c; sourceTree = "<group>"; };
 		19F11959275A627B0051D808 /* stepdirection.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = stepdirection.h; sourceTree = "<group>"; };
 		19F1195A275A627B0051D808 /* stepdirection.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = stepdirection.c; sourceTree = "<group>"; };
 		19F1195C275A9A260051D808 /* dsdpfeast.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = dsdpfeast.h; sourceTree = "<group>"; };
@@ -300,6 +303,8 @@
 			isa = PBXGroup;
 			children = (
 				19118D942737B72800D51D03 /* schurmat.c */,
+				19C3BC03279527BA00F0331B /* dsdppfeascheck.h */,
+				19C3BC04279527BA00F0331B /* dsdppfeascheck.c */,
 				19118D992737B72800D51D03 /* schurmat.h */,
 				19118D922737B72800D51D03 /* residualsetup.h */,
 				19118D932737B72800D51D03 /* stepheur.h */,
@@ -309,14 +314,14 @@
 				19118D982737B72800D51D03 /* hsd.h */,
 				19F11959275A627B0051D808 /* stepdirection.h */,
 				19F1195A275A627B0051D808 /* stepdirection.c */,
-				198AF5DC275BDE54007A38C9 /* pfeascheck.h */,
-				198AF5DD275BDE54007A38C9 /* pfeascheck.c */,
 				19C3BBDB2794539600F0331B /* dsdpdinfeas.h */,
 				19C3BBDC2794539600F0331B /* dsdpdinfeas.c */,
 				19C3BBDE279453F200F0331B /* dsdpinitializer.h */,
 				19C3BBDF279453F200F0331B /* dsdpinitializer.c */,
 				19C3BBE1279454D600F0331B /* dsdputils.h */,
 				19C3BBE2279454D600F0331B /* dsdputils.c */,
+				19C3BBE42795054900F0331B /* dsdpproxmeasure.h */,
+				19C3BBE52795054900F0331B /* dsdpproxmeasure.c */,
 			);
 			path = dsalg;
 			sourceTree = "<group>";
@@ -549,13 +554,14 @@
 				19118DEB2737B72800D51D03 /* vec.c in Sources */,
 				19118E152737B72800D51D03 /* cs_sqr.c in Sources */,
 				19118E172737B72800D51D03 /* cs_cumsum.c in Sources */,
+				19C3BC05279527BA00F0331B /* dsdppfeascheck.c in Sources */,
 				19C3BBDA2794032000F0331B /* dsdplog.c in Sources */,
 				19118E022737B72800D51D03 /* cs_dfs.c in Sources */,
-				198AF5DE275BDE54007A38C9 /* pfeascheck.c in Sources */,
 				19BACAF727521A7800E987FD /* test_pardiso.c in Sources */,
 				19118E1F2737B72800D51D03 /* cs_norm.c in Sources */,
 				19808F46273817510014086F /* rankonemat.c in Sources */,
 				19118DE62737B72800D51D03 /* schurmat.c in Sources */,
+				19C3BBE62795054900F0331B /* dsdpproxmeasure.c in Sources */,
 				19BACAF5274EBC2D00E987FD /* test_dense.c in Sources */,
 				19BEEC262756065600C36C9E /* cs_lusol.c in Sources */,
 				19118E162737B72800D51D03 /* cs_amd.c in Sources */,

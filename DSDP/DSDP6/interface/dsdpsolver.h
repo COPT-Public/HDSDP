@@ -47,7 +47,11 @@ typedef struct {
     
     dsMat    *Msdp;       // Schur matrix for SDP (dense)
     vec      *u;          // A_ls^(-2)c + AS^(-1)CS^(-1)
+    
+    vec      *b1;         // Auxiliary array 1
+    vec      *b2;         // Auxiliary array 2
     vec      *d1;         // Embedding
+    vec      *d12;        // Auxiliary for d1 
     vec      *d2;         // Affine scaling
     vec      *d3;         // Dual centering
     vec      *d4;         // Dual infeasibility
@@ -65,7 +69,7 @@ typedef struct {
     
     // Step matrix
     spsMat   **dS;        // SDP step matrix
-    spsMat   **spaux;      // Used for maximum step computation
+    spsMat   **spaux;     // Used for maximum step computation
     vec      *ds;         // LP step matrix
     vec      *dy;         // Dual step matrix
     double   dtau;        // Tau step

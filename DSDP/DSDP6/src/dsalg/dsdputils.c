@@ -2,6 +2,132 @@
 #include "dsdpsolver.h"
 static char etype[] = "DSDP Utility";
 
+/*
+ DSDP utility routines that manage the operations between
+ different types of matrices
+*/
+
+extern DSDP_INT getSinvASinv( HSDSolver *dsdpSolver, DSDP_INT blockid, DSDP_INT constrid, void *SinvASinv ) {
+    
+    // Given S and A, the routine computes A, asinv and trace(S, Sinv A Sinv)
+    DSDP_INT retcode = DSDP_RETCODE_OK;
+    DSDP_INT typeA = dsdpSolver->sdpData[blockid]->types[constrid];
+    spsMat *S = dsdpSolver->S[blockid];
+    void *A = dsdpSolver->sdpData[blockid]->sdpData[constrid];
+    
+    double *asinv = NULL;
+    double *asinvrysinv = NULL;
+    double tracediag = 0.0;
+    
+    if (constrid < dsdpSolver->m) {
+        asinv = &dsdpSolver->asinv->x[constrid];
+        asinvrysinv = &dsdpSolver->d4->x[constrid];
+    } else {
+        asinv = &dsdpSolver->csinv;
+        asinvrysinv = &dsdpSolver->csinvrysinv;
+    }
+    
+    if (typeA == MAT_TYPE_RANK1) {
+        r1Mat *dataA = (r1Mat *) A;
+        r1Mat *dataSinvASinv = (r1Mat *) SinvASinv;
+        retcode = spsSinvR1SinvSolve(S, dataA, dataSinvASinv, asinv); checkCode;
+    } else if (typeA == MAT_TYPE_SPARSE) {
+        spsMat *dataA = (spsMat *) A;
+        dsMat *dataSinvASinv = (dsMat *) SinvASinv;
+        retcode = spsSinvSpSinvSolve(S, dataA, dataSinvASinv, asinv); checkCode;
+    } else if (typeA == MAT_TYPE_DENSE) {
+        dsMat *dataA = (dsMat *) A;
+        dsMat *dataSinvASinv = (dsMat *) SinvASinv;
+        retcode = spsSinvDsSinvSolve(S, dataA, dataSinvASinv, asinv); checkCode;
+    } else {
+        error(etype, "Invalid matrix type. \n");
+    }
+    
+    switch (typeA) {
+        case MAT_TYPE_RANK1:
+            retcode = r1MatdiagTrace(SinvASinv, dsdpSolver->Ry, &tracediag);
+            break;
+        default:
+            retcode = denseDiagTrace(SinvASinv, dsdpSolver->Ry, &tracediag);
+            break;
+    }
+    
+    checkCode;
+    *asinvrysinv += tracediag;
+    
+    return retcode;
+}
+
+extern DSDP_INT getTraceASinvASinv( HSDSolver *dsdpSolver, DSDP_INT blockid, DSDP_INT constrid,
+                                    DSDP_INT mattype, DSDP_INT constrid2, void *SinvASinv ) {
+    
+    // Compute trace between SinvASinv and some A
+    // constrid is the position of (A in A * (.)) and constrid2 is the position of (A in (.) * SinvASinv)
+    DSDP_INT retcode = DSDP_RETCODE_OK;
+    DSDP_INT Atype = dsdpSolver->sdpData[blockid]->types[constrid];
+    DSDP_INT m = dsdpSolver->m;
+    void *A = dsdpSolver->sdpData[blockid]->sdpData[constrid];
+    double trace = 0.0;
+    double *M = dsdpSolver->Msdp->array;
+    
+    assert( constrid <= constrid2 );
+    assert( constrid <= m && constrid2 <= m);
+    
+    if (mattype == MAT_TYPE_ZERO || Atype == MAT_TYPE_ZERO) {
+        return retcode;
+    }
+    
+    if (mattype == MAT_TYPE_RANK1) {
+        switch (Atype) {
+            case MAT_TYPE_DENSE:
+                retcode = r1MatdenseTrace(SinvASinv, A, &trace);
+                break;
+            case MAT_TYPE_SPARSE:
+                retcode = r1MatspsTrace(SinvASinv, A, &trace);
+                break;
+            case MAT_TYPE_RANK1:
+                retcode = r1Matr1Trace(SinvASinv, A, &trace);
+                break;
+            default:
+                error(etype, "Invalid matrix type. \n");
+                break;
+        }
+    } else if (mattype == MAT_TYPE_DENSE) {
+        switch (Atype) {
+            case MAT_TYPE_DENSE:
+                retcode = denseDsTrace(SinvASinv, A, &trace);
+                break;
+            case MAT_TYPE_SPARSE:
+                retcode = denseSpsTrace(SinvASinv, A, &trace);
+                break;
+            case MAT_TYPE_RANK1:
+                retcode = r1MatdenseTrace(A, SinvASinv, &trace);
+                break;
+            default:
+                error(etype, "Invalid matrix type. \n");
+                break;
+        }
+    } else {
+        error(etype, "Invalid matrix type. \n");
+    }
+    
+    checkCode;
+    
+    // Update Schur/auxiliary vectors
+    if (constrid2 == m) {
+        // The first A is C
+        if (constrid == m) {
+            dsdpSolver->csinvcsinv += trace;
+        } else {
+            dsdpSolver->u->x[constrid] += trace;
+        }
+    } else {
+        packIdx(M, m, constrid2, constrid) += trace;
+    }
+    
+    return retcode;
+}
+
 /* Coefficient norm computer */
 extern DSDP_INT getMatnrm( HSDSolver *dsdpSolver, DSDP_INT blockid, DSDP_INT constrid, double *nrm ) {
     
@@ -61,6 +187,32 @@ extern DSDP_INT addMattoS( HSDSolver *dsdpSolver, DSDP_INT blockid, DSDP_INT con
     return retcode;
 }
 
+/* Free various matrices */
+extern DSDP_INT freesdpMat( HSDSolver *dsdpSolver, DSDP_INT blockid, DSDP_INT constrid ) {
+    
+    DSDP_INT retcode = DSDP_RETCODE_OK;
+    void *data = dsdpSolver->sdpData[blockid]->sdpData[constrid];
+    switch (dsdpSolver->sdpData[blockid]->types[constrid]) {
+        case MAT_TYPE_ZERO:
+            break;
+        case MAT_TYPE_DENSE:
+            retcode = denseMatFree(data); checkCode;
+            break;
+        case MAT_TYPE_SPARSE:
+            retcode = spsMatFree(data); checkCode;
+            checkCode;
+            break;
+        case MAT_TYPE_RANK1:
+            retcode = r1MatFree(data); checkCode;
+            break;
+        default:
+            error(etype, "Unknown matrix type. \n");
+            break;
+    }
+    
+    return retcode;
+}
+
 /* Objective value computer */
 extern DSDP_INT getDualObj( HSDSolver *dsdpSolver ) {
     // Compute b' * y
@@ -83,7 +235,7 @@ extern DSDP_INT getSDPPrimalObjB( HSDSolver *dsdpSolver ) {
     
     DSDP_INT retcode = DSDP_RETCODE_OK;
     
-    assert( dsdpSolver->eventMonitor[EVENT_SDP_NO_RY] &&
+    assert( dsdpSolver->eventMonitor[EVENT_NO_RY] &&
             dsdpSolver->eventMonitor[EVENT_PFEAS_FOUND] );
     
     double pObjVal  = 0.0;

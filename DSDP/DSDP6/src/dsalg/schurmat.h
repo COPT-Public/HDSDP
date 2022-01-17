@@ -27,14 +27,7 @@
 extern "C" {
 #endif
 
-extern DSDP_INT setupSchur   ( HSDSolver *dsdpSolver );
-extern DSDP_INT setupAux     ( HSDSolver *dsdpSolver,
-                               vec       *RM,
-                               double    *rM,
-                               vec       *b1,
-                               vec       *b2          );
-
-extern DSDP_INT schurMatSolve( HSDSolver *dsdpSolver, vec *b1, vec *RM );
+extern DSDP_INT setupPhaseASchur   ( HSDSolver *dsdpSolver );
 
 #ifdef __cplusplus
 }

@@ -1,4 +1,5 @@
 #include "schurmat.h"
+#include "dsdputils.h"
 
 static char etype[] = "Schur matrix setup";
 /* Setup the auxiliary arrays as well as the schur matrix
@@ -23,31 +24,6 @@ static char etype[] = "Schur matrix setup";
      
 */
 
-// A helping routine to build SinvASinv
-static DSDP_INT SinvASinv( spsMat *S, DSDP_INT typeA, void *A, double *asinv, void *SinvASinv ) {
-    
-    // Given S and A, the routine computes A, asinv and trace(S, Sinv A Sinv)
-    DSDP_INT retcode = DSDP_RETCODE_OK;
-    
-    if (typeA == MAT_TYPE_RANK1) {
-        r1Mat *dataA = (r1Mat *) A;
-        r1Mat *dataSinvASinv = (r1Mat *) SinvASinv;
-        retcode = spsSinvR1SinvSolve(S, dataA, dataSinvASinv, asinv); checkCode;
-    } else if (typeA == MAT_TYPE_SPARSE) {
-        spsMat *dataA = (spsMat *) A;
-        dsMat *dataSinvASinv = (dsMat *) SinvASinv;
-        retcode = spsSinvSpSinvSolve(S, dataA, dataSinvASinv, asinv); checkCode;
-    } else if (typeA == MAT_TYPE_DENSE) {
-        dsMat *dataA = (dsMat *) A;
-        dsMat *dataSinvASinv = (dsMat *) SinvASinv;
-        retcode = spsSinvDsSinvSolve(S, dataA, dataSinvASinv, asinv); checkCode;
-    } else {
-        error(etype, "Invalid matrix type. \n");
-    }
-    
-    return retcode;
-}
-
 static DSDP_INT setupSDPSchurBlock( HSDSolver *dsdpSolver, DSDP_INT blockid ) {
     /* Set up the schur matrix for a given block. This routine updates
      
@@ -62,152 +38,33 @@ static DSDP_INT setupSDPSchurBlock( HSDSolver *dsdpSolver, DSDP_INT blockid ) {
     
     DSDP_INT m       = dsdpSolver->m;
     DSDP_INT mattype = MAT_TYPE_UNKNOWN;
-    DSDP_INT useRy   = TRUE;
-    double trace     = 0.0;
-    
     sdpMat *sdpData = dsdpSolver->sdpData[blockid];
-    spsMat *S       = dsdpSolver->S[blockid];
-    vec    *asinv   = dsdpSolver->asinv;
-    double Ry       = dsdpSolver->Ry;
-    
-    dsMat  *Msdp    = dsdpSolver->Msdp;
-    vec    *u       = dsdpSolver->u;
-    vec    *d4      = dsdpSolver->d4;
-    
-    if (dsdpSolver->eventMonitor[EVENT_SDP_NO_RY]) {
-        useRy = FALSE;
-    }
-    
-    void   **blockdata = NULL;
-    double *Mdata      = Msdp->array;
-    double csinv       = dsdpSolver->csinv;
-    double csinvcsinv  = dsdpSolver->csinvcsinv;
-    double csinvrysinv = dsdpSolver->csinvrysinv;
     
     // Temporary storage array for SinvASinv
     r1Mat *r1data = (r1Mat *) calloc(1, sizeof(r1Mat));
     dsMat *dsdata = (dsMat *) calloc(1, sizeof(dsMat));
+    void *data = NULL;
     
     for (DSDP_INT i = 0; i < m + 1; ++i) {
-        
         // Compute SinvASinv
         mattype = sdpData->types[i];
         if (mattype == MAT_TYPE_ZERO) {
             continue;
         } else if (mattype == MAT_TYPE_RANK1) {
-            retcode = SinvASinv(S, mattype, sdpData->sdpData[i], &trace, (void *) r1data);
+            retcode = getSinvASinv(dsdpSolver, blockid, i, r1data);
+            data = (void *) r1data;
             checkCodeFree;
             // retcode = r1MatCountNnz(r1data);
         } else {
-            retcode = SinvASinv(S, mattype, sdpData->sdpData[i], &trace, (void *) dsdata);
+            retcode = getSinvASinv(dsdpSolver, blockid, i, dsdata);
+            data = (void *) dsdata;
             checkCodeFree;
         }
         
-        if (i < m) {
-            asinv->x[i] = trace;
-        } else {
-            csinv += trace;
-        }
-        
-        if (mattype == MAT_TYPE_RANK1) {
-            
-            if (useRy) {
-                
-                // Setup d4: dual infeasibility
-                retcode = r1MatdiagTrace(r1data, Ry, &trace);
-                checkCodeFree;
-                
-                if (i < m) {
-                    d4->x[i] += trace;
-                } else {
-                    csinvrysinv += trace;
-                }
-            }
-            
-            // Set up M
-            for (DSDP_INT j = 0; j <= i; ++i) {
-                switch (sdpData->types[i]) {
-                    case MAT_TYPE_ZERO:
-                        break;
-                    case MAT_TYPE_RANK1:
-                        retcode = r1Matr1Trace(r1data, (r1Mat *) blockdata[j], &trace);
-                        checkCodeFree;
-                        break;
-                    case MAT_TYPE_SPARSE:
-                        retcode = r1MatspsTrace(r1data, (spsMat *) blockdata[j], &trace);
-                        checkCodeFree;
-                        break;
-                    case MAT_TYPE_DENSE:
-                        retcode = r1MatdenseTrace(r1data, (dsMat *) blockdata[j], &trace);
-                        checkCodeFree;
-                        break;
-                    default:
-                        error(etype, "Unknown matrix type. \n");
-                        break;
-                }
-                
-                if (i < m) {
-                    packIdx(Mdata, m, i, j) += trace;
-                } else {
-                    // Set up csinv
-                    if (j == m) {
-                        csinvcsinv += trace;
-                    } else {
-                        // Setup csinvasinv
-                        u->x[j] += trace;
-                    }
-                }
-            }
-        } else {
-            
-            if (useRy) {
-                // Set up d4: dual infeasibility
-                retcode = denseDiagTrace(dsdata, Ry, &trace);
-                checkCodeFree;
-                if (i < m) {
-                    d4->x[i] += trace;
-                } else {
-                    csinvrysinv += trace;
-                }
-            }
-            
-            // Set up M
-            for (DSDP_INT j = 0; j <= i; ++i) {
-                switch (sdpData->types[i]) {
-                    case MAT_TYPE_ZERO:
-                        break;
-                    case MAT_TYPE_RANK1:
-                        retcode = r1MatdenseTrace((r1Mat *) blockdata[j], dsdata, &trace);
-                        checkCodeFree;
-                        break;
-                    case MAT_TYPE_SPARSE:
-                        retcode = denseSpsTrace(dsdata, (spsMat *) blockdata[j], &trace);
-                        checkCodeFree;
-                        break;
-                    case MAT_TYPE_DENSE:
-                        retcode = denseDsTrace(dsdata, (dsMat *) blockdata[j], &trace);
-                        checkCodeFree;
-                        break;
-                    default:
-                        error(etype, "Unknown matrix type. \n");
-                        break;
-                }
-                if (i < m) {
-                    packIdx(Mdata, m, i, j) += trace;
-                } else {
-                    if (j == m) {
-                        csinvcsinv += trace;
-                    } else {
-                        u->x[j] += trace;
-                    }
-                }
-            }
+        for (DSDP_INT j = 0; j <= i; ++j) {
+            getTraceASinvASinv(dsdpSolver, blockid, j, mattype, i, data);
         }
     }
-    
-    dsdpSolver->csinv = csinv;
-    dsdpSolver->csinvcsinv = csinvcsinv;
-    dsdpSolver->csinvrysinv = csinvrysinv;
     
 clean_up:
     
@@ -368,52 +225,17 @@ static DSDP_INT setupLPSchur( HSDSolver *dsdpSolver ) {
     return retcode;
 }
 
-static DSDP_INT setupRM( HSDSolver *dsdpSolver, vec *RM ) {
-    // Set up the auxiliary vector RM
-    // RM = b * tau - mu * asinv + mu * d3
+static DSDP_INT setupPhaseAdvecs( HSDSolver *dsdpSolver ) {
+    // Set up the auxiliary vector
+    /*
+     d2_12_3_4 = M \ [b, u, asinv, asinvrysinv];
+    */
     DSDP_INT retcode = DSDP_RETCODE_OK;
-    
-    DSDP_INT m = RM->dim;
-    vec *asinv = dsdpSolver->asinv;
-    vec *d3    = dsdpSolver->d3;
-    double mu  = dsdpSolver->mu;
-    double tau = dsdpSolver->tau;
-    
-    assert( dsdpSolver->m == m );
-    
-    retcode = vec_reset(RM);
-    retcode = vec_copy(d3, RM);
-    retcode = vec_axpby(tau, dsdpSolver->dObj, mu, RM);
-    retcode = vec_axpby(- mu, asinv, 1.0, RM);
-    
-    return retcode;
-}
 
-static DSDP_INT setuprM( HSDSolver *dsdpSolver, double *rM ) {
-    // Set up the auxiliary vector rM
-    // rM = -dObj + mu / tau + mu * csinv - mu * csinvrysinv
-    DSDP_INT retcode = DSDP_RETCODE_OK;
-    
-    double mu = dsdpSolver->mu;
-    *rM = - dsdpSolver->dObjVal + mu * (1 / dsdpSolver->tau
-                                        + dsdpSolver->csinv
-                                        - dsdpSolver->csinvrysinv);
-    
-    return retcode;
-}
-
-static DSDP_INT setupb( HSDSolver *dsdpSolver, vec *b1, vec *b2 ) {
-    // Set up the auxiliary vector b1 = b + mu * u and b2 = b - mu * u
-    DSDP_INT retcode = DSDP_RETCODE_OK;
-    
-    vec *b = dsdpSolver->lpObj;
-    vec *u = dsdpSolver->u;
-    double mu = dsdpSolver->mu;
-    
-    retcode = vec_copy(b, b1);
-    retcode = vec_copy(b, b2);
-    retcode = vec_axpy(  mu, u, b1);
-    retcode = vec_axpy(- mu, u, b1);
+    retcode = vec_copy(dsdpSolver->dObj, dsdpSolver->d2);
+    retcode = vec_copy(dsdpSolver->u, dsdpSolver->d12);
+    retcode = vec_copy(dsdpSolver->asinv, dsdpSolver->d3);
+    retcode = vec_copy(dsdpSolver->asinv, dsdpSolver->d4);
     
     return retcode;
 }
@@ -439,46 +261,10 @@ extern DSDP_INT setupFactorize( HSDSolver *dsdpSolver ) {
     return retcode;
 }
 
-extern DSDP_INT setupSchur( HSDSolver *dsdpSolver ) {
-    // Setup the schur matrix Msdp and some of the temporary arrays
-    DSDP_INT retcode = DSDP_RETCODE_OK;
-    
-    retcode = setupSDPSchur(dsdpSolver);
-    retcode = setupLPSchur(dsdpSolver);
-    
-    return retcode;
-}
-
-extern DSDP_INT setupAux( HSDSolver *dsdpSolver,
-                          vec       *RM,
-                          double    *rM,
-                          vec       *b1,
-                          vec       *b2 ) {
-    
-    // Set up auxiliary arrays rm and RM
-    DSDP_INT retcode = DSDP_RETCODE_OK;
-    
-    retcode = checkIterProgress(dsdpSolver, ITER_AUX_ARRAY);
-    assert( !dsdpSolver->iterProgress[ITER_AUX_ARRAY] );
-    
-    if (dsdpSolver->iterProgress[ITER_AUX_ARRAY]) {
-        error(etype, "Auxiliary arrays have been set up. \n");
-    }
-    
-    retcode = setupRM(dsdpSolver, RM); checkCode;
-    retcode = setuprM(dsdpSolver, rM); checkCode;
-    retcode = setupb(dsdpSolver, b1, b2); checkCode;
-    
-    dsdpSolver->iterProgress[ITER_AUX_ARRAY] = TRUE;
-    
-    return retcode;
-}
-
-extern DSDP_INT schurMatSolve( HSDSolver *dsdpSolver, vec *b1, vec *RM ) {
+extern DSDP_INT schurPhaseAMatSolve( HSDSolver *dsdpSolver ) {
     // Solve the internal system for getting the directions
     // After this routine, d1 and d2 will be filled
     DSDP_INT retcode = DSDP_RETCODE_OK;
-    
     retcode = checkIterProgress(dsdpSolver, ITER_SCHUR_SOLVE);
     
     assert( !dsdpSolver->iterProgress[ITER_SCHUR_SOLVE] );
@@ -487,29 +273,30 @@ extern DSDP_INT schurMatSolve( HSDSolver *dsdpSolver, vec *b1, vec *RM ) {
         error(etype, "Schur matrix has been factorized. \n");
     }
     
+    retcode = setupPhaseAdvecs(dsdpSolver); checkCode;
+    
     dsMat *M = dsdpSolver->Msdp;
     assert( !M->isFactorized );
     
-    DSDP_INT m = M->dim;
-    assert( b1->dim == m );
-    assert( RM->dim == m );
+    denseArrSolveInp(M, 1, dsdpSolver->d2->x);
+    denseArrSolveInp(M, 1, dsdpSolver->d12->x);
+    denseArrSolveInp(M, 1, dsdpSolver->d3->x);
+    denseArrSolveInp(M, 1, dsdpSolver->d4->x);
     
-    // Factorize then solve
-    retcode = denseMatFactorize(M); checkCode;
-    double *b1RM  = (double *) calloc(2 * m, sizeof(double));
-    
-    memcpy(b1RM, b1->x, sizeof(double) * m);
-    memcpy(&b1RM[m], RM->x, sizeof(double) * m);
-    
-    retcode = denseArrSolveInp(M, 2, b1RM);
-    
-    // Collect solution
-    memcpy(dsdpSolver->d1->x, b1RM, sizeof(double) * m);
-    memcpy(dsdpSolver->d2->x, &b1RM[m], sizeof(double) * m);
-    
-    DSDP_FREE(b1RM);
     
     dsdpSolver->iterProgress[ITER_SCHUR_SOLVE] = TRUE;
     
     return retcode;
 }
+
+extern DSDP_INT setupPhaseASchur( HSDSolver *dsdpSolver ) {
+    // Setup the schur matrix Msdp and some of the temporary arrays
+    DSDP_INT retcode = DSDP_RETCODE_OK;
+    
+    retcode = setupSDPSchur(dsdpSolver);
+    retcode = setupLPSchur(dsdpSolver);
+    retcode = schurPhaseAMatSolve(dsdpSolver);
+    
+    return retcode;
+}
+

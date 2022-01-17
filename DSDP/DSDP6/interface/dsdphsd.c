@@ -10,6 +10,7 @@
 #include "dsdpparam.h"
 #include "dsdpsolver.h"
 #include "hsd.h"
+#include "dsdputils.h"
 
 static char etype[] = "DSDP Interface";
 
@@ -65,7 +66,11 @@ static DSDP_INT DSDPIInit( HSDSolver *dsdpSolver ) {
     
     dsdpSolver->Msdp   = NULL;
     dsdpSolver->u      = NULL;
+    
+    dsdpSolver->b1     = NULL;
+    dsdpSolver->b2     = NULL;
     dsdpSolver->d1     = NULL;
+    dsdpSolver->d12    = NULL;
     dsdpSolver->d2     = NULL;
     dsdpSolver->d3     = NULL;
     dsdpSolver->d4     = NULL;
@@ -303,14 +308,29 @@ static DSDP_INT DSDPIAllocIter( HSDSolver *dsdpSolver ) {
     retcode = denseMatInit(dsIter); checkCode;
     retcode = denseMatAlloc(dsIter, m, TRUE); checkCode;
     
-    // Allocate u, d1, d2 and d3
+    // Allocate u, b1, b2, d1, d12, d2, d3 and d4
     vecIter = (vec *) calloc(1, sizeof(vec));
     dsdpSolver->u = vecIter;
     retcode = vec_init(vecIter); checkCode;
     retcode = vec_alloc(vecIter, m); checkCode;
     
     vecIter = (vec *) calloc(1, sizeof(vec));
+    dsdpSolver->b1 = vecIter;
+    retcode = vec_init(vecIter); checkCode;
+    retcode = vec_alloc(vecIter, m); checkCode;
+    
+    vecIter = (vec *) calloc(1, sizeof(vec));
+    dsdpSolver->b2 = vecIter;
+    retcode = vec_init(vecIter); checkCode;
+    retcode = vec_alloc(vecIter, m); checkCode;
+    
+    vecIter = (vec *) calloc(1, sizeof(vec));
     dsdpSolver->d1 = vecIter;
+    retcode = vec_init(vecIter); checkCode;
+    retcode = vec_alloc(vecIter, m); checkCode;
+    
+    vecIter = (vec *) calloc(1, sizeof(vec));
+    dsdpSolver->d12 = vecIter;
     retcode = vec_init(vecIter); checkCode;
     retcode = vec_alloc(vecIter, m); checkCode;
     
@@ -464,6 +484,7 @@ static DSDP_INT DSDPIFreeAlgIter( HSDSolver *dsdpSolver ) {
     // u, d1, d2, d3, d4, yp
     retcode = vec_free(dsdpSolver->u ); checkCode;
     retcode = vec_free(dsdpSolver->d1); checkCode;
+    retcode = vec_free(dsdpSolver->d12); checkCode;
     retcode = vec_free(dsdpSolver->d2); checkCode;
     retcode = vec_free(dsdpSolver->d3); checkCode;
     retcode = vec_free(dsdpSolver->d4); checkCode;
@@ -471,6 +492,7 @@ static DSDP_INT DSDPIFreeAlgIter( HSDSolver *dsdpSolver ) {
     
     DSDP_FREE(dsdpSolver->u );
     DSDP_FREE(dsdpSolver->d1);
+    DSDP_FREE(dsdpSolver->d12);
     DSDP_FREE(dsdpSolver->d2);
     DSDP_FREE(dsdpSolver->d3);
     DSDP_FREE(dsdpSolver->d4);
@@ -575,9 +597,7 @@ static DSDP_INT DSDPIPresolve( HSDSolver *dsdpSolver ) {
     double minNrm     = 0.0;
     double tmpnrm     = 0.0;
     double pScalFact  = 0.0;
-    DSDP_INT coneSize = 0;
     sdpMat *cone      = NULL;
-    
     
     for (DSDP_INT i = 0; i < dsdpSolver->m; ++i) {
         
@@ -585,30 +605,7 @@ static DSDP_INT DSDPIPresolve( HSDSolver *dsdpSolver ) {
         minNrm = 0.0;
         
         for (DSDP_INT j = 0; j < dsdpSolver->nBlock; ++j) {
-            
-            cone = dsdpSolver->sdpData[j];
-            coneSize = cone->dimS;
-            
-            switch (cone->types[i]) {
-                case MAT_TYPE_ZERO:
-                    break;
-                case MAT_TYPE_DENSE:
-                    retcode = denseMatFnorm((dsMat *) cone->sdpData[i], &tmpnrm);
-                    checkCode;
-                    break;
-                case MAT_TYPE_SPARSE:
-                    retcode = spsMatFnorm((spsMat *) cone->sdpData[i] , &tmpnrm);
-                    checkCode;
-                    break;
-                case MAT_TYPE_RANK1:
-                    retcode = r1MatFnorm((r1Mat *) cone->sdpData[i], &tmpnrm);
-                    checkCode;
-                    break;
-                default:
-                    error(etype, "Unknown matrix type. \n");
-                    break;
-            }
-            
+            getMatnrm(dsdpSolver, j, i, &tmpnrm);
             maxNrm = MAX(maxNrm, tmpnrm);
             minNrm = MIN(minNrm, tmpnrm);
         }

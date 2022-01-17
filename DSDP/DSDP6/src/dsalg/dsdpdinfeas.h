@@ -1,13 +1,11 @@
-//
-//  dsdpdinfeas.h
-//  DSDP6
-//
-//  Created by 高文智 on 2022/1/16.
-//
-
 #ifndef dsdpdinfeas_h
 #define dsdpdinfeas_h
+/* Implement phase A of dual scaling */
 
-#include <stdio.h>
+#include "dsdphsd.h"
+#include "dsdpdata.h"
+#include "structs.h"
+#include "dsdpsolver.h"
+#include "hsd.h"
 
 #endif /* dsdpdinfeas_h */

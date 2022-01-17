@@ -4,6 +4,10 @@
 #include "dsdphsd.h"
 #include "dsdpsolver.h"
 
+// Solver Phase
+#define PHASEA_DUAL_INFEAS     0
+#define PHASEB_PRIMAL_HEUR     1
+
 // Iteration monitor
 #define ITER_LOGGING           0
 #define ITER_LP_RESIDUAL       1
@@ -27,8 +31,7 @@
 
 // Special events
 #define EVENT_INIT_ITER    (-1) // Initial iteration
-#define EVENT_LP_NO_RY       0  // LP dual infeasibility is eliminated
-#define EVENT_SDP_NO_RY      1  // SDP dual infeasibility is eliminated
+#define EVENT_NO_RY          0  // Dual infeasibility is eliminated
 #define EVENT_NO_RKAPPA      2  // Complementary infeasibility is eliminated
 #define EVENT_PFEAS_FOUND    3  // Projection finds a primal feasible solution
 #define EVENT_MU_QUALIFIES   4  // Duality gap is qualified by tolerance
