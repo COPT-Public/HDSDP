@@ -110,6 +110,8 @@ extern DSDP_INT DSDPDInfeasEliminator( HSDSolver *dsdpSolver ) {
             muprimal *= 0.1;
         }
         
+        dsdpSolver->iterProgress[ITER_DECREASE_MU] = TRUE;
+        
         // Be more aggressive if
         if (i == agiter) {
             sigma = 0.1;

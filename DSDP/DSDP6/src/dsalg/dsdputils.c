@@ -200,21 +200,50 @@ extern DSDP_INT getMatnrm( HSDSolver *dsdpSolver, DSDP_INT blockid, DSDP_INT con
             break;
         case MAT_TYPE_DENSE:
             retcode = denseMatFnorm(data, nrm);
-            checkCode;
             break;
         case MAT_TYPE_SPARSE:
             retcode = spsMatFnorm(data, nrm);
-            checkCode;
             break;
         case MAT_TYPE_RANK1:
             retcode = r1MatFnorm(data, nrm);
-            checkCode;
             break;
         default:
             error(etype, "Unknown matrix type. \n");
             break;
     }
     
+    checkCode;
+    return retcode;
+}
+
+/* Matrix Scaler */
+extern DSDP_INT matRScale( HSDSolver *dsdpSolver, DSDP_INT blockid, DSDP_INT constrid, double scaler) {
+    
+    DSDP_INT retcode = DSDP_RETCODE_OK;
+    if (scaler == 1.0) {
+        return retcode;
+    }
+    
+    void *data = dsdpSolver->sdpData[blockid]->sdpData[constrid];
+    
+    switch (dsdpSolver->sdpData[blockid]->types[constrid]) {
+        case MAT_TYPE_ZERO:
+            break;
+        case MAT_TYPE_DENSE:
+            retcode = denseMatRscale((dsMat *) data, scaler);
+            break;
+        case MAT_TYPE_SPARSE:
+            retcode = spsMatRscale((spsMat *) data, scaler);
+            break;
+        case MAT_TYPE_RANK1:
+            retcode = r1MatRscale((r1Mat *) data, scaler);
+            break;
+        default:
+            error(etype, "Unknown matrix type. \n");
+            break;
+    }
+    
+    checkCode;
     return retcode;
 }
 

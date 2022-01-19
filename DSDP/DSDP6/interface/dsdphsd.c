@@ -10,6 +10,7 @@
 #include "dsdpparam.h"
 #include "dsdpsolver.h"
 #include "hsd.h"
+#include "dsdpdinfeas.h"
 #include "dsdputils.h"
 
 static char etype[] = "DSDP Interface";
@@ -190,7 +191,7 @@ static DSDP_INT DSDPIGetBlockSymbolic( HSDSolver *dsdpSolver, DSDP_INT blockid )
     } else {
         for (DSDP_INT i = 0; i < sdpBlock->nr1Mat; ++i) {
             r1data = (r1Mat *) sdpBlock->sdpData[matIdx[i]];
-            if (r1data->nnz > 0.5 * dim) {
+            if (r1data->nnz > 0.7 * dim) {
                 useDenseS = TRUE;
             }
         }
@@ -596,61 +597,10 @@ static DSDP_INT DSDPIPresolve( HSDSolver *dsdpSolver ) {
         error(etype, "Problem data is not set up. \n");
     }
     
-    // Round 1: scale the primal pairs {b_i, A_ip} across different constraints
-    dsdpSolver->pScaler = (vec *) calloc(1, sizeof(vec));
-    retcode = vec_init(dsdpSolver->pScaler); checkCode;
-    retcode = vec_alloc(dsdpSolver->pScaler, dsdpSolver->m); checkCode;
-    
-    double maxNrm     = 0.0;
-    double minNrm     = 0.0;
-    double tmpnrm     = 0.0;
-    double pScalFact  = 0.0;
-    sdpMat *cone      = NULL;
-    
-    for (DSDP_INT i = 0; i < dsdpSolver->m; ++i) {
-        
-        maxNrm = 0.0;
-        minNrm = 0.0;
-        
-        for (DSDP_INT j = 0; j < dsdpSolver->nBlock; ++j) {
-            getMatnrm(dsdpSolver, j, i, &tmpnrm);
-            maxNrm = MAX(maxNrm, tmpnrm);
-            minNrm = MIN(minNrm, tmpnrm);
-        }
-        
-        pScalFact = maxNrm * minNrm;
-        
-        if (pScalFact < 1.2 && pScalFact > 0.8) {
-            pScalFact = 1.0;
-        } else {
-            dsdpSolver->pScaler->x[i] = sqrt(pScalFact);
-        }
-    }
-    
-    // Do presolving
-    DSDP_INT nblock = dsdpSolver->nBlock;
-    for (DSDP_INT j = 0; j < nblock; ++j) {
-        cone = dsdpSolver->sdpData[j];
-        // Rank-1 detection
-        retcode = preRank1Rdc(cone); checkCode;
-        // Primal coefficient scaling
-        retcode = preSDPMatPScale(cone, dsdpSolver->pScaler); checkCode;
-        // Dual coefficient scaling
-        retcode = preSDPMatDScale(cone); checkCode;
-    }
-    
-    // LP coefficient scaling
-    if (dsdpSolver->isLPset) {
-        retcode = preLPMatScale(dsdpSolver->lpData,
-                                dsdpSolver->lpObj,
-                                dsdpSolver->pScaler); checkCode;
-    }
-    
-    // Count index and end presolving
-    for (DSDP_INT j = 0; j < nblock; ++j) {
-        cone = dsdpSolver->sdpData[j];
-        retcode = getMatIdx(cone); checkCode;
-    }
+    retcode = preRank1Rdc(dsdpSolver); checkCode;
+    retcode = preSDPMatDScale(dsdpSolver); checkCode;
+    retcode = preSDPMatPScale(dsdpSolver); checkCode;
+    retcode = getMatIdx(dsdpSolver); checkCode;
     
     return retcode;
 }
@@ -805,6 +755,18 @@ extern DSDP_INT DSDPSetSDPConeData( HSDSolver *dsdpSolver,
     
     return retcode;
 }
+
+extern DSDP_INT DSDPOptimize( HSDSolver *dsdpSolver ) {
+    // Optimization routine for DSDP
+    DSDP_INT retcode = DSDP_RETCODE_OK;
+    
+    // Presolver
+    retcode = DSDPIPresolve(dsdpSolver); checkCode;
+    retcode = DSDPDInfeasEliminator(dsdpSolver); checkCode;
+    
+    return retcode;
+}
+
 
 extern DSDP_INT DSDPDestroy( HSDSolver *dsdpSolver ) {
     

@@ -12,18 +12,18 @@
 #include "densemat.h"
 #include "rankonemat.h"
 #include "dsdpdata.h"
-
+#include "dsdpsolver.h"
 
 #ifdef __cplusplus
 extern "C" {
 #endif
 
 
-extern DSDP_INT preSDPMatPScale( sdpMat *dataMat, vec *pScaler );
-extern DSDP_INT preSDPMatDScale( sdpMat *dataMat );
-extern DSDP_INT preLPMatScale  ( lpMat  *lpData, vec *lpObj, vec *pScaler );
-extern DSDP_INT preRank1Rdc    ( sdpMat *dataMat );
-extern DSDP_INT getMatIdx      ( sdpMat *sdpData );
+extern DSDP_INT preSDPMatPScale( HSDSolver *dsdpSolver );
+extern DSDP_INT preSDPMatDScale( HSDSolver *dsdpSolver );
+// extern DSDP_INT preLPMatScale  ( lpMat  *lpData, vec *lpObj, vec *pScaler );
+extern DSDP_INT preRank1Rdc    ( HSDSolver *dsdpSolver );
+extern DSDP_INT getMatIdx      ( HSDSolver *dsdpSolver );
 
 
 #ifdef __cplusplus

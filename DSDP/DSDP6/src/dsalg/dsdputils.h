@@ -27,6 +27,7 @@ extern DSDP_INT getSDPPrimalObjPhaseB   ( HSDSolver *dsdpSolver );
 
 /* Other utilities */
 extern DSDP_INT getMatnrm          ( HSDSolver *dsdpSolver, DSDP_INT blockid, DSDP_INT constrid, double *nrm );
+extern DSDP_INT matRScale          ( HSDSolver *dsdpSolver, DSDP_INT blockid, DSDP_INT constrid, double scaler);
 extern DSDP_INT addMattoS          ( HSDSolver *dsdpSolver, DSDP_INT blockid, DSDP_INT constrid, double alpha );
 extern DSDP_INT addMattodS         ( HSDSolver *dsdpSolver, DSDP_INT blockid, DSDP_INT constrid, double alpha );
 

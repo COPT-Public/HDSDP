@@ -1,9 +1,5 @@
 #include "dsdppresolve.h"
-
-/*
- TODO: Matrix rank-one structure detector
- TODO: Matrix coefficient scaling
-*/
+#include "dsdputils.h"
 
 static char *etype = "Presolving operations";
 
@@ -220,7 +216,7 @@ static DSDP_INT isSparseRank1( spsMat *dataMat, DSDP_INT *isRank1 ) {
     return retcode;
 }
 
-static DSDP_INT extractR1fromDs ( dsMat *dataMat, double *a, DSDP_INT isNeg ) {
+static DSDP_INT extractR1fromDs( dsMat *dataMat, double *a, DSDP_INT isNeg ) {
     // Extract the rank 1 data from dense data structure
     DSDP_INT retcode = DSDP_RETCODE_OK;
     
@@ -252,7 +248,7 @@ static DSDP_INT extractR1fromDs ( dsMat *dataMat, double *a, DSDP_INT isNeg ) {
     return retcode;
 }
 
-static DSDP_INT extractR1fromSps ( spsMat *dataMat, double *a, DSDP_INT isNeg ) {
+static DSDP_INT extractR1fromSps( spsMat *dataMat, double *a, DSDP_INT isNeg ) {
     // Extract the rank 1 data from sparse data structure
     DSDP_INT retcode = DSDP_RETCODE_OK;
     
@@ -293,9 +289,9 @@ static DSDP_INT extractR1fromSps ( spsMat *dataMat, double *a, DSDP_INT isNeg ) 
     return retcode;
 }
 
-extern DSDP_INT preRank1Rdc( sdpMat *dataMat ) {
-    // Detect rank-one structure in SDP data, some block
+static DSDP_INT preRank1RdcBlock( sdpMat *dataMat ) {
     
+    // Detect rank-one structure in SDP data
     DSDP_INT retcode  = DSDP_RETCODE_OK;
     DSDP_INT *types   = dataMat->types;
     DSDP_INT ndsMat   = dataMat->ndenseMat;
@@ -321,7 +317,7 @@ extern DSDP_INT preRank1Rdc( sdpMat *dataMat ) {
            nspsMat, ndsMat, nr1Mat, nzeroMat);
     
     // If all the matrices are already rank-one
-    if (nr1Mat == m) {
+    if (nr1Mat == m + 1) {
         return retcode;
     }
     
@@ -404,38 +400,43 @@ extern DSDP_INT preRank1Rdc( sdpMat *dataMat ) {
     return retcode;
 }
 
-extern DSDP_INT preSDPMatPScale( sdpMat *dataMat, vec *pScaler ) {
-    // Do matrix coefficient scaling given preScaler for the primal
-    DSDP_INT retcode = DSDP_RETCODE_OK;
+static DSDP_INT getBlockStatistic( sdpMat *sdpData ) {
+    // Count the matrix index information in sdpData
+    // This routine also checks validity of data
     
-    assert( dataMat->dimy == pScaler->dim );
-    if (dataMat->dimy != pScaler->dim) {
-        error(etype, "Presolving vector does not match "
-              "the number of matrices in the block. \n");
-    }
+    DSDP_INT retcode  = DSDP_RETCODE_OK;
+    DSDP_INT blockid  = sdpData->blockId;
+    DSDP_INT m        = sdpData->dimy;
+    DSDP_INT *type    = sdpData->types;
+    DSDP_INT nzeroMat = 0;
+    DSDP_INT ndsMat   = 0;
+    DSDP_INT nspsMat  = 0;
+    DSDP_INT nr1Mat   = 0;
     
-    // Here the scaling does not consider C
-    for (DSDP_INT i = 0; i < dataMat->dimy; ++i) {
-        
-        if (pScaler->x[i] == 1.0) {
-            continue;
-        }
-        
-        switch (dataMat->types[i]) {
+    // Ready to give index
+    assert( (!sdpData->spsMatIdx) && (!sdpData->denseMatIdx) && (!sdpData->r1MatIdx) );
+    sdpData->spsMatIdx   = (DSDP_INT *) calloc(nspsMat, sizeof(DSDP_INT));
+    sdpData->denseMatIdx = (DSDP_INT *) calloc(ndsMat, sizeof(DSDP_INT));
+    sdpData->r1MatIdx    = (DSDP_INT *) calloc(nr1Mat, sizeof(DSDP_INT));
+    
+    printf("- Cone "ID"\n", blockid);
+    
+    for (DSDP_INT i = 0; i < m + 1; ++i) {
+        switch (type[i]) {
             case MAT_TYPE_ZERO:
+                nzeroMat += 1;
                 break;
             case MAT_TYPE_DENSE:
-                retcode = denseMatRscale((dsMat *) dataMat->sdpData[i],
-                                         pScaler->x[i]); checkCode;
+                sdpData->denseMatIdx[ndsMat] = i;
+                ndsMat += 1;
                 break;
             case MAT_TYPE_SPARSE:
-                retcode = spsMatRscale((spsMat *) dataMat->sdpData[i],
-                                       pScaler->x[i]); checkCode;
+                sdpData->spsMatIdx[nspsMat] = i;
+                nspsMat += 1;
                 break;
             case MAT_TYPE_RANK1:
-                retcode = r1MatRscale((r1Mat *) dataMat->sdpData[i],
-                                      pScaler->x[i]); checkCode;
-                checkCode;
+                sdpData->r1MatIdx[nr1Mat] = i;
+                nr1Mat += 1;
                 break;
             default:
                 error(etype, "Unknown matrix type. \n");
@@ -443,10 +444,34 @@ extern DSDP_INT preSDPMatPScale( sdpMat *dataMat, vec *pScaler ) {
         }
     }
     
+    assert( nzeroMat == sdpData->nzeroMat );
+    assert( ndsMat   == sdpData->ndenseMat );
+    assert( nspsMat  == sdpData->nspsMat );
+    assert( nr1Mat   == sdpData->nr1Mat );
+    
     return retcode;
 }
 
-extern DSDP_INT preSDPMatDScale( sdpMat *dataMat ) {
+extern DSDP_INT preRank1Rdc( HSDSolver *dsdpSolver ) {
+    // Do rank 1 reduction
+    DSDP_INT retcode = DSDP_RETCODE_OK;
+    
+    for (DSDP_INT i = 0; i < dsdpSolver->nBlock; ++i) {
+        retcode = preRank1RdcBlock(dsdpSolver->sdpData[i]);
+        checkCode;
+    }
+    
+    return retcode;
+}
+
+extern DSDP_INT preSDPMatPScale( HSDSolver *dsdpSolver ) {
+    // Do matrix coefficient scaling given preScaler for the primal
+    DSDP_INT retcode = DSDP_RETCODE_OK;
+    
+    return retcode;
+}
+
+extern DSDP_INT preSDPMatDScaleBlock( sdpMat *dataMat ) {
     // Do matrix coefficient scaling for one SDP block
     DSDP_INT retcode = DSDP_RETCODE_OK;
     DSDP_INT m = dataMat->dimy;
@@ -520,6 +545,17 @@ extern DSDP_INT preSDPMatDScale( sdpMat *dataMat ) {
     return retcode;
 }
 
+extern DSDP_INT preSDPMatDScale( HSDSolver *dsdpSolver ) {
+    // Dual coefficient scaling
+    DSDP_INT retcode = DSDP_RETCODE_OK;
+    
+    
+    
+    
+    
+    return retcode;
+}
+
 extern DSDP_INT preLPMatScale( lpMat *lpData, vec *lpObj, vec *pScaler ) {
     
     // Do matrix coefficient scaling for LP
@@ -575,54 +611,14 @@ extern DSDP_INT preLPMatScale( lpMat *lpData, vec *lpObj, vec *pScaler ) {
     return retcode;
 }
 
-extern DSDP_INT getMatIdx( sdpMat *sdpData ) {
-    // Count the matrix index information in sdpData
-    // This routine also checks validity of data
+extern DSDP_INT getMatIdx( HSDSolver *dsdpSolver ) {
     
-    DSDP_INT retcode  = DSDP_RETCODE_OK;
-    DSDP_INT blockid  = sdpData->blockId;
-    DSDP_INT m        = sdpData->dimy;
-    DSDP_INT *type    = sdpData->types;
-    DSDP_INT nzeroMat = 0;
-    DSDP_INT ndsMat   = 0;
-    DSDP_INT nspsMat  = 0;
-    DSDP_INT nr1Mat   = 0;
+    DSDP_INT retcode = DSDP_RETCODE_OK;
     
-    // Ready to give index
-    assert( (!sdpData->spsMatIdx) && (!sdpData->denseMatIdx) && (!sdpData->r1MatIdx) );
-    sdpData->spsMatIdx   = (DSDP_INT *) calloc(nspsMat, sizeof(DSDP_INT));
-    sdpData->denseMatIdx = (DSDP_INT *) calloc(ndsMat, sizeof(DSDP_INT));
-    sdpData->r1MatIdx    = (DSDP_INT *) calloc(nr1Mat, sizeof(DSDP_INT));
-    
-    printf("- Cone "ID"\n", blockid);
-    
-    for (DSDP_INT i = 0; i < m + 1; ++i) {
-        switch (type[i]) {
-            case MAT_TYPE_ZERO:
-                nzeroMat += 1;
-                break;
-            case MAT_TYPE_DENSE:
-                sdpData->denseMatIdx[ndsMat] = i;
-                ndsMat += 1;
-                break;
-            case MAT_TYPE_SPARSE:
-                sdpData->spsMatIdx[nspsMat] = i;
-                nspsMat += 1;
-                break;
-            case MAT_TYPE_RANK1:
-                sdpData->r1MatIdx[nr1Mat] = i;
-                nr1Mat += 1;
-                break;
-            default:
-                error(etype, "Unknown matrix type. \n");
-                break;
-        }
+    for (DSDP_INT i = 0; i < dsdpSolver->nBlock; ++i) {
+        retcode = getBlockStatistic(dsdpSolver->sdpData[i]);
+        checkCode;
     }
-    
-    assert( nzeroMat == sdpData->nzeroMat );
-    assert( ndsMat   == sdpData->ndenseMat );
-    assert( nspsMat  == sdpData->nspsMat );
-    assert( nr1Mat   == sdpData->nr1Mat );
     
     return retcode;
 }
