@@ -29,16 +29,27 @@ static DSDP_INT initmu( HSDSolver *dsdpSolver ) {
 
 static DSDP_INT initresi( HSDSolver *dsdpSolver ) {
     // Initialize Ry TODO: and ry
+    
+    /*
+     if norm(Ctau, 'fro') == 0
+         Ry = - speye(n) * initbeta;
+     else
+         Ry = - speye(n) * (norm(Ctau, 'fro')) * initbeta;
+     end % End if
+    */
+    
     DSDP_INT retcode = DSDP_RETCODE_OK;
     
     double beta = dsdpSolver->param->initBeta;
     double Cnrm = 0.0;
-    double nrm = 0.0;
-    double tau = dsdpSolver->tau;
+    double nrm  = 0.0;
+    double tau  = dsdpSolver->tau;
     DSDP_INT m  = dsdpSolver->m;
     
     for (DSDP_INT i = 0; i < dsdpSolver->nBlock; ++i) {
+        // Matrix of index m in each block is C
         retcode = getMatnrm(dsdpSolver, i, m, &nrm);
+        checkCode;
         Cnrm += nrm * nrm;
     }
     
@@ -51,9 +62,14 @@ static DSDP_INT initresi( HSDSolver *dsdpSolver ) {
     }
     
     for (DSDP_INT i = 0; i < dsdpSolver->nBlock; ++i) {
+        // S = C * tau - Ry
         retcode = addMattoS(dsdpSolver, i, m, tau);
         retcode = spsMatAdddiag(dsdpSolver->S[i], - dsdpSolver->Ry);
+        checkCode;
     }
+    
+    // Iteration Monitor
+    dsdpSolver->iterProgress[ITER_INITIALIZE] = TRUE;
     
     return retcode;
 }
@@ -61,14 +77,16 @@ static DSDP_INT initresi( HSDSolver *dsdpSolver ) {
 extern DSDP_INT dsdpInitialize( HSDSolver *dsdpSolver ) {
     
     // Initialize iteration for DSDP solver
+    // TODO: Add special case if C is all-constant
+    
     DSDP_INT retcode = DSDP_RETCODE_OK;
     
-    retcode = inity(dsdpSolver);
-    retcode = initkappatau(dsdpSolver);
-    retcode = initmu(dsdpSolver);
-    retcode = initresi(dsdpSolver);
+    retcode = inity(dsdpSolver); checkCode;
+    retcode = initkappatau(dsdpSolver); checkCode;
+    retcode = initmu(dsdpSolver); checkCode;
+    retcode = initresi(dsdpSolver); checkCode;
     
-    printf("* DSDP is initialized. \n");
+    printf("* DSDP is initialized with Ry = %3.3e * I \n", dsdpSolver->Ry);
     
     return retcode;
 }

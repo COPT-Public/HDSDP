@@ -1,4 +1,6 @@
+#include <time.h>
 #include "test.h"
+static char etype[] = "Test dense";
 /* Packed data
  
  145.0902  107.4532   -2.4046   -0.6691  -11.3401    9.7020  137.9264  188.1493   22.3598   81.2420
@@ -13,6 +15,86 @@
   81.2420   -2.2327   -2.8766   -0.2061    7.7144   16.5201   41.3076  214.3802  -22.6640  349.4797
 
 */
+static void fastTranspose( double *A, double *AT, DSDP_INT row,
+                           DSDP_INT col, DSDP_INT m, DSDP_INT n, DSDP_INT N ) {
+    
+    // Cache oblivious transposition of A matrix
+    // Adapted from https://github.com/iainkfraser/cache_transpose
+    if (m > 4 || n > 4) {
+        if (n >= m) {
+            DSDP_INT half = n / 2;
+            if (n % 2 == 0) {
+                fastTranspose(A, AT, row, col, m, half, N);
+                fastTranspose(A, AT, row, col + half, m, half, N);
+            } else {
+                fastTranspose(A, AT, row, col, m, half, N);
+                fastTranspose(A, AT, row, col + half, m, n - half, N);
+            }
+            
+        } else {
+            DSDP_INT half = m / 2;
+            if (m % 2 == 0) {
+                fastTranspose(A, AT, row, col, half, n, N);
+                fastTranspose(A, AT, row + half, col, half, n, N);
+            } else {
+                fastTranspose(A, AT, row, col, half, n, N);
+                fastTranspose(A, AT, row + half, col, m - half, n, N);
+            }
+        }
+    } else {
+        DSDP_INT r = row + m;
+        DSDP_INT c = col + n;
+        for (DSDP_INT i = row; i < r; ++i) {
+            for (DSDP_INT j = col; j < c; ++j) {
+                AT[N * j + i] = A[N * i + j];
+            }
+        }
+    }
+}
+
+static void fastTranspose2( double *A, DSDP_INT row, DSDP_INT col, DSDP_INT m, DSDP_INT n, DSDP_INT N ) {
+    
+    // Cache oblivious transposition of A matrix
+    // Adapted from https://github.com/iainkfraser/cache_transpose
+    if (m > 4 || n > 4) {
+        if (n >= m) {
+            DSDP_INT half = n / 2;
+            fastTranspose2(A, row, col, m, half, N);
+            fastTranspose2(A, row, col + half, m, half, N);
+            
+        } else {
+            DSDP_INT half = m / 2;
+            fastTranspose2(A, row, col, half, n, N);
+            if (m % 2 == 0) {
+                fastTranspose2(A, row + half, col, half, n, N);
+            } else {
+                fastTranspose2(A, row + half, col, m - half, n, N);
+            }
+        }
+    } else {
+        double tmp = 0.0;
+        DSDP_INT r = row + m;
+        DSDP_INT c = col + n;
+        for (DSDP_INT i = row; i < r; ++i) {
+            for (DSDP_INT j = col; j < c; ++j) {
+                tmp = A[N * j + i];
+                A[N * i + j] = A[N * j + i];
+                A[N * j + i] = tmp;
+            }
+        }
+    }
+}
+
+static void slowTranspose( double *A, double *AT, DSDP_INT m, DSDP_INT n ) {
+    double tmp = 0.0;
+    for (DSDP_INT i = 0; i < n; ++i) {
+        for (DSDP_INT j = 0; j <= i; ++j) {
+            tmp = A[i * n + j];
+            A[i * n + j] = A[j * n + i];
+            A[j * n + i] = tmp;
+        }
+    }
+}
 
 DSDP_INT packAdim = 10;
 double packA[] = {145.0902, 107.4532, -2.4046, -0.6691, -11.3401, 9.7020, 137.9264,
@@ -143,6 +225,8 @@ DSDP_INT test_dense(void) {
     double *mysol = NULL;
     vec *vecrhs = NULL;
     double *fullA = NULL;
+    double *mat = NULL;
+    double *mat2 = NULL;
     
     double myfnorm = 0.0;
     data = (dsMat *) calloc(1, sizeof(dsMat));
@@ -299,6 +383,47 @@ DSDP_INT test_dense(void) {
         passed("Matrix system");
     }
     
+    err = 0.0;
+    fastTranspose(Bsol, fullA, 0, 0, packAdim, packAdim, packAdim);
+    for (DSDP_INT i = 0; i < packAdim; ++i) {
+        for (DSDP_INT j = 0; j < packAdim; ++j) {
+            err += fabs(fullA[i + j * packAdim] - Bsol[i * packAdim + j]);
+            printf("%10.2e ", fullA[i + j * packAdim]);
+        }
+        printf("\n");
+    }
+    
+    if (err < 1e-15) {
+        passed("Matrix transpose");
+    }
+    
+    int size = 1024;
+    mat = (double *) calloc(size * size, sizeof(double));
+    mat2 = (double *) calloc(size * size, sizeof(double));
+    
+    for (int i = 0; i < size; ++i) {
+        mat[i] = 1.0;
+        mat2[i] = 1.0;
+    }
+    
+    double time = 0.0;
+    clock_t start = clock();
+    
+    for (int i = 0; i < 100; ++i) {
+        fastTranspose2(mat, 0, 0, size, size, size);
+    }
+    
+    time = ((double) (clock() - start)) / CLOCKS_PER_SEC;
+    printf("Cache Oblivious Transpose elapsed time: %3f \n", time);
+    
+    
+    start = clock();
+    for (int i = 0; i < 100; ++i) {
+        slowTranspose(mat, mat2, size, size);
+    }
+    time = ((double) (clock() - start)) / CLOCKS_PER_SEC;
+    printf("Naive Transpose elapsed time: %3f \n", time);
+    
     
 clean_up:
     denseMatFree(data);
@@ -313,6 +438,9 @@ clean_up:
     DSDP_FREE(vecrhs);
     
     DSDP_FREE(fullA);
+    DSDP_FREE(mat);
+    DSDP_FREE(mat2);
+    
     
     return retcode;
 }

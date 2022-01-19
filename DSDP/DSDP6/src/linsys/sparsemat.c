@@ -2,10 +2,47 @@
 #include "densemat.h"
 #include "dsdpfeast.h"
 
+// Enable hash sum check
+#ifndef VERIFY_HASH
+#define VERIFY_HASH
+#endif
+
 static char *etype = "Sparse matrix";
 static DSDP_INT one = 1;
 
 /* Internal Pardiso Wrapper */
+static DSDP_INT pardisoSymFactorize( spsMat *S ) {
+    /* Factorize the spsMat matrix */
+    DSDP_INT retcode = DSDP_RETCODE_OK;
+    
+    // Extract the lower triangular part from CSparse structure
+    DSDP_INT *Sp = S->p;
+    DSDP_INT *Si = S->i;
+    double   *Sx = S->x;
+    
+    // Get the pardiso parameter
+    DSDP_INT phase = PARDISO_SYM;
+    DSDP_INT error = 0;
+    DSDP_INT n     = S->dim;
+    
+    // Invoke pardiso to do symbolic analysis and Cholesky factorization
+    pardiso(S->pdsWorker, &maxfct, &mnum, &mtype, &phase, &n,
+            Sx, Sp, Si, &idummy, &idummy, PARDISO_PARAMS_CHOLESKY,
+            &msglvl, NULL, NULL, &error);
+    
+    assert( error == PARDISO_OK );
+    
+    if (error) {
+        printf("[Pardiso Error]: Matrix factorization failed."
+               " Error code: "ID" \n", error);
+        error(etype, "Pardiso failes to factorize. \n");
+    }
+    
+    // Complete the factorization
+    S->isFactorized = TRUE;
+    return retcode;
+}
+
 static DSDP_INT pardisoFactorize( spsMat *S ) {
     
     /* Factorize the spsMat matrix */
@@ -76,7 +113,7 @@ static DSDP_INT pardisoNumFactorize( spsMat *S ) {
     return retcode;
 }
 
-static DSDP_INT pardisoForwardSolve( spsMat *S, DSDP_INT nrhs, double *B ) {
+static DSDP_INT pardisoForwardSolve( spsMat *S, DSDP_INT nrhs, double *B, double *aux ) {
     // pardiso forward solve
     DSDP_INT retcode = DSDP_RETCODE_OK;
     
@@ -94,8 +131,8 @@ static DSDP_INT pardisoForwardSolve( spsMat *S, DSDP_INT nrhs, double *B ) {
     
     // Invoke pardiso to do symbolic analysis and Cholesky factorization
     pardiso(S->pdsWorker, &maxfct, &mnum, &mtype, &phase, &n,
-            Sx, Sp, Si, &idummy, &idummy, PARDISO_PARAMS_CHOLESKY,
-            &msglvl, NULL, NULL, &error);
+            Sx, Sp, Si, &idummy, &nrhs, PARDISO_PARAMS_FORWARD_BACKWORD,
+            &msglvl, B, aux, &error);
     
     assert( error == PARDISO_OK );
     
@@ -108,7 +145,7 @@ static DSDP_INT pardisoForwardSolve( spsMat *S, DSDP_INT nrhs, double *B ) {
     return retcode;
 }
 
-static DSDP_INT pardisoBackwardSolve( spsMat *S, DSDP_INT nrhs, double *B ) {
+static DSDP_INT pardisoBackwardSolve( spsMat *S, DSDP_INT nrhs, double *B, double *aux ) {
     // pardiso forward solve
     DSDP_INT retcode = DSDP_RETCODE_OK;
     
@@ -126,8 +163,8 @@ static DSDP_INT pardisoBackwardSolve( spsMat *S, DSDP_INT nrhs, double *B ) {
     
     // Invoke pardiso to do symbolic analysis and Cholesky factorization
     pardiso(S->pdsWorker, &maxfct, &mnum, &mtype, &phase, &n,
-            Sx, Sp, Si, &idummy, &idummy, PARDISO_PARAMS_CHOLESKY,
-            &msglvl, NULL, NULL, &error);
+            Sx, Sp, Si, &idummy, &nrhs, PARDISO_PARAMS_FORWARD_BACKWORD,
+            &msglvl, B, aux, &error);
     
     assert( error == PARDISO_OK );
     
@@ -137,6 +174,7 @@ static DSDP_INT pardisoBackwardSolve( spsMat *S, DSDP_INT nrhs, double *B ) {
         error(etype, "Pardiso failes to factorize. \n");
     }
     
+    DSDP_FREE(aux);
     return retcode;
 }
 
@@ -189,6 +227,32 @@ static DSDP_INT pardisoFree( spsMat *S ) {
     }
     
     return retcode;
+}
+
+static void fastTranspose( double *A, double *AT, DSDP_INT row,
+                           DSDP_INT col, DSDP_INT m, DSDP_INT n ) {
+    
+    // Cache oblivious transposition of A matrix
+    // Reference: https://github.com/iainkfraser/cache_transpose
+    if (m > 4 || n > 4) {
+        if (n >= m) {
+            DSDP_INT half = n / 2;
+            fastTranspose(A, AT, row, col, m, half);
+            fastTranspose(A, AT, row, col + half, m, half);
+        } else {
+            DSDP_INT half = m / 2;
+            fastTranspose(A, AT, row, col, half, n);
+            fastTranspose(A, AT, row + half, col, half, n);
+        }
+    } else {
+        DSDP_INT r = row + n;
+        DSDP_INT c = col + m;
+        for (DSDP_INT i = row; i < r; ++i) {
+            for (DSDP_INT j = col; j < c; ++j) {
+                AT[n * j + i] = A[n * i + j];
+            }
+        }
+    }
 }
 
 /* Structure operations */
@@ -320,9 +384,13 @@ extern DSDP_INT spsMataXpbY( double alpha, spsMat *sXMat, double beta, spsMat *s
     
     for (DSDP_INT i = 0; i < dim; ++i) {
         for (DSDP_INT j = Ap[i]; j < Ap[i + 1]; ++j) {
+#ifdef VERIFY_HASH
             hash = packIdx(sYMat->sumHash, dim, Ai[j], i);
             assert( hash > 0 || j == 0 );
             Bx[hash] += alpha * Ax[j];
+#else
+            Bx[packIdx(sYMat->sumHash, dim, Ai[j], i)] += alpha * Ax[j];
+#endif
         }
     }
 
@@ -346,9 +414,13 @@ extern DSDP_INT spsMatAdddiag( spsMat *sMat, double d ) {
     DSDP_INT idx = 0;
     
     for (DSDP_INT i = 0; i < dim; ++i) {
+#ifdef VERIFY_HASH
         idx = packIdx(hash, dim, i, i);
         assert( idx > 0 || i == 0 );
         sMat->x[idx] += d;
+#else
+        sMat->x[packIdx(hash, dim, i, i)] += d;
+#endif
     }
     
     return retcode;
@@ -395,9 +467,14 @@ extern DSDP_INT spsMatAddr1( spsMat *sXMat, double alpha, r1Mat *r1YMat ) {
     
     for (DSDP_INT i = 0; i < r1YMat->nnz; ++i) {
         for (DSDP_INT j = 0; j <= i; ++j) {
+#ifdef VERIFY_HASH
             idx = packIdx(hash, dim, nzIdx[i], nzIdx[j]);
             assert( idx > 0 || i == 0 );
             sXMat->x[idx] += alpha * sign * rx[i] * rx[j];
+#else
+            sXMat->x[packIdx(hash, dim, nzIdx[i], nzIdx[j])] +=
+            alpha * sign * rx[i] * rx[j];
+#endif
         }
     }
     
@@ -449,19 +526,20 @@ extern DSDP_INT spsMatFnorm( spsMat *sMat, double *fnrm ) {
 }
 
 /* Factorization and linear system solver */
+extern DSDP_INT spsMatSymbolic( spsMat *sAMat ) {
+    
+    // Symbolic analysis 
+    DSDP_INT retcode = DSDP_RETCODE_OK;
+    retcode = pardisoSymFactorize(sAMat);
+    return retcode;
+}
+
 extern DSDP_INT spsMatFactorize( spsMat *sAMat ) {
     
     // Sparse matrix Cholesky decomposition
     // We allow consecutive factorizations involving iteration variables
     DSDP_INT retcode = DSDP_RETCODE_OK;
-    
-    // Call the internal method
-    if (sAMat->isFactorized) {
-        retcode = pardisoNumFactorize(sAMat);
-    } else {
-        retcode = pardisoFactorize(sAMat);
-    }
-    
+    retcode = pardisoNumFactorize(sAMat);
     return retcode;
 }
 
@@ -566,12 +644,14 @@ extern DSDP_INT spsMatLspLSolve( spsMat *S, spsMat *dS, spsMat *spaux ) {
     assert( spaux->dim == n);
     
     double *fulldS = (double *) calloc(n * n, sizeof(double));
+    double *aux    = (double *) calloc(n * n, sizeof(double));
     
     // L^-1 dS
     retcode = spsMatFill(dS, fulldS);
-    retcode = pardisoForwardSolve(S, n, fulldS);
+    retcode = pardisoForwardSolve(S, n, fulldS, aux);
     
     // Transpose
+    // fastTranspose(fulldS, aux, 0, 0, n, n);
     double tmp = 0.0;
     for (DSDP_INT i = 0; i < n; ++i) {
         for (DSDP_INT j = 0; j <= i; ++j) {
@@ -588,7 +668,7 @@ extern DSDP_INT spsMatLspLSolve( spsMat *S, spsMat *dS, spsMat *spaux ) {
     DSDP_INT *Ai = spaux->i;
     double   *Ax = spaux->x;
     
-    retcode = pardisoBackwardSolve(S, n, fulldS);
+    retcode = pardisoForwardSolve(S, n, fulldS, aux);
     DSDP_INT nnz = 0;
     DSDP_INT start = 0;
     for (DSDP_INT i = 0; i < n; ++i) {
@@ -605,7 +685,26 @@ extern DSDP_INT spsMatLspLSolve( spsMat *S, spsMat *dS, spsMat *spaux ) {
         Ap[i + 1] = nnz;
     }
     
+    spaux->nnz = nnz;
     DSDP_FREE(fulldS);
+    DSDP_FREE(aux);
+    
+    return retcode;
+}
+
+/* DSDP routine for computing the stepsize in the SDP cone */
+extern DSDP_INT dsdpGetAlpha( spsMat *S, spsMat *dS, spsMat *spaux, double *alpha ) {
+    // Get the maximum alpha such that S + alpha * dS is PSD
+    DSDP_INT retcode = DSDP_RETCODE_OK;
+    double mineig = 0.0;
+    
+    DSDP_INT n = S->dim;
+    assert( n == dS->dim && n == spaux->dim );
+    // Two ways for computation
+    // The first way computes l1(L^-1 dS L^-T)
+    retcode = spsMatLspLSolve(S, dS, spaux); checkCode;
+    retcode = spsMatMinEig(spaux, &mineig); checkCode;
+    *alpha = - 1.0 / mineig;
     
     return retcode;
 }
@@ -815,7 +914,7 @@ extern DSDP_INT spsMatIspd( spsMat *sMat, DSDP_INT *ispd ) {
     DSDP_INT retcode = DSDP_RETCODE_OK;
     
     // Get the pardiso parameter
-    DSDP_INT phase = PARDISO_SYM_FAC;
+    DSDP_INT phase = PARDISO_FAC;
     DSDP_INT error = 0;
     
     // Invoke pardiso to do symbolic analysis and Cholesky factorization
@@ -907,7 +1006,6 @@ extern DSDP_INT spsMatView( spsMat *sMat ) {
     assert( sMat->dim > 0 );
     
     cs mat;
-    
     mat.p = sMat->p;
     mat.i = sMat->i;
     mat.x = sMat->x;
@@ -915,7 +1013,6 @@ extern DSDP_INT spsMatView( spsMat *sMat ) {
     mat.nzmax = sMat->nnz;
     mat.m = sMat->dim;
     mat.n = sMat->dim;
-    
     cs_print(&mat, TRUE);
     
     return retcode;

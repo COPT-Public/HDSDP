@@ -88,17 +88,20 @@ typedef int DSDP_INT;
 #define MINOR_VERSION            1
 
 // Error log
-#define error(etype, x)          printf("[%s]: %s", (etype), (x)); \
+#define error(etype, x)          printf("[%s]: %s", (etype), (x)); retcode = DSDP_RETCODE_FAILED; \
                                  retcode = DSDP_RETCODE_FAILED; return retcode;
-#define checkCode                if (retcode != DSDP_RETCODE_OK) return retcode;
-#define checkCodeFree            if (retcode != DSDP_RETCODE_OK) goto clean_up;
+#define checkCode                if (retcode != DSDP_RETCODE_OK) {error(etype, "\n") return retcode;}
+#define checkCodeFree            if (retcode != DSDP_RETCODE_OK) {error(etype, "\n") goto clean_up;}
 
 // Parameters
 
 // Initialization
 #define DSDP_INITMETHOD_FRO     105
-#define DSDP_INITMETHOD_EIGS    106
-#define DSDP_INITMETHOD_LINE    107
+
+// Phase A attempt
+#define DSDP_ATTEMPT_NO         106
+#define DSDP_ATTEMPT_CONSV      107
+#define DSDP_ATTEMPT_AGG        108
 
 
 #endif /* dsdphsd_h */

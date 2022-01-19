@@ -17,60 +17,82 @@ static char etype[] = "DSDP Dual infeasibility elimination";
  solution to start the second phase
 
  */
-extern DSDP_INT DSDPCheckPhaseAConvergence( HSDSolver *dsdpSolver, DSDP_INT *isOK ) {
-    /* Check convergence of DSDP */
-    DSDP_INT retcode = DSDP_RETCODE_OK;
-    
-    *isOK = FALSE;
-    
-    if (dsdpSolver->Ry < dsdpSolver->param->absOptTol) {
-        dsdpSolver->solStatus = DSDP_PD_FEASIBLE;
-        *isOK = TRUE;
-    }
-    
-    if (dsdpSolver->tau < 0.0001 * dsdpSolver->kappa &&
-        dsdpSolver->mu < dsdpSolver->param->absOptTol) {
-        dsdpSolver->solStatus = DSDP_PUNKNOWN_DFEAS;
-        *isOK = TRUE;
-    }
+static const double nomu[1]    = {1.0};
+static const double consvmu[2] = {0.3, 1.0};
+static const double aggmu[4]   = {0.1, 0.4, 0.7, 1.0};
 
-    if (dsdpSolver->iterA >= dsdpSolver->param->AmaxIter) {
-        dsdpSolver->solStatus = DSDP_MAXITER;
-        *isOK = TRUE;
+static void dsdpCheckNan( HSDSolver *dsdpSolver ) {
+    
+    // Check nan in some iterations
+    if (isnan(dsdpSolver->y->x[0])) {
+        dsdpSolver->eventMonitor[EVENT_NAN_IN_ITER] = TRUE;
+        return;
     }
     
-    if (dsdpSolver->alpha < 1e-05) {
-        dsdpSolver->eventMonitor[EVENT_STEP_TOO_SMALL] = TRUE;
-        dsdpSolver->solStatus = DSDP_UNKNOWN;
-        *isOK = TRUE;
+    if (isnan(dsdpSolver->tau)   || isnan(dsdpSolver->kappa) ||
+        isnan(dsdpSolver->alpha) || isnan(dsdpSolver->Ry)    ||
+        isnan(dsdpSolver->dObjVal|| isnan(dsdpSolver->pObjVal))) {
+        dsdpSolver->eventMonitor[EVENT_NAN_IN_ITER] = TRUE;
     }
-    
-    return retcode;
 }
 
 extern DSDP_INT DSDPDInfeasEliminator( HSDSolver *dsdpSolver ) {
     
     DSDP_INT retcode = DSDP_RETCODE_OK;
     DSDP_INT goOn = TRUE;
+    
+    // Initialize
     double muprimal = dsdpSolver->param->initMu;
-    double tol = dsdpSolver->param->absOptTol;
-    double trymu = 0.0;
-    double sigma = dsdpSolver->param->Asigma;
-    double newmu[4] = {0.1, 0.3, 0.7, 1.0};
+    double tol      = dsdpSolver->param->absOptTol;
+    double sigma    = dsdpSolver->param->Asigma;
+    double attempt  = dsdpSolver->param->Aattempt;
+    double trymu    = 0.0;
+    double time     = 0.0;
+    DSDP_INT ntry   = 0;
+    clock_t start   = clock();
     
+    const double *newmu = NULL;
+    
+    if (attempt == DSDP_ATTEMPT_NO) {
+        ntry = 1;
+        newmu = nomu;
+    } else if (attempt == DSDP_ATTEMPT_CONSV) {
+        ntry = 2;
+        newmu = consvmu;
+    } else {
+        ntry = 4;
+        newmu = aggmu;
+    }
+        
     /* Start Phase A algorithm */
+    dsdpshowdash();
     retcode = dsdpInitialize(dsdpSolver); checkCode;
+    dsdpshowdash();
     
-    for (DSDP_INT i = 0;; ++i) {
+    /* Print algorithm header */
+    dsdpprintPhaseAheader();
+    
+    for (DSDP_INT i = 0; ; ++i) {
+        
         dsdpSolver->iterA = i;
+        
+        // Check NaN
+        dsdpCheckNan(dsdpSolver);
+        // Check algorithm convergence
         DSDPCheckPhaseAConvergence(dsdpSolver, &goOn);
+        // Logging
+        DSDPPhaseALogging(dsdpSolver);
+        
         if (!goOn) {
             break;
         }
         
-        retcode = setupPhaseASchur(dsdpSolver);
+        // Compute dual objective
+        retcode = getDualObj(dsdpSolver); checkCode;
         
-        for (DSDP_INT j = 0; j < 4; ++j) {
+        // Set up schur matrix
+        retcode = setupPhaseASchur(dsdpSolver);
+        for (DSDP_INT j = 0; j < ntry; ++j) {
             trymu = newmu[j] * muprimal;
             retcode = dsdpgetPhaseAProxMeasure(dsdpSolver, trymu); checkCode;
             if (dsdpSolver->eventMonitor[EVENT_PFEAS_FOUND]) {
@@ -97,5 +119,9 @@ extern DSDP_INT DSDPDInfeasEliminator( HSDSolver *dsdpSolver ) {
             dsdpSolver->param->Aalpha = 0.2;
         }
     }
+    
+    time = (double) (clock() - start) / CLOCKS_PER_SEC;
+    printPhaseASummary(dsdpSolver, time);
+    
     return retcode;
 }

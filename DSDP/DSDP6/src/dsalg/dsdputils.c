@@ -302,10 +302,10 @@ extern DSDP_INT freesdpMat( HSDSolver *dsdpSolver, DSDP_INT blockid, DSDP_INT co
 
 /* Objective value computer */
 extern DSDP_INT getDualObj( HSDSolver *dsdpSolver ) {
+    
     // Compute b' * y
-    // Iteration prerequisite: normal
-    // Event prerequisite    : none
     DSDP_INT retcode = DSDP_RETCODE_OK;
+    retcode = checkIterProgress(dsdpSolver, ITER_DUAL_OBJ);
     DSDP_INT m = dsdpSolver->m;
     DSDP_INT incx = 1;
     double *ydata = dsdpSolver->y->x;
@@ -316,18 +316,22 @@ extern DSDP_INT getDualObj( HSDSolver *dsdpSolver ) {
 }
 
 extern DSDP_INT getSDPPrimalObjB( HSDSolver *dsdpSolver ) {
+    
     // Compute primal objective given primal feasible projection
-    // Iteration prerequisite: normal
-    // Event prerequisite: EVENT_SDP_NO_RY, EVENT_PFEAS_FOUND
     
     DSDP_INT retcode = DSDP_RETCODE_OK;
     
-    assert( dsdpSolver->eventMonitor[EVENT_NO_RY] &&
-            dsdpSolver->eventMonitor[EVENT_PFEAS_FOUND] );
+    if (dsdpSolver->eventMonitor[EVENT_NO_RY] &&
+        dsdpSolver->eventMonitor[EVENT_PFEAS_FOUND] &&
+        dsdpSolver->eventMonitor[EVENT_IN_PHASE_B]) {
+        
+    } else {
+        return retcode;
+    }
     
     double pObjVal  = 0.0;
-    DSDP_INT m  = dsdpSolver->m;
-    double mu   = dsdpSolver->mu;
+    DSDP_INT m    = dsdpSolver->m;
+    double  mu    = dsdpSolver->mu;
     DSDP_INT incx = 1;
     
     vec *asinv = dsdpSolver->asinv;

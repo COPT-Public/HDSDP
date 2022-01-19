@@ -1,4 +1,5 @@
 #include "test.h"
+static char etype[] = "Test sparse";
 /* CSC data
  
  10.0000         0         0         0         0   -2.1321         0         0         0   -0.5607
@@ -211,6 +212,7 @@ DSDP_INT test_sparse(void) {
     }
     
     // Factorization
+    retcode = spsMatSymbolic(data); checkCodeFree;
     retcode = spsMatFactorize(data); checkCodeFree;
     
     // Vector solve
@@ -286,6 +288,7 @@ DSDP_INT test_sparse(void) {
     }
     
     // Check positive-definiteness
+    retcode = spsMatSymbolic(data2); checkCodeFree;
     DSDP_INT ispd = FALSE;
     spsMatIspd(data, &ispd);
     if (!ispd) {

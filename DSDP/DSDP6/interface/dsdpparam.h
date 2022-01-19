@@ -24,7 +24,6 @@ typedef struct {
     double initTau;
     double initKappa;
     
-    
     double Aalpha;
     double Balpha;
     

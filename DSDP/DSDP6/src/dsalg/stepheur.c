@@ -94,14 +94,12 @@ static DSDP_INT getBlockSDPSStep( HSDSolver *dsdpSolver, DSDP_INT k, double *SkS
     // Note that we compute the step utilizing the Cholesky factorization of S by
     // S + a * dS = L (I + a L^-1 dS L^-T) L^T
     DSDP_INT retcode = DSDP_RETCODE_OK;
-    
     assert( k < dsdpSolver->nBlock );
-    spsMat *dS = dsdpSolver->dS[k];
-    spsMat *S  = dsdpSolver->S[k];
-    
     double res = 0.0;
-    retcode = spsMatLspLSolve(S, dS, dsdpSolver->spaux[k]);
-    retcode = spsMatMinEig(dsdpSolver->spaux[k], &res);
+    
+    retcode = dsdpGetAlpha(dsdpSolver->S[k], dsdpSolver->dS[k],
+                           dsdpSolver->spaux[k], &res);
+    checkCode;
     *SkStep = - 1.0 / res;
     
     return retcode;
@@ -117,7 +115,7 @@ static DSDP_INT getSDPSStep( HSDSolver *dsdpSolver, double *SStep ) {
     
     for (DSDP_INT i = 0; i < nblock; ++i) {
         retcode = getBlockSDPSStep(dsdpSolver, i, &res);
-        if (res > 0) {
+        if (res >= 0) {
             step = MIN(step, res);
         }
     }

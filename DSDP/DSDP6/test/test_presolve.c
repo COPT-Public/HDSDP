@@ -1,6 +1,7 @@
 #include "test.h"
 #include "dsdppresolve.h"
 
+static char etype[] = "Test prosolve";
 /* Rank 1 data
  
  r1A =

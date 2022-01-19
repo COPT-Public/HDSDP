@@ -92,14 +92,7 @@ static DSDP_INT getdKappa( HSDSolver *dsdpSolver ) {
 static DSDP_INT getdsLP( HSDSolver *dsdpSolver ) {
     // Compute the dual direction for LP ry - A' * dy + c * dtau
     DSDP_INT retcode = DSDP_RETCODE_OK;
-    
-    retcode = checkIterProgress(dsdpSolver, ITER_RECOVER_LP_DIR);
-    assert( !dsdpSolver->iterProgress[ITER_RECOVER_LP_DIR] );
-    
-    if (dsdpSolver->iterProgress[ITER_RECOVER_LP_DIR]) {
-        error(etype, "LP directions have been set up. \n");
-    }
-    
+
     vec *ds = dsdpSolver->ds;
     double *dydata = dsdpSolver->dy->x;
     double *dsdata = ds->x;
@@ -120,27 +113,26 @@ static DSDP_INT getdsLP( HSDSolver *dsdpSolver ) {
         }
         dsdata[i] -= tmp;
     }
-    
-    dsdpSolver->iterProgress[ITER_RECOVER_LP_DIR] = TRUE;
-    
+
     return retcode;
 }
 
 static DSDP_INT getSDPDirs( HSDSolver *dsdpSolver ) {
     
     DSDP_INT retcode = DSDP_RETCODE_OK;
-    retcode = checkIterProgress(dsdpSolver, ITER_RECOVER_SDP_DIR);
-    assert( !dsdpSolver->iterProgress[ITER_RECOVER_SDP_DIR] );
+    retcode = checkIterProgress(dsdpSolver, ITER_STEP_DIRECTION);
+    assert( !dsdpSolver->iterProgress[ITER_STEP_DIRECTION] );
     
-    if (dsdpSolver->iterProgress[ITER_RECOVER_SDP_DIR]) {
+    if (dsdpSolver->iterProgress[ITER_STEP_DIRECTION]) {
         error(etype, "SDP directions have been set up. \n");
     }
     
     retcode = getdTau(dsdpSolver); checkCode;
+    retcode = getdy(dsdpSolver); checkCode;
     retcode = getdS(dsdpSolver); checkCode;
     retcode = getdKappa(dsdpSolver); checkCode;
     
-    dsdpSolver->iterProgress[ITER_RECOVER_SDP_DIR] = TRUE;
+    dsdpSolver->iterProgress[ITER_STEP_DIRECTION] = TRUE;
     
     return retcode;
 }

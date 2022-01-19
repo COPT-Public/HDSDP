@@ -57,8 +57,8 @@ static DSDP_INT setupSDPSchur( HSDSolver *dsdpSolver ) {
     // After calling this routine, Msdp, asinv, u for SDP and csinv will be filled
     DSDP_INT retcode = DSDP_RETCODE_OK;
     
-    assert( !dsdpSolver->iterProgress[ITER_SDP_SCHUR] );
-    if (!dsdpSolver->iterProgress[ITER_SDP_SCHUR]) {
+    assert( !dsdpSolver->iterProgress[ITER_SCHUR] );
+    if (!dsdpSolver->iterProgress[ITER_SCHUR]) {
         error(etype, "Schur matrix is already setup. \n");
     }
     
@@ -82,7 +82,7 @@ static DSDP_INT setupSDPSchur( HSDSolver *dsdpSolver ) {
         retcode = setupSDPSchurBlock(dsdpSolver, k); checkCode;
     }
     
-    dsdpSolver->iterProgress[ITER_SDP_SCHUR] = TRUE;
+    dsdpSolver->iterProgress[ITER_SCHUR] = TRUE;
     return retcode;
 }
 
@@ -91,8 +91,8 @@ static DSDP_INT setupLPSchur( HSDSolver *dsdpSolver ) {
     // After calling this routine, Msdp, asinv, u, csinv and d3 will be updated
     DSDP_INT retcode = DSDP_RETCODE_OK;
     
-    assert( !dsdpSolver->iterProgress[ITER_LP_SCHUR] );
-    if (!dsdpSolver->iterProgress[ITER_LP_SCHUR]) {
+    assert( !dsdpSolver->iterProgress[ITER_SCHUR] );
+    if (!dsdpSolver->iterProgress[ITER_SCHUR]) {
         error(etype, "Schur matrix for LP is already setup. \n");
     }
     
@@ -199,7 +199,7 @@ static DSDP_INT setupLPSchur( HSDSolver *dsdpSolver ) {
     retcode = vec_free(sinv);
     DSDP_FREE(sinv);
     
-    dsdpSolver->iterProgress[ITER_LP_SCHUR] = TRUE;
+    dsdpSolver->iterProgress[ITER_SCHUR] = TRUE;
     
     return retcode;
 }

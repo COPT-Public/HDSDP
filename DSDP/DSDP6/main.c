@@ -10,8 +10,8 @@ int main (void)
     
     
 //    test_data();
-      test_sparse();
-//    test_dense();
+//    test_sparse();
+      test_dense();
 //    test_presolve();
 //    test_vec();
 //    test_pardiso();
