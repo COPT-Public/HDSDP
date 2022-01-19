@@ -23,7 +23,7 @@ extern DSDP_INT dsdpInCone         ( HSDSolver *dsdpSolver, DSDP_INT *ispsd );
 
 /* Objective */
 extern DSDP_INT getDualObj         ( HSDSolver *dsdpSolver );
-extern DSDP_INT getSDPPrimalObjB   ( HSDSolver *dsdpSolver );
+extern DSDP_INT getSDPPrimalObjPhaseB   ( HSDSolver *dsdpSolver );
 
 /* Other utilities */
 extern DSDP_INT getMatnrm          ( HSDSolver *dsdpSolver, DSDP_INT blockid, DSDP_INT constrid, double *nrm );

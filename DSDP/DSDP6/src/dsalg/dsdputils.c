@@ -7,7 +7,8 @@ static char etype[] = "DSDP Utility";
  different types of matrices
 */
 
-extern DSDP_INT getSinvASinv( HSDSolver *dsdpSolver, DSDP_INT blockid, DSDP_INT constrid, void *SinvASinv ) {
+extern DSDP_INT getSinvASinv( HSDSolver *dsdpSolver, DSDP_INT blockid, DSDP_INT constrid,
+                              void *SinvASinv ) {
     
     // Given S and A, the routine computes A, asinv and trace(S, Sinv A Sinv)
     DSDP_INT retcode = DSDP_RETCODE_OK;
@@ -306,19 +307,18 @@ extern DSDP_INT getDualObj( HSDSolver *dsdpSolver ) {
     // Compute b' * y
     DSDP_INT retcode = DSDP_RETCODE_OK;
     retcode = checkIterProgress(dsdpSolver, ITER_DUAL_OBJ);
-    DSDP_INT m = dsdpSolver->m;
-    DSDP_INT incx = 1;
-    double *ydata = dsdpSolver->y->x;
-    double *bdata = dsdpSolver->dObj->x;
-    dsdpSolver->dObjVal = dot(&m, bdata, &incx, ydata, &incx);
-    
+    checkCode;
+    vec *ydata = dsdpSolver->y;
+    vec *bdata = dsdpSolver->dObj;
+    vec_dot(bdata, ydata, &dsdpSolver->dObjVal);
+    dsdpSolver->iterProgress[ITER_DUAL_OBJ] = TRUE;
+     
     return retcode;
 }
 
-extern DSDP_INT getSDPPrimalObjB( HSDSolver *dsdpSolver ) {
+extern DSDP_INT getSDPPrimalObjPhaseB( HSDSolver *dsdpSolver ) {
     
     // Compute primal objective given primal feasible projection
-    
     DSDP_INT retcode = DSDP_RETCODE_OK;
     
     if (dsdpSolver->eventMonitor[EVENT_NO_RY] &&

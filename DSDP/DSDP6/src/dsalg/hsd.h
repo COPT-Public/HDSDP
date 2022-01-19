@@ -11,15 +11,14 @@
 #define ITER_RESIDUAL           3  // Set up residuals
 #define ITER_DUAL_FACTORIZE     4  // Factorize dual matrices {S}
 #define ITER_SCHUR              5  // Set up the schur matrix M and part of auxiliary arrays
-#define ITER_AUX_ARRAY          6  // Set up all the auxiliary arrays
-#define ITER_SCHUR_SOLVE        7  // Solve the Schur system
+#define ITER_SCHUR_SOLVE        6  // Solve the Schur system
+#define ITER_PROX_POBJ          7  // Get proximity and verify primal feasibility
 #define ITER_STEP_DIRECTION     8  // Recover step directions
 #define ITER_COMPUTE_STEP       9  // Compute algorithm stepsize
 #define ITER_TAKE_STEP         10  // Take step
-#define ITER_PROX_POBJ         11  // Get proximity and verify primal feasibility
-#define ITER_CORRECTOR         12  // Take corrector step
-#define ITER_DECREASE_MU       13  // Decrease parameter mu
-#define ITER_NEXT_ITERATION    14  // Get into next iteration
+#define ITER_CORRECTOR         11  // Take corrector step
+#define ITER_DECREASE_MU       12  // Decrease parameter mu
+#define ITER_NEXT_ITERATION    13  // Get into next iteration
 
 // Special events
 #define EVENT_NO_RY             0  // Dual infeasibility is eliminated

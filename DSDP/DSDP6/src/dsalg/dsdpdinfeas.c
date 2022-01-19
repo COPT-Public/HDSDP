@@ -21,21 +21,6 @@ static const double nomu[1]    = {1.0};
 static const double consvmu[2] = {0.3, 1.0};
 static const double aggmu[4]   = {0.1, 0.4, 0.7, 1.0};
 
-static void dsdpCheckNan( HSDSolver *dsdpSolver ) {
-    
-    // Check nan in some iterations
-    if (isnan(dsdpSolver->y->x[0])) {
-        dsdpSolver->eventMonitor[EVENT_NAN_IN_ITER] = TRUE;
-        return;
-    }
-    
-    if (isnan(dsdpSolver->tau)   || isnan(dsdpSolver->kappa) ||
-        isnan(dsdpSolver->alpha) || isnan(dsdpSolver->Ry)    ||
-        isnan(dsdpSolver->dObjVal|| isnan(dsdpSolver->pObjVal))) {
-        dsdpSolver->eventMonitor[EVENT_NAN_IN_ITER] = TRUE;
-    }
-}
-
 extern DSDP_INT DSDPDInfeasEliminator( HSDSolver *dsdpSolver ) {
     
     DSDP_INT retcode = DSDP_RETCODE_OK;
@@ -48,6 +33,7 @@ extern DSDP_INT DSDPDInfeasEliminator( HSDSolver *dsdpSolver ) {
     double attempt  = dsdpSolver->param->Aattempt;
     double trymu    = 0.0;
     double time     = 0.0;
+    DSDP_INT agiter = MIN(dsdpSolver->param->AmaxIter, 30);
     DSDP_INT ntry   = 0;
     clock_t start   = clock();
     
@@ -87,11 +73,15 @@ extern DSDP_INT DSDPDInfeasEliminator( HSDSolver *dsdpSolver ) {
             break;
         }
         
+        // Reset monitor
+        DSDPResetPhaseAMonitor(dsdpSolver);
         // Compute dual objective
         retcode = getDualObj(dsdpSolver); checkCode;
-        
-        // Set up schur matrix
+        // Factorize dual matrices
+        retcode = setupFactorize(dsdpSolver); checkCode;
+        // Set up schur matrix and solve the system
         retcode = setupPhaseASchur(dsdpSolver);
+        // Get proximity and check primal feasibility
         for (DSDP_INT j = 0; j < ntry; ++j) {
             trymu = newmu[j] * muprimal;
             retcode = dsdpgetPhaseAProxMeasure(dsdpSolver, trymu); checkCode;
@@ -103,18 +93,25 @@ extern DSDP_INT DSDPDInfeasEliminator( HSDSolver *dsdpSolver ) {
                 break;
             }
         }
+        dsdpSolver->iterProgress[ITER_PROX_POBJ] = TRUE;
         
+        // Setup directions
         retcode = getStepDirs(dsdpSolver); checkCode;
+        // Compute maximum available stepsize
         retcode = getMaxStep(dsdpSolver); checkCode;
+        // Take step
         retcode = takeStep(dsdpSolver); checkCode;
+        // Compute residual
         retcode = setupRes(dsdpSolver); checkCode;
         
+        // Decrease mu with sufficient proximity
         if (dsdpSolver->Pnrm < 0.1) {
             dsdpSolver->mu *= 0.1;
             muprimal *= 0.1;
         }
         
-        if (i >= 30) {
+        // Be more aggressive if
+        if (i == agiter) {
             sigma = 0.1;
             dsdpSolver->param->Aalpha = 0.2;
         }

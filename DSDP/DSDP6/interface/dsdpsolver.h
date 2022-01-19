@@ -84,6 +84,7 @@ typedef struct {
     // Solver status
     DSDP_INT iterA;       // Iteration in phase A
     DSDP_INT iterB;       // Iteration in phase B
+    DSDP_INT smallIter;   // Number of iteration admitting small stepsize
     DSDP_INT insStatus;   // Solver instance status
     DSDP_INT solStatus;   // Solver solution status
     
@@ -99,6 +100,9 @@ typedef struct {
 
 typedef HSDSolver Solver;
 
+#ifdef __cplusplus
+extern "C" {
+#endif
 // Solver interface
 extern DSDP_INT DSDPCreate( Solver **dsdpSolver );
 
@@ -124,6 +128,10 @@ extern DSDP_INT DSDPSetSDPConeData( Solver    *dsdpSolver,
                                     double    *Asdpx );
 
 extern DSDP_INT DSDPDestroy( Solver *dsdpSolver );
+
+#ifdef __cplusplus
+}
+#endif
 
 
 #endif /* dsdpsolver_h */

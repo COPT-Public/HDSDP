@@ -786,6 +786,7 @@ extern DSDP_INT spsSinvDsSinvSolve( spsMat *S, dsMat *A, dsMat *SinvASinv, doubl
     double tmp          = 0.0;
     *asinv              = 0.0;
     
+    // TODO: Replace the transpose by a cache-aware version
     for (DSDP_INT i = 0; i < n; ++i) {
         for (DSDP_INT j = 0; j <= i; ++j) {
             if (i == j) {

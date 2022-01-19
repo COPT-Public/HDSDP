@@ -9,6 +9,14 @@
 #include "hsd.h"
 
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 extern DSDP_INT dsdpgetPhaseAProxMeasure( HSDSolver *dsdpSolver, double newmu );
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif /* dsdpproxmeasure_h */

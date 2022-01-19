@@ -14,7 +14,7 @@ extern DSDP_INT checkIterProgress( HSDSolver *dsdpSolver, DSDP_INT iter ) {
         npassed += dsdpSolver->iterProgress[i];
     }
     
-    if (npassed <= iter) {
+    if (npassed < iter) {
         error(etype, "Pre-requisite steps are not completed. \n");
     }
     

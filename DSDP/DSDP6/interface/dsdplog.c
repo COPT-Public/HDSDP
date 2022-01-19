@@ -48,6 +48,21 @@ extern void dsdpshowdash(void) {
            "_______________________________________\n");
 }
 
+extern void dsdpCheckNan( HSDSolver *dsdpSolver ) {
+    
+    // Check nan in some iterations
+    if (isnan(dsdpSolver->y->x[0])) {
+        dsdpSolver->eventMonitor[EVENT_NAN_IN_ITER] = TRUE;
+        return;
+    }
+    
+    if (isnan(dsdpSolver->tau)   || isnan(dsdpSolver->kappa) ||
+        isnan(dsdpSolver->alpha) || isnan(dsdpSolver->Ry)    ||
+        isnan(dsdpSolver->dObjVal|| isnan(dsdpSolver->pObjVal))) {
+        dsdpSolver->eventMonitor[EVENT_NAN_IN_ITER] = TRUE;
+    }
+}
+
 extern void dsdpprintPhaseAheader(void) {
     
     dsdpshowdash();
@@ -58,6 +73,19 @@ extern void dsdpprintPhaseAheader(void) {
             "niter", "pObj", "dObj", "dInf", "k/t", "mu", "alpha", "pNrm", "E");
     printf("---------------------------------------"
            "---------------------------------------\n");
+}
+
+extern void DSDPResetPhaseAMonitor( HSDSolver *dsdpSolver ) {
+    
+    // Reset event and iteration monitor at the end of each iteration
+    memset(dsdpSolver->iterProgress, 0, sizeof(DSDP_INT) * IterStep);
+    dsdpSolver->iterProgress[ITER_INITIALIZE] = TRUE;
+    DSDP_INT *monitor = dsdpSolver->eventMonitor;
+    
+    assert( monitor[EVENT_IN_PHASE_A] );
+    monitor[EVENT_PFEAS_FOUND] = FALSE;
+    monitor[EVENT_LARGE_NORM] = FALSE;
+    monitor[EVENT_SMALL_STEP] = FALSE;
 }
 
 extern DSDP_INT DSDPPhaseALogging( HSDSolver *dsdpSolver ) {
@@ -92,7 +120,7 @@ extern DSDP_INT DSDPPhaseALogging( HSDSolver *dsdpSolver ) {
         goto print_log;
     }
     
-    if (moniter[EVENT_SMALL_STEP]  ||
+    if (dsdpSolver->smallIter == 3 ||
         moniter[EVENT_NAN_IN_ITER] ||
         moniter[EVENT_BAD_SCHUR]) {
         strcpy(&event[0], "F");
@@ -116,7 +144,6 @@ print_log:
     dsdpSolver->iterProgress[ITER_LOGGING] = TRUE;
     return retcode;
 }
-
 
 extern DSDP_INT DSDPCheckPhaseAConvergence( HSDSolver *dsdpSolver, DSDP_INT *isOK ) {
     /* Check convergence of DSDP */
@@ -160,11 +187,9 @@ extern DSDP_INT DSDPCheckPhaseAConvergence( HSDSolver *dsdpSolver, DSDP_INT *isO
     }
     
     // Small step
-    if (dsdpSolver->alpha < 1e-05) {
+    if (dsdpSolver->alpha < 1e-04 && !monitor[EVENT_PFEAS_FOUND]) {
         monitor[EVENT_SMALL_STEP] = TRUE;
-        dsdpSolver->solStatus = DSDP_INTERNAL_ERROR;
-        *isOK = TRUE;
-        return retcode;
+        dsdpSolver->smallIter += 1;
     }
     
     // NAN in iteration

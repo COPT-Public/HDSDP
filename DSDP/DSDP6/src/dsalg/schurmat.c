@@ -16,12 +16,19 @@ static DSDP_INT setupSDPSchurBlock( HSDSolver *dsdpSolver, DSDP_INT blockid ) {
     assert( blockid < dsdpSolver->nBlock );
     
     DSDP_INT m       = dsdpSolver->m;
+    DSDP_INT n       = dsdpSolver->S[blockid]->dim;
     DSDP_INT mattype = MAT_TYPE_UNKNOWN;
     sdpMat *sdpData = dsdpSolver->sdpData[blockid];
     
     // Temporary storage array for SinvASinv
     r1Mat *r1data = (r1Mat *) calloc(1, sizeof(r1Mat));
     dsMat *dsdata = (dsMat *) calloc(1, sizeof(dsMat));
+    retcode = r1MatInit(r1data);
+    retcode = r1MatAlloc(r1data, n);
+    retcode = denseMatInit(dsdata);
+    retcode = denseMatAlloc(dsdata, n, FALSE);
+    checkCodeFree;
+    
     void *data = NULL;
     
     for (DSDP_INT i = 0; i < m + 1; ++i) {
@@ -48,7 +55,9 @@ static DSDP_INT setupSDPSchurBlock( HSDSolver *dsdpSolver, DSDP_INT blockid ) {
 clean_up:
     
     retcode = r1MatFree(r1data);
+    DSDP_FREE(r1data);
     retcode = denseMatFree(dsdata);
+    DSDP_FREE(dsdata);
     return retcode;
 }
 
@@ -60,6 +69,7 @@ static DSDP_INT setupSDPSchur( HSDSolver *dsdpSolver ) {
     assert( !dsdpSolver->iterProgress[ITER_SCHUR] );
     if (!dsdpSolver->iterProgress[ITER_SCHUR]) {
         error(etype, "Schur matrix is already setup. \n");
+        return retcode;
     }
     
     DSDP_INT m = dsdpSolver->m;
@@ -106,7 +116,6 @@ static DSDP_INT setupLPSchur( HSDSolver *dsdpSolver ) {
     
     cs *A = dsdpSolver->lpData->lpdata;
     double *M = dsdpSolver->Msdp->array;
-    
     
     // TODO: Replace the SuiteSparse routines using MKL Sparse routine library
     
@@ -211,15 +220,15 @@ static DSDP_INT setupPhaseAdvecs( HSDSolver *dsdpSolver ) {
     */
     DSDP_INT retcode = DSDP_RETCODE_OK;
 
-    retcode = vec_copy(dsdpSolver->dObj, dsdpSolver->d2);
-    retcode = vec_copy(dsdpSolver->u, dsdpSolver->d12);
+    retcode = vec_copy(dsdpSolver->dObj,  dsdpSolver->d2);
+    retcode = vec_copy(dsdpSolver->u,     dsdpSolver->d12);
     retcode = vec_copy(dsdpSolver->asinv, dsdpSolver->d3);
     retcode = vec_copy(dsdpSolver->asinv, dsdpSolver->d4);
     
     return retcode;
 }
 
-static DSDP_INT setupFactorize( HSDSolver *dsdpSolver ) {
+extern DSDP_INT setupFactorize( HSDSolver *dsdpSolver ) {
     // Factorize all the dual solutions
     DSDP_INT retcode = DSDP_RETCODE_OK;
     
@@ -232,9 +241,17 @@ static DSDP_INT setupFactorize( HSDSolver *dsdpSolver ) {
     
     DSDP_INT nblock = dsdpSolver->nBlock;
     
-    for (DSDP_INT i = 0; i < nblock; ++i) {
-        retcode = spsMatFactorize(dsdpSolver->S[i]);
-        checkCode
+    if (dsdpSolver->iterA == 0) {
+        for (DSDP_INT i = 0; i < nblock; ++i) {
+            retcode = spsMatSymbolic(dsdpSolver->S[i]);
+            retcode = spsMatFactorize(dsdpSolver->S[i]);
+            checkCode
+        }
+    } else {
+        for (DSDP_INT i = 0; i < nblock; ++i) {
+            retcode = spsMatFactorize(dsdpSolver->S[i]);
+            checkCode
+        }
     }
     
     return retcode;
@@ -262,7 +279,6 @@ extern DSDP_INT schurPhaseAMatSolve( HSDSolver *dsdpSolver ) {
     denseArrSolveInp(M, 1, dsdpSolver->d3->x);
     denseArrSolveInp(M, 1, dsdpSolver->d4->x);
     
-    
     dsdpSolver->iterProgress[ITER_SCHUR_SOLVE] = TRUE;
     
     return retcode;
@@ -272,9 +288,8 @@ extern DSDP_INT setupPhaseASchur( HSDSolver *dsdpSolver ) {
     // Setup the schur matrix Msdp and some of the temporary arrays
     DSDP_INT retcode = DSDP_RETCODE_OK;
     
-    retcode = setupFactorize(dsdpSolver);
     retcode = setupSDPSchur(dsdpSolver);
-    retcode = setupLPSchur(dsdpSolver);
+    // retcode = setupLPSchur(dsdpSolver);
     retcode = schurPhaseAMatSolve(dsdpSolver);
     
     return retcode;

@@ -156,6 +156,7 @@ extern DSDP_INT takeStep( HSDSolver *dsdpSolver ) {
     
     retcode = checkIterProgress(dsdpSolver, ITER_TAKE_STEP);
     assert( !dsdpSolver->iterProgress[ITER_TAKE_STEP] );
+    
     if (dsdpSolver->iterProgress[ITER_TAKE_STEP]) {
         error(etype, "Step has been taken. \n");
     }

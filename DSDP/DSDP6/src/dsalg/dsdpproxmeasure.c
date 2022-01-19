@@ -3,8 +3,8 @@
 #include "dsdputils.h"
 
 extern DSDP_INT dsdpgetPhaseAProxMeasure( HSDSolver *dsdpSolver, double newmu ) {
-    // Check primal feasibility and proximity measure given a new mu parameter
     
+    // Check primal feasibility and proximity measure given a new mu parameter
     DSDP_INT retcode = DSDP_RETCODE_OK;
     
     double taudenom = 0.0;
@@ -28,9 +28,11 @@ extern DSDP_INT dsdpgetPhaseAProxMeasure( HSDSolver *dsdpSolver, double newmu ) 
         dtaudelta = - dObj + newmu * (1 / tau + dsdpSolver->csinv) + utd2;
         vec_dot(dsdpSolver->u, dsdpSolver->d3, &utd2);
         dtaudelta -= utd2 * newmu;
+        
         // dtaudelta = (1 / mu) *  dtaudelta / taudenom;
         dtaudelta = dtaudelta / (newmu * taudenom);
     }
+    
     // dydelta = d12 * dtaudelta + d2 * tau / mu - d3;
     vec_zaxpby(dydelta, dtaudelta, dsdpSolver->d12, tau / newmu, dsdpSolver->d2);
     vec_axpy(-1.0, dsdpSolver->d3, dydelta);
