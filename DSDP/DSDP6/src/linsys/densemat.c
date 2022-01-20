@@ -327,7 +327,7 @@ extern DSDP_INT denseSpsTrace( dsMat *dAMat, spsMat *sBMat, double *trace ) {
         for (DSDP_INT k = Bp[i]; k < Bp[i + 1]; ++i) {
             s   = Bi[k];
             tmp = Bx[k] * A[s + (DSDP_INT) (i * (2 * n - i - 1) / 2)];
-            if (k == i) {
+            if (Bi[k] == i) {
                 tmp = tmp / 2;
             }
             t += tmp;
@@ -368,7 +368,7 @@ extern DSDP_INT denseDsTrace( dsMat *dAMat, dsMat *dBMat, double *trace ) {
 
 extern DSDP_INT denseDiagTrace( dsMat *dAMat, double diag, double *trace ) {
     
-    // Compute trace( A * diag * I ) = diag * trace( A )
+    // Compute trace( A * diag * I ) = diag * trace( A ). Used for Ry
     DSDP_INT retcode = DSDP_RETCODE_OK;
         
     DSDP_INT n = dAMat->dim;

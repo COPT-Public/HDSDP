@@ -1,7 +1,7 @@
 #include "dsdppresolve.h"
 #include "dsdputils.h"
 
-static char *etype = "Presolving operations";
+static char etype[] = "Presolving operations";
 
 static DSDP_INT isDenseRank1InAcc( dsMat *dataMat, DSDP_INT *isRank1 ) {
     // Check if a dense matrix is rank-one
@@ -452,6 +452,236 @@ static DSDP_INT getBlockStatistic( sdpMat *sdpData ) {
     return retcode;
 }
 
+static DSDP_INT preSDPMatgetPScaler( HSDSolver *dsdpSolver ) {
+    
+    // Compute the primal scaler for DSDP
+    DSDP_INT retcode = DSDP_RETCODE_OK;
+    DSDP_INT m = dsdpSolver->m;
+    
+    vec_alloc(dsdpSolver->pScaler, m);
+    
+    double nrm    = 0.0;
+    double maxnrm = 0.0;
+    double minnrm = 0.0;
+    
+    for (DSDP_INT i = 0; i < m; ++i) {
+        
+        if (fabs(dsdpSolver->dObj->x[i]) > 0.0) {
+            minnrm = fabs(dsdpSolver->dObj->x[i]);
+        } else {
+            minnrm = 1.0;
+        }
+        
+        maxnrm = 0.0;
+        
+        for (DSDP_INT j = 0; j < dsdpSolver->nBlock; ++j) {
+            retcode= getMatnrm(dsdpSolver, j, i, &nrm);
+            if (nrm > 0) {
+                minnrm = MIN(minnrm, nrm);
+                maxnrm = MAX(maxnrm, nrm);
+            }
+        }
+        
+        if (maxnrm == 0.0) {
+            error(etype, "Empty row detected. \n");
+        } else {
+            if (fabs(sqrt(maxnrm * minnrm) - 1.0) < 0.1) {
+                dsdpSolver->pScaler->x[i] = 1.0;
+            } else {
+                dsdpSolver->pScaler->x[i] = sqrt(maxnrm * minnrm);
+            }
+        }
+    }
+    
+    return retcode;
+}
+
+static DSDP_INT preSDPMatPScale( HSDSolver *dsdpSolver ) {
+    
+    // Carry out primal scaling of SDP
+    DSDP_INT retcode = DSDP_RETCODE_OK;
+    assert( dsdpSolver->pScaler->x );
+    
+    double scaler = 0.0;
+    for (DSDP_INT i = 0; i < dsdpSolver->m; ++i) {
+        scaler = dsdpSolver->pScaler->x[i];
+        assert( scaler > 0 );
+        for (DSDP_INT j = 0; j < dsdpSolver->nBlock; ++j) {
+            retcode = matRScale(dsdpSolver, j, i, scaler);
+        }
+        checkCode;
+    }
+    
+    return retcode;
+}
+
+static DSDP_INT preSDPMatgetDScaler( HSDSolver *dsdpSolver ) {
+    
+    // Compute the dual scaler for DSDP
+    DSDP_INT retcode = DSDP_RETCODE_OK;
+    
+    DSDP_INT m = dsdpSolver->m;
+    double nrm    = 0.0;
+    double maxnrm = 0.0;
+    double minnrm = 0.0;
+    
+    for (DSDP_INT i = 0; i < dsdpSolver->nBlock; ++i) {
+        minnrm = 1.0;
+        for (DSDP_INT j = 0; j < m; ++j) {
+            retcode = getMatnrm(dsdpSolver, i, j, &nrm);
+            if (nrm > 0.0) {
+                minnrm = MIN(minnrm, nrm);
+                maxnrm = MAX(maxnrm, nrm);
+            }
+        }
+        
+        if (maxnrm == 0.0) {
+            error(etype, "Empty block detected. \n");
+        }
+        
+        if (fabs(sqrt(maxnrm * minnrm) - 1.0) < 0.1) {
+            dsdpSolver->sdpData[i]->scaler = 1.0;
+        } else {
+            dsdpSolver->sdpData[i]->scaler = sqrt(minnrm * maxnrm);
+        }
+    }
+    
+    return retcode;
+}
+
+static DSDP_INT preSDPMatDScale( HSDSolver *dsdpSolver ) {
+    
+    // Carry out primal scaling of SDP
+    DSDP_INT retcode = DSDP_RETCODE_OK;
+    
+    double scaler = 0.0;
+    for (DSDP_INT i = 0; i < dsdpSolver->nBlock; ++i) {
+        scaler = dsdpSolver->sdpData[i]->scaler;
+        assert( scaler > 0 );
+        for (DSDP_INT j = 0; j < dsdpSolver->m; ++j) {
+            retcode = matRScale(dsdpSolver, i, j, scaler);
+        }
+        checkCode;
+    }
+    
+    return retcode;
+}
+
+static DSDP_INT preSDPgetSymbolic( HSDSolver *dsdpSolver, DSDP_INT blockid ) {
+    
+    // Get the symbolic structure for dual matrix S/dS in block k and allocate memory
+    // By the time this symbolic phase is called, the problem data should have gone
+    // through presolving reduction
+    
+    DSDP_INT retcode = DSDP_RETCODE_OK;
+    
+    sdpMat *sdpBlock = dsdpSolver->sdpData[blockid];
+    assert( sdpBlock->blockId == blockid );
+    
+    DSDP_INT dim     = sdpBlock->dimS;
+    DSDP_INT nhash   = nsym(dim);
+    DSDP_INT nnz     = 0;
+    
+    dsdpSolver->S[blockid]  = (spsMat *) calloc(1, sizeof(spsMat));
+    dsdpSolver->dS[blockid] = (spsMat *) calloc(1, sizeof(spsMat));
+    
+    retcode = spsMatInit(dsdpSolver->S[blockid]); checkCode;
+    retcode = spsMatInit(dsdpSolver->dS[blockid]); checkCode;
+    
+    spsMat *spsdata  = NULL;
+    r1Mat  *r1data   = NULL;
+    
+    // Get hash table
+    DSDP_INT *hash = NULL;
+    hash = (DSDP_INT *) calloc(nhash, sizeof(DSDP_INT));
+    
+    DSDP_INT useDenseS = FALSE;
+    DSDP_INT *matIdx = sdpBlock->r1MatIdx;
+    
+    if (sdpBlock->ndenseMat > 0) {
+        useDenseS = TRUE;
+    } else {
+        for (DSDP_INT i = 0; i < sdpBlock->nr1Mat; ++i) {
+            r1data = (r1Mat *) sdpBlock->sdpData[matIdx[i]];
+            if (r1data->nnz > 0.7 * dim) {
+                useDenseS = TRUE;
+            }
+        }
+    }
+    
+    // Dense matrix is present
+    if (!useDenseS) {
+        // Sparse matrix
+        matIdx = sdpBlock->spsMatIdx;
+        for (DSDP_INT i = 0; i < sdpBlock->nspsMat; ++i) {
+            spsdata = (spsMat *) sdpBlock->sdpData[matIdx[i]];
+            for (DSDP_INT j = 0; j < dim; ++j) {
+                for (DSDP_INT k = spsdata->p[j]; k < spsdata->p[j + 1]; ++k) {
+                    if (packIdx(hash, dim, spsdata->i[k], j) == 0) {
+                        packIdx(hash, dim, spsdata->i[k], j) = 1;
+                        nnz += 1;
+                    }
+                }
+            }
+            if (nnz > 0.8 * nhash) {
+                useDenseS = TRUE;
+            }
+        }
+        // Rank 1 matrix
+        matIdx = sdpBlock->r1MatIdx;
+        for (DSDP_INT i = 0; i < sdpBlock->nr1Mat; ++i) {
+            r1data = (r1Mat *) sdpBlock->sdpData[matIdx[i]];
+            for (DSDP_INT j = 0; j < r1data->nnz; ++j) {
+                for (DSDP_INT k = 0; k <= j; ++k) {
+                    if (packIdx(hash, dim, r1data->nzIdx[j], r1data->nzIdx[k]) == 0) {
+                        packIdx(hash, dim, r1data->nzIdx[j], r1data->nzIdx[k]) = 1;
+                        nnz += 1;
+                    }
+                }
+            }
+            if (nnz > 0.8 * nhash) {
+                useDenseS = TRUE;
+            }
+        }
+    }
+    
+    if (useDenseS) {
+        nnz = nhash;
+        DSDP_INT idx = 0;
+        for (DSDP_INT i = 0; i < dim; ++i) {
+            idx += i;
+            for (DSDP_INT j = 0; j <= dim; ++j) {
+                hash[j] = idx;
+            }
+        }
+    } else {
+        // Get hash table by the symbolic features
+        DSDP_INT idx = 0;
+        for (DSDP_INT i = 0; i < nhash; ++i) {
+            if (hash[i]) {
+                hash[i] = idx;
+                idx ++;
+            }
+        }
+        assert( idx == nnz );
+    }
+    
+    retcode = spsMatAllocData(dsdpSolver->S[blockid], dim, nnz); checkCode;
+    retcode = spsMatAllocData(dsdpSolver->dS[blockid], dim, nnz); checkCode;
+    retcode = spsMatAllocSumMat(dsdpSolver->S[blockid]); checkCode;
+    retcode = spsMatAllocSumMat(dsdpSolver->dS[blockid]); checkCode;
+    
+    memcpy(dsdpSolver->S[blockid]->sumHash, hash, nhash);
+    memcpy(dsdpSolver->dS[blockid]->sumHash, hash, nhash);
+    
+#ifdef SHOWALL
+        printf("Block "ID" goes through symbolic check. \n", blockid);
+#endif
+    
+    DSDP_FREE(hash);
+    return retcode;
+}
+
 extern DSDP_INT preRank1Rdc( HSDSolver *dsdpSolver ) {
     // Do rank 1 reduction
     DSDP_INT retcode = DSDP_RETCODE_OK;
@@ -464,94 +694,22 @@ extern DSDP_INT preRank1Rdc( HSDSolver *dsdpSolver ) {
     return retcode;
 }
 
-extern DSDP_INT preSDPMatPScale( HSDSolver *dsdpSolver ) {
+extern DSDP_INT preSDPPrimal( HSDSolver *dsdpSolver ) {
     // Do matrix coefficient scaling given preScaler for the primal
     DSDP_INT retcode = DSDP_RETCODE_OK;
     
-    return retcode;
-}
-
-extern DSDP_INT preSDPMatDScaleBlock( sdpMat *dataMat ) {
-    // Do matrix coefficient scaling for one SDP block
-    DSDP_INT retcode = DSDP_RETCODE_OK;
-    DSDP_INT m = dataMat->dimy;
-    
-    double maxNrm     = 0.0;
-    double minNrm     = 0.0;
-    double tmpnrm     = 0.0;
-    
-    assert ( dataMat->scaler == 0.0 );
-    
-    // Dual normalization considers C, while primal does not
-    for (DSDP_INT i = 0; i < m + 1; ++i) {
-        
-        switch (dataMat->types[i]) {
-            case MAT_TYPE_ZERO:
-                break;
-            case MAT_TYPE_DENSE:
-                retcode = denseMatFnorm((dsMat *) dataMat->sdpData[i], &tmpnrm);
-                checkCode;
-                break;
-            case MAT_TYPE_SPARSE:
-                retcode = spsMatFnorm((spsMat *) dataMat->sdpData[i] , &tmpnrm);
-                checkCode;
-                break;
-            case MAT_TYPE_RANK1:
-                retcode = r1MatFnorm((r1Mat *) dataMat->sdpData[i], &tmpnrm);
-                checkCode;
-                break;
-            default:
-                error(etype, "Unknown matrix type. \n");
-                break;
-        }
-        
-        maxNrm = MAX(maxNrm, tmpnrm);
-        minNrm = MIN(minNrm, tmpnrm);
-    }
-    
-    dataMat->scaler = sqrt(maxNrm * minNrm);
-    
-    if (dataMat->scaler < 1.05 && dataMat->scaler > 0.95) {
-        dataMat->scaler = 1.0;
-    } else {
-        
-        // Do scaling
-        for (DSDP_INT i = 0; i < m; ++i) {
-            
-            tmpnrm = dataMat->scaler;
-            switch (dataMat->types[i]) {
-                case MAT_TYPE_ZERO:
-                    break;
-                case MAT_TYPE_DENSE:
-                    retcode = denseMatRscale((dsMat *) dataMat->sdpData[i],
-                                             tmpnrm); checkCode;
-                    break;
-                case MAT_TYPE_SPARSE:
-                    retcode = spsMatRscale((spsMat *) dataMat->sdpData[i],
-                                            tmpnrm); checkCode;
-                    break;
-                case MAT_TYPE_RANK1:
-                    retcode = r1MatRscale((r1Mat *) dataMat->sdpData[i],
-                                          tmpnrm); checkCode;
-                    checkCode;
-                    break;
-                default:
-                    error(etype, "Unknown matrix type. \n");
-                    break;
-            }
-        }
-    }
+    retcode = preSDPMatgetPScaler(dsdpSolver); checkCode;
+    retcode = preSDPMatPScale(dsdpSolver); checkCode;
     
     return retcode;
 }
 
-extern DSDP_INT preSDPMatDScale( HSDSolver *dsdpSolver ) {
+extern DSDP_INT preSDPDual( HSDSolver *dsdpSolver ) {
     // Dual coefficient scaling
     DSDP_INT retcode = DSDP_RETCODE_OK;
     
-    
-    
-    
+    retcode = preSDPMatgetDScaler(dsdpSolver); checkCode;
+    retcode = preSDPMatDScale(dsdpSolver); checkCode;
     
     return retcode;
 }
@@ -620,5 +778,18 @@ extern DSDP_INT getMatIdx( HSDSolver *dsdpSolver ) {
         checkCode;
     }
     
+    return retcode;
+}
+
+extern DSDP_INT preSymbolic( HSDSolver *dsdpSolver ) {
+    // Get the symbolic structure of S
+    DSDP_INT retcode = DSDP_RETCODE_OK;
+    DSDP_INT nblock = dsdpSolver->nBlock;
+    
+    for (DSDP_INT i = 0; i < nblock; ++i) {
+        retcode = preSDPgetSymbolic(dsdpSolver, i);
+        checkCode;
+    }
+ 
     return retcode;
 }

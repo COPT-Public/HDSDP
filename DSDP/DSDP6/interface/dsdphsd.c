@@ -155,121 +155,6 @@ static DSDP_INT DSDPIAllocResi( HSDSolver *dsdpSolver ) {
     return retcode;
 }
 
-static DSDP_INT DSDPIGetBlockSymbolic( HSDSolver *dsdpSolver, DSDP_INT blockid ) {
-    
-    // Get the symbolic structure for dual matrix S/dS in block k and allocate memory
-    // By the time this symbolic phase is called, the problem data should have gone
-    // through presolving reduction
-    
-    DSDP_INT retcode = DSDP_RETCODE_OK;
-    
-    sdpMat *sdpBlock = dsdpSolver->sdpData[blockid];
-    assert( sdpBlock->blockId == blockid );
-    
-    DSDP_INT dim     = sdpBlock->dimS;
-    DSDP_INT nhash   = nsym(dim);
-    DSDP_INT nnz     = 0;
-    
-    dsdpSolver->S[blockid]  = (spsMat *) calloc(1, sizeof(spsMat));
-    dsdpSolver->dS[blockid] = (spsMat *) calloc(1, sizeof(spsMat));
-    
-    retcode = spsMatInit(dsdpSolver->S[blockid]); checkCode;
-    retcode = spsMatInit(dsdpSolver->dS[blockid]); checkCode;
-    
-    spsMat *spsdata  = NULL;
-    r1Mat  *r1data   = NULL;
-    
-    // Get hash table
-    DSDP_INT *hash = NULL;
-    hash = (DSDP_INT *) calloc(nhash, sizeof(DSDP_INT));
-    
-    DSDP_INT useDenseS = FALSE;
-    DSDP_INT *matIdx = sdpBlock->r1MatIdx;
-    
-    if (sdpBlock->ndenseMat > 0) {
-        useDenseS = TRUE;
-    } else {
-        for (DSDP_INT i = 0; i < sdpBlock->nr1Mat; ++i) {
-            r1data = (r1Mat *) sdpBlock->sdpData[matIdx[i]];
-            if (r1data->nnz > 0.7 * dim) {
-                useDenseS = TRUE;
-            }
-        }
-    }
-    
-    // Dense matrix is present
-    if (!useDenseS) {
-        // Sparse matrix
-        matIdx = sdpBlock->spsMatIdx;
-        for (DSDP_INT i = 0; i < sdpBlock->nspsMat; ++i) {
-            spsdata = (spsMat *) sdpBlock->sdpData[matIdx[i]];
-            for (DSDP_INT j = 0; j < dim; ++j) {
-                for (DSDP_INT k = spsdata->p[j]; k < spsdata->p[j + 1]; ++k) {
-                    if (packIdx(hash, dim, spsdata->i[k], j) == 0) {
-                        packIdx(hash, dim, spsdata->i[k], j) = 1;
-                        nnz += 1;
-                    }
-                }
-            }
-            if (nnz > 0.8 * nhash) {
-                useDenseS = TRUE;
-            }
-        }
-        // Rank 1 matrix
-        matIdx = sdpBlock->r1MatIdx;
-        for (DSDP_INT i = 0; i < sdpBlock->nr1Mat; ++i) {
-            r1data = (r1Mat *) sdpBlock->sdpData[matIdx[i]];
-            for (DSDP_INT j = 0; j < r1data->nnz; ++j) {
-                for (DSDP_INT k = 0; k <= j; ++k) {
-                    if (packIdx(hash, dim, r1data->nzIdx[j], r1data->nzIdx[k]) == 0) {
-                        packIdx(hash, dim, r1data->nzIdx[j], r1data->nzIdx[k]) = 1;
-                        nnz += 1;
-                    }
-                }
-            }
-            if (nnz > 0.8 * nhash) {
-                useDenseS = TRUE;
-            }
-        }
-    }
-    
-    if (useDenseS) {
-        nnz = nhash;
-        DSDP_INT idx = 0;
-        for (DSDP_INT i = 0; i < dim; ++i) {
-            idx += i;
-            for (DSDP_INT j = 0; j <= dim; ++j) {
-                hash[j] = idx;
-            }
-        }
-    } else {
-        // Get hash table by the symbolic features
-        DSDP_INT idx = 0;
-        for (DSDP_INT i = 0; i < nhash; ++i) {
-            if (hash[i]) {
-                hash[i] = idx;
-                idx ++;
-            }
-        }
-        assert( idx == nnz );
-    }
-    
-    retcode = spsMatAllocData(dsdpSolver->S[blockid], dim, nnz); checkCode;
-    retcode = spsMatAllocData(dsdpSolver->dS[blockid], dim, nnz); checkCode;
-    retcode = spsMatAllocSumMat(dsdpSolver->S[blockid]); checkCode;
-    retcode = spsMatAllocSumMat(dsdpSolver->dS[blockid]); checkCode;
-    
-    memcpy(dsdpSolver->S[blockid]->sumHash, hash, nhash);
-    memcpy(dsdpSolver->dS[blockid]->sumHash, hash, nhash);
-    
-#ifdef SHOWALL
-        printf("Block "ID" goes through symbolic check. \n", blockid);
-#endif
-    
-    DSDP_FREE(hash);
-    return retcode;
-}
-
 static DSDP_INT DSDPIAllocIter( HSDSolver *dsdpSolver ) {
     
     // Invoked after the getIdx routine is called
@@ -387,24 +272,20 @@ static DSDP_INT DSDPIAllocIter( HSDSolver *dsdpSolver ) {
 static DSDP_INT DSDPICheckData( HSDSolver *dsdpSolver ) {
     
     // Check whether problem data is alreay set up
-    // Begin presolving after this step
     DSDP_INT retcode = DSDP_RETCODE_OK;
     DSDP_INT nblock = dsdpSolver->nBlock;
     DSDP_INT nblockSet = 0;
     for (int i = 0; i < nblock; ++i) {
         nblockSet += dsdpSolver->isSDPset[i];
     }
-    if (dsdpSolver->isLPset && nblockSet == nblock) {
+    if (nblockSet == nblock) {
         dsdpSolver->insStatus = DSDP_STATUS_SET;
+        retcode = DSDPIAllocIter(dsdpSolver);
+        retcode = DSDPIAllocResi(dsdpSolver);
     }
     
     if (dsdpSolver->verbosity) {
         printf(ID" out of "ID" blocks are set. \n", nblockSet, nblock);
-        if (dsdpSolver->isLPset) {
-            printf("LP data is set. \n");
-        } else {
-            printf("LP data is not set. \n");
-        }
     }
     
     return retcode;
@@ -598,9 +479,12 @@ static DSDP_INT DSDPIPresolve( HSDSolver *dsdpSolver ) {
     }
     
     retcode = preRank1Rdc(dsdpSolver); checkCode;
-    retcode = preSDPMatDScale(dsdpSolver); checkCode;
-    retcode = preSDPMatPScale(dsdpSolver); checkCode;
+    retcode = preSDPPrimal(dsdpSolver); checkCode;
+    // retcode = preSDPDual(dsdpSolver); checkCode;
     retcode = getMatIdx(dsdpSolver); checkCode;
+    retcode = preSymbolic(dsdpSolver); checkCode;
+    
+    dsdpSolver->insStatus = DSDP_STATUS_PRESOLVED;
     
     return retcode;
 }
@@ -745,11 +629,9 @@ extern DSDP_INT DSDPSetSDPConeData( HSDSolver *dsdpSolver,
     }
     
     retcode = sdpMatSetData(data, Asdpp, Asdpi, Asdpx); checkCode;
-    
     if (dsdpSolver->verbosity) {
         printf("SDP block "ID" is set. \n", blockid);
     }
-    
     dsdpSolver->isSDPset[blockid] = TRUE;
     DSDPICheckData(dsdpSolver);
     
@@ -760,8 +642,10 @@ extern DSDP_INT DSDPOptimize( HSDSolver *dsdpSolver ) {
     // Optimization routine for DSDP
     DSDP_INT retcode = DSDP_RETCODE_OK;
     
-    // Presolver
+    assert( dsdpSolver->insStatus == DSDP_STATUS_SET );
     retcode = DSDPIPresolve(dsdpSolver); checkCode;
+    
+    assert( dsdpSolver->insStatus == DSDP_STATUS_PRESOLVED );
     retcode = DSDPDInfeasEliminator(dsdpSolver); checkCode;
     
     return retcode;
