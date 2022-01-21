@@ -156,8 +156,8 @@ extern DSDP_INT denseMatxTAx( dsMat *dAMat, vec *x, double *xTAx ) {
                &one, &beta, y, &one);
     
     *xTAx = ddot(&dim, x->x, &one, y, &one);
-    DSDP_FREE(xTAx);
     
+    DSDP_FREE(y);
     return retcode;
 }
 
@@ -393,7 +393,7 @@ extern DSDP_INT denseDiagTrace( dsMat *dAMat, double diag, double *trace ) {
         }
     }
     
-    *trace = mattrace;
+    *trace = diag * mattrace;
     
     return retcode;
 }

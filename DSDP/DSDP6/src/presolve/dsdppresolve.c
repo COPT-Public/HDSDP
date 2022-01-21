@@ -693,8 +693,14 @@ static DSDP_INT preSDPgetSymbolic( HSDSolver *dsdpSolver, DSDP_INT blockid ) {
     
     retcode = spsMatAllocData(dsdpSolver->S[blockid], dim, nnz); checkCodeFree;
     retcode = spsMatAllocData(dsdpSolver->dS[blockid], dim, nnz); checkCodeFree;
-    retcode = spsMatAllocSumMat(dsdpSolver->S[blockid]); checkCodeFree;
-    retcode = spsMatAllocSumMat(dsdpSolver->dS[blockid]); checkCodeFree;
+    retcode = spsMatAllocData(dsdpSolver->Scker[blockid], dim, nnz); checkCodeFree;
+    
+    if (useDenseS) {
+        DSDP_FREE(hash);
+        hash = NULL;
+    }
+    
+    dsdpSolver->symS[blockid] = hash;
     
     DSDP_INT tmp = 0;
     if (isfirstNz) {
@@ -716,12 +722,11 @@ static DSDP_INT preSDPgetSymbolic( HSDSolver *dsdpSolver, DSDP_INT blockid ) {
         dsdpSolver->dS[blockid]->p[i + 1] = tmp;
     }
     
-    memcpy(dsdpSolver->S[blockid]->sumHash, hash, sizeof(DSDP_INT) * nhash);
-    memcpy(dsdpSolver->dS[blockid]->sumHash, hash, sizeof(DSDP_INT) * nhash);
-    
 #ifdef SHOWALL
         printf("Block "ID" goes through symbolic check. \n", blockid);
 #endif
+    
+    return retcode;
     
 clean_up:
     DSDP_FREE(hash);

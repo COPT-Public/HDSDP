@@ -64,7 +64,9 @@ static DSDP_INT initresi( HSDSolver *dsdpSolver ) {
     for (DSDP_INT i = 0; i < dsdpSolver->nBlock; ++i) {
         // S = C * tau - Ry
         retcode = addMattoS(dsdpSolver, i, m, tau);
-        retcode = spsMatAdddiag(dsdpSolver->S[i], - dsdpSolver->Ry);
+        retcode = spsMatAdddiag(dsdpSolver->S[i],
+                                - dsdpSolver->Ry,
+                                dsdpSolver->symS[i]);
         checkCode;
     }
     

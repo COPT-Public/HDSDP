@@ -139,7 +139,7 @@ extern DSDP_INT getMaxStep( HSDSolver *dsdpSolver ) {
     double sdpS = 0.0;
     
     retcode = getKappaTauStep(dsdpSolver, &stepkappatau);
-    retcode = getLPsStep(dsdpSolver, &steplps);
+    // retcode = getLPsStep(dsdpSolver, &steplps);
     retcode = getSDPSStep(dsdpSolver, &sdpS); checkCode;
     sdpS = MIN(sdpS, steplps);
     dsdpSolver->alpha = MIN(sdpS, stepkappatau);

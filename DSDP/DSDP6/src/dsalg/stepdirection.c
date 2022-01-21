@@ -13,13 +13,25 @@ static DSDP_INT assembleArrs( HSDSolver *dsdpSolver ) {
      d1  = d11 + d12;
     */
     DSDP_INT retcode = DSDP_RETCODE_OK;
+    
+    // b1 = b - mu * u
     vec_zaxpby(dsdpSolver->b1, 1.0, dsdpSolver->dObj,
-               dsdpSolver->mu, dsdpSolver->u);
+               - dsdpSolver->mu, dsdpSolver->u);
+    
+    // b2 = tau / mu * d2 - d3
     vec_zaxpby(dsdpSolver->b2, dsdpSolver->tau / dsdpSolver->mu,
                dsdpSolver->d2, -1.0, dsdpSolver->d3);
+    
+    // b2 = b2 + d4
     vec_axpy(1.0, dsdpSolver->d4, dsdpSolver->b2);
+    
+    // d1 = d2
     vec_copy(dsdpSolver->d2, dsdpSolver->d1);
+    
+    // d1 = d1 / mu
     vec_rscale(dsdpSolver->d1, dsdpSolver->mu);
+    
+    // d1 = d1 + d2
     vec_axpy(1.0, dsdpSolver->d12, dsdpSolver->d1);
     
     return retcode;

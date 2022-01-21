@@ -225,7 +225,6 @@ static DSDP_INT setupPhaseAdvecs( HSDSolver *dsdpSolver ) {
     retcode = vec_copy(dsdpSolver->dObj,  dsdpSolver->d2);
     retcode = vec_copy(dsdpSolver->u,     dsdpSolver->d12);
     retcode = vec_copy(dsdpSolver->asinv, dsdpSolver->d3);
-    retcode = vec_copy(dsdpSolver->asinv, dsdpSolver->d4);
     
     return retcode;
 }
@@ -276,6 +275,9 @@ extern DSDP_INT schurPhaseAMatSolve( HSDSolver *dsdpSolver ) {
     
     dsMat *M = dsdpSolver->Msdp;
     assert( !M->isFactorized );
+    
+    // Factorize the Schur matrix
+    retcode = denseMatFactorize(M);
     
     denseArrSolveInp(M, 1, dsdpSolver->d2->x);
     denseArrSolveInp(M, 1, dsdpSolver->d12->x);

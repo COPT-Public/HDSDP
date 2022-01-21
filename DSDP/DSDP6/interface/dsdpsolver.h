@@ -36,6 +36,7 @@ typedef struct {
     double  mu;           // Duality gap
     
     spsMat   **S;         // SDP dual iteration matrix
+    DSDP_INT **symS;      // Symbolic structure of S matrices
     vec      *s;          // LP dual iteration matrix
     vec      *x;          // LP primal iteration vector
     
@@ -72,7 +73,10 @@ typedef struct {
     
     // Step matrix
     spsMat   **dS;        // SDP step matrix
+    
+    /* TODO: Remove spaux by applying Lanczos iterations */
     spsMat   **spaux;     // Used for maximum step computation
+    spsMat   **Scker;     // Used for checking positive definiteness
     vec      *ds;         // LP step matrix
     vec      *dy;         // Dual step matrix
     double   dtau;        // Tau step

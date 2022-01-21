@@ -131,7 +131,7 @@ static DSDP_INT pardisoForwardSolve( spsMat *S, DSDP_INT nrhs, double *B, double
     
     // Invoke pardiso to do symbolic analysis and Cholesky factorization
     pardiso(S->pdsWorker, &maxfct, &mnum, &mtype, &phase, &n,
-            Sx, Sp, Si, &idummy, &nrhs, PARDISO_PARAMS_FORWARD_BACKWORD,
+            NULL, NULL, NULL, &idummy, &nrhs, PARDISO_PARAMS_FORWARD_BACKWORD,
             &msglvl, B, aux, &error);
     
     assert( error == PARDISO_OK );
@@ -266,8 +266,6 @@ extern DSDP_INT spsMatInit( spsMat *sMat ) {
     sMat->i            = NULL;
     sMat->x            = NULL;
     sMat->isFactorized = FALSE;
-    sMat->isSum        = FALSE;
-    sMat->sumHash      = NULL;
     
     memset(sMat->pdsWorker, 0, PARDISOINDEX * sizeof(void *));
     
@@ -312,20 +310,6 @@ extern DSDP_INT spsMatAllocData( spsMat *sMat, DSDP_INT dim, DSDP_INT nnz ) {
     return retcode;
 }
 
-extern DSDP_INT spsMatAllocSumMat( spsMat *sMat ) {
-    
-    // Allocate memory for symbolic hash table
-    DSDP_INT retcode = DSDP_RETCODE_OK;
-    
-    assert( sMat->nnz > 0 );
-    assert( sMat->dim > 0 );
-    assert( sMat->isSum == FALSE );
-    sMat->sumHash = (DSDP_INT *) calloc(nsym(sMat->dim), sizeof(DSDP_INT));
-    sMat->isSum = TRUE;
-    
-    return retcode;
-}
-
 extern DSDP_INT spsMatFree( spsMat *sMat ) {
     
     // Free memory allocated
@@ -342,17 +326,13 @@ extern DSDP_INT spsMatFree( spsMat *sMat ) {
         retcode = pardisoFree(sMat);
         sMat->isFactorized = FALSE;
     }
-    
-    if (sMat->isSum) {
-        DSDP_FREE(sMat->sumHash);
-        sMat->isSum = FALSE;
-    }
         
     return retcode;
 }
 
 /* Basic operations */
-extern DSDP_INT spsMataXpbY( double alpha, spsMat *sXMat, double beta, spsMat *sYMat ) {
+extern DSDP_INT spsMataXpbY( double alpha, spsMat *sXMat, double beta,
+                             spsMat *sYMat, DSDP_INT *sumHash ) {
     
     // Matrix axpy operation: let sYMat = alpha * sXMat + beta * sYMat
     // Note that sYMat must have a hash table
@@ -361,7 +341,6 @@ extern DSDP_INT spsMataXpbY( double alpha, spsMat *sXMat, double beta, spsMat *s
     // The matrices added is NEVER factorized since they purely serve as constant data
     assert ( sXMat->dim == sYMat->dim );
     assert ((!sXMat->isFactorized));
-    assert ( sYMat->isSum );
     if (sXMat->isFactorized) {
         error(etype, "Adding a factorized matrix. \n");
     }
@@ -385,11 +364,11 @@ extern DSDP_INT spsMataXpbY( double alpha, spsMat *sXMat, double beta, spsMat *s
     for (DSDP_INT i = 0; i < dim; ++i) {
         for (DSDP_INT j = Ap[i]; j < Ap[i + 1]; ++j) {
 #ifdef VERIFY_HASH
-            hash = packIdx(sYMat->sumHash, dim, Ai[j], i);
+            hash = packIdx(sumHash, dim, Ai[j], i);
             assert( hash > 0 || j == 0 );
             Bx[hash] += alpha * Ax[j];
 #else
-            Bx[packIdx(sYMat->sumHash, dim, Ai[j], i)] += alpha * Ax[j];
+            Bx[packIdx(sumHash, dim, Ai[j], i)] += alpha * Ax[j];
 #endif
         }
     }
@@ -397,19 +376,18 @@ extern DSDP_INT spsMataXpbY( double alpha, spsMat *sXMat, double beta, spsMat *s
     return retcode;
 }
 
-extern DSDP_INT spsMatAdddiag( spsMat *sMat, double d ) {
+extern DSDP_INT spsMatAdddiag( spsMat *sMat, double d, DSDP_INT *sumHash ) {
     
     // Add a diagonal element to a sparse matrix with hash table
     DSDP_INT retcode = DSDP_RETCODE_OK;
     
-    assert( sMat->isSum );
     assert( sMat->dim );
     
     if (d == 0.0) {
         return retcode;
     }
     
-    DSDP_INT *hash = sMat->sumHash;
+    DSDP_INT *hash = sumHash;
     DSDP_INT dim = sMat->dim;
     DSDP_INT idx = 0;
     
@@ -431,7 +409,6 @@ extern DSDP_INT spsMatAddds( spsMat *sXMat, double alpha, dsMat *dsYMat ) {
     // Add a dense matrix to a nominally sparse matrix
     DSDP_INT retcode = DSDP_RETCODE_OK;
     
-    assert( sXMat->isSum );
     assert( sXMat->nnz == nsym(sXMat->dim) );
     assert( sXMat->dim == dsYMat->dim );
     
@@ -445,12 +422,11 @@ extern DSDP_INT spsMatAddds( spsMat *sXMat, double alpha, dsMat *dsYMat ) {
     return retcode;
 }
 
-extern DSDP_INT spsMatAddr1( spsMat *sXMat, double alpha, r1Mat *r1YMat ) {
+extern DSDP_INT spsMatAddr1( spsMat *sXMat, double alpha, r1Mat *r1YMat, DSDP_INT *sumHash ) {
     
     // Add a rank 1 matrix to a sparse matrix
     DSDP_INT retcode = DSDP_RETCODE_OK;
     
-    assert( sXMat->isSum );
     assert( sXMat->dim == r1YMat->dim);
     
     if (alpha == 0.0) {
@@ -459,7 +435,7 @@ extern DSDP_INT spsMatAddr1( spsMat *sXMat, double alpha, r1Mat *r1YMat ) {
     
     DSDP_INT dim = sXMat->dim;
     DSDP_INT idx = 0;
-    DSDP_INT *hash = sXMat->sumHash;
+    DSDP_INT *hash = sumHash;
     DSDP_INT *nzIdx = r1YMat->nzIdx;
     
     double sign = (double) r1YMat->sign;
@@ -470,10 +446,10 @@ extern DSDP_INT spsMatAddr1( spsMat *sXMat, double alpha, r1Mat *r1YMat ) {
 #ifdef VERIFY_HASH
             idx = packIdx(hash, dim, nzIdx[i], nzIdx[j]);
             assert( idx > 0 || i == 0 );
-            sXMat->x[idx] += alpha * sign * rx[i] * rx[j];
+            sXMat->x[idx] += alpha * sign * rx[nzIdx[i]] * rx[nzIdx[j]];
 #else
             sXMat->x[packIdx(hash, dim, nzIdx[i], nzIdx[j])] +=
-            alpha * sign * rx[i] * rx[j];
+            alpha * sign * rx[nzIdx[i]] * rx[nzIdx[j]];
 #endif
         }
     }
@@ -648,6 +624,8 @@ extern DSDP_INT spsMatLspLSolve( spsMat *S, spsMat *dS, spsMat *spaux ) {
     
     // L^-1 dS
     retcode = spsMatFill(dS, fulldS);
+
+    retcode = pardisoSolve(S, n, fulldS, aux);
     retcode = pardisoForwardSolve(S, n, fulldS, aux);
     
     // Transpose

@@ -58,6 +58,7 @@ static DSDP_INT DSDPIInit( HSDSolver *dsdpSolver ) {
     dsdpSolver->mu      = 0.0;
     
     dsdpSolver->S = NULL;
+    dsdpSolver->symS = NULL;
     dsdpSolver->s = NULL;
     dsdpSolver->x = NULL;
     
@@ -85,6 +86,7 @@ static DSDP_INT DSDPIInit( HSDSolver *dsdpSolver ) {
     
     // Step matrix
     dsdpSolver->dS     = NULL;
+    dsdpSolver->Scker  = NULL;
     dsdpSolver->spaux  = NULL;
     dsdpSolver->ds     = NULL;
     dsdpSolver->dy     = NULL;
@@ -167,6 +169,9 @@ static DSDP_INT DSDPIAllocIter( HSDSolver *dsdpSolver ) {
     // Allocate S and dS
     dsdpSolver->S  = (spsMat **) calloc(nblock, sizeof(spsMat *));
     dsdpSolver->dS = (spsMat **) calloc(nblock, sizeof(spsMat *));
+    
+    // Allocate symbolic structure
+    dsdpSolver->symS = (DSDP_INT **) calloc(nblock, sizeof(DSDP_INT *));
 
     // Allocate s
     /*
@@ -241,7 +246,8 @@ static DSDP_INT DSDPIAllocIter( HSDSolver *dsdpSolver ) {
     retcode = vec_init(vecIter); checkCode;
     retcode = vec_alloc(vecIter, m); checkCode;
     
-    // Allocate spaux
+    // Allocate Scker and spaux
+    dsdpSolver->Scker = (spsMat **) calloc(nblock, sizeof(spsMat *));
     dsdpSolver->spaux = (spsMat **) calloc(nblock, sizeof(spsMat *));
     for (DSDP_INT i = 0; i < nblock; ++i) {
         dim = dsdpSolver->sdpData[i]->dimS;
@@ -347,6 +353,13 @@ static DSDP_INT DSDPIFreeAlgIter( HSDSolver *dsdpSolver ) {
     
     DSDP_FREE(dsdpSolver->S);
     
+    // Ssym
+    for (DSDP_INT i = 0; i < nblock; ++i) {
+        DSDP_FREE(dsdpSolver->symS[i]);
+    }
+    
+    DSDP_FREE(dsdpSolver->symS);
+
     // s
     retcode = vec_free(dsdpSolver->s); checkCode;
     DSDP_FREE(dsdpSolver->s);
@@ -388,12 +401,19 @@ static DSDP_INT DSDPIFreeAlgIter( HSDSolver *dsdpSolver ) {
     
     DSDP_FREE(dsdpSolver->dS);
     
+    // Scker
+    for (DSDP_INT i = 0; i < nblock; ++i) {
+        retcode = spsMatFree(dsdpSolver->Scker[i]); checkCode;
+        DSDP_FREE(dsdpSolver->Scker[i]);
+    }
+    DSDP_FREE(dsdpSolver->Scker);
+    
     // spaux
     for (DSDP_INT i = 0; i < nblock; ++i) {
         retcode = spsMatFree(dsdpSolver->spaux[i]); checkCode;
         DSDP_FREE(dsdpSolver->spaux[i]);
     }
-          DSDP_FREE(dsdpSolver->spaux);
+    DSDP_FREE(dsdpSolver->spaux);
     
     // ds
     retcode = vec_free(dsdpSolver->ds);

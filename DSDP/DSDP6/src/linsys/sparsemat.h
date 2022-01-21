@@ -33,14 +33,14 @@ extern "C" {
 extern DSDP_INT spsMatInit         ( spsMat *sMat );
 extern DSDP_INT spsMatAlloc        ( spsMat *sMat, DSDP_INT dim );
 extern DSDP_INT spsMatAllocData    ( spsMat *sMat, DSDP_INT dim, DSDP_INT nnz );
-extern DSDP_INT spsMatAllocSumMat  ( spsMat *sMat );
 extern DSDP_INT spsMatFree         ( spsMat *sMat );
 
 /* Basic operations */
-extern DSDP_INT spsMataXpbY        ( double alpha, spsMat *sXMat, double beta, spsMat *sYMat );
-extern DSDP_INT spsMatAdddiag      ( spsMat *sMat, double d );
+extern DSDP_INT spsMataXpbY        ( double alpha, spsMat *sXMat, double beta,
+                                    spsMat *sYMat, DSDP_INT *sumHash );
+extern DSDP_INT spsMatAdddiag      ( spsMat *sMat, double d, DSDP_INT *sumHash );
 extern DSDP_INT spsMatAddds        ( spsMat *sXMat, double alpha, dsMat *sYMat );
-extern DSDP_INT spsMatAddr1        ( spsMat *sXMat, double alpha, r1Mat *r1YMat );
+extern DSDP_INT spsMatAddr1        ( spsMat *sXMat, double alpha, r1Mat *r1YMat, DSDP_INT *sumHash );
 extern DSDP_INT spsMatFnorm        ( spsMat *sMat, double *fnrm );
 extern DSDP_INT spsMatScale        ( spsMat *sXMat, double alpha );
 extern DSDP_INT spsMatRscale       ( spsMat *sXMat, double r );

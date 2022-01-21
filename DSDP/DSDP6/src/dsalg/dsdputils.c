@@ -142,11 +142,11 @@ extern DSDP_INT getPhaseAS( HSDSolver *dsdpSolver, double *y, double tau ) {
         for (DSDP_INT j = 0; j < m; ++j) {
             retcode = addMattoS(dsdpSolver, i, j, - y[j]);
         }
-        retcode = addMattoS(dsdpSolver, i, m + 1, tau);
+        retcode = addMattoS(dsdpSolver, i, m, tau);
+        retcode = spsMatAdddiag(S, - dsdpSolver->Ry, dsdpSolver->symS[i]);
+        checkCode;
     }
     
-    retcode = spsMatAdddiag(S, - dsdpSolver->Ry);
-    checkCode;
     return retcode;
 }
 
@@ -163,11 +163,11 @@ extern DSDP_INT getPhaseAdS( HSDSolver *dsdpSolver, double *dy, double dtau ) {
         for (DSDP_INT j = 0; j < m; ++j) {
             retcode = addMattodS(dsdpSolver, i, j, - dy[j]);
         }
-        retcode = addMattodS(dsdpSolver, i, m + 1, dtau);
+        retcode = addMattodS(dsdpSolver, i, m, dtau);
+        retcode = spsMatAdddiag(dS, dsdpSolver->Ry, dsdpSolver->symS[i]);
+        checkCode;
     }
     
-    retcode = spsMatAdddiag(dS, dsdpSolver->Ry);
-    checkCode;
     return retcode;
 }
 
@@ -261,11 +261,13 @@ extern DSDP_INT addMattoS( HSDSolver *dsdpSolver, DSDP_INT blockid, DSDP_INT con
             checkCode;
             break;
         case MAT_TYPE_SPARSE:
-            retcode = spsMataXpbY(alpha, data, 1.0, dsdpSolver->S[blockid]);
+            retcode = spsMataXpbY(alpha, data, 1.0, dsdpSolver->S[blockid],
+                                  dsdpSolver->symS[blockid]);
             checkCode;
             break;
         case MAT_TYPE_RANK1:
-            retcode = spsMatAddr1(dsdpSolver->S[blockid], alpha, data);
+            retcode = spsMatAddr1(dsdpSolver->S[blockid], alpha,
+                                  data, dsdpSolver->symS[blockid]);
             checkCode;
             break;
         default:
@@ -289,11 +291,13 @@ extern DSDP_INT addMattodS( HSDSolver *dsdpSolver, DSDP_INT blockid, DSDP_INT co
             checkCode;
             break;
         case MAT_TYPE_SPARSE:
-            retcode = spsMataXpbY(alpha, data, 1.0, dsdpSolver->dS[blockid]);
+            retcode = spsMataXpbY(alpha, data, 1.0,
+                                  dsdpSolver->dS[blockid], dsdpSolver->symS[blockid]);
             checkCode;
             break;
         case MAT_TYPE_RANK1:
-            retcode = spsMatAddr1(dsdpSolver->dS[blockid], alpha, data);
+            retcode = spsMatAddr1(dsdpSolver->dS[blockid],
+                                  alpha, data, dsdpSolver->symS[blockid]);
             checkCode;
             break;
         default:

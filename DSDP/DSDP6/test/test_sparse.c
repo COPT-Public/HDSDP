@@ -255,22 +255,6 @@ DSDP_INT test_sparse(void) {
         passed("Spinv Sp Spinv");
     }
     
-    // Hash sum
-    retcode = spsMatAllocSumMat(data);
-    DSDP_INT idx = 0;
-    for (DSDP_INT i = 0; i < data->dim; ++i) {
-        for (DSDP_INT j = data->p[i]; j < data->p[i + 1]; ++j) {
-            packIdx(data->sumHash, data->dim, data->i[j], i) = idx;
-            idx += 1;
-        }
-    }
-    
-    retcode = spsMataXpbY(2.0, data2, -1.0, data); checkCodeFree;
-    retcode = spsMatFnorm(data, &myfnrm); checkCodeFree;
-    
-    if (myfnrm < 1e-15) {
-        passed("Hash sum");
-    }
     
     // Eigen value routines
     double maxEig = 0.0;
