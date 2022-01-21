@@ -705,7 +705,6 @@ static DSDP_INT preSDPgetSymbolic( HSDSolver *dsdpSolver, DSDP_INT blockid ) {
     DSDP_INT tmp = 0;
     if (isfirstNz) {
         dsdpSolver->S[blockid]->i[tmp] = 0;
-        dsdpSolver->dS[blockid]->i[tmp] = 0;
         tmp += 1;
     }
     
@@ -713,14 +712,30 @@ static DSDP_INT preSDPgetSymbolic( HSDSolver *dsdpSolver, DSDP_INT blockid ) {
         for (DSDP_INT j = i; j < dim; ++j) {
             if (packIdx(hash, dim, j, i)) {
                 dsdpSolver->S[blockid]->i[tmp] = j;
-                dsdpSolver->dS[blockid]->i[tmp] = j;
                 tmp += 1;
             }
         }
-        
         dsdpSolver->S[blockid]->p[i + 1] = tmp;
-        dsdpSolver->dS[blockid]->p[i + 1] = tmp;
     }
+    
+    memcpy(dsdpSolver->dS[blockid]->p,
+           dsdpSolver->S[blockid]->p,
+           sizeof(DSDP_INT) * (dim + 1));
+    memcpy(dsdpSolver->Scker[blockid]->p,
+           dsdpSolver->S[blockid]->p,
+           sizeof(DSDP_INT) * (dim + 1));
+    memcpy(dsdpSolver->dS[blockid]->i,
+           dsdpSolver->S[blockid]->i,
+           sizeof(DSDP_INT) * tmp);
+    memcpy(dsdpSolver->Scker[blockid]->i,
+           dsdpSolver->S[blockid]->i,
+           sizeof(DSDP_INT) * tmp);
+    memcpy(dsdpSolver->dS[blockid]->x,
+           dsdpSolver->S[blockid]->x,
+           sizeof(double) * tmp);
+    memcpy(dsdpSolver->Scker[blockid]->x,
+           dsdpSolver->S[blockid]->x,
+           sizeof(double) * tmp);
     
 #ifdef SHOWALL
         printf("Block "ID" goes through symbolic check. \n", blockid);

@@ -150,6 +150,27 @@ extern DSDP_INT getPhaseAS( HSDSolver *dsdpSolver, double *y, double tau ) {
     return retcode;
 }
 
+/* Retrieve S for verifying positive definiteness */
+extern DSDP_INT getPhaseACheckerS( HSDSolver *dsdpSolver, double *y, double tau ) {
+    
+    DSDP_INT retcode = DSDP_RETCODE_OK;
+    spsMat *checker = NULL;
+    DSDP_INT m = dsdpSolver->m;
+    
+    for (DSDP_INT i = 0; i < dsdpSolver->nBlock; ++i) {
+        checker = dsdpSolver->Scker[i];
+        retcode = spsMatReset(checker);
+        for (DSDP_INT j = 0; j < m; ++j) {
+            retcode = addMattoChecker(dsdpSolver, i, j, - y[j]);
+        }
+        retcode = addMattoChecker(dsdpSolver, i, m, tau);
+        retcode = spsMatAdddiag(checker, - dsdpSolver->Ry, dsdpSolver->symS[i]);
+        checkCode;
+    }
+    
+    return retcode;
+}
+
 /* Retrieve dS = Ry + C * dtau - ATdy across all the blocks */
 extern DSDP_INT getPhaseAdS( HSDSolver *dsdpSolver, double *dy, double dtau ) {
     
@@ -172,6 +193,22 @@ extern DSDP_INT getPhaseAdS( HSDSolver *dsdpSolver, double *dy, double dtau ) {
 }
 
 /* DSDP routine for checking positive definite-ness of matrix */
+extern DSDP_INT dsdpCheckerInCone( HSDSolver *dsdpSolver, DSDP_INT *ispsd ) {
+    // Determine whether the current checking auxiliary variable lies in the cone
+    DSDP_INT retcode = DSDP_RETCODE_OK;
+    DSDP_INT incone = FALSE;
+    
+    for (DSDP_INT i = 0; i < dsdpSolver->nBlock; ++i) {
+        spsMatIspd(dsdpSolver->Scker[i], &incone);
+        if (!incone) {
+            break;
+        }
+    }
+    
+    *ispsd = incone;
+    return retcode;
+}
+
 extern DSDP_INT dsdpInCone( HSDSolver *dsdpSolver, DSDP_INT *ispsd ) {
     // Determine whether the current dual variable lies in the cone
     DSDP_INT retcode = DSDP_RETCODE_OK;
@@ -267,6 +304,38 @@ extern DSDP_INT addMattoS( HSDSolver *dsdpSolver, DSDP_INT blockid, DSDP_INT con
             break;
         case MAT_TYPE_RANK1:
             retcode = spsMatAddr1(dsdpSolver->S[blockid], alpha,
+                                  data, dsdpSolver->symS[blockid]);
+            checkCode;
+            break;
+        default:
+            error(etype, "Unknown matrix type. \n");
+            break;
+    }
+    
+    return retcode;
+}
+
+/* Compute checkerS + alpha * some matrix */
+extern DSDP_INT addMattoChecker( HSDSolver *dsdpSolver, DSDP_INT blockid,
+                                 DSDP_INT constrid, double alpha ) {
+    
+    DSDP_INT retcode = DSDP_RETCODE_OK;
+    void *data = dsdpSolver->sdpData[blockid]->sdpData[constrid];
+    
+    switch (dsdpSolver->sdpData[blockid]->types[constrid]) {
+        case MAT_TYPE_ZERO:
+            break;
+        case MAT_TYPE_DENSE:
+            retcode = spsMatAddds(dsdpSolver->Scker[blockid], alpha, data);
+            checkCode;
+            break;
+        case MAT_TYPE_SPARSE:
+            retcode = spsMataXpbY(alpha, data, 1.0, dsdpSolver->Scker[blockid],
+                                  dsdpSolver->symS[blockid]);
+            checkCode;
+            break;
+        case MAT_TYPE_RANK1:
+            retcode = spsMatAddr1(dsdpSolver->Scker[blockid], alpha,
                                   data, dsdpSolver->symS[blockid]);
             checkCode;
             break;

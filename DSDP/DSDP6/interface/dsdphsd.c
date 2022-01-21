@@ -252,6 +252,7 @@ static DSDP_INT DSDPIAllocIter( HSDSolver *dsdpSolver ) {
     for (DSDP_INT i = 0; i < nblock; ++i) {
         dim = dsdpSolver->sdpData[i]->dimS;
         dsdpSolver->spaux[i] = (spsMat *) calloc(1, sizeof(spsMat));
+        dsdpSolver->Scker[i] = (spsMat *) calloc(1, sizeof(spsMat));
         retcode = spsMatInit(dsdpSolver->spaux[i]); checkCode;
         retcode = spsMatAlloc(dsdpSolver->spaux[i], dim); checkCode;
     }

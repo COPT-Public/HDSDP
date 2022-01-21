@@ -6,7 +6,7 @@
 #include "densemat.h"
 #include "rankonemat.h"
 
-#include "memwatch.h"
+// #include "memwatch.h"
 // #define printf mwTrace
 
 #define passed(test) printf("Test %s passed. \n", (test))

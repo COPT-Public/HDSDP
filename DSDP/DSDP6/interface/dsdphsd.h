@@ -16,8 +16,8 @@
  
 */
 
-#ifndef SHOWALL
-#define SHOWALL
+#ifdef SHOWALL
+#undef SHOWALL
 #endif
 
 // #define DSDP64

@@ -2,18 +2,17 @@
 #include <stdlib.h>
 #include <math.h>
 
-#ifndef MEMWATCH
-#define MEMWATCH
-#endif
-#include "memwatch.h"
 
 #include "dsdppardiso.h"
 #include "test.h"
 
 int main (void)
 {
-    mwInit();
-    test_dsdp();
+    
+    for (int i = 0; i < 20; ++i ) {
+        test_dsdp();
+    }
+    
 //    test_data();
 //    test_sparse();
 //    test_dense();
@@ -21,7 +20,6 @@ int main (void)
 //    test_vec();
 //    test_pardiso();
 //    test_feast();
-    mwAbort();
     
     return 0;
 }

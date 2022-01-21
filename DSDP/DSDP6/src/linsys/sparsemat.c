@@ -131,7 +131,7 @@ static DSDP_INT pardisoForwardSolve( spsMat *S, DSDP_INT nrhs, double *B, double
     
     // Invoke pardiso to do symbolic analysis and Cholesky factorization
     pardiso(S->pdsWorker, &maxfct, &mnum, &mtype, &phase, &n,
-            NULL, NULL, NULL, &idummy, &nrhs, PARDISO_PARAMS_FORWARD_BACKWORD,
+            Sx, Sp, Si, &idummy, &nrhs, PARDISO_PARAMS_FORWARD_BACKWORD,
             &msglvl, B, aux, &error);
     
     assert( error == PARDISO_OK );
@@ -624,8 +624,6 @@ extern DSDP_INT spsMatLspLSolve( spsMat *S, spsMat *dS, spsMat *spaux ) {
     
     // L^-1 dS
     retcode = spsMatFill(dS, fulldS);
-
-    retcode = pardisoSolve(S, n, fulldS, aux);
     retcode = pardisoForwardSolve(S, n, fulldS, aux);
     
     // Transpose
@@ -640,19 +638,19 @@ extern DSDP_INT spsMatLspLSolve( spsMat *S, spsMat *dS, spsMat *spaux ) {
     }
     
     // L^-T (L^-1 dS)
-    // TODO: write a Lanczos algorithm to compute the minimum eigenvalue
+    // TODO: write a Lanczos algorithm to compute the maximum eigenvalue
     // Currently FEAST is used by transferring the matrix into dense format and is INEFFICIENT
     DSDP_INT *Ap = spaux->p;
     DSDP_INT *Ai = spaux->i;
     double   *Ax = spaux->x;
     
     retcode = pardisoForwardSolve(S, n, fulldS, aux);
+    
     DSDP_INT nnz = 0;
     DSDP_INT start = 0;
     for (DSDP_INT i = 0; i < n; ++i) {
         start = i * n;
-        nnz = 0;
-        for (DSDP_INT j = 0; j <= i; ++j) {
+        for (DSDP_INT j = i; j < n; ++j) {
             tmp = fulldS[start + j];
             if (fabs(tmp) > 1e-12) {
                 Ax[nnz] = tmp;
@@ -682,7 +680,12 @@ extern DSDP_INT dsdpGetAlpha( spsMat *S, spsMat *dS, spsMat *spaux, double *alph
     // The first way computes l1(L^-1 dS L^-T)
     retcode = spsMatLspLSolve(S, dS, spaux); checkCode;
     retcode = spsMatMinEig(spaux, &mineig); checkCode;
-    *alpha = - 1.0 / mineig;
+    
+    if (mineig > 0) {
+        *alpha = DSDP_INFINITY;
+    } else {
+        *alpha = - 1.0 / mineig;
+    }
     
     return retcode;
 }

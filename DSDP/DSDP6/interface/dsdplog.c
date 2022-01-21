@@ -15,7 +15,7 @@ static void dsdpstatus( DSDP_INT code, char *word ) {
     // Convert status code
     switch (code) {
         case DSDP_UNKNOWN:
-            strcpy(word, "DSDP_KNOWN");
+            strcpy(word, "DSDP_UKNOWN");
             break;
         case DSDP_OPTIMAL:
             strcpy(word, "DSDP_OPTIMAL");
@@ -46,7 +46,7 @@ static void dsdpstatus( DSDP_INT code, char *word ) {
 extern void dsdpshowdash(void) {
     printf("_______________________________________"
            "_______________________________________"
-           "__________________\n");
+           "______________________\n");
 }
 
 extern void dsdpCheckNan( HSDSolver *dsdpSolver ) {
@@ -70,11 +70,11 @@ extern void dsdpprintPhaseAheader(void) {
     /*      ________________________________________________________________________________*/
     /*      | niter |   pObj   |   dObj   |  dInf  |  k/t  |  mu  |  alpha  |  pNrm  |  E  |*/
     /*      --------------------------------------------------------------------------------*/
-    printf("| %4s | %10s | %10s | %8s | %8s | %8s | %8s | %8s | %3s |\n",
-            "niter", "pObj", "dObj", "dInf", "k/t", "mu", "alpha", "pNrm", "E");
+    printf("| %4s | %12s | %12s | %8s | %8s | %8s | %8s | %8s | %3s |\n",
+            "iter", "pObj", "dObj", "dInf", "k/t", "mu", "alpha", "pNrm", "E");
     printf("_______________________________________"
            "_______________________________________"
-           "__________________\n");
+           "______________________\n");
 }
 
 extern void DSDPResetPhaseAMonitor( HSDSolver *dsdpSolver ) {
@@ -103,7 +103,7 @@ extern DSDP_INT DSDPPhaseALogging( HSDSolver *dsdpSolver ) {
     retcode = checkIterProgress(dsdpSolver, ITER_LOGGING);
     
     char event[3] = " ";
-    double nRy = dsdpSolver->Ry * sqrt(dsdpSolver->n);
+    double nRy = fabs(dsdpSolver->Ry) * sqrt(dsdpSolver->n);
     double kovert = dsdpSolver->kappa / dsdpSolver->tau;
     DSDP_INT *moniter = dsdpSolver->eventMonitor;
     
@@ -140,8 +140,8 @@ extern DSDP_INT DSDPPhaseALogging( HSDSolver *dsdpSolver ) {
     }
     
 print_log:
-    printf("| %4d | %-10.3e | %-10.3e | %-8.2e | %-8.2e | %8.2e | %8.2e | %8.2e | %3s |\n",
-            dsdpSolver->iterA, dsdpSolver->pObjVal, dsdpSolver->dObjVal,
+    printf("| %4d | %12.3e | %12.3e | %8.2e | %8.2e | %8.2e | %8.2e | %8.2e | %3s |\n",
+            dsdpSolver->iterA + 1, dsdpSolver->pObjVal, dsdpSolver->dObjVal,
             nRy, kovert, dsdpSolver->mu, dsdpSolver->alpha, dsdpSolver->Pnrm,
             event);
     
@@ -158,6 +158,13 @@ extern DSDP_INT DSDPCheckPhaseAConvergence( HSDSolver *dsdpSolver, DSDP_INT *isO
     // Dual infeasibility eliminated
     if (fabs(dsdpSolver->Ry) * sqrt(dsdpSolver->n) < dsdpSolver->param->absOptTol * 0.1) {
         monitor[EVENT_NO_RY] = TRUE;
+        
+        if (dsdpSolver->pObjVal != dsdpSolver->param->initpObj) {
+            dsdpSolver->solStatus = DSDP_PD_FEASIBLE;
+        } else {
+            dsdpSolver->solStatus = DSDP_PUNKNOWN_DFEAS;
+        }
+        
         *isOK = TRUE;
         return retcode;
     }
@@ -218,7 +225,7 @@ extern DSDP_INT printPhaseASummary( HSDSolver *dsdpSolver, double time ) {
     DSDP_INT retcode = DSDP_RETCODE_OK;
     char sAlog[100] = "DSDP Phase A ends with status: ";
     dsdpshowdash();
-    dsdpstatus(dsdpSolver->solStatus, &sAlog[33]);
+    dsdpstatus(dsdpSolver->solStatus, &sAlog[31]);
     printf("%s \n", sAlog);
     printf("Elapsed Time: %5f seconds \n", time);
     dsdpshowdash();

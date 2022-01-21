@@ -8,6 +8,8 @@
 #include "dsdpproxmeasure.h"
 #include "dsdplog.h"
 
+#define timer printf("Elapsed Time %g \n", (double) (clock() - start) / CLOCKS_PER_SEC)
+
 // Implement the phase A of the dual scaling algorithm: Dual infeasibility elimination
 static char etype[] = "DSDP Dual infeasibility elimination";
 
@@ -98,7 +100,6 @@ extern DSDP_INT DSDPDInfeasEliminator( HSDSolver *dsdpSolver ) {
             }
         }
         dsdpSolver->iterProgress[ITER_PROX_POBJ] = TRUE;
-        
         // Setup directions
         retcode = getStepDirs(dsdpSolver); checkCode;
         // Compute maximum available stepsize

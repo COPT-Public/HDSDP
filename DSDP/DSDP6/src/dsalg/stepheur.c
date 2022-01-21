@@ -19,9 +19,9 @@ static DSDP_INT getKappaTauStep( HSDSolver *dsdpSolver, double *kappatauStep ) {
     double step = MIN((dtau / tau), (dkappa / kappa));
     
     if (step < 0.0) {
-        *kappatauStep = MIN(1.0, fabs(0.995 / step));
+        *kappatauStep = fabs(dsdpSolver->param->Aalpha / step);
     } else {
-        *kappatauStep = 1.0;
+        *kappatauStep = DSDP_INFINITY;
     }
     
     return retcode;
@@ -76,14 +76,14 @@ static DSDP_INT getLPsStep( HSDSolver *dsdpSolver, double *sStep ) {
     vec *s  = dsdpSolver->s;
     vec *ds = dsdpSolver->ds;
     
-    double step = 1.0;
+    double step = 100.0;
     
     for (DSDP_INT i = 0; i < s->dim; ++i) {
         step = MIN((ds->x[i] / s->x[i]), step);
     }
     
     if (step < 0.0) {
-        *sStep = MIN(1.0, fabs(0.995 / step));
+        *sStep = fabs(0.995 / step);
     }
     
     return retcode;
@@ -95,12 +95,9 @@ static DSDP_INT getBlockSDPSStep( HSDSolver *dsdpSolver, DSDP_INT k, double *SkS
     // S + a * dS = L (I + a L^-1 dS L^-T) L^T
     DSDP_INT retcode = DSDP_RETCODE_OK;
     assert( k < dsdpSolver->nBlock );
-    double res = 0.0;
-    
     retcode = dsdpGetAlpha(dsdpSolver->S[k], dsdpSolver->dS[k],
-                           dsdpSolver->spaux[k], &res);
+                           dsdpSolver->spaux[k], SkStep);
     checkCode;
-    *SkStep = - 1.0 / res;
     
     return retcode;
 }
@@ -111,14 +108,14 @@ static DSDP_INT getSDPSStep( HSDSolver *dsdpSolver, double *SStep ) {
     DSDP_INT nblock = dsdpSolver->nBlock;
     
     double res = 0.0;
-    double step = 1.0;
+    double step = DSDP_INFINITY;
     
     for (DSDP_INT i = 0; i < nblock; ++i) {
         retcode = getBlockSDPSStep(dsdpSolver, i, &res);
-        if (res >= 0) {
-            step = MIN(step, res);
-        }
+        step = MIN(step, dsdpSolver->param->Aalpha * res);
     }
+    
+    *SStep = step;
     
     return retcode;
 }
@@ -135,7 +132,7 @@ extern DSDP_INT getMaxStep( HSDSolver *dsdpSolver ) {
     }
     
     double stepkappatau = 0.0;
-    double steplps = 0.0;
+    double steplps = 100.0;
     double sdpS = 0.0;
     
     retcode = getKappaTauStep(dsdpSolver, &stepkappatau);

@@ -13,7 +13,6 @@ static DSDP_INT getRkappaTau( HSDSolver *dsdpSolver ) {
 static DSDP_INT getRy( HSDSolver *dsdpSolver ) {
     // Check the dual infeasibility
     dsdpSolver->Ry *= (1 - dsdpSolver->alpha);
-    assert( dsdpSolver->Ry >= 0.0 );
     return DSDP_RETCODE_OK;
 }
 

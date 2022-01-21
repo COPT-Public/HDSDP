@@ -246,6 +246,10 @@ extern DSDP_INT setupFactorize( HSDSolver *dsdpSolver ) {
         for (DSDP_INT i = 0; i < nblock; ++i) {
             retcode = spsMatSymbolic(dsdpSolver->S[i]);
             retcode = spsMatFactorize(dsdpSolver->S[i]);
+            
+            /* This symbolic phase is not necessaary if
+             we have access to the internal Pardiso permutation */
+            retcode = spsMatSymbolic(dsdpSolver->Scker[i]);
             checkCode
         }
     } else {

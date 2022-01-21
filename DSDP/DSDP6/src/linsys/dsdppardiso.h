@@ -35,7 +35,7 @@ static DSDP_INT PARDISO_PARAMS_CHOLESKY[PARDISOINDEX] = {
     0, /* Output            */ 0, /* Output              */-1, /* No report         */
     0, /* No report         */ 0, /* Output              */ 1, /* Pivoting          */
     0, /* nPosEigVals       */ 0, /* nNegEigVals         */ 0, /* Classic factorize */
-    0,                         0,                           1, /* Matrix checker    */
+    0,                         0,                           0, /* Matrix checker    */
     0,                         0,                           0,
     0,                         0,                           0,
     0,                         1, /* 0-based solve       */ 0,
@@ -61,7 +61,7 @@ static DSDP_INT PARDISO_PARAMS_FORWARD_BACKWORD[PARDISOINDEX] = {
     0, /* Output            */ 0, /* Output              */-1, /* No report         */
     0, /* No report         */ 0, /* Output              */ 1, /* Pivoting          */
     0, /* nPosEigVals       */ 0, /* nNegEigVals         */ 0, /* Classic factorize */
-    0,                         0,                           1, /* Matrix checker    */
+    0,                         0,                           0, /* Matrix checker    */
     0,                         0,                           0,
     0,                         0,                           0,
     0,                         1, /* 0-based solve       */ 0,
@@ -88,7 +88,7 @@ static DSDP_INT PARDISO_PARAMS_CG[PARDISOINDEX] = {
     0, /* Output            */ 0, /* Output              */-1, /* No report         */
     0, /* No report         */ 0, /* Output              */ 1, /* Pivoting          */
     0, /* nPosEigVals       */ 0, /* nNegEigVals         */ 0, /* Classic factorize */
-    0,                         0,                           1, /* Matrix checker    */
+    0,                         0,                           0, /* Matrix checker    */
     0,                         0,                           0,
     0,                         0,                           0,
     0,                         1, /* 0-based solve       */ 0,

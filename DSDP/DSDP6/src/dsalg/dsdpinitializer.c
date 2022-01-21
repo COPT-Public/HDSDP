@@ -88,7 +88,7 @@ extern DSDP_INT dsdpInitialize( HSDSolver *dsdpSolver ) {
     retcode = initmu(dsdpSolver); checkCode;
     retcode = initresi(dsdpSolver); checkCode;
     
-    printf("* DSDP is initialized with Ry = %3.3e * I \n", dsdpSolver->Ry);
+    printf("| DSDP is initialized with Ry = %3.3e * I \n", dsdpSolver->Ry);
     
     return retcode;
 }
