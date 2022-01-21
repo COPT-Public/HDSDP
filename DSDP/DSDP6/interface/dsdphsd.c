@@ -15,6 +15,7 @@
 
 static char etype[] = "DSDP Interface";
 
+
 /* DSDP internal methods */
 static DSDP_INT DSDPIInit( HSDSolver *dsdpSolver ) {
     
@@ -134,10 +135,6 @@ static DSDP_INT DSDPIAlloc( HSDSolver *dsdpSolver ) {
         retcode = sdpMatInit(dsdpSolver->sdpData[i]); checkCode;
     }
     
-    if (dsdpSolver->verbosity) {
-        printf("Level 1 memory set. \n");
-    }
-    
     return retcode;
 }
 
@@ -167,15 +164,12 @@ static DSDP_INT DSDPIAllocIter( HSDSolver *dsdpSolver ) {
     dsMat *dsIter   = NULL;
     vec *vecIter    = NULL;
     
-    // Allocate S and dS with symbolic hash table
+    // Allocate S and dS
     dsdpSolver->S  = (spsMat **) calloc(nblock, sizeof(spsMat *));
     dsdpSolver->dS = (spsMat **) calloc(nblock, sizeof(spsMat *));
-    for (DSDP_INT i = 0; i < nblock; ++i) {
-        dim = dsdpSolver->sdpData[i]->dimS;
-        retcode = DSDPIGetBlockSymbolic(dsdpSolver, i);
-    }
-    
+
     // Allocate s
+    /*
     vecIter = (vec *) calloc(1, sizeof(vec));
     dsdpSolver->s = vecIter;
     retcode = vec_init(vecIter); checkCode;
@@ -186,6 +180,8 @@ static DSDP_INT DSDPIAllocIter( HSDSolver *dsdpSolver ) {
     dsdpSolver->x = vecIter;
     retcode = vec_init(vecIter); checkCode;
     retcode = vec_alloc(vecIter, dsdpSolver->lpDim); checkCode;
+    
+     */
     
     // Allocate asinv
     dsdpSolver->asinv = (vec *) calloc(1, sizeof(vec));
@@ -638,9 +634,33 @@ extern DSDP_INT DSDPSetSDPConeData( HSDSolver *dsdpSolver,
     return retcode;
 }
 
+extern DSDP_INT DSDPSetObj( HSDSolver *dsdpSolver, double *dObj ) {
+    // Set the dual objective
+    DSDP_INT retcode = DSDP_RETCODE_OK;
+    
+    assert( dsdpSolver->insStatus == DSDP_STATUS_SET && !dsdpSolver->dObj );
+    
+    dsdpSolver->dObj = (vec *) calloc(1, sizeof(vec));
+    vec_init(dsdpSolver->dObj);
+    vec_alloc(dsdpSolver->dObj, dsdpSolver->m);
+    
+    if (dObj) {
+        memcpy(dsdpSolver->dObj->x, dObj, sizeof(double) * dsdpSolver->m);
+    } else {
+        memset(dsdpSolver->dObj, 0, sizeof(double) * dsdpSolver->m);
+    }
+    
+    return retcode;
+}
+
 extern DSDP_INT DSDPOptimize( HSDSolver *dsdpSolver ) {
     // Optimization routine for DSDP
     DSDP_INT retcode = DSDP_RETCODE_OK;
+    
+    if (!dsdpSolver->dObj) {
+        retcode = DSDPSetObj(dsdpSolver, NULL);
+        checkCode;
+    }
     
     assert( dsdpSolver->insStatus == DSDP_STATUS_SET );
     retcode = DSDPIPresolve(dsdpSolver); checkCode;
@@ -650,7 +670,6 @@ extern DSDP_INT DSDPOptimize( HSDSolver *dsdpSolver ) {
     
     return retcode;
 }
-
 
 extern DSDP_INT DSDPDestroy( HSDSolver *dsdpSolver ) {
     

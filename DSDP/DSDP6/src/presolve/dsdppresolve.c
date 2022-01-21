@@ -154,7 +154,7 @@ static DSDP_INT isSparseRank1( spsMat *dataMat, DSDP_INT *isRank1 ) {
         }
     }
     
-    assert( col < n - 1 ); // Otherwise the matrix is empty
+    assert( col <= n - 1 ); // Otherwise the matrix is empty
     
     if (Ai[0] != col) {
         isR1 = FALSE;
@@ -259,6 +259,8 @@ static DSDP_INT extractR1fromSps( spsMat *dataMat, double *a, DSDP_INT isNeg ) {
     DSDP_INT col   = 0;
     double adiag   = 0.0;
     
+    isNeg = !isNeg;
+    
     memset(a, 0, sizeof(double) * n);
     
     for (DSDP_INT i = 0; i < n; ++i) {
@@ -268,7 +270,7 @@ static DSDP_INT extractR1fromSps( spsMat *dataMat, double *a, DSDP_INT isNeg ) {
         }
     }
     
-    assert( col < n - 1 ); // Otherwise the matrix is empty
+    assert( col <= n - 1 ); // Otherwise the matrix is empty
     
     if (isNeg) {
         adiag = sqrt(- Ax[0]);
@@ -415,9 +417,9 @@ static DSDP_INT getBlockStatistic( sdpMat *sdpData ) {
     
     // Ready to give index
     assert( (!sdpData->spsMatIdx) && (!sdpData->denseMatIdx) && (!sdpData->r1MatIdx) );
-    sdpData->spsMatIdx   = (DSDP_INT *) calloc(nspsMat, sizeof(DSDP_INT));
-    sdpData->denseMatIdx = (DSDP_INT *) calloc(ndsMat, sizeof(DSDP_INT));
-    sdpData->r1MatIdx    = (DSDP_INT *) calloc(nr1Mat, sizeof(DSDP_INT));
+    sdpData->spsMatIdx   = (DSDP_INT *) calloc(sdpData->nspsMat, sizeof(DSDP_INT));
+    sdpData->denseMatIdx = (DSDP_INT *) calloc(sdpData->ndenseMat, sizeof(DSDP_INT));
+    sdpData->r1MatIdx    = (DSDP_INT *) calloc(sdpData->nr1Mat, sizeof(DSDP_INT));
     
     printf("- Cone "ID"\n", blockid);
     
@@ -458,6 +460,8 @@ static DSDP_INT preSDPMatgetPScaler( HSDSolver *dsdpSolver ) {
     DSDP_INT retcode = DSDP_RETCODE_OK;
     DSDP_INT m = dsdpSolver->m;
     
+    dsdpSolver->pScaler = (vec *) calloc(1, sizeof(vec));
+    vec_init(dsdpSolver->pScaler);
     vec_alloc(dsdpSolver->pScaler, m);
     
     double nrm    = 0.0;
@@ -596,6 +600,7 @@ static DSDP_INT preSDPgetSymbolic( HSDSolver *dsdpSolver, DSDP_INT blockid ) {
     hash = (DSDP_INT *) calloc(nhash, sizeof(DSDP_INT));
     
     DSDP_INT useDenseS = FALSE;
+    DSDP_INT isfirstNz = FALSE;
     DSDP_INT *matIdx = sdpBlock->r1MatIdx;
     
     if (sdpBlock->ndenseMat > 0) {
@@ -609,28 +614,41 @@ static DSDP_INT preSDPgetSymbolic( HSDSolver *dsdpSolver, DSDP_INT blockid ) {
         }
     }
     
-    // Dense matrix is present
+    // Dense matrix is not present
     if (!useDenseS) {
         // Sparse matrix
         matIdx = sdpBlock->spsMatIdx;
         for (DSDP_INT i = 0; i < sdpBlock->nspsMat; ++i) {
             spsdata = (spsMat *) sdpBlock->sdpData[matIdx[i]];
+            
+            if ((spsdata->i[0] == 0) && (spsdata->p[1] > 0)) {
+                isfirstNz = TRUE;
+            }
+            
             for (DSDP_INT j = 0; j < dim; ++j) {
                 for (DSDP_INT k = spsdata->p[j]; k < spsdata->p[j + 1]; ++k) {
+                    
                     if (packIdx(hash, dim, spsdata->i[k], j) == 0) {
                         packIdx(hash, dim, spsdata->i[k], j) = 1;
                         nnz += 1;
                     }
                 }
             }
+            
             if (nnz > 0.8 * nhash) {
                 useDenseS = TRUE;
+                break;
             }
         }
         // Rank 1 matrix
         matIdx = sdpBlock->r1MatIdx;
         for (DSDP_INT i = 0; i < sdpBlock->nr1Mat; ++i) {
             r1data = (r1Mat *) sdpBlock->sdpData[matIdx[i]];
+            
+            if (r1data->nzIdx[0] == 0) {
+                isfirstNz = TRUE;
+            }
+            
             for (DSDP_INT j = 0; j < r1data->nnz; ++j) {
                 for (DSDP_INT k = 0; k <= j; ++k) {
                     if (packIdx(hash, dim, r1data->nzIdx[j], r1data->nzIdx[k]) == 0) {
@@ -641,43 +659,71 @@ static DSDP_INT preSDPgetSymbolic( HSDSolver *dsdpSolver, DSDP_INT blockid ) {
             }
             if (nnz > 0.8 * nhash) {
                 useDenseS = TRUE;
+                break;
             }
         }
     }
     
     if (useDenseS) {
         nnz = nhash;
-        DSDP_INT idx = 0;
-        for (DSDP_INT i = 0; i < dim; ++i) {
-            idx += i;
-            for (DSDP_INT j = 0; j <= dim; ++j) {
-                hash[j] = idx;
-            }
+        for (DSDP_INT i = 0; i < nhash - nhash % 4; i+=4) {
+            hash[i    ] = i;
+            hash[i + 1] = i + 1;
+            hash[i + 2] = i + 2;
+            hash[i + 3] = i + 3;
         }
+
+        for (DSDP_INT i = nhash - nhash % 4; i < nhash; ++i) {
+            hash[i] = i;
+        }
+        
     } else {
         // Get hash table by the symbolic features
         DSDP_INT idx = 0;
+        
         for (DSDP_INT i = 0; i < nhash; ++i) {
             if (hash[i]) {
                 hash[i] = idx;
-                idx ++;
+                idx += 1;
             }
         }
+        
         assert( idx == nnz );
     }
     
-    retcode = spsMatAllocData(dsdpSolver->S[blockid], dim, nnz); checkCode;
-    retcode = spsMatAllocData(dsdpSolver->dS[blockid], dim, nnz); checkCode;
-    retcode = spsMatAllocSumMat(dsdpSolver->S[blockid]); checkCode;
-    retcode = spsMatAllocSumMat(dsdpSolver->dS[blockid]); checkCode;
+    retcode = spsMatAllocData(dsdpSolver->S[blockid], dim, nnz); checkCodeFree;
+    retcode = spsMatAllocData(dsdpSolver->dS[blockid], dim, nnz); checkCodeFree;
+    retcode = spsMatAllocSumMat(dsdpSolver->S[blockid]); checkCodeFree;
+    retcode = spsMatAllocSumMat(dsdpSolver->dS[blockid]); checkCodeFree;
     
-    memcpy(dsdpSolver->S[blockid]->sumHash, hash, nhash);
-    memcpy(dsdpSolver->dS[blockid]->sumHash, hash, nhash);
+    DSDP_INT tmp = 0;
+    if (isfirstNz) {
+        dsdpSolver->S[blockid]->i[tmp] = 0;
+        dsdpSolver->dS[blockid]->i[tmp] = 0;
+        tmp += 1;
+    }
+    
+    for (DSDP_INT i = 0; i < dim; ++i) {
+        for (DSDP_INT j = i; j < dim; ++j) {
+            if (packIdx(hash, dim, j, i)) {
+                dsdpSolver->S[blockid]->i[tmp] = j;
+                dsdpSolver->dS[blockid]->i[tmp] = j;
+                tmp += 1;
+            }
+        }
+        
+        dsdpSolver->S[blockid]->p[i + 1] = tmp;
+        dsdpSolver->dS[blockid]->p[i + 1] = tmp;
+    }
+    
+    memcpy(dsdpSolver->S[blockid]->sumHash, hash, sizeof(DSDP_INT) * nhash);
+    memcpy(dsdpSolver->dS[blockid]->sumHash, hash, sizeof(DSDP_INT) * nhash);
     
 #ifdef SHOWALL
         printf("Block "ID" goes through symbolic check. \n", blockid);
 #endif
     
+clean_up:
     DSDP_FREE(hash);
     return retcode;
 }

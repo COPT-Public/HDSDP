@@ -45,7 +45,8 @@ static void dsdpstatus( DSDP_INT code, char *word ) {
 
 extern void dsdpshowdash(void) {
     printf("_______________________________________"
-           "_______________________________________\n");
+           "_______________________________________"
+           "__________________\n");
 }
 
 extern void dsdpCheckNan( HSDSolver *dsdpSolver ) {
@@ -71,17 +72,20 @@ extern void dsdpprintPhaseAheader(void) {
     /*      --------------------------------------------------------------------------------*/
     printf("| %4s | %10s | %10s | %8s | %8s | %8s | %8s | %8s | %3s |\n",
             "niter", "pObj", "dObj", "dInf", "k/t", "mu", "alpha", "pNrm", "E");
-    printf("---------------------------------------"
-           "---------------------------------------\n");
+    printf("_______________________________________"
+           "_______________________________________"
+           "__________________\n");
 }
 
 extern void DSDPResetPhaseAMonitor( HSDSolver *dsdpSolver ) {
     
     // Reset event and iteration monitor at the end of each iteration
+    DSDP_INT logged = dsdpSolver->iterProgress[ITER_LOGGING];
     memset(dsdpSolver->iterProgress, 0, sizeof(DSDP_INT) * IterStep);
     dsdpSolver->iterProgress[ITER_INITIALIZE] = TRUE;
-    DSDP_INT *monitor = dsdpSolver->eventMonitor;
+    dsdpSolver->iterProgress[ITER_LOGGING] = logged;
     
+    DSDP_INT *monitor = dsdpSolver->eventMonitor;
     assert( monitor[EVENT_IN_PHASE_A] );
     monitor[EVENT_PFEAS_FOUND] = FALSE;
     monitor[EVENT_LARGE_NORM] = FALSE;
@@ -136,7 +140,7 @@ extern DSDP_INT DSDPPhaseALogging( HSDSolver *dsdpSolver ) {
     }
     
 print_log:
-    printf("| %4d | %10.3e | %10.3e | %8.2e | %8.2e | %8.2e | %8.2e | %8.2e | %3s |\n",
+    printf("| %4d | %-10.3e | %-10.3e | %-8.2e | %-8.2e | %8.2e | %8.2e | %8.2e | %3s |\n",
             dsdpSolver->iterA, dsdpSolver->pObjVal, dsdpSolver->dObjVal,
             nRy, kovert, dsdpSolver->mu, dsdpSolver->alpha, dsdpSolver->Pnrm,
             event);
@@ -152,7 +156,7 @@ extern DSDP_INT DSDPCheckPhaseAConvergence( HSDSolver *dsdpSolver, DSDP_INT *isO
     *isOK = FALSE;
     
     // Dual infeasibility eliminated
-    if (dsdpSolver->Ry * sqrt(dsdpSolver->n) < dsdpSolver->param->absOptTol * 0.1) {
+    if (fabs(dsdpSolver->Ry) * sqrt(dsdpSolver->n) < dsdpSolver->param->absOptTol * 0.1) {
         monitor[EVENT_NO_RY] = TRUE;
         *isOK = TRUE;
         return retcode;
@@ -187,7 +191,8 @@ extern DSDP_INT DSDPCheckPhaseAConvergence( HSDSolver *dsdpSolver, DSDP_INT *isO
     }
     
     // Small step
-    if (dsdpSolver->alpha < 1e-04 && !monitor[EVENT_PFEAS_FOUND]) {
+    if (dsdpSolver->iterA > 0 && dsdpSolver->alpha < 1e-04 &&
+        !monitor[EVENT_PFEAS_FOUND]) {
         monitor[EVENT_SMALL_STEP] = TRUE;
         dsdpSolver->smallIter += 1;
     }

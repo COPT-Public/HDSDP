@@ -121,6 +121,11 @@ extern DSDP_INT vec_print( vec *x ) {
 }
 
 extern DSDP_INT vec_free( vec *x ) {
+    
+    if (!x) {
+        return DSDP_RETCODE_OK;
+    }
+    
     // Free the allocated memory in vec structure
     x->dim = 0;
     DSDP_FREE(x->x);

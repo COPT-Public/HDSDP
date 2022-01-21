@@ -8,7 +8,7 @@ static char etype[] = "DSDP Initialization";
 static DSDP_INT inity( HSDSolver *dsdpSolver ) {
     
     DSDP_INT retcode = DSDP_RETCODE_OK;
-    memset(dsdpSolver->y, 0, sizeof(double) * dsdpSolver->m);
+    vec_reset(dsdpSolver->y);
     return retcode;
 }
 

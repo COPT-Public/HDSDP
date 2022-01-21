@@ -39,11 +39,13 @@ static DSDP_INT setupSDPSchurBlock( HSDSolver *dsdpSolver, DSDP_INT blockid ) {
         } else if (mattype == MAT_TYPE_RANK1) {
             retcode = getSinvASinv(dsdpSolver, blockid, i, r1data);
             data = (void *) r1data;
+            mattype = MAT_TYPE_RANK1;
             checkCodeFree;
             // retcode = r1MatCountNnz(r1data);
         } else {
             retcode = getSinvASinv(dsdpSolver, blockid, i, dsdata);
             data = (void *) dsdata;
+            mattype = MAT_TYPE_DENSE;
             checkCodeFree;
         }
         
@@ -67,7 +69,7 @@ static DSDP_INT setupSDPSchur( HSDSolver *dsdpSolver ) {
     DSDP_INT retcode = DSDP_RETCODE_OK;
     
     assert( !dsdpSolver->iterProgress[ITER_SCHUR] );
-    if (!dsdpSolver->iterProgress[ITER_SCHUR]) {
+    if (dsdpSolver->iterProgress[ITER_SCHUR]) {
         error(etype, "Schur matrix is already setup. \n");
         return retcode;
     }
@@ -254,6 +256,7 @@ extern DSDP_INT setupFactorize( HSDSolver *dsdpSolver ) {
         }
     }
     
+    dsdpSolver->iterProgress[ITER_DUAL_FACTORIZE] = TRUE;
     return retcode;
 }
 

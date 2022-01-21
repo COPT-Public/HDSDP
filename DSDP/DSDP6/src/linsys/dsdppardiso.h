@@ -54,7 +54,7 @@ static DSDP_INT PARDISO_PARAMS_CHOLESKY[PARDISOINDEX] = {
 static DSDP_INT PARDISO_PARAMS_FORWARD_BACKWORD[PARDISOINDEX] = {
     
     1, /* Non-default value */ 3, /* P Nested dissection */ 0, /* Reserved          */
-    0, /* No CG             */ 0, /* No user permutation */ 1, /* No overwriting    */
+    0, /* No CG             */ 0, /* No user permutation */ 1, /* Overwriting       */
     0, /* Refinement report */ 0, /* No ItRef step       */ 0, /* Reserved          */
     8, /* Perturb           */ 1, /* Disable scaling     */ 0, /* No transpose      */
     0, /* Disable matching  */ 0, /* Report on pivots    */ 0, /* Output            */

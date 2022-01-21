@@ -6,17 +6,17 @@
 
 // Iteration monitor
 #define ITER_INITIALIZE         0  // Initialize y, S, tau, kappa and Ry
-#define ITER_DUAL_OBJ           1  // Get b' * y
-#define ITER_LOGGING            2  // Print | niter | pObj | dObj | dInf | k/t | mu | alpha | pNrm | E |
-#define ITER_RESIDUAL           3  // Set up residuals
-#define ITER_DUAL_FACTORIZE     4  // Factorize dual matrices {S}
-#define ITER_SCHUR              5  // Set up the schur matrix M and part of auxiliary arrays
-#define ITER_SCHUR_SOLVE        6  // Solve the Schur system
-#define ITER_PROX_POBJ          7  // Get proximity and verify primal feasibility
-#define ITER_STEP_DIRECTION     8  // Recover step directions
-#define ITER_COMPUTE_STEP       9  // Compute algorithm stepsize
-#define ITER_TAKE_STEP         10  // Take step
-#define ITER_CORRECTOR         11  // Take corrector step
+#define ITER_LOGGING            1  // Print | niter | pObj | dObj | dInf | k/t | mu | alpha | pNrm | E |
+#define ITER_DUAL_OBJ           2  // Get b' * y
+#define ITER_DUAL_FACTORIZE     3  // Factorize dual matrices {S}
+#define ITER_SCHUR              4  // Set up the schur matrix M and part of auxiliary arrays
+#define ITER_SCHUR_SOLVE        5  // Solve the Schur system
+#define ITER_PROX_POBJ          6  // Get proximity and verify primal feasibility
+#define ITER_STEP_DIRECTION     7  // Recover step directions
+#define ITER_COMPUTE_STEP       8  // Compute algorithm stepsize
+#define ITER_TAKE_STEP          9  // Take step
+#define ITER_CORRECTOR         10  // Take corrector step
+#define ITER_RESIDUAL          11  // Set up residuals
 #define ITER_DECREASE_MU       12  // Decrease parameter mu
 #define ITER_NEXT_ITERATION    13  // Get into next iteration
 

@@ -41,7 +41,6 @@ typedef long int DSDP_INT;
 typedef int DSDP_INT;
 #define ID "%d"
 #endif
-
 #endif
 
 //typedef HSDSolver Solver;

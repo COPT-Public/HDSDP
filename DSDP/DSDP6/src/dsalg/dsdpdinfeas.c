@@ -26,6 +26,8 @@ extern DSDP_INT DSDPDInfeasEliminator( HSDSolver *dsdpSolver ) {
     DSDP_INT retcode = DSDP_RETCODE_OK;
     DSDP_INT goOn = TRUE;
     
+    dsdpSolver->pObjVal = dsdpSolver->param->initpObj;
+    
     // Initialize
     double muprimal = dsdpSolver->param->initMu;
     double tol      = dsdpSolver->param->absOptTol;
@@ -50,10 +52,12 @@ extern DSDP_INT DSDPDInfeasEliminator( HSDSolver *dsdpSolver ) {
         newmu = aggmu;
     }
         
+    dsdpSolver->eventMonitor[EVENT_IN_PHASE_A] = TRUE;
+    dsdpSolver->eventMonitor[EVENT_IN_PHASE_B] = FALSE;
+    
     /* Start Phase A algorithm */
     dsdpshowdash();
     retcode = dsdpInitialize(dsdpSolver); checkCode;
-    dsdpshowdash();
     
     /* Print algorithm header */
     dsdpprintPhaseAheader();
@@ -69,7 +73,7 @@ extern DSDP_INT DSDPDInfeasEliminator( HSDSolver *dsdpSolver ) {
         // Logging
         DSDPPhaseALogging(dsdpSolver);
         
-        if (!goOn) {
+        if (goOn) {
             break;
         }
         

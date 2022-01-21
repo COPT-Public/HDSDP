@@ -1,15 +1,10 @@
 #ifndef test_h
 #define test_h
 
-#include "memwatch.h"
 #include "vec.h"
 #include "sparsemat.h"
 #include "densemat.h"
 #include "rankonemat.h"
-
-#ifndef MEMWATCH
-#define MEMWATCH
-#endif
 
 #include "memwatch.h"
 // #define printf mwTrace
@@ -22,6 +17,7 @@ extern "C" {
 
 /* DSDP interface */
 DSDP_INT test_data(void);
+DSDP_INT test_dsdp(void);
 
 /* Vector utility */
 DSDP_INT test_vec(void);

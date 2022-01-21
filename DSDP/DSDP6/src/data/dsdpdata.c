@@ -114,8 +114,23 @@ static DSDP_INT sdpMatIAllocByType( sdpMat *sdpData, DSDP_INT k, DSDP_INT *Ai,
         retcode = spsMatInit(data); checkCode;
         retcode = spsMatAllocData(data, n, nnz); checkCode;
         
-        for (DSDP_INT i = 0; i < n; ++i) {
-            data->p[i + 1] = nnz;
+        data->p[n] = nnz;
+        data->nnz = nnz;
+        
+        if (n > 10000) {
+            for (DSDP_INT i = 0; i < n - n % 4; i+=4) {
+                data->p[i + 1] = nnz;
+                data->p[i + 2] = nnz;
+                data->p[i + 3] = nnz;
+                data->p[i + 4] = nnz;
+            }
+            for (DSDP_INT i = n - n % 4; i < n; ++i) {
+                data->p[i + 1] = nnz;
+            }
+        } else {
+            for (DSDP_INT i = 0; i < n; ++i) {
+                data->p[i + 1] = nnz;
+            }
         }
         
         memcpy(data->x, Ax, sizeof(double) * nnz);
@@ -124,20 +139,17 @@ static DSDP_INT sdpMatIAllocByType( sdpMat *sdpData, DSDP_INT k, DSDP_INT *Ai,
         DSDP_INT where     = 0;
         DSDP_INT colnnz    = 0;
         DSDP_INT idxthresh = n;
-        DSDP_INT diff      = n;
         data->p[0] = 0;
         
         for (DSDP_INT i = 0; i < nnz; ++i) {
             rowidx = Ai[i];
-            if (rowidx >= idxthresh) {
+            while (rowidx >= idxthresh) {
                 where += 1;
                 data->p[where] = colnnz;
-                diff = n - where;
-                idxthresh += diff;
-                colnnz = 0;
+                idxthresh += n - where;
             }
             colnnz += 1;
-            data->i[i] = rowidx - idxthresh + diff;
+            data->i[i] = rowidx - idxthresh + n;
         }
         
 #ifdef SHOWALL

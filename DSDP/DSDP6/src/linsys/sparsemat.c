@@ -301,7 +301,7 @@ extern DSDP_INT spsMatAllocData( spsMat *sMat, DSDP_INT dim, DSDP_INT nnz ) {
     // Currently do nothing here. TODO: Do Optimization if S is dense
     if (nnz < nsym(dim)) {
         sMat->p = (DSDP_INT *) calloc(dim + 1, sizeof(DSDP_INT));
-        sMat->i = (DSDP_INT *) calloc(nsym(dim), sizeof(DSDP_INT));
+        sMat->i = (DSDP_INT *) calloc(nnz, sizeof(DSDP_INT));
     } else {
         sMat->p = (DSDP_INT *) calloc(dim + 1, sizeof(DSDP_INT));
         sMat->i = (DSDP_INT *) calloc(nsym(dim), sizeof(DSDP_INT));
@@ -1014,7 +1014,7 @@ extern DSDP_INT spsMatView( spsMat *sMat ) {
     mat.nzmax = sMat->nnz;
     mat.m = sMat->dim;
     mat.n = sMat->dim;
-    cs_print(&mat, TRUE);
+    cs_print(&mat, FALSE);
     
     return retcode;
 }

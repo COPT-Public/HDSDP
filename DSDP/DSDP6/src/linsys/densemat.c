@@ -324,7 +324,7 @@ extern DSDP_INT denseSpsTrace( dsMat *dAMat, spsMat *sBMat, double *trace ) {
     DSDP_INT   s = 0;
     
     for (DSDP_INT i = 0; i < n; ++i) {
-        for (DSDP_INT k = Bp[i]; k < Bp[i + 1]; ++i) {
+        for (DSDP_INT k = Bp[i]; k < Bp[i + 1]; ++k) {
             s   = Bi[k];
             tmp = Bx[k] * A[s + (DSDP_INT) (i * (2 * n - i - 1) / 2)];
             if (Bi[k] == i) {
