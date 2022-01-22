@@ -12,7 +12,8 @@ extern "C" {
 #endif
 
 /* Schur matrix set up */
-extern DSDP_INT getSinvASinv       ( HSDSolver *dsdpSolver, DSDP_INT blockid, DSDP_INT constrid, void *SinvASinv );
+extern DSDP_INT getSinvASinv       ( HSDSolver *dsdpSolver, DSDP_INT blockid, DSDP_INT constrid,
+                                     void *SinvASinv );
 extern DSDP_INT getTraceASinvASinv ( HSDSolver *dsdpSolver, DSDP_INT blockid, DSDP_INT constrid,
                                      DSDP_INT mattype, DSDP_INT constrid2, void *SinvASinv );
 
@@ -20,11 +21,13 @@ extern DSDP_INT getTraceASinvASinv ( HSDSolver *dsdpSolver, DSDP_INT blockid, DS
 extern DSDP_INT getPhaseAS         ( HSDSolver *dsdpSolver, double *y,  double tau );
 extern DSDP_INT getPhaseACheckerS  ( HSDSolver *dsdpSolver, double *y,  double tau );
 extern DSDP_INT getPhaseAdS        ( HSDSolver *dsdpSolver, double *dy, double dtau );
+extern DSDP_INT getPhaseBCheckerS  ( HSDSolver *dsdpSolver, double *y );
+extern DSDP_INT getPhaseBdS        ( HSDSolver *dsdpSolver, double alpha, double *dy, double beta );
 extern DSDP_INT dsdpCheckerInCone  ( HSDSolver *dsdpSolver, DSDP_INT *ispsd );
 extern DSDP_INT dsdpInCone         ( HSDSolver *dsdpSolver, DSDP_INT *ispsd );
 
 /* Objective */
-extern DSDP_INT getDualObj         ( HSDSolver *dsdpSolver );
+extern DSDP_INT getDualObj              ( HSDSolver *dsdpSolver );
 extern DSDP_INT getSDPPrimalObjPhaseB   ( HSDSolver *dsdpSolver );
 
 /* Other utilities */

@@ -394,10 +394,12 @@ static DSDP_INT preRank1RdcBlock( sdpMat *dataMat ) {
                + dataMat->nr1Mat + dataMat->nspsMat == m + 1 );
     }
     
+#ifdef SHOWALL
     printf("Block "ID" after reduction: \n", blockid);
     printf("nSparse: "ID"  nDense: "ID"  nRank1: "ID" nZero: "ID" \n",
            dataMat->nspsMat, dataMat->ndenseMat, dataMat->nr1Mat,
            dataMat->nzeroMat);
+#endif
     
     return retcode;
 }
@@ -421,7 +423,9 @@ static DSDP_INT getBlockStatistic( sdpMat *sdpData ) {
     sdpData->denseMatIdx = (DSDP_INT *) calloc(sdpData->ndenseMat, sizeof(DSDP_INT));
     sdpData->r1MatIdx    = (DSDP_INT *) calloc(sdpData->nr1Mat, sizeof(DSDP_INT));
     
+#ifdef SHOWALL
     printf("- Cone "ID"\n", blockid);
+#endif
     
     for (DSDP_INT i = 0; i < m + 1; ++i) {
         switch (type[i]) {

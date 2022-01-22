@@ -9,9 +9,7 @@
 int main (void)
 {
     
-    for (int i = 0; i < 20; ++i ) {
-        test_dsdp();
-    }
+    test_dsdp();
     
 //    test_data();
 //    test_sparse();

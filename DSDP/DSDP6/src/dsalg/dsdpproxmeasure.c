@@ -52,3 +52,28 @@ extern DSDP_INT dsdpgetPhaseAProxMeasure( HSDSolver *dsdpSolver, double newmu ) 
     
     return retcode;
 }
+
+extern DSDP_INT dsdpgetPhaseBProxMeasure( HSDSolver *dsdpSolver, double *muub, double *mulb ) {
+    
+    // Compute the proximal measure of the current iterate
+    DSDP_INT retcode = DSDP_RETCODE_OK;
+    DSDP_INT ispfeas = FALSE;
+    
+    double gap = 0.0;
+    retcode = denseMatxTAx(dsdpSolver->Msdp, dsdpSolver->b1, &dsdpSolver->Pnrm);
+    retcode = dsdpCheckBackwardNewton(dsdpSolver, &ispfeas);
+    
+    if (ispfeas) {
+        dsdpSolver->eventMonitor[EVENT_PFEAS_FOUND] = TRUE;
+        vec_dot(dsdpSolver->b1, dsdpSolver->asinv, &gap);
+        gap = (gap + dsdpSolver->n) * dsdpSolver->mu;
+        dsdpSolver->pObjVal = dsdpSolver->dObjVal + gap;
+        *muub = gap / dsdpSolver->n;
+    } else {
+        *muub = (dsdpSolver->pObjVal - dsdpSolver->dObjVal) / dsdpSolver->n;
+    }
+    
+    *mulb = (*muub) / dsdpSolver->param->rho;
+    
+    return retcode;
+}

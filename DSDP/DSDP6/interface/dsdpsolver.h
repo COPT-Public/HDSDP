@@ -89,6 +89,7 @@ typedef struct {
     DSDP_INT iterA;       // Iteration in phase A
     DSDP_INT iterB;       // Iteration in phase B
     DSDP_INT smallIter;   // Number of iteration admitting small stepsize
+    DSDP_INT gapBroken;   // Duality gap violated
     DSDP_INT insStatus;   // Solver instance status
     DSDP_INT solStatus;   // Solver solution status
     

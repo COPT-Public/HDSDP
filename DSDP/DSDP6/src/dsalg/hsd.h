@@ -6,8 +6,8 @@
 
 // Iteration monitor
 #define ITER_INITIALIZE         0  // Initialize y, S, tau, kappa and Ry
-#define ITER_LOGGING            1  // Print | niter | pObj | dObj | dInf | k/t | mu | alpha | pNrm | E |
-#define ITER_DUAL_OBJ           2  // Get b' * y
+#define ITER_DUAL_OBJ           1  // Get b' * y
+#define ITER_LOGGING            2  // Print | niter | pObj | dObj | dInf | k/t | mu | alpha | pNrm | E |
 #define ITER_DUAL_FACTORIZE     3  // Factorize dual matrices {S}
 #define ITER_SCHUR              4  // Set up the schur matrix M and part of auxiliary arrays
 #define ITER_SCHUR_SOLVE        5  // Solve the Schur system
@@ -30,8 +30,11 @@
 #define EVENT_NAN_IN_ITER       6  // Nan detected in iterations
 #define EVENT_SMALL_STEP        7  // Step taken is too small
 #define EVENT_MAX_ITERATION     8  // Maximum iteration reached
-#define EVENT_IN_PHASE_A        9  // We are in phase A
-#define EVENT_IN_PHASE_B       10  // We are in phase B
+#define EVENT_LARGE_DOBJ        9  // Large dual objective
+#define EVENT_PINFEAS_DETECTED 10  // Primal infeasibility is detected
+#define EVENT_INVALID_GAP      11  // Dual objective exceeds primal bound
+#define EVENT_IN_PHASE_A       12  // We are in phase A
+#define EVENT_IN_PHASE_B       13  // We are in phase B
 
 #ifdef __cplusplus
 extern "C" {

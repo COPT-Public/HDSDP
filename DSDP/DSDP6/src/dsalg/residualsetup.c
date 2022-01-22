@@ -46,6 +46,7 @@ extern DSDP_INT setupRes( HSDSolver *dsdpSolver ) {
     // Setup residuals used for LP and SDP
     DSDP_INT retcode = DSDP_RETCODE_OK;
     
+    checkIterProgress(dsdpSolver, ITER_RESIDUAL);
     retcode = getRy(dsdpSolver); checkCode;
     retcode = getRkappaTau(dsdpSolver); checkCode;
     

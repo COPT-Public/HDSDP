@@ -76,7 +76,7 @@ static DSDP_INT initresi( HSDSolver *dsdpSolver ) {
     return retcode;
 }
 
-extern DSDP_INT dsdpInitialize( HSDSolver *dsdpSolver ) {
+extern DSDP_INT dsdpInitializeA( HSDSolver *dsdpSolver ) {
     
     // Initialize iteration for DSDP solver
     // TODO: Add special case if C is all-constant
@@ -89,6 +89,51 @@ extern DSDP_INT dsdpInitialize( HSDSolver *dsdpSolver ) {
     retcode = initresi(dsdpSolver); checkCode;
     
     printf("| DSDP is initialized with Ry = %3.3e * I \n", dsdpSolver->Ry);
+    
+    return retcode;
+}
+
+extern DSDP_INT dsdpInitializeB( HSDSolver *dsdpSolver ) {
+    
+    // Initialize the mu parameter and the initial primal objective bound
+    DSDP_INT retcode = DSDP_RETCODE_OK;
+    
+    assert( dsdpSolver->eventMonitor[EVENT_IN_PHASE_B] );
+    
+    // Reset the number of iterations taking small stepsize
+    dsdpSolver->smallIter = 0;
+    dsdpSolver->dObjVal = dsdpSolver->dObjVal / dsdpSolver->tau;
+    
+    // y = y / tau;
+    vec_rscale(dsdpSolver->y, dsdpSolver->tau);
+    
+    // S = S / tau;
+    for (DSDP_INT i = 0; i < dsdpSolver->nBlock; ++i) {
+        retcode = spsMatRscale(dsdpSolver->S[i], dsdpSolver->tau);
+    }
+    
+    switch (dsdpSolver->solStatus) {
+            
+        case DSDP_PD_FEASIBLE:
+            // mu = min((pObj - dObj) / rho, muPrimal)
+            dsdpSolver->mu = MIN((dsdpSolver->pObjVal - dsdpSolver->dObjVal) / \
+                                  dsdpSolver->param->rho, dsdpSolver->mu);
+            printf("| DSDP Phase B starts. Restarting dual-scaling with "
+                   "pObj: %10.3e  dObj: %10.3e\n", dsdpSolver->pObjVal, dsdpSolver->dObjVal);
+            break;
+        case DSDP_PUNKNOWN_DFEAS:
+            //pObj  = max(dsdpParam{5}, dObj + dsdpParam{5} / 10);
+            dsdpSolver->pObjVal = MAX(dsdpSolver->pObjVal,
+                                      dsdpSolver->dObjVal + 0.1 * dsdpSolver->pObjVal);
+            printf("| DSDP Phase B starts. "
+                   "Trying to certificate primal feasibility in %d iterations \n",
+                   dsdpSolver->param->BmaxIter);
+            break;
+        default:
+            error(etype, "Invalid starting status for Phase B. \n");
+            break;
+    }
+    
     
     return retcode;
 }

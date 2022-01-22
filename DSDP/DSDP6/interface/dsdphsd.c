@@ -12,6 +12,8 @@
 #include "hsd.h"
 #include "dsdpdinfeas.h"
 #include "dsdputils.h"
+#include "dsdplog.h"
+#include "dsdppfeas.h"
 
 static char etype[] = "DSDP Interface";
 
@@ -97,6 +99,7 @@ static DSDP_INT DSDPIInit( HSDSolver *dsdpSolver ) {
     dsdpSolver->iterA     = 0;
     dsdpSolver->iterB     = 0;
     dsdpSolver->smallIter = 0;
+    dsdpSolver->gapBroken = 0;
     dsdpSolver->insStatus = DSDP_STATUS_INIT_UNSET;
     dsdpSolver->solStatus = DSDP_UNKNOWN;
     
@@ -479,6 +482,7 @@ static DSDP_INT DSDPIFreeCleanUp( HSDSolver *dsdpSolver ) {
     dsdpSolver->iterA     = 0;
     dsdpSolver->iterB     = 0;
     dsdpSolver->smallIter = 0;
+    dsdpSolver->gapBroken = 0;
     dsdpSolver->insStatus = 0;
     dsdpSolver->solStatus = 0;
     
@@ -554,7 +558,7 @@ extern DSDP_INT DSDPSetDim( HSDSolver *dsdpSolver,
     }
     
     if (dsdpSolver->verbosity) {
-        printf("Dimension is successfully set. \n");
+        // printf("Dimension is successfully set. \n");
         printf("nSDPCones: "ID" "
                "nConstraints: "ID" "
                "LPDim: "ID" "
@@ -678,6 +682,8 @@ extern DSDP_INT DSDPOptimize( HSDSolver *dsdpSolver ) {
     // Optimization routine for DSDP
     DSDP_INT retcode = DSDP_RETCODE_OK;
     
+    DSDP_INT gotoB = FALSE;
+    
     if (!dsdpSolver->dObj) {
         retcode = DSDPSetObj(dsdpSolver, NULL);
         checkCode;
@@ -688,6 +694,16 @@ extern DSDP_INT DSDPOptimize( HSDSolver *dsdpSolver ) {
     
     assert( dsdpSolver->insStatus == DSDP_STATUS_PRESOLVED );
     retcode = DSDPDInfeasEliminator(dsdpSolver); checkCode;
+    
+    printPhaseABConvert(dsdpSolver, &gotoB);
+    
+    if (gotoB) {
+        
+        retcode = DSDPPFeasPhase(dsdpSolver);
+        
+        // Phase B
+    }
+    
     
     return retcode;
 }

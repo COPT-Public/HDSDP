@@ -473,6 +473,23 @@ extern DSDP_INT denseMatGetdiag( dsMat *dMat, vec *diag ) {
     return retcode;
 }
 
+extern DSDP_INT denseMatReset( dsMat *dMat ) {
+    
+    // Reset M to be 0
+    DSDP_INT retcode = DSDP_RETCODE_OK;
+    
+    DSDP_INT n = dMat->dim;
+    assert( n > 0 );
+    memset(dMat->array, 0, sizeof(double) * nsym(n));
+    
+    if (dMat->isFactorized) {
+        dMat->isFactorized = FALSE;
+        memset(dMat->lfactor, 0, sizeof(double) * nsym(n));
+    }
+    
+    return retcode;
+}
+
 extern DSDP_INT denseMatView( dsMat *dMat ) {
     
     // Print the upper triangular part of the matrix

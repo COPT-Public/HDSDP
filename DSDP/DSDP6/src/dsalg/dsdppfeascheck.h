@@ -10,7 +10,9 @@
 extern "C" {
 #endif
 
-extern DSDP_INT dsdpCheckPhaseAPfeas( HSDSolver *dsdpSolver, double dtaudelta, vec *dydelta, DSDP_INT *isPfeas );
+extern DSDP_INT dsdpCheckPhaseAPfeas   ( HSDSolver *dsdpSolver, double dtaudelta,
+                                         vec *dydelta, DSDP_INT *isPfeas );
+extern DSDP_INT dsdpCheckBackwardNewton( HSDSolver *dsdpSolver, DSDP_INT *ispfeas );
 
 #ifdef __cplusplus
 }

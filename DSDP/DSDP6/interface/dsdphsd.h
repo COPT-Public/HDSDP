@@ -64,12 +64,11 @@ typedef int DSDP_INT;
 #define DSDP_OPTIMAL            100
 #define DSDP_MAXITER            101
 #define DSDP_INTERNAL_ERROR     102
-#define DSDP_INACCURATE         103
-#define DSDP_PD_FEASIBLE        104
-#define DSDP_PFEAS_DINFEAS      105
-#define DSDP_PINFEAS_DFEAS      106
-#define DSDP_PUNKNOWN_DFEAS     107
-#define DSDP_PUNBOUND_DINFEAS   108
+#define DSDP_PD_FEASIBLE        103
+#define DSDP_PINFEAS_DFEAS      104
+#define DSDP_PUNKNOWN_DFEAS     105
+#define DSDP_PFEAS_DINFEAS      106
+#define DSDP_PUNKNOWN_DINFEAS   107
 
 // Solver status
 #define DSDP_STATUS_UNINIT      0

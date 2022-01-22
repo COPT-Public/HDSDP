@@ -44,13 +44,15 @@ extern DSDP_INT getSinvASinv( HSDSolver *dsdpSolver, DSDP_INT blockid, DSDP_INT 
         error(etype, "Invalid matrix type. \n");
     }
     
-    switch (typeA) {
-        case MAT_TYPE_RANK1:
-            retcode = r1MatdiagTrace(SinvASinv, dsdpSolver->Ry, &tracediag);
-            break;
-        default:
-            retcode = denseDiagTrace(SinvASinv, dsdpSolver->Ry, &tracediag);
-            break;
+    if (dsdpSolver->eventMonitor[EVENT_IN_PHASE_A]) {
+        switch (typeA) {
+            case MAT_TYPE_RANK1:
+                retcode = r1MatdiagTrace(SinvASinv, dsdpSolver->Ry, &tracediag);
+                break;
+            default:
+                retcode = denseDiagTrace(SinvASinv, dsdpSolver->Ry, &tracediag);
+                break;
+        }
     }
     
     checkCode;
@@ -114,6 +116,17 @@ extern DSDP_INT getTraceASinvASinv( HSDSolver *dsdpSolver, DSDP_INT blockid, DSD
     
     checkCode;
     
+    // Perturbation of M diagonal element
+    if (dsdpSolver->mu < 1e-05) {
+        trace += 1e-08;
+    }
+    
+    if (dsdpSolver->eventMonitor[EVENT_IN_PHASE_B] &&
+        (constrid == constrid2) &&
+        !dsdpSolver->eventMonitor[EVENT_INVALID_GAP]) {
+        trace += 1e-08;
+    }
+    
     // Update Schur/auxiliary vectors
     if (constrid2 == m) {
         // The first A is C
@@ -171,6 +184,25 @@ extern DSDP_INT getPhaseACheckerS( HSDSolver *dsdpSolver, double *y, double tau 
     return retcode;
 }
 
+extern DSDP_INT getPhaseBCheckerS( HSDSolver *dsdpSolver, double *y ) {
+    
+    DSDP_INT retcode = DSDP_RETCODE_OK;
+    spsMat *checker = NULL;
+    DSDP_INT m = dsdpSolver->m;
+    
+    for (DSDP_INT i = 0; i < dsdpSolver->nBlock; ++i) {
+        checker = dsdpSolver->Scker[i];
+        retcode = spsMatReset(checker);
+        for (DSDP_INT j = 0; j < m; ++j) {
+            retcode = addMattoChecker(dsdpSolver, i, j, - y[j]);
+        }
+        retcode = addMattoChecker(dsdpSolver, i, m, 1.0);
+        checkCode;
+    }
+    
+    return retcode;
+}
+
 /* Retrieve dS = Ry + C * dtau - ATdy across all the blocks */
 extern DSDP_INT getPhaseAdS( HSDSolver *dsdpSolver, double *dy, double dtau ) {
     
@@ -186,6 +218,27 @@ extern DSDP_INT getPhaseAdS( HSDSolver *dsdpSolver, double *dy, double dtau ) {
         }
         retcode = addMattodS(dsdpSolver, i, m, dtau);
         retcode = spsMatAdddiag(dS, dsdpSolver->Ry, dsdpSolver->symS[i]);
+        checkCode;
+    }
+    
+    return retcode;
+}
+
+/* Retrieve dS = C * beta - ATdy * alpha across all the blocks */
+extern DSDP_INT getPhaseBdS( HSDSolver *dsdpSolver, double alpha,
+                             double *dy, double beta ) {
+    
+    DSDP_INT retcode = DSDP_RETCODE_OK;
+    spsMat *dS = NULL;
+    DSDP_INT m = dsdpSolver->m;
+    
+    for (DSDP_INT i = 0; i < dsdpSolver->nBlock; ++i) {
+        dS = dsdpSolver->dS[i];
+        retcode = spsMatReset(dS);
+        for (DSDP_INT j = 0; j < m; ++j) {
+            retcode = addMattodS(dsdpSolver, i, j, - alpha * dy[j]);
+        }
+        retcode = addMattodS(dsdpSolver, i, m, beta);
         checkCode;
     }
     
@@ -350,6 +403,11 @@ extern DSDP_INT addMattoChecker( HSDSolver *dsdpSolver, DSDP_INT blockid,
 extern DSDP_INT addMattodS( HSDSolver *dsdpSolver, DSDP_INT blockid, DSDP_INT constrid, double alpha ) {
     
     DSDP_INT retcode = DSDP_RETCODE_OK;
+    
+    if (alpha == 0.0) {
+        return retcode;
+    }
+    
     void *data = dsdpSolver->sdpData[blockid]->sdpData[constrid];
     
     switch (dsdpSolver->sdpData[blockid]->types[constrid]) {

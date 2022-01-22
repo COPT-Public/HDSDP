@@ -14,7 +14,8 @@
 extern "C" {
 #endif
 
-extern DSDP_INT dsdpInitialize( HSDSolver *dsdpSolver );
+extern DSDP_INT dsdpInitializeA( HSDSolver *dsdpSolver );
+extern DSDP_INT dsdpInitializeB( HSDSolver *dsdpSolver );
 
 #ifdef __cplusplus
 }

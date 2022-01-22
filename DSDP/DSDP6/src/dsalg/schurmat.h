@@ -28,7 +28,7 @@ extern "C" {
 #endif
 
 extern DSDP_INT setupFactorize     ( HSDSolver *dsdpSolver );
-extern DSDP_INT setupPhaseASchur   ( HSDSolver *dsdpSolver );
+extern DSDP_INT setupSchur   ( HSDSolver *dsdpSolver );
 
 #ifdef __cplusplus
 }

@@ -29,6 +29,10 @@ static DSDP_INT setupSDPSchurBlock( HSDSolver *dsdpSolver, DSDP_INT blockid ) {
     retcode = denseMatAlloc(dsdata, n, FALSE);
     checkCodeFree;
     
+    if (dsdpSolver->eventMonitor[EVENT_IN_PHASE_B]) {
+        m -= 1;
+    }
+    
     void *data = NULL;
     
     for (DSDP_INT i = 0; i < m + 1; ++i) {
@@ -74,14 +78,13 @@ static DSDP_INT setupSDPSchur( HSDSolver *dsdpSolver ) {
         return retcode;
     }
     
-    DSDP_INT m = dsdpSolver->m;
     DSDP_INT nblock = dsdpSolver->nBlock;
     vec *u      = dsdpSolver->u;
     vec *d4     = dsdpSolver->d4;
     dsMat *Msdp = dsdpSolver->Msdp;
     
     // Clear the Schur matrix and other arrays
-    memset(Msdp->array, 0, sizeof(double) * nsym(m));
+    retcode = denseMatReset(Msdp);
     
     dsdpSolver->csinv = 0.0;
     dsdpSolver->csinvrysinv = 0.0;
@@ -216,7 +219,7 @@ static DSDP_INT setupLPSchur( HSDSolver *dsdpSolver ) {
 }
 
 static DSDP_INT setupPhaseAdvecs( HSDSolver *dsdpSolver ) {
-    // Set up the auxiliary vector
+    // Set up the auxiliary vectors
     /*
      d2_12_3_4 = M \ [b, u, asinv, asinvrysinv];
     */
@@ -227,6 +230,22 @@ static DSDP_INT setupPhaseAdvecs( HSDSolver *dsdpSolver ) {
     retcode = vec_copy(dsdpSolver->asinv, dsdpSolver->d3);
     
     return retcode;
+}
+
+static DSDP_INT setupPhaseBdvecs( HSDSolver *dsdpSolver ) {
+    // Set up the auxiliary vectors
+    /*
+     dy1dy2 = Mhat \ [b, asinv];
+     dy1 is d1
+     dy2 is d2
+     */
+    
+    DSDP_INT retcode = DSDP_RETCODE_OK;
+    
+    retcode = vec_copy(dsdpSolver->dObj, dsdpSolver->d1);
+    retcode = vec_copy(dsdpSolver->asinv, dsdpSolver->d2);
+    
+    return retcode;;
 }
 
 extern DSDP_INT setupFactorize( HSDSolver *dsdpSolver ) {
@@ -264,8 +283,8 @@ extern DSDP_INT setupFactorize( HSDSolver *dsdpSolver ) {
 }
 
 extern DSDP_INT schurPhaseAMatSolve( HSDSolver *dsdpSolver ) {
-    // Solve the internal system for getting the directions
-    // After this routine, d1 and d2 will be filled
+    // Solve the internal system to get the directions
+    // After this routine, d1, d12, d3 and d4 will be filled
     DSDP_INT retcode = DSDP_RETCODE_OK;
     retcode = checkIterProgress(dsdpSolver, ITER_SCHUR_SOLVE);
     
@@ -293,13 +312,44 @@ extern DSDP_INT schurPhaseAMatSolve( HSDSolver *dsdpSolver ) {
     return retcode;
 }
 
-extern DSDP_INT setupPhaseASchur( HSDSolver *dsdpSolver ) {
+extern DSDP_INT schurPhaseBMatSolve( HSDSolver *dsdpSolver ) {
+    // Solve the internal system to get the directions
+    // After this routine, d1 and d2 will be filled
+    DSDP_INT retcode = DSDP_RETCODE_OK;
+    retcode = checkIterProgress(dsdpSolver, ITER_SCHUR_SOLVE);
+    
+    assert( !dsdpSolver->iterProgress[ITER_SCHUR_SOLVE] );
+    
+    if (dsdpSolver->iterProgress[ITER_SCHUR_SOLVE]) {
+        error(etype, "Schur matrix has been factorized. \n");
+    }
+    
+    dsMat *M = dsdpSolver->Msdp;
+    assert( !M->isFactorized );
+    
+    // Factorize the Schur matrix
+    retcode = denseMatFactorize(M);
+    
+    denseArrSolveInp(M, 1, dsdpSolver->d1->x);
+    denseArrSolveInp(M, 1, dsdpSolver->d2->x);
+    
+    dsdpSolver->iterProgress[ITER_SCHUR_SOLVE] = TRUE;
+    
+    return retcode;
+}
+
+extern DSDP_INT setupSchur( HSDSolver *dsdpSolver ) {
     // Setup the schur matrix Msdp and some of the temporary arrays
     DSDP_INT retcode = DSDP_RETCODE_OK;
     
     retcode = setupSDPSchur(dsdpSolver);
     // retcode = setupLPSchur(dsdpSolver);
-    retcode = schurPhaseAMatSolve(dsdpSolver);
+    
+    if (dsdpSolver->eventMonitor[EVENT_IN_PHASE_A]) {
+        retcode = schurPhaseAMatSolve(dsdpSolver);
+    } else {
+        retcode = schurPhaseBMatSolve(dsdpSolver);
+    }
     
     return retcode;
 }

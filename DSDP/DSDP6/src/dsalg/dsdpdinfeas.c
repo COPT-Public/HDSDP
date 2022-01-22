@@ -59,7 +59,7 @@ extern DSDP_INT DSDPDInfeasEliminator( HSDSolver *dsdpSolver ) {
     
     /* Start Phase A algorithm */
     dsdpshowdash();
-    retcode = dsdpInitialize(dsdpSolver); checkCode;
+    retcode = dsdpInitializeA(dsdpSolver); checkCode;
     
     /* Print algorithm header */
     dsdpprintPhaseAheader();
@@ -68,10 +68,14 @@ extern DSDP_INT DSDPDInfeasEliminator( HSDSolver *dsdpSolver ) {
         
         dsdpSolver->iterA = i;
         
+        // Reset monitor
+        DSDPResetPhaseAMonitor(dsdpSolver);
         // Check NaN
         dsdpCheckNan(dsdpSolver);
         // Check algorithm convergence
         DSDPCheckPhaseAConvergence(dsdpSolver, &goOn);
+        // Compute dual objective
+        retcode = getDualObj(dsdpSolver); checkCode;
         // Logging
         DSDPPhaseALogging(dsdpSolver);
         
@@ -79,14 +83,10 @@ extern DSDP_INT DSDPDInfeasEliminator( HSDSolver *dsdpSolver ) {
             break;
         }
         
-        // Reset monitor
-        DSDPResetPhaseAMonitor(dsdpSolver);
-        // Compute dual objective
-        retcode = getDualObj(dsdpSolver); checkCode;
         // Factorize dual matrices
         retcode = setupFactorize(dsdpSolver); checkCode;
-        // Set up schur matrix and solve the system
-        retcode = setupPhaseASchur(dsdpSolver);
+        // Set up Schur matrix and solve the system
+        retcode = setupSchur(dsdpSolver);
         // Get proximity and check primal feasibility
         for (DSDP_INT j = 0; j < ntry; ++j) {
             trymu = newmu[j] * muprimal;
@@ -110,9 +110,11 @@ extern DSDP_INT DSDPDInfeasEliminator( HSDSolver *dsdpSolver ) {
         retcode = setupRes(dsdpSolver); checkCode;
         
         // Decrease mu with sufficient proximity
-        if (dsdpSolver->Pnrm < 0.1) {
+        checkIterProgress(dsdpSolver, ITER_DECREASE_MU);
+        if (dsdpSolver->Pnrm < 0.1 &&
+            !dsdpSolver->eventMonitor[EVENT_MU_QUALIFIES]) {
             dsdpSolver->mu *= 0.1;
-            muprimal *= 0.1;
+            // muprimal *= 0.1;
         }
         
         dsdpSolver->iterProgress[ITER_DECREASE_MU] = TRUE;
@@ -122,9 +124,13 @@ extern DSDP_INT DSDPDInfeasEliminator( HSDSolver *dsdpSolver ) {
             sigma = 0.1;
             dsdpSolver->param->Aalpha = 0.2;
         }
+        
+        checkIterProgress(dsdpSolver, ITER_NEXT_ITERATION);
     }
     
     time = (double) (clock() - start) / CLOCKS_PER_SEC;
+    
+    dsdpSolver->mu = muprimal;
     printPhaseASummary(dsdpSolver, time);
     
     return retcode;

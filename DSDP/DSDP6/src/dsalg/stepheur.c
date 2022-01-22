@@ -166,3 +166,49 @@ extern DSDP_INT takeStep( HSDSolver *dsdpSolver ) {
     
     return retcode;
 }
+
+extern DSDP_INT selectMu( HSDSolver *dsdpSolver, double *newmu ) {
+    // Choose the next barrier parameter
+    // The backward newton step is stored in b2 and Scker, dy1 is in d1; dy is in b1
+    
+    DSDP_INT retcode = DSDP_RETCODE_OK;
+    
+    double alpha = DSDP_INFINITY;
+    double tmp = 1.0;
+    
+    if (dsdpSolver->eventMonitor[EVENT_PFEAS_FOUND]) {
+        retcode = getPhaseBdS(dsdpSolver, 1.0, dsdpSolver->d1->x, 0.0);
+        
+        for (DSDP_INT i = 0; i < dsdpSolver->nBlock; ++i) {
+            retcode = dsdpGetAlpha(dsdpSolver->Scker[i], dsdpSolver->dS[i],
+                                   dsdpSolver->spaux[i], &tmp);
+            checkCode;
+            alpha = MIN(alpha, tmp);
+        }
+        *newmu = dsdpSolver->mu / (1 + 0.95 * alpha);
+        
+    } else {
+        
+        // dS = dsdpgetATy(A, dy);
+        retcode = getPhaseBdS(dsdpSolver, -1.0, dsdpSolver->b1->x, 0.0);
+        
+        // alphap = dsdpgetalpha(S, dS);
+        retcode = getSDPSStep(dsdpSolver, &tmp);
+        assert( alpha != DSDP_INFINITY );
+        
+        // Shat = S + 0.95 * alphap * dS;
+        for (DSDP_INT i = 0; i < dsdpSolver->nBlock; ++i) {
+            retcode = spsMataXpbY(0.95 * tmp, dsdpSolver->dS[i],
+                                  1.0, dsdpSolver->S[i], dsdpSolver->symS[i]);
+        }
+        
+        
+        
+        
+    }
+    
+    
+    
+    
+    return retcode;
+}

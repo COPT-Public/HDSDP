@@ -70,6 +70,7 @@
 		19808F3F273807770014086F /* dsdpdata.c in Sources */ = {isa = PBXBuildFile; fileRef = 19808F3E273807770014086F /* dsdpdata.c */; };
 		19808F4327380A990014086F /* dsdppresolve.c in Sources */ = {isa = PBXBuildFile; fileRef = 19808F4227380A990014086F /* dsdppresolve.c */; };
 		19808F46273817510014086F /* rankonemat.c in Sources */ = {isa = PBXBuildFile; fileRef = 19808F45273817510014086F /* rankonemat.c */; };
+		1985AC3D279B9DB400B7B8EB /* dsdppfeas.c in Sources */ = {isa = PBXBuildFile; fileRef = 1985AC3C279B9DB400B7B8EB /* dsdppfeas.c */; };
 		1992207B2737D8A400DD975D /* libmkl_intel_thread.1.dylib in Frameworks */ = {isa = PBXBuildFile; fileRef = 199220772737D8A400DD975D /* libmkl_intel_thread.1.dylib */; };
 		1992207C2737D8A400DD975D /* libmkl_intel_thread.1.dylib in Embed Libraries */ = {isa = PBXBuildFile; fileRef = 199220772737D8A400DD975D /* libmkl_intel_thread.1.dylib */; settings = {ATTRIBUTES = (CodeSignOnCopy, ); }; };
 		1992207D2737D8A400DD975D /* libmkl_core.1.dylib in Frameworks */ = {isa = PBXBuildFile; fileRef = 199220782737D8A400DD975D /* libmkl_core.1.dylib */; };
@@ -211,6 +212,8 @@
 		19808F44273817510014086F /* rankonemat.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = rankonemat.h; sourceTree = "<group>"; };
 		19808F45273817510014086F /* rankonemat.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = rankonemat.c; sourceTree = "<group>"; };
 		19808F47273833760014086F /* dsdpparam.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = dsdpparam.h; sourceTree = "<group>"; };
+		1985AC3B279B9DB400B7B8EB /* dsdppfeas.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = dsdppfeas.h; sourceTree = "<group>"; };
+		1985AC3C279B9DB400B7B8EB /* dsdppfeas.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = dsdppfeas.c; sourceTree = "<group>"; };
 		199220752737D86C00DD975D /* Accelerate.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = Accelerate.framework; path = System/Library/Frameworks/Accelerate.framework; sourceTree = SDKROOT; };
 		199220772737D8A400DD975D /* libmkl_intel_thread.1.dylib */ = {isa = PBXFileReference; lastKnownFileType = "compiled.mach-o.dylib"; name = libmkl_intel_thread.1.dylib; path = ../../../../../../opt/intel/oneapi/mkl/2021.2.0/lib/libmkl_intel_thread.1.dylib; sourceTree = "<group>"; };
 		199220782737D8A400DD975D /* libmkl_core.1.dylib */ = {isa = PBXFileReference; lastKnownFileType = "compiled.mach-o.dylib"; name = libmkl_core.1.dylib; path = ../../../../../../opt/intel/oneapi/mkl/2021.2.0/lib/libmkl_core.1.dylib; sourceTree = "<group>"; };
@@ -328,6 +331,8 @@
 				19C3BBE2279454D600F0331B /* dsdputils.c */,
 				19C3BBE42795054900F0331B /* dsdpproxmeasure.h */,
 				19C3BBE52795054900F0331B /* dsdpproxmeasure.c */,
+				1985AC3B279B9DB400B7B8EB /* dsdppfeas.h */,
+				1985AC3C279B9DB400B7B8EB /* dsdppfeas.c */,
 			);
 			path = dsalg;
 			sourceTree = "<group>";
@@ -616,6 +621,7 @@
 				19118DEE2737B72800D51D03 /* SuiteSparse_config.c in Sources */,
 				19118DF52737B72800D51D03 /* cs_dmperm.c in Sources */,
 				19118DE82737B72800D51D03 /* residualsetup.c in Sources */,
+				1985AC3D279B9DB400B7B8EB /* dsdppfeas.c in Sources */,
 				19118DF12737B72800D51D03 /* cs_ipvec.c in Sources */,
 				19BEEC252756065600C36C9E /* cs_schol.c in Sources */,
 				19118DFF2737B72800D51D03 /* cs_post.c in Sources */,
