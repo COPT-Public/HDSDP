@@ -690,6 +690,34 @@ extern DSDP_INT dsdpGetAlpha( spsMat *S, spsMat *dS, spsMat *spaux, double *alph
     return retcode;
 }
 
+extern DSDP_INT dsdpGetAlphaLS( spsMat *S, spsMat *dS, spsMat *Scker,
+                                double alphamax, double *alpha, DSDP_INT *sumHash ) {
+    // Get the maximum alpha such that S + alpha * dS is PSD by line-search
+    DSDP_INT retcode = DSDP_RETCODE_OK;
+    
+    double step = 1 / alphamax;
+    DSDP_INT ispsd = FALSE;
+    
+    for (DSDP_INT i = 0; ; ++i) {
+        if (step <= 1e-08) {
+            *alpha = 0.0;
+            break;
+        }
+        
+        memcpy(Scker->x, S->x, sizeof(double) * S->nnz);
+        spsMataXpbY(step, dS, 1.0, Scker, sumHash);
+        spsMatIspd(Scker, &ispsd);
+        
+        if (ispsd) {
+            *alpha = step;
+            break;
+        }
+        step *= 0.8;
+    }
+
+    return retcode;
+}
+
 extern DSDP_INT spsSinvSpSinvSolve( spsMat *S, spsMat *A, dsMat *SinvASinv, double *asinv ) {
     
     // Routine for setting up the Schur matrix
@@ -913,6 +941,32 @@ extern DSDP_INT spsMatIspd( spsMat *sMat, DSDP_INT *ispd ) {
         error(etype, "Pardiso failes for some reason. \n");
     }
     
+    return retcode;
+}
+
+extern DSDP_INT spsMatGetlogdet( spsMat *sMat, double *logdet ) {
+    // Compute log det S
+    DSDP_INT retcode = DSDP_RETCODE_OK;
+    
+    assert( sMat->isFactorized );
+    double *array = (double *) calloc(2 * sMat->dim, sizeof(double));
+    double res = 0.0;
+    DSDP_INT ecode = PARDISO_OK;
+    
+    pardiso_getdiag((const void **) sMat->pdsWorker, array,
+                    &array[sMat->dim], &one, &ecode);
+    
+    if (ecode != PARDISO_OK) {
+        DSDP_FREE(array);
+        error(etype, "Pardiso Failed to get diagonal entries. \n");
+    }
+    
+    for (DSDP_INT i = 0; i < sMat->dim; ++i) {
+        res += log(array[i]);
+    }
+    
+    *logdet = res;
+    DSDP_FREE(array);
     return retcode;
 }
 

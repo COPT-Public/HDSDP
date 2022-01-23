@@ -68,8 +68,6 @@ extern DSDP_INT DSDPDInfeasEliminator( HSDSolver *dsdpSolver ) {
         
         dsdpSolver->iterA = i;
         
-        // Reset monitor
-        DSDPResetPhaseAMonitor(dsdpSolver);
         // Check NaN
         dsdpCheckNan(dsdpSolver);
         // Check algorithm convergence
@@ -82,7 +80,6 @@ extern DSDP_INT DSDPDInfeasEliminator( HSDSolver *dsdpSolver ) {
         if (goOn) {
             break;
         }
-        
         // Factorize dual matrices
         retcode = setupFactorize(dsdpSolver); checkCode;
         // Set up Schur matrix and solve the system
@@ -106,9 +103,10 @@ extern DSDP_INT DSDPDInfeasEliminator( HSDSolver *dsdpSolver ) {
         retcode = getMaxStep(dsdpSolver); checkCode;
         // Take step
         retcode = takeStep(dsdpSolver); checkCode;
+        // Corrector
+        dsdpSolver->iterProgress[ITER_CORRECTOR] = TRUE;
         // Compute residual
         retcode = setupRes(dsdpSolver); checkCode;
-        
         // Decrease mu with sufficient proximity
         checkIterProgress(dsdpSolver, ITER_DECREASE_MU);
         if (dsdpSolver->Pnrm < 0.1 &&
@@ -126,12 +124,17 @@ extern DSDP_INT DSDPDInfeasEliminator( HSDSolver *dsdpSolver ) {
         }
         
         checkIterProgress(dsdpSolver, ITER_NEXT_ITERATION);
+        // Reset monitor
+        DSDPResetPhaseAMonitor(dsdpSolver);
+        
+        time = (double) (clock() - start) / CLOCKS_PER_SEC;
     }
     
-    time = (double) (clock() - start) / CLOCKS_PER_SEC;
+    
     
     dsdpSolver->mu = muprimal;
     printPhaseASummary(dsdpSolver, time);
     
+        
     return retcode;
 }

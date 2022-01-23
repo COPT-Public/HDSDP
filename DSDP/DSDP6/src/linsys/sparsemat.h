@@ -65,6 +65,9 @@ extern DSDP_INT spsMatMinEig       ( spsMat *sMat, double *minEig );
 
 /* Utilities */
 extern DSDP_INT spsMatIspd         ( spsMat *sMat, DSDP_INT *ispd );
+extern DSDP_INT dsdpGetAlphaLS     ( spsMat *S, spsMat *dS, spsMat *Scker, double alphamax,
+                                     double *alpha, DSDP_INT *sumHash );
+extern DSDP_INT spsMatGetlogdet    ( spsMat *sMat, double *logdet );
 extern DSDP_INT spsMatScatter      ( spsMat *sMat, vec *b, DSDP_INT k );
 extern DSDP_INT spsMatFill         ( spsMat *sMat, double *fulldMat );
 extern DSDP_INT spsMatReset        ( spsMat *sMat );

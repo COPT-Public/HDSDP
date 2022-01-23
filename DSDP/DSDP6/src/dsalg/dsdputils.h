@@ -21,6 +21,7 @@ extern DSDP_INT getTraceASinvASinv ( HSDSolver *dsdpSolver, DSDP_INT blockid, DS
 extern DSDP_INT getPhaseAS         ( HSDSolver *dsdpSolver, double *y,  double tau );
 extern DSDP_INT getPhaseACheckerS  ( HSDSolver *dsdpSolver, double *y,  double tau );
 extern DSDP_INT getPhaseAdS        ( HSDSolver *dsdpSolver, double *dy, double dtau );
+extern DSDP_INT getPhaseBS         ( HSDSolver *dsdpSolver, double *y );
 extern DSDP_INT getPhaseBCheckerS  ( HSDSolver *dsdpSolver, double *y );
 extern DSDP_INT getPhaseBdS        ( HSDSolver *dsdpSolver, double alpha, double *dy, double beta );
 extern DSDP_INT dsdpCheckerInCone  ( HSDSolver *dsdpSolver, DSDP_INT *ispsd );

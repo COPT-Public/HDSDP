@@ -50,5 +50,7 @@ extern DSDP_INT setupRes( HSDSolver *dsdpSolver ) {
     retcode = getRy(dsdpSolver); checkCode;
     retcode = getRkappaTau(dsdpSolver); checkCode;
     
+    dsdpSolver->iterProgress[ITER_RESIDUAL] = TRUE;
+    
     return retcode;
 }

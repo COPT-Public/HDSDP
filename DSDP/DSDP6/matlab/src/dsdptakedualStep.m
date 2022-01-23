@@ -2,7 +2,7 @@ function [y, S, step] = dsdptakedualStep(A, b, C, pObj, y, dy, S, dS, rho)
 % Take dual Newton step by potential reduction
 % Refer to DSDPYStepLineSearch for detailed implementation
 
-step = dsdpgetalpha(S, dS);
+step = dsdpgetalpha(S, dS, 0.95);
 if step < 0
     alpha = 1;
 else

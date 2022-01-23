@@ -1,4 +1,4 @@
-function [newmu] = dsdpselectMu(A, S, muk, dy, dy1, backwardnewton, ismukfeas)
+function [newmu] = dsdpselectMu(A, S, muk, dy, dy1, backwardnewton, ismukfeas, gap)
 % Take primal step and find new mu parameter
 % dy = dy1 / muk + dy2
 
@@ -20,7 +20,7 @@ else
     if alphamu < 0
         alphamu = 1.0;
     end % End if 
-    newmu = (alphap * muk) / (1 + alphamu) + (1 - alphap) * muk;
+    newmu = (alphap * muk) / (1 + alphamu) + (1 - alphap) * gap;
 end % End if 
 
 % End function

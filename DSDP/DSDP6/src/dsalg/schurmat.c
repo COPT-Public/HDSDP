@@ -267,7 +267,7 @@ extern DSDP_INT setupFactorize( HSDSolver *dsdpSolver ) {
             retcode = spsMatFactorize(dsdpSolver->S[i]);
             
             /* This symbolic phase is not necessaary if
-             we have access to the internal Pardiso permutation */
+             we have access to the internal Pardiso permutation and parallel computing*/
             retcode = spsMatSymbolic(dsdpSolver->Scker[i]);
             checkCode
         }

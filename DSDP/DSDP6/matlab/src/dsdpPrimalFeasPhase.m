@@ -80,7 +80,7 @@ for i = 1:maxiter
     
     % Select new mu
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-    newmu = dsdpselectMu(A, S, muprimal, dymuprimal, dy1, backwardnewton, ismufeas);
+    newmu = dsdpselectMu(A, S, muprimal, dymuprimal, dy1, backwardnewton, ismufeas, (pObj - dObj) / n);
     muprimal = min(newmu, muub);
     muprimal = max(muprimal, mulb);
     

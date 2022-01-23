@@ -24,6 +24,7 @@ extern DSDP_INT printPhaseABConvert        ( HSDSolver *dsdpSolver, DSDP_INT *go
 extern void     DSDPResetPhaseBMonitor     ( HSDSolver *dsdpSolver );
 extern DSDP_INT DSDPCheckPhaseBConvergence ( HSDSolver *dsdpSolver, DSDP_INT *isOK );
 extern DSDP_INT DSDPPhaseBLogging          ( HSDSolver *dsdpSolver );
+extern DSDP_INT printPhaseBSummary         ( HSDSolver *dsdpSolver, double time );
 
 #ifdef __cplusplus
 }

@@ -65,6 +65,7 @@ typedef struct {
     
     // Proximity measure
     double   Pnrm;
+    double   dPotential;  // Value of dual potential function
     
     // Residuals
     double   rtk;         // Complementarity residual

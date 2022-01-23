@@ -93,9 +93,6 @@ extern void dsdpprintPhaseBheader( void ) {
 extern void DSDPResetPhaseAMonitor( HSDSolver *dsdpSolver ) {
     
     // Reset event and iteration monitor in Phase A
-    DSDP_INT logged = dsdpSolver->iterProgress[ITER_LOGGING];
-    DSDP_INT dobj = dsdpSolver->iterProgress[ITER_DUAL_OBJ];
-    
     memset(dsdpSolver->iterProgress, 0, sizeof(DSDP_INT) * IterStep);
     dsdpSolver->iterProgress[ITER_INITIALIZE] = TRUE;
     
@@ -196,7 +193,7 @@ extern DSDP_INT DSDPPhaseBLogging( HSDSolver *dsdpSolver ) {
     char event[3] = " ";
     DSDP_INT *moniter = dsdpSolver->eventMonitor;
     
-    assert( moniter[EVENT_IN_PHASE_A] );
+    assert( moniter[EVENT_IN_PHASE_B] );
     
     if (moniter[EVENT_PFEAS_FOUND]) {
         strcpy(&event[0], "H");
@@ -323,6 +320,19 @@ extern DSDP_INT printPhaseASummary( HSDSolver *dsdpSolver, double time ) {
     dsdpshowdash();
     dsdpstatus(dsdpSolver->solStatus, &sAlog[33]);
     printf("%s \n", sAlog);
+    printf("| Elapsed Time: %5f seconds \n", time);
+    dsdpshowdash();
+    return retcode;
+}
+
+extern DSDP_INT printPhaseBSummary( HSDSolver *dsdpSolver, double time ) {
+    
+    // Summarize Phase B iteration
+    DSDP_INT retcode = DSDP_RETCODE_OK;
+    char sBlog[100] = "| DSDP Phase B ends with status: ";
+    dsdpshowdash();
+    dsdpstatus(dsdpSolver->solStatus, &sBlog[33]);
+    printf("%s \n", sBlog);
     printf("| Elapsed Time: %5f seconds \n", time);
     dsdpshowdash();
     return retcode;

@@ -120,6 +120,42 @@ static DSDP_INT getSDPSStep( HSDSolver *dsdpSolver, double *SStep ) {
     return retcode;
 }
 
+static DSDP_INT getCurrentyPotential( HSDSolver *dsdpSolver, vec *y,
+                                      double rho, double *potential ) {
+    // Compute the current potential
+    // phi(y) = rho * log(pObj - dObj) - log det S
+    DSDP_INT retcode = DSDP_RETCODE_OK;
+    
+    double pval = 0.0;
+    double dObjVal = 0.0;
+    
+    if (y) {
+        retcode = getPhaseBS(dsdpSolver, y->x);
+        vec_dot(dsdpSolver->dObj, y, &dObjVal);
+        pval = rho * log(dsdpSolver->pObjVal - dObjVal);
+        
+        for (DSDP_INT i = 0; i < dsdpSolver->nBlock; ++i) {
+            spsMatFactorize(dsdpSolver->S[i]);
+            spsMatGetlogdet(dsdpSolver->S[i], &dObjVal);
+            pval -= 2 * dObjVal;
+        }
+        
+        *potential = pval;
+        
+    } else {
+
+        dObjVal = dsdpSolver->dObjVal;
+        pval = rho * log(dsdpSolver->pObjVal - dObjVal);
+        for (DSDP_INT i = 0; i < dsdpSolver->nBlock; ++i) {
+            spsMatGetlogdet(dsdpSolver->S[i], &dObjVal);
+            pval -= 2 * dObjVal;
+        }
+        dsdpSolver->dPotential = pval;
+    }
+    
+    return retcode;
+}
+
 extern DSDP_INT getMaxStep( HSDSolver *dsdpSolver ) {
     // Compute the maximum step size to take for one iteration
     DSDP_INT retcode = DSDP_RETCODE_OK;
@@ -174,6 +210,7 @@ extern DSDP_INT selectMu( HSDSolver *dsdpSolver, double *newmu ) {
     DSDP_INT retcode = DSDP_RETCODE_OK;
     
     double alpha = DSDP_INFINITY;
+    double alphap = 0.0;
     double tmp = 1.0;
     
     if (dsdpSolver->eventMonitor[EVENT_PFEAS_FOUND]) {
@@ -193,22 +230,96 @@ extern DSDP_INT selectMu( HSDSolver *dsdpSolver, double *newmu ) {
         retcode = getPhaseBdS(dsdpSolver, -1.0, dsdpSolver->b1->x, 0.0);
         
         // alphap = dsdpgetalpha(S, dS);
-        retcode = getSDPSStep(dsdpSolver, &tmp);
-        assert( alpha != DSDP_INFINITY );
+        retcode = getSDPSStep(dsdpSolver, &alphap);
+        assert( alphap != DSDP_INFINITY );
         
         // Shat = S + 0.95 * alphap * dS;
         for (DSDP_INT i = 0; i < dsdpSolver->nBlock; ++i) {
+            memcpy(dsdpSolver->S[i]->x, dsdpSolver->Scker[i]->x,
+                   sizeof(double) * dsdpSolver->S[i]->nnz);
             retcode = spsMataXpbY(0.95 * tmp, dsdpSolver->dS[i],
-                                  1.0, dsdpSolver->S[i], dsdpSolver->symS[i]);
+                                  1.0, dsdpSolver->Scker[i], dsdpSolver->symS[i]);
         }
         
+        for (DSDP_INT i = 0; i < dsdpSolver->nBlock; ++i) {
+            retcode = spsMatFactorize(dsdpSolver->Scker[i]);
+            checkCode;
+        }
         
+        // dS = - alphap * dsdpgetATy(A, dy1) / muk;
+        getPhaseBdS(dsdpSolver, alphap / dsdpSolver->mu, dsdpSolver->d1->x, 0.0);
         
+        for (DSDP_INT i = 0; i < dsdpSolver->nBlock; ++i) {
+            retcode = dsdpGetAlpha(dsdpSolver->Scker[i], dsdpSolver->dS[i],
+                                   dsdpSolver->spaux[i], &alpha);
+            tmp = MIN(tmp, alpha);
+        }
         
+        tmp = MIN(tmp, 1.0);
+        *newmu = (alphap * dsdpSolver->mu) / (1 + tmp) + \
+                 (1 - alpha) * (dsdpSolver->pObjVal - dsdpSolver->dObjVal) / dsdpSolver->n;
     }
     
+    return retcode;
+}
+
+extern DSDP_INT dualPotentialReduction( HSDSolver *dsdpSolver ) {
+    
+    // Implement the dual potential reduction method
+    // dy is filled
+    DSDP_INT retcode = DSDP_RETCODE_OK;
+    retcode = checkIterProgress(dsdpSolver, ITER_COMPUTE_STEP);
+    
+    double rho = (dsdpSolver->pObjVal - dsdpSolver->dObjVal) / dsdpSolver->mu;
+    double oldpotential = 0.0;
+    double maxstep = 0.0;
+    vec *ytarget = dsdpSolver->d4;
+    vec *y = dsdpSolver->y;
+    vec *dy = dsdpSolver->dy;
+    
+    retcode = getCurrentyPotential(dsdpSolver, NULL, rho, &oldpotential);
+    checkCode;
+    
+    retcode = getPhaseBdS(dsdpSolver, 1.0, dsdpSolver->dy->x, 0.0); checkCode;
+    getSDPSStep(dsdpSolver, &maxstep); checkCode;
+    
+    maxstep = MIN(maxstep * 0.95, 1.0);
+    
+    double alpha = maxstep;
+    double newpotential = 0.0;
+    double bestpotential = oldpotential;
+    double bestalpha = maxstep;
     
     
+    // Start line search
+    for (DSDP_INT i = 0; ; ++i) {
+        // y = y + alpha * dy
+        vec_zaxpby(ytarget, 1.0, y, alpha, dy);
+        getCurrentyPotential(dsdpSolver, ytarget, rho, &newpotential);
+        
+        if (alpha < 1e-06 || newpotential <= oldpotential - 0.05) {
+            break;
+        } else {
+            if (newpotential < bestpotential) {
+                bestalpha = alpha;
+                bestpotential = newpotential;
+            }
+        }
+        alpha *= 0.3;
+    }
+    
+    if (alpha <= 1e-06) {
+        alpha = bestalpha;
+    }
+    
+    // Take step
+    vec_axpy(alpha, dy, y);
+    getPhaseBS(dsdpSolver, y->x);
+    dsdpSolver->alpha = alpha;
+    dsdpSolver->dPotential = bestpotential;
+    
+    dsdpSolver->iterProgress[ITER_COMPUTE_STEP] = TRUE;
+    dsdpSolver->iterProgress[ITER_TAKE_STEP] = TRUE;
     
     return retcode;
 }

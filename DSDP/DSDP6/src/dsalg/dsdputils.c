@@ -163,6 +163,27 @@ extern DSDP_INT getPhaseAS( HSDSolver *dsdpSolver, double *y, double tau ) {
     return retcode;
 }
 
+/* Retrieve S = C - ATy */
+extern DSDP_INT getPhaseBS( HSDSolver *dsdpSolver, double *y ) {
+    
+    DSDP_INT retcode = DSDP_RETCODE_OK;
+    spsMat *S = NULL;
+    DSDP_INT m = dsdpSolver->m;
+    
+    for (DSDP_INT i = 0; i < dsdpSolver->nBlock; ++i) {
+        S = dsdpSolver->S[i];
+        retcode = spsMatReset(S);
+        for (DSDP_INT j = 0; j < m; ++j) {
+            retcode = addMattoS(dsdpSolver, i, j, - y[j]);
+        }
+        retcode = addMattoS(dsdpSolver, i, m, 1.0);
+        retcode = spsMatAdddiag(S, - dsdpSolver->Ry, dsdpSolver->symS[i]);
+        checkCode;
+    }
+    
+    return retcode;
+}
+
 /* Retrieve S for verifying positive definiteness */
 extern DSDP_INT getPhaseACheckerS( HSDSolver *dsdpSolver, double *y, double tau ) {
     
