@@ -24,6 +24,7 @@ extern DSDP_INT DSDPPFeasPhase( HSDSolver *dsdpSolver ) {
     // Switch to phase B
     dsdpSolver->eventMonitor[EVENT_IN_PHASE_A] = FALSE;
     dsdpSolver->eventMonitor[EVENT_IN_PHASE_B] = TRUE;
+    dsdpSolver->iterProgress[ITER_RESIDUAL] = TRUE;
     
     retcode = dsdpInitializeB(dsdpSolver);
     dsdpprintPhaseBheader();
@@ -38,8 +39,10 @@ extern DSDP_INT DSDPPFeasPhase( HSDSolver *dsdpSolver ) {
     double time  = 0.0;
     
     for (DSDP_INT i = 0; ; ++i) {
-        
+
+        // Start iteration
         dsdpSolver->iterB = i;
+        dsdpSolver->iterProgress[ITER_LOGGING] = FALSE;
 
         // Check NAN
         dsdpCheckNan(dsdpSolver);
@@ -47,11 +50,15 @@ extern DSDP_INT DSDPPFeasPhase( HSDSolver *dsdpSolver ) {
         DSDPCheckPhaseBConvergence(dsdpSolver, &stop);
         // Compute dual objective value
         if (i > 0) {
+            dsdpSolver->iterProgress[ITER_DUAL_OBJ] = FALSE;
             retcode = getDualObj(dsdpSolver); checkCode;
         }
         
         // Logging
         DSDPPhaseBLogging(dsdpSolver);
+        
+        // Reset monitor
+        DSDPResetPhaseBMonitor(dsdpSolver);
         
         if (stop) {
             break;
@@ -59,7 +66,6 @@ extern DSDP_INT DSDPPFeasPhase( HSDSolver *dsdpSolver ) {
         
         // Factorize dual matrices
         retcode = setupFactorize(dsdpSolver); checkCode;
-        
         // Set up Schur matrix and solve the system
         retcode = setupSchur(dsdpSolver); checkCode;
         // Get proximity and check primal feasibility
@@ -83,9 +89,8 @@ extern DSDP_INT DSDPPFeasPhase( HSDSolver *dsdpSolver ) {
         retcode = dualPotentialReduction(dsdpSolver); checkCode;
         // Corrector step
         dsdpSolver->iterProgress[ITER_CORRECTOR] = TRUE;
+        dsdpSolver->iterProgress[ITER_DECREASE_MU] = TRUE;
         checkIterProgress(dsdpSolver, ITER_NEXT_ITERATION);
-        // Reset monitor
-        DSDPResetPhaseBMonitor(dsdpSolver);
 
         time = (double) (clock() - start) / CLOCKS_PER_SEC;
     }

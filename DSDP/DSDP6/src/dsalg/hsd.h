@@ -14,9 +14,9 @@
 #define ITER_PROX_POBJ          6  // Get proximity and verify primal feasibility
 #define ITER_STEP_DIRECTION     7  // Recover step directions
 #define ITER_COMPUTE_STEP       8  // Compute algorithm stepsize
-#define ITER_TAKE_STEP          9  // Take step
-#define ITER_CORRECTOR         10  // Take corrector step
-#define ITER_RESIDUAL          11  // Set up residuals
+#define ITER_RESIDUAL           9  // Set up residuals
+#define ITER_TAKE_STEP         10  // Take step
+#define ITER_CORRECTOR         11  // Take corrector step
 #define ITER_DECREASE_MU       12  // Decrease parameter mu
 #define ITER_NEXT_ITERATION    13  // Get into next iteration
 

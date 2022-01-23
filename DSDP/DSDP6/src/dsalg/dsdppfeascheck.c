@@ -19,9 +19,6 @@ extern DSDP_INT dsdpCheckBackwardNewton( HSDSolver *dsdpSolver, DSDP_INT *ispfea
     
     // Check backward newton step C - dsdpgetATy(A, y - dymuprimal)
     DSDP_INT retcode = DSDP_RETCODE_OK;
-    
-    vec_zaxpby(dsdpSolver->b1, 1 / dsdpSolver->mu,
-               dsdpSolver->d1, 1.0, dsdpSolver->d2);
     vec_zaxpby(dsdpSolver->b2, 1.0, dsdpSolver->y,
                -1.0, dsdpSolver->b1);
     

@@ -256,10 +256,14 @@ extern DSDP_INT getPhaseBdS( HSDSolver *dsdpSolver, double alpha,
     for (DSDP_INT i = 0; i < dsdpSolver->nBlock; ++i) {
         dS = dsdpSolver->dS[i];
         retcode = spsMatReset(dS);
-        for (DSDP_INT j = 0; j < m; ++j) {
-            retcode = addMattodS(dsdpSolver, i, j, - alpha * dy[j]);
+        if (alpha) {
+            for (DSDP_INT j = 0; j < m; ++j) {
+                retcode = addMattodS(dsdpSolver, i, j, - alpha * dy[j]);
+            }
         }
-        retcode = addMattodS(dsdpSolver, i, m, beta);
+        if (beta) {
+            retcode = addMattodS(dsdpSolver, i, m, beta);
+        }
         checkCode;
     }
     

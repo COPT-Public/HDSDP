@@ -99,8 +99,9 @@ typedef struct {
     
     // Primal variable
     vec      *pScaler;    // Primal scaling coefficient
-    dsMat    **X;         // Primal solution matrix
-    DSDP_INT isXComputed; // Whether X has been computed
+    vec      *ymaker;     // y
+    vec      *dymaker;    // dy
+    double   mumaker;     // mu
     
 } HSDSolver;
 

@@ -81,7 +81,7 @@ static DSDP_INT getdyB( HSDSolver *dsdpSolver ) {
     DSDP_INT retcode = DSDP_RETCODE_OK;
     
     vec_zaxpby(dsdpSolver->dy, 1 / dsdpSolver->mu,
-               dsdpSolver->d1, 1.0, dsdpSolver->d2);
+               dsdpSolver->d1, -1.0, dsdpSolver->d2);
     
     return retcode;
 }
@@ -99,7 +99,7 @@ static DSDP_INT getdS( HSDSolver *dsdpSolver ) {
 static DSDP_INT getdSB( HSDSolver *dsdpSolver ) {
     
     DSDP_INT retcode = DSDP_RETCODE_OK;
-    retcode = getPhaseBdS(dsdpSolver, 1.0, dsdpSolver->dy->x, 1.0);
+    retcode = getPhaseBdS(dsdpSolver, 1.0, dsdpSolver->dy->x, 0.0);
     return retcode;
 }
 
@@ -152,7 +152,7 @@ static DSDP_INT getSDPDirs( HSDSolver *dsdpSolver ) {
         retcode = getdKappa(dsdpSolver); checkCode;
     } else {
         retcode = getdyB(dsdpSolver); checkCode;
-        retcode = getdS(dsdpSolver); checkCode;
+        retcode = getdSB(dsdpSolver); checkCode;
     }
     
     return retcode;
@@ -169,7 +169,9 @@ extern DSDP_INT getStepDirs( HSDSolver *dsdpSolver ) {
         error(etype, "SDP directions have been set up. \n");
     }
     
-    retcode = assemblePhaseAArrs(dsdpSolver);
+    if (dsdpSolver->eventMonitor[EVENT_IN_PHASE_A]) {
+        retcode = assemblePhaseAArrs(dsdpSolver);
+    }
     retcode = getSDPDirs(dsdpSolver); checkCode;
     // retcode = getdsLP(dsdpSolver); checkCode;
     dsdpSolver->iterProgress[ITER_STEP_DIRECTION] = TRUE;

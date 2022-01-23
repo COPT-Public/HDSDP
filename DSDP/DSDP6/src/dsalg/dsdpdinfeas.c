@@ -66,7 +66,10 @@ extern DSDP_INT DSDPDInfeasEliminator( HSDSolver *dsdpSolver ) {
     
     for (DSDP_INT i = 0; ; ++i) {
         
+        // Start iteration
         dsdpSolver->iterA = i;
+        dsdpSolver->iterProgress[ITER_LOGGING] = FALSE;
+        dsdpSolver->iterProgress[ITER_DUAL_OBJ] = FALSE;
         
         // Check NaN
         dsdpCheckNan(dsdpSolver);
@@ -76,6 +79,8 @@ extern DSDP_INT DSDPDInfeasEliminator( HSDSolver *dsdpSolver ) {
         retcode = getDualObj(dsdpSolver); checkCode;
         // Logging
         DSDPPhaseALogging(dsdpSolver);
+        // Reset monitor
+        DSDPResetPhaseAMonitor(dsdpSolver);
         
         if (goOn) {
             break;
@@ -101,12 +106,12 @@ extern DSDP_INT DSDPDInfeasEliminator( HSDSolver *dsdpSolver ) {
         retcode = getStepDirs(dsdpSolver); checkCode;
         // Compute maximum available stepsize
         retcode = getMaxStep(dsdpSolver); checkCode;
+        // Compute residual
+        retcode = setupRes(dsdpSolver); checkCode;
         // Take step
         retcode = takeStep(dsdpSolver); checkCode;
         // Corrector
         dsdpSolver->iterProgress[ITER_CORRECTOR] = TRUE;
-        // Compute residual
-        retcode = setupRes(dsdpSolver); checkCode;
         // Decrease mu with sufficient proximity
         checkIterProgress(dsdpSolver, ITER_DECREASE_MU);
         if (dsdpSolver->Pnrm < 0.1 &&
@@ -124,13 +129,9 @@ extern DSDP_INT DSDPDInfeasEliminator( HSDSolver *dsdpSolver ) {
         }
         
         checkIterProgress(dsdpSolver, ITER_NEXT_ITERATION);
-        // Reset monitor
-        DSDPResetPhaseAMonitor(dsdpSolver);
         
         time = (double) (clock() - start) / CLOCKS_PER_SEC;
     }
-    
-    
     
     dsdpSolver->mu = muprimal;
     printPhaseASummary(dsdpSolver, time);

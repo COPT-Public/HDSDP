@@ -45,7 +45,7 @@ static DSDP_INT PARDISO_PARAMS_CHOLESKY[PARDISOINDEX] = {
     0,                         0,                           0,
     0,                         0,                           0,
     0,                         0,                           0,
-    0,                         0, /* No diagonal         */ 0,
+    0,                         1, /* Get diagonal        */ 0,
     0,                         0,                           0,
     0,                         0,                           0,
     0
@@ -71,7 +71,7 @@ static DSDP_INT PARDISO_PARAMS_FORWARD_BACKWORD[PARDISOINDEX] = {
     0,                         0,                           0,
     0,                         0,                           0,
     0,                         0,                           0,
-    0,                         0, /* No diagonal         */ 0,
+    0,                         0, /* Get diagonal        */ 0,
     0,                         0,                           0,
     0,                         0,                           0,
     0
@@ -98,7 +98,7 @@ static DSDP_INT PARDISO_PARAMS_CG[PARDISOINDEX] = {
     0,                         0,                           0,
     0,                         0,                           0,
     0,                         0,                           0,
-    0,                         0, /* No diagonal         */ 0,
+    0,                         1, /* Get diagonal        */ 0,
     0,                         0,                           0,
     0,                         0,                           0,
     0

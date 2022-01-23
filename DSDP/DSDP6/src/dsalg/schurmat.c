@@ -85,12 +85,15 @@ static DSDP_INT setupSDPSchur( HSDSolver *dsdpSolver ) {
     
     // Clear the Schur matrix and other arrays
     retcode = denseMatReset(Msdp);
+    vec_reset(dsdpSolver->asinv);
     
-    dsdpSolver->csinv = 0.0;
-    dsdpSolver->csinvrysinv = 0.0;
-    dsdpSolver->csinvcsinv  = 0.0;
-    retcode = vec_reset(u);
-    retcode = vec_reset(d4);
+    if (dsdpSolver->eventMonitor[EVENT_IN_PHASE_A]) {
+        dsdpSolver->csinv = 0.0;
+        dsdpSolver->csinvrysinv = 0.0;
+        dsdpSolver->csinvcsinv  = 0.0;
+        retcode = vec_reset(u);
+        retcode = vec_reset(d4);
+    }
     
     // Start setting up the Schur matrix
     for (DSDP_INT k = 0; k < nblock; ++k) {
@@ -323,6 +326,8 @@ extern DSDP_INT schurPhaseBMatSolve( HSDSolver *dsdpSolver ) {
     if (dsdpSolver->iterProgress[ITER_SCHUR_SOLVE]) {
         error(etype, "Schur matrix has been factorized. \n");
     }
+    
+    retcode = setupPhaseBdvecs(dsdpSolver); checkCode;
     
     dsMat *M = dsdpSolver->Msdp;
     assert( !M->isFactorized );

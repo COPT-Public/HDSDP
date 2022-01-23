@@ -108,9 +108,10 @@ static DSDP_INT DSDPIInit( HSDSolver *dsdpSolver ) {
     dsdpSolver->verbosity = TRUE;
     
     // Primal variable
-    dsdpSolver->pScaler     = NULL;
-    dsdpSolver->X           = NULL;
-    dsdpSolver->isXComputed = FALSE;
+    dsdpSolver->pScaler = NULL;
+    dsdpSolver->ymaker  = NULL;
+    dsdpSolver->dymaker = NULL;
+    dsdpSolver->mumaker = 0.0;
     
     return retcode;
 }
@@ -273,6 +274,17 @@ static DSDP_INT DSDPIAllocIter( HSDSolver *dsdpSolver ) {
     retcode = vec_init(vecIter); checkCode;
     retcode = vec_alloc(vecIter, m); checkCode;
     
+    // Allocate ymaker, dymaker
+    vecIter = (vec *) calloc(1, sizeof(vec));
+    dsdpSolver->ymaker = vecIter;
+    retcode = vec_init(vecIter); checkCode;
+    retcode = vec_alloc(vecIter, m); checkCode;
+    
+    vecIter = (vec *) calloc(1, sizeof(vec));
+    dsdpSolver->dymaker = vecIter;
+    retcode = vec_init(vecIter); checkCode;
+    retcode = vec_alloc(vecIter, m); checkCode;
+    
     return retcode;
 }
 
@@ -432,14 +444,13 @@ static DSDP_INT DSDPIFreeAlgIter( HSDSolver *dsdpSolver ) {
     retcode = vec_free(dsdpSolver->pScaler);
     DSDP_FREE(dsdpSolver->pScaler);
     
-    // X
-    if (dsdpSolver->isXComputed) {
-        for (DSDP_INT i = 0; i < nblock; ++i) {
-            retcode = denseMatFree(dsdpSolver->X[i]); checkCode;
-            DSDP_FREE(dsdpSolver->X[i]);
-        }
-        DSDP_FREE(dsdpSolver->X);
-    }
+    // ymaker
+    retcode = vec_free(dsdpSolver->ymaker);
+    DSDP_FREE(dsdpSolver->ymaker);
+    
+    // dy maker
+    retcode = vec_free(dsdpSolver->dymaker);
+    DSDP_FREE(dsdpSolver->dymaker);
     
     return retcode;
 }
@@ -479,7 +490,7 @@ static DSDP_INT DSDPIFreeCleanUp( HSDSolver *dsdpSolver ) {
     dsdpSolver->alpha  = 0.0;
     dsdpSolver->dtau   = 0.0;
     dsdpSolver->dkappa = 0.0;
-    dsdpSolver->isXComputed = FALSE;
+    dsdpSolver->mumaker = 0.0;
     
     dsdpSolver->iterA     = 0;
     dsdpSolver->iterB     = 0;
@@ -691,6 +702,8 @@ extern DSDP_INT DSDPOptimize( HSDSolver *dsdpSolver ) {
         checkCode;
     }
     
+    clock_t start = clock();
+    
     assert( dsdpSolver->insStatus == DSDP_STATUS_SET );
     retcode = DSDPIPresolve(dsdpSolver); checkCode;
     
@@ -700,12 +713,12 @@ extern DSDP_INT DSDPOptimize( HSDSolver *dsdpSolver ) {
     printPhaseABConvert(dsdpSolver, &gotoB);
     
     if (gotoB) {
-        
         retcode = DSDPPFeasPhase(dsdpSolver);
-        
-        // Phase B
     }
     
+    double time = (double) (clock() - start) / CLOCKS_PER_SEC;
+    printf("| DSDP Ends. Elapsed Time: %g seconds \n", time);
+    dsdpshowdash();
     
     return retcode;
 }

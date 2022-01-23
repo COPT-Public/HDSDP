@@ -60,7 +60,10 @@ extern DSDP_INT dsdpgetPhaseBProxMeasure( HSDSolver *dsdpSolver, double *muub, d
     DSDP_INT ispfeas = FALSE;
     
     double gap = 0.0;
+    vec_zaxpby(dsdpSolver->b1, 1 / dsdpSolver->mu, dsdpSolver->d1, -1.0, dsdpSolver->d2);
+    
     retcode = denseMatxTAx(dsdpSolver->Msdp, dsdpSolver->b1, &dsdpSolver->Pnrm);
+    dsdpSolver->Pnrm = sqrt(dsdpSolver->Pnrm);
     retcode = dsdpCheckBackwardNewton(dsdpSolver, &ispfeas);
     
     if (ispfeas) {
@@ -69,6 +72,13 @@ extern DSDP_INT dsdpgetPhaseBProxMeasure( HSDSolver *dsdpSolver, double *muub, d
         gap = (gap + dsdpSolver->n) * dsdpSolver->mu;
         dsdpSolver->pObjVal = dsdpSolver->dObjVal + gap;
         *muub = gap / dsdpSolver->n;
+        
+        if (gap < 1e-03) {
+            dsdpSolver->mumaker = dsdpSolver->mu;
+            vec_copy(dsdpSolver->y, dsdpSolver->ymaker);
+            vec_copy(dsdpSolver->b1, dsdpSolver->dymaker);
+        }
+        
     } else {
         *muub = (dsdpSolver->pObjVal - dsdpSolver->dObjVal) / dsdpSolver->n;
     }

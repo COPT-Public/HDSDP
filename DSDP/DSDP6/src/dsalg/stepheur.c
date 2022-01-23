@@ -112,7 +112,7 @@ static DSDP_INT getSDPSStep( HSDSolver *dsdpSolver, double *SStep ) {
     
     for (DSDP_INT i = 0; i < nblock; ++i) {
         retcode = getBlockSDPSStep(dsdpSolver, i, &res);
-        step = MIN(step, dsdpSolver->param->Aalpha * res);
+        step = MIN(step, res);
     }
     
     *SStep = step;
@@ -137,10 +137,8 @@ static DSDP_INT getCurrentyPotential( HSDSolver *dsdpSolver, vec *y,
         for (DSDP_INT i = 0; i < dsdpSolver->nBlock; ++i) {
             spsMatFactorize(dsdpSolver->S[i]);
             spsMatGetlogdet(dsdpSolver->S[i], &dObjVal);
-            pval -= 2 * dObjVal;
+            pval -= dObjVal;
         }
-        
-        *potential = pval;
         
     } else {
 
@@ -148,10 +146,12 @@ static DSDP_INT getCurrentyPotential( HSDSolver *dsdpSolver, vec *y,
         pval = rho * log(dsdpSolver->pObjVal - dObjVal);
         for (DSDP_INT i = 0; i < dsdpSolver->nBlock; ++i) {
             spsMatGetlogdet(dsdpSolver->S[i], &dObjVal);
-            pval -= 2 * dObjVal;
+            pval -= dObjVal;
         }
         dsdpSolver->dPotential = pval;
     }
+    
+    *potential = pval;
     
     return retcode;
 }
@@ -214,10 +214,10 @@ extern DSDP_INT selectMu( HSDSolver *dsdpSolver, double *newmu ) {
     double tmp = 1.0;
     
     if (dsdpSolver->eventMonitor[EVENT_PFEAS_FOUND]) {
-        retcode = getPhaseBdS(dsdpSolver, 1.0, dsdpSolver->d1->x, 0.0);
+        retcode = getPhaseBdS(dsdpSolver, -1.0, dsdpSolver->d1->x, 0.0);
         
         for (DSDP_INT i = 0; i < dsdpSolver->nBlock; ++i) {
-            retcode = dsdpGetAlpha(dsdpSolver->Scker[i], dsdpSolver->dS[i],
+            retcode = dsdpGetAlpha(dsdpSolver->S[i], dsdpSolver->dS[i],
                                    dsdpSolver->spaux[i], &tmp);
             checkCode;
             alpha = MIN(alpha, tmp);
@@ -230,12 +230,19 @@ extern DSDP_INT selectMu( HSDSolver *dsdpSolver, double *newmu ) {
         retcode = getPhaseBdS(dsdpSolver, -1.0, dsdpSolver->b1->x, 0.0);
         
         // alphap = dsdpgetalpha(S, dS);
-        retcode = getSDPSStep(dsdpSolver, &alphap);
+        for (DSDP_INT i = 0; i < dsdpSolver->nBlock; ++i) {
+            retcode = dsdpGetAlpha(dsdpSolver->S[i], dsdpSolver->dS[i],
+                                   dsdpSolver->spaux[i], &tmp);
+            checkCode;
+            alpha = MIN(alpha, tmp);
+        }
+        
+        alphap = alpha;
         assert( alphap != DSDP_INFINITY );
         
         // Shat = S + 0.95 * alphap * dS;
         for (DSDP_INT i = 0; i < dsdpSolver->nBlock; ++i) {
-            memcpy(dsdpSolver->S[i]->x, dsdpSolver->Scker[i]->x,
+            memcpy(dsdpSolver->Scker[i]->x, dsdpSolver->S[i]->x,
                    sizeof(double) * dsdpSolver->S[i]->nnz);
             retcode = spsMataXpbY(0.95 * tmp, dsdpSolver->dS[i],
                                   1.0, dsdpSolver->Scker[i], dsdpSolver->symS[i]);
@@ -247,17 +254,16 @@ extern DSDP_INT selectMu( HSDSolver *dsdpSolver, double *newmu ) {
         }
         
         // dS = - alphap * dsdpgetATy(A, dy1) / muk;
-        getPhaseBdS(dsdpSolver, alphap / dsdpSolver->mu, dsdpSolver->d1->x, 0.0);
-        
+        getPhaseBdS(dsdpSolver, tmp / dsdpSolver->mu, dsdpSolver->d1->x, 0.0);
+        tmp = 1.0;
         for (DSDP_INT i = 0; i < dsdpSolver->nBlock; ++i) {
             retcode = dsdpGetAlpha(dsdpSolver->Scker[i], dsdpSolver->dS[i],
                                    dsdpSolver->spaux[i], &alpha);
             tmp = MIN(tmp, alpha);
         }
         
-        tmp = MIN(tmp, 1.0);
         *newmu = (alphap * dsdpSolver->mu) / (1 + tmp) + \
-                 (1 - alpha) * (dsdpSolver->pObjVal - dsdpSolver->dObjVal) / dsdpSolver->n;
+                 (1 - alphap) * (dsdpSolver->pObjVal - dsdpSolver->dObjVal) / dsdpSolver->n;
     }
     
     return retcode;
@@ -280,7 +286,6 @@ extern DSDP_INT dualPotentialReduction( HSDSolver *dsdpSolver ) {
     retcode = getCurrentyPotential(dsdpSolver, NULL, rho, &oldpotential);
     checkCode;
     
-    retcode = getPhaseBdS(dsdpSolver, 1.0, dsdpSolver->dy->x, 0.0); checkCode;
     getSDPSStep(dsdpSolver, &maxstep); checkCode;
     
     maxstep = MIN(maxstep * 0.95, 1.0);

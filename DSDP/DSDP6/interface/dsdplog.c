@@ -93,8 +93,13 @@ extern void dsdpprintPhaseBheader( void ) {
 extern void DSDPResetPhaseAMonitor( HSDSolver *dsdpSolver ) {
     
     // Reset event and iteration monitor in Phase A
+    DSDP_INT islogged = dsdpSolver->iterProgress[ITER_LOGGING];
+    DSDP_INT isdobj = dsdpSolver->iterProgress[ITER_DUAL_OBJ];
+    
     memset(dsdpSolver->iterProgress, 0, sizeof(DSDP_INT) * IterStep);
     dsdpSolver->iterProgress[ITER_INITIALIZE] = TRUE;
+    dsdpSolver->iterProgress[ITER_LOGGING] = islogged;
+    dsdpSolver->iterProgress[ITER_DUAL_OBJ] = isdobj;
     
     DSDP_INT *monitor = dsdpSolver->eventMonitor;
     assert( monitor[EVENT_IN_PHASE_A] );
@@ -106,13 +111,14 @@ extern void DSDPResetPhaseAMonitor( HSDSolver *dsdpSolver ) {
 extern void DSDPResetPhaseBMonitor( HSDSolver *dsdpSolver ) {
     
     // Reset event and iteration monitor in Phase B
-    DSDP_INT logged = dsdpSolver->iterProgress[ITER_LOGGING];
-    DSDP_INT dobj = dsdpSolver->iterProgress[ITER_DUAL_OBJ];
+    DSDP_INT islogged = dsdpSolver->iterProgress[ITER_LOGGING];
+    DSDP_INT isdobj = dsdpSolver->iterProgress[ITER_DUAL_OBJ];
     
     memset(dsdpSolver->iterProgress, 0, sizeof(DSDP_INT) * IterStep);
     dsdpSolver->iterProgress[ITER_INITIALIZE] = TRUE;
-    dsdpSolver->iterProgress[ITER_LOGGING] = logged;
-    dsdpSolver->iterProgress[ITER_DUAL_OBJ] = dobj;
+    dsdpSolver->iterProgress[ITER_RESIDUAL] = TRUE;
+    dsdpSolver->iterProgress[ITER_LOGGING] = islogged;
+    dsdpSolver->iterProgress[ITER_DUAL_OBJ] = isdobj;
     
     DSDP_INT *monitor = dsdpSolver->eventMonitor;
     assert( monitor[EVENT_IN_PHASE_B] );
@@ -196,7 +202,7 @@ extern DSDP_INT DSDPPhaseBLogging( HSDSolver *dsdpSolver ) {
     assert( moniter[EVENT_IN_PHASE_B] );
     
     if (moniter[EVENT_PFEAS_FOUND]) {
-        strcpy(&event[0], "H");
+        strcpy(&event[0], "P");
     }
     
     if (dsdpSolver->solStatus == DSDP_OPTIMAL) {
@@ -231,7 +237,7 @@ extern DSDP_INT DSDPPhaseBLogging( HSDSolver *dsdpSolver ) {
     
 print_log:
     printf("| %4d | %12.3e | %12.3e | %8.2e | %8.2e | %8.2e | %3s |\n",
-            dsdpSolver->iterA + 1, dsdpSolver->pObjVal, dsdpSolver->dObjVal,
+            dsdpSolver->iterB + 1, dsdpSolver->pObjVal, dsdpSolver->dObjVal,
             dsdpSolver->mu, dsdpSolver->alpha, dsdpSolver->Pnrm, event);
     
     dsdpSolver->iterProgress[ITER_LOGGING] = TRUE;
@@ -373,8 +379,10 @@ extern DSDP_INT DSDPCheckPhaseBConvergence( HSDSolver *dsdpSolver, DSDP_INT *isO
     }
     
     // Gap is sufficiently small
-    if (fabs(dsdpSolver->pObjVal - dsdpSolver->dObjVal) \
-        < dsdpSolver->param->absOptTol) {
+    double gap = fabs(dsdpSolver->pObjVal - dsdpSolver->dObjVal);
+    gap = gap / (fabs(dsdpSolver->pObjVal) + fabs(dsdpSolver->dObjVal));
+    
+    if (gap < 1e-06) {
         monitor[EVENT_MU_QUALIFIES] = TRUE;
         dsdpSolver->solStatus = DSDP_OPTIMAL;
         *isOK = TRUE;
@@ -393,6 +401,11 @@ extern DSDP_INT DSDPCheckPhaseBConvergence( HSDSolver *dsdpSolver, DSDP_INT *isO
         !monitor[EVENT_PFEAS_FOUND]) {
         monitor[EVENT_SMALL_STEP] = TRUE;
         dsdpSolver->smallIter += 1;
+    }
+    
+    if (dsdpSolver->smallIter == 3) {
+        dsdpSolver->solStatus = DSDP_INTERNAL_ERROR;
+        return retcode;
     }
     
     // NAN in iteration
