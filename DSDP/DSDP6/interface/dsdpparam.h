@@ -3,7 +3,7 @@
 
 /* Implement the parameter interface for DSDP */
 #include <stdio.h>
-#include <dsdphsd.h>
+#include "dsdphsd.h"
 
 typedef struct {
     

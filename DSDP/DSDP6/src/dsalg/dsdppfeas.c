@@ -31,7 +31,7 @@ extern DSDP_INT DSDPPFeasPhase( HSDSolver *dsdpSolver ) {
     
     // Start dual scaling
     DSDP_INT stop = FALSE;
-    clock_t start = clock();
+    double start = my_clock();
     
     double newmu = 0.0;
     double muub  = 0.0;
@@ -92,7 +92,7 @@ extern DSDP_INT DSDPPFeasPhase( HSDSolver *dsdpSolver ) {
         dsdpSolver->iterProgress[ITER_DECREASE_MU] = TRUE;
         checkIterProgress(dsdpSolver, ITER_NEXT_ITERATION);
 
-        time = (double) (clock() - start) / CLOCKS_PER_SEC;
+        time =  my_clock() - start;
     }
     
     printPhaseBSummary(dsdpSolver, time);

@@ -77,6 +77,8 @@ typedef struct {
     
     /* TODO: Remove spaux by applying Lanczos iterations */
     spsMat   **spaux;     // Used for maximum step computation
+    dsMat    **dsaux;     // Used for Schur matrix setup
+    r1Mat    **r1aux;     // Use for Schur matrix setup
     spsMat   **Scker;     // Used for checking positive definiteness
     vec      *ds;         // LP step matrix
     vec      *dy;         // Dual step matrix

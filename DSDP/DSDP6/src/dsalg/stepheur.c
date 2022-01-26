@@ -214,13 +214,17 @@ extern DSDP_INT selectMu( HSDSolver *dsdpSolver, double *newmu ) {
     double tmp = 1.0;
     
     if (dsdpSolver->eventMonitor[EVENT_PFEAS_FOUND]) {
-        retcode = getPhaseBdS(dsdpSolver, -1.0, dsdpSolver->d1->x, 0.0);
+        retcode = getPhaseBdS(dsdpSolver, -1.0 / dsdpSolver->mu, dsdpSolver->d1->x, 0.0);
         
         for (DSDP_INT i = 0; i < dsdpSolver->nBlock; ++i) {
-            retcode = dsdpGetAlpha(dsdpSolver->S[i], dsdpSolver->dS[i],
+            retcode = dsdpGetAlpha(dsdpSolver->Scker[i], dsdpSolver->dS[i],
                                    dsdpSolver->spaux[i], &tmp);
             checkCode;
             alpha = MIN(alpha, tmp);
+        }
+        
+        if (alpha == DSDP_INFINITY) {
+            alpha = 1.0;
         }
         *newmu = dsdpSolver->mu / (1 + 0.95 * alpha);
         
@@ -255,11 +259,15 @@ extern DSDP_INT selectMu( HSDSolver *dsdpSolver, double *newmu ) {
         
         // dS = - alphap * dsdpgetATy(A, dy1) / muk;
         getPhaseBdS(dsdpSolver, tmp / dsdpSolver->mu, dsdpSolver->d1->x, 0.0);
-        tmp = 1.0;
+        tmp = DSDP_INFINITY;
         for (DSDP_INT i = 0; i < dsdpSolver->nBlock; ++i) {
             retcode = dsdpGetAlpha(dsdpSolver->Scker[i], dsdpSolver->dS[i],
                                    dsdpSolver->spaux[i], &alpha);
             tmp = MIN(tmp, alpha);
+        }
+        
+        if (tmp == DSDP_INFINITY) {
+            tmp = 1.0;
         }
         
         *newmu = (alphap * dsdpSolver->mu) / (1 + tmp) + \

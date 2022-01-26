@@ -13,6 +13,12 @@
 
 static char etype[] = "DSDP logging";
 
+extern inline double my_clock(void) {
+    struct timeval t;
+    gettimeofday(&t, NULL);
+    return (1.0e-6 * t.tv_usec + t.tv_sec);
+}
+
 static void dsdpstatus( DSDP_INT code, char *word ) {
     
     // Convert status code
@@ -380,7 +386,7 @@ extern DSDP_INT DSDPCheckPhaseBConvergence( HSDSolver *dsdpSolver, DSDP_INT *isO
     
     // Gap is sufficiently small
     double gap = fabs(dsdpSolver->pObjVal - dsdpSolver->dObjVal);
-    gap = gap / (fabs(dsdpSolver->pObjVal) + fabs(dsdpSolver->dObjVal));
+    gap = gap / (fabs(dsdpSolver->pObjVal) + fabs(dsdpSolver->dObjVal) + 1);
     
     if (gap < 1e-06) {
         monitor[EVENT_MU_QUALIFIES] = TRUE;

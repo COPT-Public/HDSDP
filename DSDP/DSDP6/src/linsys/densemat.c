@@ -326,7 +326,7 @@ extern DSDP_INT denseSpsTrace( dsMat *dAMat, spsMat *sBMat, double *trace ) {
     for (DSDP_INT i = 0; i < n; ++i) {
         for (DSDP_INT k = Bp[i]; k < Bp[i + 1]; ++k) {
             s   = Bi[k];
-            tmp = Bx[k] * A[s + (DSDP_INT) (i * (2 * n - i - 1) / 2)];
+            tmp = Bx[k] * packIdx(A, n, s, i);
             if (Bi[k] == i) {
                 tmp = tmp / 2;
             }
@@ -484,7 +484,7 @@ extern DSDP_INT denseMatReset( dsMat *dMat ) {
     
     if (dMat->isFactorized) {
         dMat->isFactorized = FALSE;
-        memset(dMat->lfactor, 0, sizeof(double) * nsym(n));
+        // memset(dMat->lfactor, 0, sizeof(double) * nsym(n));
     }
     
     return retcode;

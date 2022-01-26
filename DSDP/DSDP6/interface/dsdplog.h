@@ -26,6 +26,9 @@ extern DSDP_INT DSDPCheckPhaseBConvergence ( HSDSolver *dsdpSolver, DSDP_INT *is
 extern DSDP_INT DSDPPhaseBLogging          ( HSDSolver *dsdpSolver );
 extern DSDP_INT printPhaseBSummary         ( HSDSolver *dsdpSolver, double time );
 
+/* Timer */
+extern inline double my_clock(void);
+
 #ifdef __cplusplus
 }
 #endif

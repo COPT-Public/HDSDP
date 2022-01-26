@@ -3,15 +3,6 @@
 #include "dsdpsolver.h"
 #include "data.h"
 
-#ifndef MEMWATCH
-#define MEMWATCH
-#endif
-
-#ifndef MEMWATCH
-#define MEMWATCH
-#include "memwatch.h"
-#endif
-
 
 DSDP_INT test_dsdp(void) {
     

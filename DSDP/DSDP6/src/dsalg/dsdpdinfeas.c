@@ -39,7 +39,7 @@ extern DSDP_INT DSDPDInfeasEliminator( HSDSolver *dsdpSolver ) {
     double time     = 0.0;
     DSDP_INT agiter = MIN(dsdpSolver->param->AmaxIter, 30);
     DSDP_INT ntry   = 0;
-    clock_t start   = clock();
+    double start    = my_clock();
     
     const double *newmu = NULL;
     
@@ -85,6 +85,7 @@ extern DSDP_INT DSDPDInfeasEliminator( HSDSolver *dsdpSolver ) {
         if (goOn) {
             break;
         }
+        
         // Factorize dual matrices
         retcode = setupFactorize(dsdpSolver); checkCode;
         // Set up Schur matrix and solve the system
@@ -129,8 +130,7 @@ extern DSDP_INT DSDPDInfeasEliminator( HSDSolver *dsdpSolver ) {
         }
         
         checkIterProgress(dsdpSolver, ITER_NEXT_ITERATION);
-        
-        time = (double) (clock() - start) / CLOCKS_PER_SEC;
+        time = my_clock() - start;
     }
     
     dsdpSolver->mu = muprimal;

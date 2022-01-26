@@ -204,6 +204,30 @@ static DSDP_INT pardisoSolve( spsMat *S, DSDP_INT nrhs, double *B, double *X ) {
     return retcode;
 }
 
+static DSDP_INT pardisoPartialSolve( spsMat *S, DSDP_INT *colNnz, double *xIn, double *xOut ) {
+    
+    /* Apply pardiso partial solve strategy */
+    DSDP_INT retcode = DSDP_RETCODE_OK;
+    
+    assert( S->isFactorized == TRUE );
+    DSDP_INT phase = PARDISO_SOLVE;
+    DSDP_INT error = 0;
+    DSDP_INT n     = S->dim;
+    
+    // Invoke pardiso to perform solution
+    pardiso(S->pdsWorker, &maxfct, &mnum, &mtype, &phase, &n,
+            S->x, S->p, S->i, colNnz, &one, PARDISO_PARAMS_PARTIAL_SOLVE,
+            &msglvl, xIn, xOut, &error);
+    
+    if (error) {
+        printf("[Pardiso Error]: Matrix partial solution failed."
+               " Error code: "ID" \n", error);
+        error(etype, "Pardiso failes to solve partial system. \n");
+    }
+    
+    return retcode;
+}
+
 static DSDP_INT pardisoFree( spsMat *S ) {
     
     /* Free the internal structure of pardiso */
@@ -492,7 +516,7 @@ extern DSDP_INT spsMatFnorm( spsMat *sMat, double *fnrm ) {
     
     // Retrieve the diagonal elements
     for (DSDP_INT i = 0; i < sMat->dim; ++i) {
-        if (sMat->i[sMat->p[i]] == i) {
+        if (sMat->p[i] < sMat->nnz && sMat->i[sMat->p[i]] == i) {
             nrm -= sMat->x[sMat->p[i]] * sMat->x[sMat->p[i]];
         }
     }
@@ -737,9 +761,9 @@ extern DSDP_INT spsSinvSpSinvSolve( spsMat *S, spsMat *A, dsMat *SinvASinv, doub
     SinvA      = (double *) calloc(n * n, sizeof(double));
     fSinvASinv = (double *) calloc(n * n, sizeof(double));
     
+    double tmp = 0.0;
     // Solve to get inv(S) * A
     retcode    = spsMatSpSolve(S, A, SinvA);
-    double tmp = 0.0;
     
     // Transpose
     *asinv = 0.0;
@@ -756,9 +780,9 @@ extern DSDP_INT spsSinvSpSinvSolve( spsMat *S, spsMat *A, dsMat *SinvASinv, doub
     }
     
     // Solve
-    retcode      = pardisoSolve(S, n, SinvA, fSinvASinv);
-    DSDP_INT idx = 0;
+    retcode = pardisoSolve(S, n, SinvA, fSinvASinv);
     
+    DSDP_INT idx = 0;
     // Extract solution
     for (DSDP_INT k = 0; k < n; ++k) {
         memcpy(&(SinvASinv->array[idx]), &(fSinvASinv[k * n + k]),
@@ -883,7 +907,7 @@ extern DSDP_INT spsMatMaxEig( spsMat *sMat, double *maxEig ) {
     info = mkl_sparse_d_ev(&MAX_EIG, pm, A, dsdp_descr,
                            k0, &k, maxEig, eigvec, &resi);
     
-    if (info != SPARSE_SUCCESS) {
+    if (info != SPARSE_STATUS_SUCCESS) {
         error(etype, "Maximum eigen value computation failed. \n");
     }
     
@@ -909,7 +933,7 @@ extern DSDP_INT spsMatMinEig( spsMat *sMat, double *minEig ) {
     info = mkl_sparse_d_ev(&MIN_EIG, pm, A, dsdp_descr,
                            k0, &k, minEig, eigvec, &resi);
     
-    if (info != SPARSE_SUCCESS) {
+    if (info != SPARSE_STATUS_SUCCESS) {
         error(etype, "Minimum eigen value computation failed. \n");
     }
     

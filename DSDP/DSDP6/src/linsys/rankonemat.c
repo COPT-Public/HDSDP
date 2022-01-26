@@ -62,15 +62,39 @@ extern DSDP_INT r1denseSpsUpdate( spsMat *sAMat, double alpha, r1Mat *r1BMat ) {
 
 extern DSDP_INT r1Matr1Trace( r1Mat *x, r1Mat *y, double *trace ) {
     // Compute the inner product of two rank one matrices
-    DSDP_INT retcode = DSDP_RETCODE_OK;
-    assert( x->dim == y->dim );
     
-    DSDP_INT n = x->dim;
     double res = 0.0;
-    res = dot(&n, x->x, &one, y->x, &one);
-    *trace = res * res;
     
-    return retcode;
+    DSDP_INT xnnz = x->nnz;
+    DSDP_INT ynnz = y->nnz;
+    DSDP_INT n = x->dim;
+    
+    if (MIN(xnnz, ynnz) >= 0.6 * n) {
+        res = dot(&x->dim, x->x, &one, y->x, &one);
+    } else {
+        
+        double *xdata = x->x;
+        double *ydata = y->x;
+        DSDP_INT *xidx = x->nzIdx;
+        DSDP_INT *yidx = y->nzIdx;
+        DSDP_INT idx = 0;
+        
+        if (xnnz < ynnz) {
+            for (DSDP_INT i = 0; i < xnnz; ++i) {
+                idx = xidx[i];
+                res += xdata[idx] * ydata[idx];
+            }
+        } else {
+            
+            for (DSDP_INT i = 0; i < ynnz; ++i) {
+                idx = yidx[i];
+                res += xdata[idx] * ydata[idx];
+            }
+        }
+    }
+    
+    *trace = res * res;
+    return DSDP_RETCODE_OK;
 }
 
 extern DSDP_INT r1MatdenseTrace( r1Mat *x, dsMat *A, double *trace ) {
@@ -139,7 +163,7 @@ extern DSDP_INT r1MatdiagTrace( r1Mat *x, double diag, double *trace ) {
 
 extern DSDP_INT r1MatCountNnz( r1Mat *x ) {
     // Count the number of nonzero elements and setup nzIdx
-    assert ( (x->x) && (x->dim) && (!x->nzIdx));
+    assert ( (x->x) && (x->dim) );
     
     DSDP_INT nnz = 0;
     for (DSDP_INT i = 0; i < x->dim; ++i) {
@@ -148,7 +172,10 @@ extern DSDP_INT r1MatCountNnz( r1Mat *x ) {
         }
     }
     
-    x->nzIdx = (DSDP_INT *) calloc(sizeof(DSDP_INT), nnz);
+    if (!x->nzIdx) {
+        DSDP_FREE(x->nzIdx);
+        x->nzIdx = (DSDP_INT *) calloc(sizeof(DSDP_INT), nnz);
+    }
     
     DSDP_INT idx = 0;
     for (DSDP_INT i = 0; i < x->dim; ++i) {

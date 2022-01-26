@@ -73,8 +73,8 @@ extern DSDP_INT getTraceASinvASinv( HSDSolver *dsdpSolver, DSDP_INT blockid, DSD
     double trace = 0.0;
     double *M = dsdpSolver->Msdp->array;
     
-    assert( constrid <= constrid2 );
-    assert( constrid <= m && constrid2 <= m);
+    // assert( constrid <= constrid2 );
+    // assert( constrid <= m && constrid2 <= m);
     
     if (mattype == MAT_TYPE_ZERO || Atype == MAT_TYPE_ZERO) {
         return retcode;
@@ -83,13 +83,13 @@ extern DSDP_INT getTraceASinvASinv( HSDSolver *dsdpSolver, DSDP_INT blockid, DSD
     if (mattype == MAT_TYPE_RANK1) {
         switch (Atype) {
             case MAT_TYPE_DENSE:
-                retcode = r1MatdenseTrace(SinvASinv, A, &trace);
+                retcode = r1MatdenseTrace((r1Mat *) SinvASinv, (dsMat *) A, &trace);
                 break;
             case MAT_TYPE_SPARSE:
-                retcode = r1MatspsTrace(SinvASinv, A, &trace);
+                retcode = r1MatspsTrace((r1Mat *) SinvASinv, (spsMat *) A, &trace);
                 break;
             case MAT_TYPE_RANK1:
-                retcode = r1Matr1Trace(SinvASinv, A, &trace);
+                retcode = r1Matr1Trace((r1Mat *) SinvASinv, (r1Mat *) A, &trace);
                 break;
             default:
                 error(etype, "Invalid matrix type. \n");
@@ -98,13 +98,13 @@ extern DSDP_INT getTraceASinvASinv( HSDSolver *dsdpSolver, DSDP_INT blockid, DSD
     } else if (mattype == MAT_TYPE_DENSE) {
         switch (Atype) {
             case MAT_TYPE_DENSE:
-                retcode = denseDsTrace(SinvASinv, A, &trace);
+                retcode = denseDsTrace((dsMat *) SinvASinv, (dsMat *) A, &trace);
                 break;
             case MAT_TYPE_SPARSE:
-                retcode = denseSpsTrace(SinvASinv, A, &trace);
+                retcode = denseSpsTrace((dsMat *) SinvASinv, (spsMat *) A, &trace);
                 break;
             case MAT_TYPE_RANK1:
-                retcode = r1MatdenseTrace(A, SinvASinv, &trace);
+                retcode = r1MatdenseTrace((r1Mat *) A, (dsMat *) SinvASinv, &trace);
                 break;
             default:
                 error(etype, "Invalid matrix type. \n");

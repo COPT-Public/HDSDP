@@ -223,6 +223,7 @@ static DSDP_INT extractR1fromDs( dsMat *dataMat, double *a, DSDP_INT isNeg ) {
     double *A    = dataMat->array;
     DSDP_INT n   = dataMat->dim;
     DSDP_INT col = 0;
+    isNeg = !isNeg;
     
     // Get the first column that contains non-zero elements
     for (DSDP_INT i = 0; i < n; ++i) {
@@ -612,7 +613,8 @@ static DSDP_INT preSDPgetSymbolic( HSDSolver *dsdpSolver, DSDP_INT blockid ) {
     } else {
         for (DSDP_INT i = 0; i < sdpBlock->nr1Mat; ++i) {
             r1data = (r1Mat *) sdpBlock->sdpData[matIdx[i]];
-            if (r1data->nnz > 0.7 * dim) {
+            // TODO: Change the threshold
+            if (r1data->nnz > 1.0 * dim) {
                 useDenseS = TRUE;
             }
         }
@@ -639,31 +641,37 @@ static DSDP_INT preSDPgetSymbolic( HSDSolver *dsdpSolver, DSDP_INT blockid ) {
                 }
             }
             
-            if (nnz > 0.8 * nhash) {
+            // TODO: Change the threshold
+            if (nnz > 1.0 * nhash) {
                 useDenseS = TRUE;
                 break;
             }
         }
-        // Rank 1 matrix
-        matIdx = sdpBlock->r1MatIdx;
-        for (DSDP_INT i = 0; i < sdpBlock->nr1Mat; ++i) {
-            r1data = (r1Mat *) sdpBlock->sdpData[matIdx[i]];
-            
-            if (r1data->nzIdx[0] == 0) {
-                isfirstNz = TRUE;
-            }
-            
-            for (DSDP_INT j = 0; j < r1data->nnz; ++j) {
-                for (DSDP_INT k = 0; k <= j; ++k) {
-                    if (packIdx(hash, dim, r1data->nzIdx[j], r1data->nzIdx[k]) == 0) {
-                        packIdx(hash, dim, r1data->nzIdx[j], r1data->nzIdx[k]) = 1;
-                        nnz += 1;
+        
+        if (!useDenseS) {
+            // Rank 1 matrix
+            matIdx = sdpBlock->r1MatIdx;
+            for (DSDP_INT i = 0; i < sdpBlock->nr1Mat; ++i) {
+                r1data = (r1Mat *) sdpBlock->sdpData[matIdx[i]];
+                
+                if (r1data->nzIdx[0] == 0) {
+                    isfirstNz = TRUE;
+                }
+                
+                for (DSDP_INT j = 0; j < r1data->nnz; ++j) {
+                    for (DSDP_INT k = 0; k <= j; ++k) {
+                        if (packIdx(hash, dim, r1data->nzIdx[j], r1data->nzIdx[k]) == 0) {
+                            packIdx(hash, dim, r1data->nzIdx[j], r1data->nzIdx[k]) = 1;
+                            nnz += 1;
+                        }
                     }
                 }
-            }
-            if (nnz > 0.8 * nhash) {
-                useDenseS = TRUE;
-                break;
+                
+                // TODO: Change the threshold
+                if (nnz > 1.0 * nhash) {
+                    useDenseS = TRUE;
+                    break;
+                }
             }
         }
     }
@@ -699,10 +707,10 @@ static DSDP_INT preSDPgetSymbolic( HSDSolver *dsdpSolver, DSDP_INT blockid ) {
     retcode = spsMatAllocData(dsdpSolver->dS[blockid], dim, nnz); checkCodeFree;
     retcode = spsMatAllocData(dsdpSolver->Scker[blockid], dim, nnz); checkCodeFree;
     
-    if (useDenseS) {
-        DSDP_FREE(hash);
-        hash = NULL;
-    }
+//    if (useDenseS) {
+//        DSDP_FREE(hash);
+//        hash = NULL;
+//    }
     
     dsdpSolver->symS[blockid] = hash;
     

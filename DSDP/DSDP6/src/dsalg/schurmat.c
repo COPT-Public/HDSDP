@@ -16,18 +16,12 @@ static DSDP_INT setupSDPSchurBlock( HSDSolver *dsdpSolver, DSDP_INT blockid ) {
     assert( blockid < dsdpSolver->nBlock );
     
     DSDP_INT m       = dsdpSolver->m;
-    DSDP_INT n       = dsdpSolver->S[blockid]->dim;
     DSDP_INT mattype = MAT_TYPE_UNKNOWN;
     sdpMat *sdpData = dsdpSolver->sdpData[blockid];
     
     // Temporary storage array for SinvASinv
-    r1Mat *r1data = (r1Mat *) calloc(1, sizeof(r1Mat));
-    dsMat *dsdata = (dsMat *) calloc(1, sizeof(dsMat));
-    retcode = r1MatInit(r1data);
-    retcode = r1MatAlloc(r1data, n);
-    retcode = denseMatInit(dsdata);
-    retcode = denseMatAlloc(dsdata, n, FALSE);
-    checkCodeFree;
+    r1Mat *r1data = dsdpSolver->r1aux[blockid];
+    dsMat *dsdata = dsdpSolver->dsaux[blockid];
     
     if (dsdpSolver->eventMonitor[EVENT_IN_PHASE_B]) {
         m -= 1;
@@ -44,26 +38,20 @@ static DSDP_INT setupSDPSchurBlock( HSDSolver *dsdpSolver, DSDP_INT blockid ) {
             retcode = getSinvASinv(dsdpSolver, blockid, i, r1data);
             data = (void *) r1data;
             mattype = MAT_TYPE_RANK1;
-            checkCodeFree;
-            // retcode = r1MatCountNnz(r1data);
+            checkCode;
+            retcode = r1MatCountNnz(r1data);
         } else {
             retcode = getSinvASinv(dsdpSolver, blockid, i, dsdata);
             data = (void *) dsdata;
             mattype = MAT_TYPE_DENSE;
-            checkCodeFree;
+            checkCode;
         }
         
         for (DSDP_INT j = 0; j <= i; ++j) {
             getTraceASinvASinv(dsdpSolver, blockid, j, mattype, i, data);
         }
     }
-    
-clean_up:
-    
-    retcode = r1MatFree(r1data);
-    DSDP_FREE(r1data);
-    retcode = denseMatFree(dsdata);
-    DSDP_FREE(dsdata);
+
     return retcode;
 }
 
@@ -124,9 +112,7 @@ static DSDP_INT setupLPSchur( HSDSolver *dsdpSolver ) {
     
     cs *A = dsdpSolver->lpData->lpdata;
     double *M = dsdpSolver->Msdp->array;
-    
-    // TODO: Replace the SuiteSparse routines using MKL Sparse routine library
-    
+        
     // Setup the LP schur matrix AD^-2AT
     cs *AT = NULL;
     AT = cs_transpose(A, 0);

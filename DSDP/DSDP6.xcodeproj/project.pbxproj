@@ -71,16 +71,14 @@
 		19808F4327380A990014086F /* dsdppresolve.c in Sources */ = {isa = PBXBuildFile; fileRef = 19808F4227380A990014086F /* dsdppresolve.c */; };
 		19808F46273817510014086F /* rankonemat.c in Sources */ = {isa = PBXBuildFile; fileRef = 19808F45273817510014086F /* rankonemat.c */; };
 		1985AC3D279B9DB400B7B8EB /* dsdppfeas.c in Sources */ = {isa = PBXBuildFile; fileRef = 1985AC3C279B9DB400B7B8EB /* dsdppfeas.c */; };
-		1992207B2737D8A400DD975D /* libmkl_intel_thread.1.dylib in Frameworks */ = {isa = PBXBuildFile; fileRef = 199220772737D8A400DD975D /* libmkl_intel_thread.1.dylib */; };
-		1992207C2737D8A400DD975D /* libmkl_intel_thread.1.dylib in Embed Libraries */ = {isa = PBXBuildFile; fileRef = 199220772737D8A400DD975D /* libmkl_intel_thread.1.dylib */; settings = {ATTRIBUTES = (CodeSignOnCopy, ); }; };
-		1992207D2737D8A400DD975D /* libmkl_core.1.dylib in Frameworks */ = {isa = PBXBuildFile; fileRef = 199220782737D8A400DD975D /* libmkl_core.1.dylib */; };
-		1992207E2737D8A400DD975D /* libmkl_core.1.dylib in Embed Libraries */ = {isa = PBXBuildFile; fileRef = 199220782737D8A400DD975D /* libmkl_core.1.dylib */; settings = {ATTRIBUTES = (CodeSignOnCopy, ); }; };
-		1992207F2737D8A400DD975D /* libmkl_intel_lp64.1.dylib in Frameworks */ = {isa = PBXBuildFile; fileRef = 199220792737D8A400DD975D /* libmkl_intel_lp64.1.dylib */; };
-		199220802737D8A400DD975D /* libmkl_intel_lp64.1.dylib in Embed Libraries */ = {isa = PBXBuildFile; fileRef = 199220792737D8A400DD975D /* libmkl_intel_lp64.1.dylib */; settings = {ATTRIBUTES = (CodeSignOnCopy, ); }; };
-		199220812737D8A400DD975D /* libmkl_mc3.1.dylib in Frameworks */ = {isa = PBXBuildFile; fileRef = 1992207A2737D8A400DD975D /* libmkl_mc3.1.dylib */; };
-		199220822737D8A400DD975D /* libmkl_mc3.1.dylib in Embed Libraries */ = {isa = PBXBuildFile; fileRef = 1992207A2737D8A400DD975D /* libmkl_mc3.1.dylib */; settings = {ATTRIBUTES = (CodeSignOnCopy, ); }; };
-		199220852737D8C500DD975D /* libiomp5.dylib in Frameworks */ = {isa = PBXBuildFile; fileRef = 199220842737D8C500DD975D /* libiomp5.dylib */; };
+		199220852737D8C500DD975D /* libiomp5.dylib in Frameworks */ = {isa = PBXBuildFile; fileRef = 199220842737D8C500DD975D /* libiomp5.dylib */; settings = {ATTRIBUTES = (Weak, ); }; };
 		199220862737D8C500DD975D /* libiomp5.dylib in Embed Libraries */ = {isa = PBXBuildFile; fileRef = 199220842737D8C500DD975D /* libiomp5.dylib */; settings = {ATTRIBUTES = (CodeSignOnCopy, ); }; };
+		19B423A4279E846F00E35E0B /* libmkl_sequential.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 19B423A3279E845E00E35E0B /* libmkl_sequential.a */; };
+		19B423A7279E849F00E35E0B /* libmkl_core.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 19B423A5279E849200E35E0B /* libmkl_core.a */; };
+		19B423A8279E84BD00E35E0B /* libmkl_intel_lp64.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 19B423A6279E849200E35E0B /* libmkl_intel_lp64.a */; };
+		19B423A9279E84D900E35E0B /* libmkl_core.a in Embed Libraries */ = {isa = PBXBuildFile; fileRef = 19B423A5279E849200E35E0B /* libmkl_core.a */; settings = {ATTRIBUTES = (CodeSignOnCopy, ); }; };
+		19B423AA279E84D900E35E0B /* libmkl_intel_lp64.a in Embed Libraries */ = {isa = PBXBuildFile; fileRef = 19B423A6279E849200E35E0B /* libmkl_intel_lp64.a */; settings = {ATTRIBUTES = (CodeSignOnCopy, ); }; };
+		19B423AB279E84D900E35E0B /* libmkl_sequential.a in Embed Libraries */ = {isa = PBXBuildFile; fileRef = 19B423A3279E845E00E35E0B /* libmkl_sequential.a */; settings = {ATTRIBUTES = (CodeSignOnCopy, ); }; };
 		19BACAF3274EBC1900E987FD /* test_sparse.c in Sources */ = {isa = PBXBuildFile; fileRef = 19BACAF2274EBC1900E987FD /* test_sparse.c */; };
 		19BACAF5274EBC2D00E987FD /* test_dense.c in Sources */ = {isa = PBXBuildFile; fileRef = 19BACAF4274EBC2D00E987FD /* test_dense.c */; };
 		19BACAF727521A7800E987FD /* test_pardiso.c in Sources */ = {isa = PBXBuildFile; fileRef = 19BACAF627521A7800E987FD /* test_pardiso.c */; };
@@ -117,11 +115,10 @@
 			dstPath = "";
 			dstSubfolderSpec = 10;
 			files = (
-				199220822737D8A400DD975D /* libmkl_mc3.1.dylib in Embed Libraries */,
-				1992207C2737D8A400DD975D /* libmkl_intel_thread.1.dylib in Embed Libraries */,
-				199220802737D8A400DD975D /* libmkl_intel_lp64.1.dylib in Embed Libraries */,
+				19B423A9279E84D900E35E0B /* libmkl_core.a in Embed Libraries */,
+				19B423AA279E84D900E35E0B /* libmkl_intel_lp64.a in Embed Libraries */,
+				19B423AB279E84D900E35E0B /* libmkl_sequential.a in Embed Libraries */,
 				199220862737D8C500DD975D /* libiomp5.dylib in Embed Libraries */,
-				1992207E2737D8A400DD975D /* libmkl_core.1.dylib in Embed Libraries */,
 			);
 			name = "Embed Libraries";
 			runOnlyForDeploymentPostprocessing = 0;
@@ -220,6 +217,9 @@
 		199220792737D8A400DD975D /* libmkl_intel_lp64.1.dylib */ = {isa = PBXFileReference; lastKnownFileType = "compiled.mach-o.dylib"; name = libmkl_intel_lp64.1.dylib; path = ../../../../../../opt/intel/oneapi/mkl/2021.2.0/lib/libmkl_intel_lp64.1.dylib; sourceTree = "<group>"; };
 		1992207A2737D8A400DD975D /* libmkl_mc3.1.dylib */ = {isa = PBXFileReference; lastKnownFileType = "compiled.mach-o.dylib"; name = libmkl_mc3.1.dylib; path = ../../../../../../opt/intel/oneapi/mkl/2021.2.0/lib/libmkl_mc3.1.dylib; sourceTree = "<group>"; };
 		199220842737D8C500DD975D /* libiomp5.dylib */ = {isa = PBXFileReference; lastKnownFileType = "compiled.mach-o.dylib"; name = libiomp5.dylib; path = ../../../../../../opt/intel/oneapi/compiler/2021.2.0/mac/compiler/lib/libiomp5.dylib; sourceTree = "<group>"; };
+		19B423A3279E845E00E35E0B /* libmkl_sequential.a */ = {isa = PBXFileReference; lastKnownFileType = archive.ar; name = libmkl_sequential.a; path = ../../../../../opt/intel/oneapi/mkl/2021.2.0/lib/libmkl_sequential.a; sourceTree = "<group>"; };
+		19B423A5279E849200E35E0B /* libmkl_core.a */ = {isa = PBXFileReference; lastKnownFileType = archive.ar; name = libmkl_core.a; path = ../../../../../opt/intel/oneapi/mkl/2021.2.0/lib/libmkl_core.a; sourceTree = "<group>"; };
+		19B423A6279E849200E35E0B /* libmkl_intel_lp64.a */ = {isa = PBXFileReference; lastKnownFileType = archive.ar; name = libmkl_intel_lp64.a; path = ../../../../../opt/intel/oneapi/mkl/2021.2.0/lib/libmkl_intel_lp64.a; sourceTree = "<group>"; };
 		19BACAF1274EAE4500E987FD /* structs.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = structs.h; sourceTree = "<group>"; };
 		19BACAF2274EBC1900E987FD /* test_sparse.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = test_sparse.c; sourceTree = "<group>"; };
 		19BACAF4274EBC2D00E987FD /* test_dense.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = test_dense.c; sourceTree = "<group>"; };
@@ -256,11 +256,10 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				199220812737D8A400DD975D /* libmkl_mc3.1.dylib in Frameworks */,
-				1992207F2737D8A400DD975D /* libmkl_intel_lp64.1.dylib in Frameworks */,
+				19B423A8279E84BD00E35E0B /* libmkl_intel_lp64.a in Frameworks */,
+				19B423A4279E846F00E35E0B /* libmkl_sequential.a in Frameworks */,
+				19B423A7279E849F00E35E0B /* libmkl_core.a in Frameworks */,
 				199220852737D8C500DD975D /* libiomp5.dylib in Frameworks */,
-				1992207D2737D8A400DD975D /* libmkl_core.1.dylib in Frameworks */,
-				1992207B2737D8A400DD975D /* libmkl_intel_thread.1.dylib in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -503,6 +502,9 @@
 		199220742737D86C00DD975D /* Frameworks */ = {
 			isa = PBXGroup;
 			children = (
+				19B423A5279E849200E35E0B /* libmkl_core.a */,
+				19B423A6279E849200E35E0B /* libmkl_intel_lp64.a */,
+				19B423A3279E845E00E35E0B /* libmkl_sequential.a */,
 				199220842737D8C500DD975D /* libiomp5.dylib */,
 				199220782737D8A400DD975D /* libmkl_core.1.dylib */,
 				199220792737D8A400DD975D /* libmkl_intel_lp64.1.dylib */,
@@ -665,7 +667,7 @@
 				ALWAYS_SEARCH_USER_PATHS = NO;
 				CLANG_ANALYZER_NONNULL = YES;
 				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
-				CLANG_CXX_LANGUAGE_STANDARD = "gnu++14";
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++20";
 				CLANG_CXX_LIBRARY = "libc++";
 				CLANG_ENABLE_MODULES = YES;
 				CLANG_ENABLE_OBJC_ARC = YES;
@@ -699,7 +701,7 @@
 				GCC_C_LANGUAGE_STANDARD = gnu11;
 				GCC_DYNAMIC_NO_PIC = NO;
 				GCC_NO_COMMON_BLOCKS = YES;
-				GCC_OPTIMIZATION_LEVEL = 0;
+				GCC_OPTIMIZATION_LEVEL = fast;
 				GCC_PREPROCESSOR_DEFINITIONS = (
 					"DEBUG=1",
 					"$(inherited)",
@@ -724,7 +726,7 @@
 				ALWAYS_SEARCH_USER_PATHS = NO;
 				CLANG_ANALYZER_NONNULL = YES;
 				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
-				CLANG_CXX_LANGUAGE_STANDARD = "gnu++14";
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++20";
 				CLANG_CXX_LIBRARY = "libc++";
 				CLANG_ENABLE_MODULES = YES;
 				CLANG_ENABLE_OBJC_ARC = YES;
@@ -757,6 +759,7 @@
 				ENABLE_STRICT_OBJC_MSGSEND = YES;
 				GCC_C_LANGUAGE_STANDARD = gnu11;
 				GCC_NO_COMMON_BLOCKS = YES;
+				GCC_OPTIMIZATION_LEVEL = fast;
 				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
 				GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;
 				GCC_WARN_UNDECLARED_SELECTOR = YES;

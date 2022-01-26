@@ -51,6 +51,32 @@ static DSDP_INT PARDISO_PARAMS_CHOLESKY[PARDISOINDEX] = {
     0
 };
 
+static DSDP_INT PARDISO_PARAMS_PARTIAL_SOLVE[PARDISOINDEX] = {
+    
+    1, /* Non-default value */ 3, /* P Nested dissection */ 0, /* Reserved          */
+    0, /* No CG             */ 0, /* No user permutation */ 0, /* No overwriting    */
+    0, /* Refinement report */ 3, /* Three ItRef steps   */ 0, /* Reserved          */
+    8, /* Perturb           */ 1, /* Disable scaling     */ 0, /* No transpose      */
+    0, /* Disable matching  */ 0, /* Report on pivots    */ 0, /* Output            */
+    0, /* Output            */ 0, /* Output              */-1, /* No report         */
+    0, /* No report         */ 0, /* Output              */ 1, /* Pivoting          */
+    0, /* nPosEigVals       */ 0, /* nNegEigVals         */ 0, /* Classic factorize */
+    0,                         0,                           0, /* Matrix checker    */
+    0,                         0,                           0,
+    1, /* Partial solve     */ 0,                           0,
+    0,                         1, /* 0-based solve       */ 0,
+    0,                         0,                           0,
+    0,                         0,                           0,
+    0,                         0,                           0,
+    0,                         0,                           0,
+    0,                         0,                           0,
+    0,                         0,                           0,
+    0,                         1, /* Get diagonal        */ 0,
+    0,                         0,                           0,
+    0,                         0,                           0,
+    0
+};
+
 static DSDP_INT PARDISO_PARAMS_FORWARD_BACKWORD[PARDISOINDEX] = {
     
     1, /* Non-default value */ 3, /* P Nested dissection */ 0, /* Reserved          */
