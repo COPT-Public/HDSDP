@@ -47,6 +47,9 @@ static void dsdpstatus( DSDP_INT code, char *word ) {
         case DSDP_PUNKNOWN_DINFEAS:
             strcpy(word, "DSDP_PUNKNOWN_DINFEASIBLE");
             break;
+        case DSDP_PINFEAS_DFEAS:
+            strcpy(word, "DSDP_PINFEASIBLE_DFEASIBLE");
+            break;
         default:
             break;
     }
@@ -55,7 +58,7 @@ static void dsdpstatus( DSDP_INT code, char *word ) {
 extern void dsdpshowdash( void ) {
     printf("---------------------------------------"
            "---------------------------------------"
-           "---------------------\n");
+           "----------------------\n");
 }
 
 extern void dsdpCheckNan( HSDSolver *dsdpSolver ) {
@@ -80,7 +83,7 @@ extern void dsdpprintPhaseAheader( void ) {
     /*      ________________________________________________________________________________*/
     /*      | niter |   pObj   |   dObj   |  dInf  |  k/t  |  mu  |  alpha  |  pNrm  |  E  |*/
     /*      --------------------------------------------------------------------------------*/
-    printf("| %4s | %12s | %12s | %8s | %8s | %8s | %8s | %8s | %3s |\n",
+    printf("| %4s | %12s | %12s | %9s | %8s | %8s | %8s | %8s | %3s |\n",
             "iter", "pObj", "dObj", "dInf", "k/t", "mu", "alpha", "pNrm", "E");
     dsdpshowdash();
 }
@@ -89,10 +92,10 @@ extern void dsdpprintPhaseBheader( void ) {
     
     dsdpshowdash();
     /*      --------------------------------------------------------------------------------*/
-    /*      | niter |   pObj   |   dObj   |  mu  |  alpha  |  pNrm  |  E  |*/
+    /*      | niter |   pObj   |   dObj   |  mu  |  alpha  |  pNrm  |  dPot  |  E  |*/
     /*      --------------------------------------------------------------------------------*/
-    printf("| %4s | %12s | %12s | %8s | %8s | %8s | %3s |\n",
-            "iter", "pObj", "dObj", "mu", "alpha", "pNrm", "E");
+    printf("| %4s | %12s | %12s | %9s | %8s | %8s | %8s | %3s |\n",
+            "iter", "pObj", "dObj", "mu", "alpha", "pNrm", "dPot", "E");
     dsdpshowdash();
 }
 
@@ -132,7 +135,6 @@ extern void DSDPResetPhaseBMonitor( HSDSolver *dsdpSolver ) {
     monitor[EVENT_PFEAS_FOUND] = FALSE;
     monitor[EVENT_LARGE_NORM]  = FALSE;
     monitor[EVENT_SMALL_STEP]  = FALSE;
-    monitor[EVENT_INVALID_GAP] = FALSE;
 }
 
 extern DSDP_INT DSDPPhaseALogging( HSDSolver *dsdpSolver ) {
@@ -147,13 +149,15 @@ extern DSDP_INT DSDPPhaseALogging( HSDSolver *dsdpSolver ) {
     
     char event[3] = " ";
     double nRy = fabs(dsdpSolver->Ry) * sqrt(dsdpSolver->n);
-    double kovert = dsdpSolver->kappa / dsdpSolver->tau;
+    double tau = dsdpSolver->tau;
+    double kovert = dsdpSolver->kappa / tau;
+    
     DSDP_INT *moniter = dsdpSolver->eventMonitor;
     
     assert( moniter[EVENT_IN_PHASE_A] );
     
     if (moniter[EVENT_PFEAS_FOUND]) {
-        strcpy(&event[0], "H");
+        strcpy(&event[0], "P");
     }
     
     if (moniter[EVENT_NO_RY]) {
@@ -183,9 +187,9 @@ extern DSDP_INT DSDPPhaseALogging( HSDSolver *dsdpSolver ) {
     }
     
 print_log:
-    printf("| %4d | %12.3e | %12.3e | %8.2e | %8.2e | %8.2e | %8.2e | %8.2e | %3s |\n",
-            dsdpSolver->iterA + 1, dsdpSolver->pObjVal, dsdpSolver->dObjVal,
-            nRy, kovert, dsdpSolver->mu, dsdpSolver->alpha, dsdpSolver->Pnrm,
+    printf("| %4d | %12.3e | %12.3e | %9.2e | %8.2e | %8.2e | %8.2e | %8.2e | %3s |\n",
+            dsdpSolver->iterA + 1, dsdpSolver->pObjVal, dsdpSolver->dObjVal / tau,
+            nRy / tau, kovert, dsdpSolver->mu, dsdpSolver->alpha, dsdpSolver->Pnrm,
             event);
     
     dsdpSolver->iterProgress[ITER_LOGGING] = TRUE;
@@ -242,9 +246,10 @@ extern DSDP_INT DSDPPhaseBLogging( HSDSolver *dsdpSolver ) {
     }
     
 print_log:
-    printf("| %4d | %12.3e | %12.3e | %8.2e | %8.2e | %8.2e | %3s |\n",
+    printf("| %4d | %12.3e | %12.3e | %9.2e | %8.2e | %8.2e | %8.1e | %3s |\n",
             dsdpSolver->iterB + 1, dsdpSolver->pObjVal, dsdpSolver->dObjVal,
-            dsdpSolver->mu, dsdpSolver->alpha, dsdpSolver->Pnrm, event);
+            dsdpSolver->mu, dsdpSolver->alpha, dsdpSolver->Pnrm, dsdpSolver->dPotential,
+            event);
     
     dsdpSolver->iterProgress[ITER_LOGGING] = TRUE;
     return retcode;
@@ -260,10 +265,11 @@ extern DSDP_INT DSDPCheckPhaseAConvergence( HSDSolver *dsdpSolver, DSDP_INT *isO
     assert( dsdpSolver->eventMonitor[EVENT_IN_PHASE_A] );
     
     // Dual infeasibility eliminated
-    if (fabs(dsdpSolver->Ry) * sqrt(dsdpSolver->n) < dsdpSolver->param->absOptTol * 0.1) {
+    if (fabs(dsdpSolver->Ry) * sqrt(dsdpSolver->n) < \
+        dsdpSolver->param->absOptTol * 0.1 * dsdpSolver->tau) {
         monitor[EVENT_NO_RY] = TRUE;
         
-        if (dsdpSolver->pObjVal != dsdpSolver->param->initpObj) {
+        if (dsdpSolver->pObjVal != DSDP_INFINITY) {
             dsdpSolver->solStatus = DSDP_PD_FEASIBLE;
         } else {
             dsdpSolver->solStatus = DSDP_PUNKNOWN_DFEAS;
@@ -284,7 +290,7 @@ extern DSDP_INT DSDPCheckPhaseAConvergence( HSDSolver *dsdpSolver, DSDP_INT *isO
     
     if (monitor[EVENT_KT_QUALIFIES] &&
         monitor[EVENT_MU_QUALIFIES]) {
-        if (dsdpSolver->pObjVal != dsdpSolver->param->initpObj) {
+        if (dsdpSolver->pObjVal != DSDP_INFINITY) {
             dsdpSolver->solStatus = DSDP_PFEAS_DINFEAS;
         } else {
             dsdpSolver->solStatus = DSDP_PUNKNOWN_DINFEAS;
@@ -388,6 +394,10 @@ extern DSDP_INT DSDPCheckPhaseBConvergence( HSDSolver *dsdpSolver, DSDP_INT *isO
     double gap = fabs(dsdpSolver->pObjVal - dsdpSolver->dObjVal);
     gap = gap / (fabs(dsdpSolver->pObjVal) + fabs(dsdpSolver->dObjVal) + 1);
     
+    if (dsdpSolver->dObjVal > 1e+08) {
+        dsdpSolver->eventMonitor[EVENT_LARGE_DOBJ] = TRUE;
+    }
+    
     if (gap < 1e-06) {
         monitor[EVENT_MU_QUALIFIES] = TRUE;
         dsdpSolver->solStatus = DSDP_OPTIMAL;
@@ -450,9 +460,11 @@ extern DSDP_INT printPhaseABConvert( HSDSolver *dsdpSolver, DSDP_INT *goPb ) {
         case DSDP_PFEAS_DINFEAS:
             printf("| DSDP Phase A certificates dual infeasibility "
                    "and primal feasibility \n");
+            *goPb = FALSE;
             break;
         case DSDP_PUNKNOWN_DINFEAS:
             printf("| DSDP Phase A certificates dual infeasibility \n");
+            *goPb = FALSE;
             break;
         case DSDP_INTERNAL_ERROR:
             printf("| DSDP Phase A encounters internal error \n");

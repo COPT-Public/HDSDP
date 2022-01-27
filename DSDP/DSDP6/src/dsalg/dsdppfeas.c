@@ -90,6 +90,7 @@ extern DSDP_INT DSDPPFeasPhase( HSDSolver *dsdpSolver ) {
         // Corrector step
         dsdpSolver->iterProgress[ITER_CORRECTOR] = TRUE;
         dsdpSolver->iterProgress[ITER_DECREASE_MU] = TRUE;
+        
         checkIterProgress(dsdpSolver, ITER_NEXT_ITERATION);
 
         time =  my_clock() - start;

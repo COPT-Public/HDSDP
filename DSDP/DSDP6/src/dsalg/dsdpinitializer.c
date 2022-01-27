@@ -123,8 +123,9 @@ extern DSDP_INT dsdpInitializeB( HSDSolver *dsdpSolver ) {
             break;
         case DSDP_PUNKNOWN_DFEAS:
             //pObj  = max(dsdpParam{5}, dObj + dsdpParam{5} / 10);
-            dsdpSolver->pObjVal = MAX(dsdpSolver->pObjVal,
-                                      dsdpSolver->dObjVal + 0.1 * dsdpSolver->pObjVal);
+            dsdpSolver->pObjVal = MAX(dsdpSolver->param->initpObj,
+                                      dsdpSolver->dObjVal + 0.1 * dsdpSolver->param->initpObj);
+            dsdpSolver->mu = (dsdpSolver->pObjVal - dsdpSolver->dObjVal) / dsdpSolver->param->rho;
             printf("| DSDP Phase B starts. "
                    "Trying to certificate primal feasibility in %d iterations \n",
                    dsdpSolver->param->BmaxIter);
@@ -133,7 +134,6 @@ extern DSDP_INT dsdpInitializeB( HSDSolver *dsdpSolver ) {
             error(etype, "Invalid starting status for Phase B. \n");
             break;
     }
-    
     
     return retcode;
 }

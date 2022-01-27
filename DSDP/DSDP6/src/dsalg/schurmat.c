@@ -28,6 +28,7 @@ static DSDP_INT setupSDPSchurBlock( HSDSolver *dsdpSolver, DSDP_INT blockid ) {
     }
     
     void *data = NULL;
+    double maxdiag = 0.0;
     
     for (DSDP_INT i = 0; i < m + 1; ++i) {
         // Compute SinvASinv
@@ -50,7 +51,26 @@ static DSDP_INT setupSDPSchurBlock( HSDSolver *dsdpSolver, DSDP_INT blockid ) {
         for (DSDP_INT j = 0; j <= i; ++j) {
             getTraceASinvASinv(dsdpSolver, blockid, j, mattype, i, data);
         }
+        
+        maxdiag = MAX(packIdx(dsdpSolver->Msdp->array, m, i, i), maxdiag);
     }
+    
+    if (dsdpSolver->eventMonitor[EVENT_IN_PHASE_B] &&
+        !dsdpSolver->eventMonitor[EVENT_INVALID_GAP] &&
+        !dsdpSolver->Msdp->isillCond) {
+        for (DSDP_INT i = 0; i < m; ++i) {
+            packIdx(dsdpSolver->Msdp->array, m, i, i) += \
+            MIN(maxdiag * 1e-03, 1e-06);
+        }
+    }
+    
+    // Perturb in Phase A
+//    if (dsdpSolver->eventMonitor[EVENT_IN_PHASE_A]) {
+//        for (DSDP_INT i = 0; i < m; ++i) {
+//            packIdx(dsdpSolver->Msdp->array, m, i, i) += \
+//            MIN(maxdiag * 1e-05, 1e-05);
+//        }
+//    }
 
     return retcode;
 }
@@ -160,15 +180,34 @@ static DSDP_INT setupLPSchur( HSDSolver *dsdpSolver ) {
     
     // Update u
     retcode = vec_invsqr(sinv, s);
-    for (DSDP_INT i = 0; i < n - n % 4; i+=4) {
-        sdata[i    ] = sdata[i    ] * cdata[i    ];
-        sdata[i + 1] = sdata[i + 1] * cdata[i + 1];
-        sdata[i + 2] = sdata[i + 2] * cdata[i + 2];
-        sdata[i + 3] = sdata[i + 3] * cdata[i + 3];
+    
+    register DSDP_INT i;
+    
+    for (i = 0; i < n - 7; ++i) {
+        sdata[i] = sdata[i] * cdata[i]; ++i;
+        sdata[i] = sdata[i] * cdata[i]; ++i;
+        sdata[i] = sdata[i] * cdata[i]; ++i;
+        sdata[i] = sdata[i] * cdata[i]; ++i;
+        sdata[i] = sdata[i] * cdata[i]; ++i;
+        sdata[i] = sdata[i] * cdata[i]; ++i;
+        sdata[i] = sdata[i] * cdata[i]; ++i;
+        sdata[i] = sdata[i] * cdata[i];
     }
     
-    for (DSDP_INT i = n - n % 4; i < n; ++i) {
-        sdata[i] = sdata[i] * cdata[i];
+    if (i < n - 3) {
+        sdata[i] = sdata[i] * cdata[i]; ++i;
+        sdata[i] = sdata[i] * cdata[i]; ++i;
+        sdata[i] = sdata[i] * cdata[i]; ++i;
+        sdata[i] = sdata[i] * cdata[i]; ++i;
+    }
+    
+    if (i < n - 1) {
+        sdata[i] = sdata[i] * cdata[i]; ++i;
+        sdata[i] = sdata[i] * cdata[i]; ++i;
+    }
+    
+    if (i < n) {
+        sdata[i] = sdata[i] * cdata[i]; ++i;
     }
     
     cs_gaxpy(A, sdata, u->x);
@@ -180,6 +219,7 @@ static DSDP_INT setupLPSchur( HSDSolver *dsdpSolver ) {
     retcode = vec_invsqr(sinv, s);
     
     if (n > 64) {
+        i = 0;
         for (DSDP_INT i = 0; i < n - n % 4; i+=4) {
             sdata[i    ] = sdata[i    ] * rydata[i    ];
             sdata[i + 1] = sdata[i + 1] * rydata[i + 1];
@@ -191,7 +231,7 @@ static DSDP_INT setupLPSchur( HSDSolver *dsdpSolver ) {
             sdata[i] = sdata[i] * rydata[i];
         }
     } else {
-        for (DSDP_INT i = 0; i < n; ++i) {
+        for (i = 0; i < n; ++i) {
             sdata[i] = sdata[i] * rydata[i];
         }
     }
@@ -256,7 +296,7 @@ extern DSDP_INT setupFactorize( HSDSolver *dsdpSolver ) {
             retcode = spsMatFactorize(dsdpSolver->S[i]);
             
             /* This symbolic phase is not necessaary if
-             we have access to the internal Pardiso permutation and parallel computing*/
+             we have access to the internal Pardiso permutation and parallel computing */
             retcode = spsMatSymbolic(dsdpSolver->Scker[i]);
             checkCode
         }

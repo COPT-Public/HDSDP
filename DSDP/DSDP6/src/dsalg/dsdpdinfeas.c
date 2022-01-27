@@ -28,7 +28,7 @@ extern DSDP_INT DSDPDInfeasEliminator( HSDSolver *dsdpSolver ) {
     DSDP_INT retcode = DSDP_RETCODE_OK;
     DSDP_INT goOn = TRUE;
     
-    dsdpSolver->pObjVal = dsdpSolver->param->initpObj;
+    dsdpSolver->pObjVal = DSDP_INFINITY;
     
     // Initialize
     double muprimal = dsdpSolver->param->initMu;

@@ -313,10 +313,6 @@ static DSDP_INT DSDPICheckData( HSDSolver *dsdpSolver ) {
         retcode = DSDPIAllocResi(dsdpSolver);
     }
     
-    if (dsdpSolver->verbosity) {
-        printf(ID" out of "ID" blocks are set. \n", nblockSet, nblock);
-    }
-    
     return retcode;
 }
 
@@ -596,10 +592,10 @@ extern DSDP_INT DSDPSetDim( HSDSolver *dsdpSolver,
     
     if (dsdpSolver->verbosity) {
         // printf("Dimension is successfully set. \n");
-        printf("nSDPCones: "ID" "
-               "nConstraints: "ID" "
-               "LPDim: "ID" "
-               "SDPDim: "ID". \n", nBlock, nConstrs, lpDim, sdpDim);
+        printf("| nBlock: "ID" "
+               "| nConstrs: "ID" "
+               "| nLPVars : "ID" "
+               "| nSDPVars: "ID" | \n", nBlock, nConstrs, lpDim, sdpDim);
         
     }
     
@@ -687,9 +683,6 @@ extern DSDP_INT DSDPSetSDPConeData( HSDSolver *dsdpSolver,
     }
     
     retcode = sdpMatSetData(data, Asdpp, Asdpi, Asdpx); checkCode;
-    if (dsdpSolver->verbosity) {
-        printf("SDP block "ID" is set. \n", blockid);
-    }
     dsdpSolver->isSDPset[blockid] = TRUE;
     DSDPICheckData(dsdpSolver);
     

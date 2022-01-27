@@ -22,8 +22,10 @@ typedef struct {
     
     DSDP_INT dim;          // Dimension of the matrix
     DSDP_INT isFactorized; // Whether the dense matrix is factorized
+    DSDP_INT isillCond;    // Whether the matrix suffers from ill conditioning
     double   *array;       // The (dim + 1) * dim / 2 array
     double   *lfactor;     // The packed Cholesky factor returned by dppsv or other Lapack routines
+    DSDP_INT *ipiv;        // Array in case of indefinite Schur matrix
     
 } dsMat;
 

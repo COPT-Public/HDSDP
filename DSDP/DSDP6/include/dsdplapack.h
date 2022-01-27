@@ -55,6 +55,8 @@ CAPBLAS  : Whether routines are given by ROUTINENAME(params) or routinename(para
 #define fnorm DLANSP_
 #define packchol DPPTRF_
 #define packsolve DPPTRS_
+#define packldl DSPTRF_
+#define ldlsolve DSPTRS_
 
 #endif
 
@@ -85,6 +87,8 @@ CAPBLAS  : Whether routines are given by ROUTINENAME(params) or routinename(para
 #define fnorm DLANSP
 #define packchol DPPTRF
 #define packsolve DPPTRS
+#define packldl DSPTRF
+#define ldlsolve DSPTRS
 
 #endif
 
@@ -115,6 +119,8 @@ CAPBLAS  : Whether routines are given by ROUTINENAME(params) or routinename(para
 #define fnorm dlansp_
 #define packchol dpptrf_
 #define packsolve dpptrs_
+#define packldl dsptrf_
+#define ldlsolve dsptrs_
 
 #endif
 
@@ -145,9 +151,16 @@ CAPBLAS  : Whether routines are given by ROUTINENAME(params) or routinename(para
 #define fnorm dlansp
 #define packchol dpptrf
 #define packsolve dpptrs
+#define packldl dsptrf
+#define ldlsolve dsptrs
 
 #endif
 
+#endif
+
+#ifndef TRANS
+#define TRANS
+#define mattrans MKL_Dimatcopy
 #endif
 
 #ifdef __cplusplus
@@ -480,6 +493,21 @@ extern void packsolve( const char      *uplo,
                        const DSDP_INT  *ldb,
                        const DSDP_INT  *info );
 
+extern void packldl( const char      *uplo,
+                    const DSDP_INT  *n,
+                    double          *ap,
+                    DSDP_INT        *ipiv,
+                    DSDP_INT        *info );
+
+void ldlsolve( const char      *uplo,
+             const DSDP_INT  *n,
+             const DSDP_INT  *nrhs,
+             const double    *ap,
+             const DSDP_INT  *ipiv,
+             double          *b,
+             const DSDP_INT  *ldb,
+             DSDP_INT        *info );
+
 void packr1update( const char *uplo,
            const DSDP_INT *n,
            const double *alpha,
@@ -509,6 +537,18 @@ void matscal( const DSDP_INT *m,
               const double   *colcnd,
               const double   *amax,
               char           *equed );
+
+
+void mattrans( const char    ordering,
+               const char    trans,
+               size_t        rows,
+               size_t        cols,
+               const double  alpha,
+               double        *AB,
+               size_t        lda,
+               size_t        ldb );
+
+/* Intel MKL matrix transposition routine */
 
 
 #ifdef __cplusplus

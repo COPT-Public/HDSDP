@@ -315,8 +315,8 @@ static DSDP_INT preRank1RdcBlock( sdpMat *dataMat ) {
     
     void **matdata = dataMat->sdpData;
     
-    printf("Block "ID" Before reduction: \n", blockid);
-    printf("nSparse: "ID"  nDense: "ID"  nRank1: "ID" nZero: "ID" \n",
+    printf("| Block %d before reduction: \n", blockid);
+    printf("| Sparse: %-3d | Dense: %-3d | Rank1: %-3d | Zero: %-3d \n",
            nspsMat, ndsMat, nr1Mat, nzeroMat);
     
     // If all the matrices are already rank-one
@@ -395,12 +395,10 @@ static DSDP_INT preRank1RdcBlock( sdpMat *dataMat ) {
                + dataMat->nr1Mat + dataMat->nspsMat == m + 1 );
     }
     
-#ifdef SHOWALL
-    printf("Block "ID" after reduction: \n", blockid);
-    printf("nSparse: "ID"  nDense: "ID"  nRank1: "ID" nZero: "ID" \n",
+    printf("| Block %d after reduction: \n", blockid);
+    printf("| Sparse: %-3d | Dense: %-3d | Rank1: %-3d | Zero: %-3d \n",
            dataMat->nspsMat, dataMat->ndenseMat, dataMat->nr1Mat,
            dataMat->nzeroMat);
-#endif
     
     return retcode;
 }
@@ -410,7 +408,6 @@ static DSDP_INT getBlockStatistic( sdpMat *sdpData ) {
     // This routine also checks validity of data
     
     DSDP_INT retcode  = DSDP_RETCODE_OK;
-    DSDP_INT blockid  = sdpData->blockId;
     DSDP_INT m        = sdpData->dimy;
     DSDP_INT *type    = sdpData->types;
     DSDP_INT nzeroMat = 0;
@@ -475,14 +472,16 @@ static DSDP_INT preSDPMatgetPScaler( HSDSolver *dsdpSolver ) {
     
     for (DSDP_INT i = 0; i < m; ++i) {
         
-        if (fabs(dsdpSolver->dObj->x[i]) > 0.0) {
-            minnrm = fabs(dsdpSolver->dObj->x[i]);
-        } else {
-            minnrm = 1.0;
-        }
-        
         maxnrm = 0.0;
         
+        if (fabs(dsdpSolver->dObj->x[i]) > 0.0) {
+            minnrm = fabs(dsdpSolver->dObj->x[i]);
+            maxnrm = minnrm;
+        } else {
+            dsdpSolver->pScaler->x[i] = 1.0;
+            continue;
+        }
+                
         for (DSDP_INT j = 0; j < dsdpSolver->nBlock; ++j) {
             retcode= getMatnrm(dsdpSolver, j, i, &nrm);
             if (nrm > 0) {
@@ -494,7 +493,7 @@ static DSDP_INT preSDPMatgetPScaler( HSDSolver *dsdpSolver ) {
         if (maxnrm == 0.0) {
             error(etype, "Empty row detected. \n");
         } else {
-            if (fabs(sqrt(maxnrm * minnrm) - 1.0) < 0.1) {
+            if (fabs(maxnrm * minnrm - 1.0) < 0.1) {
                 dsdpSolver->pScaler->x[i] = 1.0;
             } else {
                 dsdpSolver->pScaler->x[i] = sqrt(maxnrm * minnrm);
@@ -515,6 +514,7 @@ static DSDP_INT preSDPMatPScale( HSDSolver *dsdpSolver ) {
     for (DSDP_INT i = 0; i < dsdpSolver->m; ++i) {
         scaler = dsdpSolver->pScaler->x[i];
         assert( scaler > 0 );
+        dsdpSolver->dObj->x[i] = dsdpSolver->dObj->x[i] / scaler;
         for (DSDP_INT j = 0; j < dsdpSolver->nBlock; ++j) {
             retcode = matRScale(dsdpSolver, j, i, scaler);
         }

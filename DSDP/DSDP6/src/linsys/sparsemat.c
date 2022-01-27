@@ -720,17 +720,27 @@ extern DSDP_INT dsdpGetAlphaLS( spsMat *S, spsMat *dS, spsMat *Scker,
     DSDP_INT retcode = DSDP_RETCODE_OK;
     
     double step = 1 / alphamax;
+    double *src = NULL;
     DSDP_INT ispsd = FALSE;
+    spsMat *buffer = NULL;
+    
+    if (Scker) {
+        src = S->x;
+        buffer = Scker;
+    } else {
+        src = (double *) calloc(S->nnz, sizeof(double));
+        memcpy(src, S->x, sizeof(double) * S->nnz);
+        buffer = S;
+    }
     
     for (DSDP_INT i = 0; ; ++i) {
-        if (step <= 1e-08) {
+        if (step <= 1e-04) {
             *alpha = 0.0;
             break;
         }
-        
-        memcpy(Scker->x, S->x, sizeof(double) * S->nnz);
-        spsMataXpbY(step, dS, 1.0, Scker, sumHash);
-        spsMatIspd(Scker, &ispsd);
+        memcpy(src, S->x, sizeof(double) * S->nnz);
+        spsMataXpbY(step, dS, 1.0, buffer, sumHash);
+        spsMatIspd(buffer, &ispsd);
         
         if (ispsd) {
             *alpha = step;
@@ -739,6 +749,10 @@ extern DSDP_INT dsdpGetAlphaLS( spsMat *S, spsMat *dS, spsMat *Scker,
         step *= 0.8;
     }
 
+    if (!Scker) {
+        DSDP_FREE(src);
+    }
+    
     return retcode;
 }
 
@@ -756,15 +770,35 @@ extern DSDP_INT spsSinvSpSinvSolve( spsMat *S, spsMat *A, dsMat *SinvASinv, doub
     assert( S->isFactorized );
     
     DSDP_INT n         = S->dim;
+    DSDP_INT inc       = n + 1;
+    DSDP_INT idx       = 0;
     double *SinvA      = NULL;
     double *fSinvASinv = NULL;
     SinvA      = (double *) calloc(n * n, sizeof(double));
     fSinvASinv = (double *) calloc(n * n, sizeof(double));
     
-    double tmp = 0.0;
+    
     // Solve to get inv(S) * A
     retcode    = spsMatSpSolve(S, A, SinvA);
     
+#ifdef TRANS
+    for (DSDP_INT i = 0; i < n - n % 8; i+=8) {
+        *asinv += SinvA[idx]; idx += inc;
+        *asinv += SinvA[idx]; idx += inc;
+        *asinv += SinvA[idx]; idx += inc;
+        *asinv += SinvA[idx]; idx += inc;
+        *asinv += SinvA[idx]; idx += inc;
+        *asinv += SinvA[idx]; idx += inc;
+        *asinv += SinvA[idx]; idx += inc;
+        *asinv += SinvA[idx]; idx += inc;
+    }
+    
+    for (DSDP_INT i = n - n % 8; i < n; ++i) {
+        *asinv += SinvA[idx]; idx += inc;
+    }
+    MKL_Dimatcopy('C', 'T', n, n, 1.0, SinvA, n, n);
+#else
+    double tmp = 0.0;
     // Transpose
     *asinv = 0.0;
     for (DSDP_INT i = 0; i < n; ++i) {
@@ -778,11 +812,12 @@ extern DSDP_INT spsSinvSpSinvSolve( spsMat *S, spsMat *A, dsMat *SinvASinv, doub
             }
         }
     }
+#endif
     
+    idx = 0;
     // Solve
     retcode = pardisoSolve(S, n, SinvA, fSinvASinv);
     
-    DSDP_INT idx = 0;
     // Extract solution
     for (DSDP_INT k = 0; k < n; ++k) {
         memcpy(&(SinvASinv->array[idx]), &(fSinvASinv[k * n + k]),
@@ -865,23 +900,41 @@ extern DSDP_INT spsSinvR1SinvSolve( spsMat *S, r1Mat *A, r1Mat *SinvASinv, doubl
     retcode = pardisoSolve(S, 1, xA, xSinvASinv); checkCode;
     
     double res = 0.0;
+    register DSDP_INT i;
     
     if (n > 64) {
-        for (DSDP_INT i = 0; i < n - n % 4; i+=4) {
-            res += xA[i    ] * xSinvASinv[i    ];
-            res += xA[i + 1] * xSinvASinv[i + 1];
-            res += xA[i + 2] * xSinvASinv[i + 2];
-            res += xA[i + 3] * xSinvASinv[i + 3];
-        }
         
-        for (DSDP_INT i = n - n % 4; i < n; ++i) {
+        for (i = 0; i < n - 7; ++i) {
+            res += xA[i] * xSinvASinv[i]; i++;
+            res += xA[i] * xSinvASinv[i]; i++;
+            res += xA[i] * xSinvASinv[i]; i++;
+            res += xA[i] * xSinvASinv[i]; i++;
+            res += xA[i] * xSinvASinv[i]; i++;
+            res += xA[i] * xSinvASinv[i]; i++;
+            res += xA[i] * xSinvASinv[i]; i++;
             res += xA[i] * xSinvASinv[i];
         }
+        
+        if (i < n - 3) {
+            res += xA[i] * xSinvASinv[i]; i++;
+            res += xA[i] * xSinvASinv[i]; i++;
+            res += xA[i] * xSinvASinv[i]; i++;
+            res += xA[i] * xSinvASinv[i]; i++;
+        }
+        
+        if (i < n - 1) {
+            res += xA[i] * xSinvASinv[i]; i++;
+            res += xA[i] * xSinvASinv[i]; i++;
+        }
+        
+        if (i < n) {
+            res += xA[i] * xSinvASinv[i]; i++;
+        }
+        
     } else {
         for (DSDP_INT i = 0; i < n; ++i) {
             res += xA[i] * xSinvASinv[i];
         }
-
     }
     
     *asinv = res;
@@ -953,7 +1006,7 @@ extern DSDP_INT spsMatIspd( spsMat *sMat, DSDP_INT *ispd ) {
     
     // Invoke pardiso to do symbolic analysis and Cholesky factorization
     pardiso(sMat->pdsWorker, &maxfct, &mnum, &mtype, &phase, &sMat->dim,
-            sMat->x, sMat->p, sMat->i, &idummy, &idummy, PARDISO_PARAMS_CHOLESKY,
+            sMat->x, sMat->p, sMat->i, &idummy, &idummy, PARDISO_PARAMS_PSD_CHECK,
             &msglvl, NULL, NULL, &error);
         
     if (error == 0) {

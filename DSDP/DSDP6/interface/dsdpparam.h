@@ -66,7 +66,7 @@ static hsdParam defaultParam =
     1.0,
     1.0,
     
-    0.7,
+    0.75,
     0.97,
     
     0,
@@ -80,9 +80,9 @@ static hsdParam defaultParam =
     1e+20,
     1e+08,
     
-    1e-08,
     1e-06,
-    1e-08,
+    1e-06,
+    1e-06,
     1e-06
 };
 

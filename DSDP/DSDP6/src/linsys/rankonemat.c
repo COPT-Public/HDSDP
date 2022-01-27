@@ -153,9 +153,7 @@ extern DSDP_INT r1MatdiagTrace( r1Mat *x, double diag, double *trace ) {
         return retcode;
     }
     
-    double nrm = 0.0;
-    
-    retcode = r1MatFnorm(x, &nrm);
+    double nrm = dnrm2(&x->dim, x->x, &one);
     *trace = diag * nrm * nrm;
     
     return retcode;
@@ -210,6 +208,7 @@ extern DSDP_INT r1MatFnorm( r1Mat *x, double *fnrm ) {
     
     assert( x->dim );
     *fnrm = norm(&x->dim, x->x, &one);
+    *fnrm = (*fnrm) * (*fnrm);
     assert(*fnrm > 0);
     
     return DSDP_RETCODE_OK;
@@ -217,8 +216,9 @@ extern DSDP_INT r1MatFnorm( r1Mat *x, double *fnrm ) {
 
 extern DSDP_INT r1MatRscale( r1Mat *x, double r ) {
     
+    double rsqrt = sqrt(r);
     assert( (x->dim) && (r != 0.0));
-    vecdiv(&x->dim, &r, x->x, &one);
+    vecdiv(&x->dim, &rsqrt, x->x, &one);
     
     return DSDP_RETCODE_OK;
 }

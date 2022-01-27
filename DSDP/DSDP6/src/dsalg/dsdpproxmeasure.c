@@ -48,6 +48,7 @@ extern DSDP_INT dsdpgetPhaseAProxMeasure( HSDSolver *dsdpSolver, double newmu ) 
         dsdpSolver->eventMonitor[EVENT_PFEAS_FOUND] = TRUE;
         utd2 = newmu / (tau * tau) * (tau - dtaudelta);
         dsdpSolver->pObjVal = dObj - utd2;
+        dsdpSolver->pObjVal = dsdpSolver->pObjVal / dsdpSolver->tau;
     }
     
     return retcode;
