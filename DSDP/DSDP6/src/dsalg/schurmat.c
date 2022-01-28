@@ -23,14 +23,17 @@ static DSDP_INT setupSDPSchurBlock( HSDSolver *dsdpSolver, DSDP_INT blockid ) {
     r1Mat *r1data = dsdpSolver->r1aux[blockid];
     dsMat *dsdata = dsdpSolver->dsaux[blockid];
     
+    DSDP_INT dim = 0;
+    
     if (dsdpSolver->eventMonitor[EVENT_IN_PHASE_B]) {
-        m -= 1;
+        dim = m;
+    } else {
+        dim = m + 1;
     }
     
     void *data = NULL;
-    double maxdiag = 0.0;
     
-    for (DSDP_INT i = 0; i < m + 1; ++i) {
+    for (DSDP_INT i = 0; i < dim; ++i) {
         // Compute SinvASinv
         mattype = sdpData->types[i];
         if (mattype == MAT_TYPE_ZERO) {
@@ -51,7 +54,10 @@ static DSDP_INT setupSDPSchurBlock( HSDSolver *dsdpSolver, DSDP_INT blockid ) {
         for (DSDP_INT j = 0; j <= i; ++j) {
             getTraceASinvASinv(dsdpSolver, blockid, j, mattype, i, data);
         }
-        
+    }
+    
+    double maxdiag = 0.0;
+    for (DSDP_INT i = 0; i < m; ++i) {
         maxdiag = MAX(packIdx(dsdpSolver->Msdp->array, m, i, i), maxdiag);
     }
     
@@ -60,7 +66,7 @@ static DSDP_INT setupSDPSchurBlock( HSDSolver *dsdpSolver, DSDP_INT blockid ) {
         !dsdpSolver->Msdp->isillCond) {
         for (DSDP_INT i = 0; i < m; ++i) {
             packIdx(dsdpSolver->Msdp->array, m, i, i) += \
-            MIN(maxdiag * 1e-03, 1e-06);
+            MIN(maxdiag * 1e-06, 1e-08);
         }
     }
     

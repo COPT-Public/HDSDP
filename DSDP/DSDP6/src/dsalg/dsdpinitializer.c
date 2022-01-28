@@ -118,8 +118,7 @@ extern DSDP_INT dsdpInitializeB( HSDSolver *dsdpSolver ) {
             // mu = min((pObj - dObj) / rho, muPrimal)
             dsdpSolver->mu = MIN((dsdpSolver->pObjVal - dsdpSolver->dObjVal) / \
                                   dsdpSolver->param->rho, dsdpSolver->mu);
-            printf("| DSDP Phase B starts. Restarting dual-scaling with "
-                   "pObj: %10.3e  dObj: %10.3e\n", dsdpSolver->pObjVal, dsdpSolver->dObjVal);
+            printf("| DSDP Phase B starts. Restarting dual-scaling \n");
             break;
         case DSDP_PUNKNOWN_DFEAS:
             //pObj  = max(dsdpParam{5}, dObj + dsdpParam{5} / 10);
@@ -134,6 +133,9 @@ extern DSDP_INT dsdpInitializeB( HSDSolver *dsdpSolver ) {
             error(etype, "Invalid starting status for Phase B. \n");
             break;
     }
+    
+    printf("| Heuristic start: mu: %10.3e pObj: %10.3e  dObj: %10.3e \n",
+           dsdpSolver->mu, dsdpSolver->pObjVal, dsdpSolver->dObjVal);
     
     return retcode;
 }

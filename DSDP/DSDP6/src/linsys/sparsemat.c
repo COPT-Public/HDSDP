@@ -782,25 +782,27 @@ extern DSDP_INT spsSinvSpSinvSolve( spsMat *S, spsMat *A, dsMat *SinvASinv, doub
     retcode    = spsMatSpSolve(S, A, SinvA);
     
 #ifdef TRANS
+    double res = *asinv;
+    
     for (DSDP_INT i = 0; i < n - n % 8; i+=8) {
-        *asinv += SinvA[idx]; idx += inc;
-        *asinv += SinvA[idx]; idx += inc;
-        *asinv += SinvA[idx]; idx += inc;
-        *asinv += SinvA[idx]; idx += inc;
-        *asinv += SinvA[idx]; idx += inc;
-        *asinv += SinvA[idx]; idx += inc;
-        *asinv += SinvA[idx]; idx += inc;
-        *asinv += SinvA[idx]; idx += inc;
+        res += SinvA[idx]; idx += inc;
+        res += SinvA[idx]; idx += inc;
+        res += SinvA[idx]; idx += inc;
+        res += SinvA[idx]; idx += inc;
+        res += SinvA[idx]; idx += inc;
+        res += SinvA[idx]; idx += inc;
+        res += SinvA[idx]; idx += inc;
+        res += SinvA[idx]; idx += inc;
     }
     
     for (DSDP_INT i = n - n % 8; i < n; ++i) {
-        *asinv += SinvA[idx]; idx += inc;
+        res += SinvA[idx]; idx += inc;
     }
+    *asinv = res;
     MKL_Dimatcopy('C', 'T', n, n, 1.0, SinvA, n, n);
 #else
     double tmp = 0.0;
     // Transpose
-    *asinv = 0.0;
     for (DSDP_INT i = 0; i < n; ++i) {
         for (DSDP_INT j = 0; j <= i; ++j) {
             if (i == j) {

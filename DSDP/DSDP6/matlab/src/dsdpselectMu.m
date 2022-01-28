@@ -16,7 +16,7 @@ else
     Shat = S + 0.95 * alphap * dS;
     % assert(dsdpIspsd(Shat));
     dS = - alphap * dsdpgetATy(A, dy1) / muk;
-    alphamu = dsdpgetalpha(Shat, dS, 1.0);
+    alphamu = dsdpgetalpha(Shat, dS);
     if alphamu < 0
         alphamu = 1.0;
     end % End if 

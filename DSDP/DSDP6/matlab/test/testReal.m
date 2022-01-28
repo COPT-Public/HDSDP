@@ -32,7 +32,7 @@ iscorrect = zeros(ntest, 1);
 
 for k = 1:ntest
     
-    [At,b,c,K] = readsdpa(fullfile('../benchmark/sdplib/', 'mcp100.dat-s'));
+    [At,b,c,K] = readsdpa(fullfile('../benchmark/sdplib/', 'theta1.dat-s'));
     % [At,b,c,K] = readsdpa(fullfile('../benchmark/sdplib/', problems(k) + '.dat-s'));
     % [At,b,c,K] = readsdpa(fullfile('../benchmark/DIMACS/', 'prob_1_2_0.dat-s'));
     % load(fullfile("../benchmark", "bm1.mat"));

@@ -125,7 +125,7 @@ for i = 1:maxiter
     
     % Logging
     fprintf("%3d  %10.2e  %10.2e  %8.2e  %8.2e  %8.2e  %8.2e  %8.2e  %8.2e\n",...
-        i, pObj, dObj / tau, nrmRd, nrmrtk, muprimal, mu, step, delta);
+        i, pObj, b' * y / tau, nrmRd, nrmrtk, muprimal, mu, step, delta);
     
     % TODO: decrese mu
     if delta < 0.1
@@ -151,7 +151,7 @@ iter = i;
 
 % Logging
 fprintf("%3d  %10.2e  %10.2e  %8.2e  %8.2e  %8.2e  %8.2e  %8.2e  %8.2e \n",...
-        i, pObj, dObj / tau, nrmRd, nrmrtk, muprimal, mu, step, delta);
+        i, pObj, b' * y / tau, nrmRd, nrmrtk, muprimal, mu, step, delta);
 showdash(ndash);
 if reason == "DSDP_DUAL_INFEASIBLE"
     fprintf("Phase 1 certificates dual infeasibility \n");

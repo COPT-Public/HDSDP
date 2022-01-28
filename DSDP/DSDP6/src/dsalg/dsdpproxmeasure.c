@@ -25,7 +25,7 @@ extern DSDP_INT dsdpgetPhaseAProxMeasure( HSDSolver *dsdpSolver, double newmu ) 
     } else {
         // dtaudelta = - dObj + mu / tau + mu * csinv + tau * u' * d2 - mu * u' * d3;
         vec_dot(dsdpSolver->u, dsdpSolver->d2, &utd2);
-        dtaudelta = - dObj + newmu * (1 / tau + dsdpSolver->csinv) + utd2;
+        dtaudelta = - dObj + newmu * (1 / tau + dsdpSolver->csinv) + tau * utd2;
         vec_dot(dsdpSolver->u, dsdpSolver->d3, &utd2);
         dtaudelta -= utd2 * newmu;
         

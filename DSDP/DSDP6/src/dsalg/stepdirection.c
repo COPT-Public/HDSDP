@@ -49,6 +49,7 @@ static DSDP_INT getdTau( HSDSolver *dsdpSolver ) {
     double csinvrysinv = dsdpSolver->csinvrysinv;
     
     vec_dot(b1, d1, &taudenom);
+    
     taudenom += mu * csinvcsinv + kappa / tau;
     
     if (fabs(taudenom) < 1e-15) {

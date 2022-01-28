@@ -17,12 +17,18 @@ if useline
     end % End if 
 else
 % Do Cholesky decomposition
+
 R = dsdpperturbChol(S);
 B = R' \ dS;
 B = R' \ B';
 B = (B + B') / 2;
 % alphamax = - 1 / min(eig(B));
 alphamax = - 1 / eigs(B, 1, "smallestreal");
+
+
+
+% [eigmax, delta, ~] = lanczos(R, -dS);
+% alphamax = 1 / (eigmax + delta);
 
 if isnan(alphamax)
     alphamax = - 1 / real(min(eig(full(B))));

@@ -28,6 +28,8 @@ problems = [ "control3.dat-s", "gpp124-2.dat-s", "hinf1.dat-s", "hinf6.dat-s",..
     "control2.dat-s", "gpp124-1.dat-s", "gpp500-4.dat-s", "hinf5.dat-s", ...
     "maxG51.dat-s", "mcp250-4.dat-s", "qpG11.dat-s", "truss1.dat-s"];
 
+problems = ["G55mc.dat-s"];
+
 ntest = length(problems);
 iscorrect = zeros(ntest, 1);
 
@@ -47,7 +49,7 @@ for k = 1:ntest
         [~, nsqr] = size(A);
     end % End try
     
-    if nsqr > 100000
+    if nsqr <= 100000
         continue;
     end % End if
     
