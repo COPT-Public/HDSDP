@@ -56,14 +56,14 @@ static DSDP_INT setupSDPSchurBlock( HSDSolver *dsdpSolver, DSDP_INT blockid ) {
         }
     }
     
-    double maxdiag = 0.0;
-    for (DSDP_INT i = 0; i < m; ++i) {
-        maxdiag = MAX(packIdx(dsdpSolver->Msdp->array, m, i, i), maxdiag);
-    }
-    
     if (dsdpSolver->eventMonitor[EVENT_IN_PHASE_B] &&
-        !dsdpSolver->eventMonitor[EVENT_INVALID_GAP] &&
-        !dsdpSolver->Msdp->isillCond) {
+        !dsdpSolver->eventMonitor[EVENT_INVALID_GAP]) {
+        
+        double maxdiag = 0.0;
+        for (DSDP_INT i = 0; i < m; ++i) {
+            maxdiag = MAX(packIdx(dsdpSolver->Msdp->array, m, i, i), maxdiag);
+        }
+        
         for (DSDP_INT i = 0; i < m; ++i) {
             packIdx(dsdpSolver->Msdp->array, m, i, i) += \
             MIN(maxdiag * 1e-06, 1e-08);
@@ -77,7 +77,8 @@ static DSDP_INT setupSDPSchurBlock( HSDSolver *dsdpSolver, DSDP_INT blockid ) {
 //            MIN(maxdiag * 1e-05, 1e-05);
 //        }
 //    }
-
+    
+    assert( retcode == DSDP_RETCODE_OK );
     return retcode;
 }
 
@@ -213,7 +214,7 @@ static DSDP_INT setupLPSchur( HSDSolver *dsdpSolver ) {
     }
     
     if (i < n) {
-        sdata[i] = sdata[i] * cdata[i]; ++i;
+        sdata[i] = sdata[i] * cdata[i];
     }
     
     cs_gaxpy(A, sdata, u->x);

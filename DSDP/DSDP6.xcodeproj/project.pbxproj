@@ -66,17 +66,19 @@
 		192B24B22768D1A900F5C7C0 /* test_data.c in Sources */ = {isa = PBXBuildFile; fileRef = 192B24B12768D1A900F5C7C0 /* test_data.c */; };
 		1947DC1D2799B64B004065D8 /* test_dsdp.c in Sources */ = {isa = PBXBuildFile; fileRef = 1947DC1C2799B64B004065D8 /* test_dsdp.c */; };
 		1947DC222799B8CD004065D8 /* memwatch.c in Sources */ = {isa = PBXBuildFile; fileRef = 1947DC202799B8CD004065D8 /* memwatch.c */; };
-		1966164827A17B7500A67DEB /* libmkl_core.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 19B423A5279E849200E35E0B /* libmkl_core.a */; };
-		1966164927A17B7500A67DEB /* libmkl_sequential.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 19B423A3279E845E00E35E0B /* libmkl_sequential.a */; };
-		1966164A27A17B7F00A67DEB /* libmkl_sequential.a in Embed Libraries */ = {isa = PBXBuildFile; fileRef = 19B423A3279E845E00E35E0B /* libmkl_sequential.a */; };
 		19808F382737EEA60014086F /* test_vec.c in Sources */ = {isa = PBXBuildFile; fileRef = 19808F372737EEA60014086F /* test_vec.c */; };
 		19808F3F273807770014086F /* dsdpdata.c in Sources */ = {isa = PBXBuildFile; fileRef = 19808F3E273807770014086F /* dsdpdata.c */; };
 		19808F4327380A990014086F /* dsdppresolve.c in Sources */ = {isa = PBXBuildFile; fileRef = 19808F4227380A990014086F /* dsdppresolve.c */; };
 		19808F46273817510014086F /* rankonemat.c in Sources */ = {isa = PBXBuildFile; fileRef = 19808F45273817510014086F /* rankonemat.c */; };
 		1985AC3D279B9DB400B7B8EB /* dsdppfeas.c in Sources */ = {isa = PBXBuildFile; fileRef = 1985AC3C279B9DB400B7B8EB /* dsdppfeas.c */; };
+		199220852737D8C500DD975D /* libiomp5.dylib in Frameworks */ = {isa = PBXBuildFile; fileRef = 199220842737D8C500DD975D /* libiomp5.dylib */; settings = {ATTRIBUTES = (Weak, ); }; };
+		199220862737D8C500DD975D /* libiomp5.dylib in Embed Libraries */ = {isa = PBXBuildFile; fileRef = 199220842737D8C500DD975D /* libiomp5.dylib */; settings = {ATTRIBUTES = (CodeSignOnCopy, ); }; };
+		19B423A4279E846F00E35E0B /* libmkl_sequential.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 19B423A3279E845E00E35E0B /* libmkl_sequential.a */; };
+		19B423A7279E849F00E35E0B /* libmkl_core.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 19B423A5279E849200E35E0B /* libmkl_core.a */; };
 		19B423A8279E84BD00E35E0B /* libmkl_intel_lp64.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 19B423A6279E849200E35E0B /* libmkl_intel_lp64.a */; };
 		19B423A9279E84D900E35E0B /* libmkl_core.a in Embed Libraries */ = {isa = PBXBuildFile; fileRef = 19B423A5279E849200E35E0B /* libmkl_core.a */; settings = {ATTRIBUTES = (CodeSignOnCopy, ); }; };
 		19B423AA279E84D900E35E0B /* libmkl_intel_lp64.a in Embed Libraries */ = {isa = PBXBuildFile; fileRef = 19B423A6279E849200E35E0B /* libmkl_intel_lp64.a */; settings = {ATTRIBUTES = (CodeSignOnCopy, ); }; };
+		19B423AB279E84D900E35E0B /* libmkl_sequential.a in Embed Libraries */ = {isa = PBXBuildFile; fileRef = 19B423A3279E845E00E35E0B /* libmkl_sequential.a */; settings = {ATTRIBUTES = (CodeSignOnCopy, ); }; };
 		19BACAF3274EBC1900E987FD /* test_sparse.c in Sources */ = {isa = PBXBuildFile; fileRef = 19BACAF2274EBC1900E987FD /* test_sparse.c */; };
 		19BACAF5274EBC2D00E987FD /* test_dense.c in Sources */ = {isa = PBXBuildFile; fileRef = 19BACAF4274EBC2D00E987FD /* test_dense.c */; };
 		19BACAF727521A7800E987FD /* test_pardiso.c in Sources */ = {isa = PBXBuildFile; fileRef = 19BACAF627521A7800E987FD /* test_pardiso.c */; };
@@ -113,9 +115,10 @@
 			dstPath = "";
 			dstSubfolderSpec = 10;
 			files = (
-				1966164A27A17B7F00A67DEB /* libmkl_sequential.a in Embed Libraries */,
 				19B423A9279E84D900E35E0B /* libmkl_core.a in Embed Libraries */,
 				19B423AA279E84D900E35E0B /* libmkl_intel_lp64.a in Embed Libraries */,
+				19B423AB279E84D900E35E0B /* libmkl_sequential.a in Embed Libraries */,
+				199220862737D8C500DD975D /* libiomp5.dylib in Embed Libraries */,
 			);
 			name = "Embed Libraries";
 			runOnlyForDeploymentPostprocessing = 0;
@@ -197,7 +200,6 @@
 		1947DC1E2799B66B004065D8 /* data.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = data.h; sourceTree = "<group>"; };
 		1947DC202799B8CD004065D8 /* memwatch.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = memwatch.c; sourceTree = "<group>"; };
 		1947DC212799B8CD004065D8 /* memwatch.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = memwatch.h; sourceTree = "<group>"; };
-		1966164427A17A4900A67DEB /* libmkl_intel_thread.a */ = {isa = PBXFileReference; lastKnownFileType = archive.ar; name = libmkl_intel_thread.a; path = ../../../../../opt/intel/oneapi/mkl/2021.2.0/lib/libmkl_intel_thread.a; sourceTree = "<group>"; };
 		19808F372737EEA60014086F /* test_vec.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = test_vec.c; sourceTree = "<group>"; };
 		19808F392737FEDA0014086F /* test.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = test.h; sourceTree = "<group>"; };
 		19808F3D273807770014086F /* dsdpdata.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = dsdpdata.h; sourceTree = "<group>"; };
@@ -254,9 +256,10 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				1966164827A17B7500A67DEB /* libmkl_core.a in Frameworks */,
-				1966164927A17B7500A67DEB /* libmkl_sequential.a in Frameworks */,
 				19B423A8279E84BD00E35E0B /* libmkl_intel_lp64.a in Frameworks */,
+				19B423A4279E846F00E35E0B /* libmkl_sequential.a in Frameworks */,
+				19B423A7279E849F00E35E0B /* libmkl_core.a in Frameworks */,
+				199220852737D8C500DD975D /* libiomp5.dylib in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -499,7 +502,6 @@
 		199220742737D86C00DD975D /* Frameworks */ = {
 			isa = PBXGroup;
 			children = (
-				1966164427A17A4900A67DEB /* libmkl_intel_thread.a */,
 				19B423A5279E849200E35E0B /* libmkl_core.a */,
 				19B423A6279E849200E35E0B /* libmkl_intel_lp64.a */,
 				19B423A3279E845E00E35E0B /* libmkl_sequential.a */,
@@ -693,7 +695,7 @@
 				CLANG_WARN_UNREACHABLE_CODE = YES;
 				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
 				COPY_PHASE_STRIP = NO;
-				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
+				DEBUG_INFORMATION_FORMAT = dwarf;
 				ENABLE_STRICT_OBJC_MSGSEND = YES;
 				ENABLE_TESTABILITY = YES;
 				GCC_C_LANGUAGE_STANDARD = gnu11;
@@ -710,7 +712,6 @@
 				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
 				GCC_WARN_UNUSED_FUNCTION = YES;
 				GCC_WARN_UNUSED_VARIABLE = YES;
-				MACH_O_TYPE = mh_execute;
 				MACOSX_DEPLOYMENT_TARGET = 11.2;
 				MTL_ENABLE_DEBUG_INFO = INCLUDE_SOURCE;
 				MTL_FAST_MATH = YES;
@@ -765,11 +766,9 @@
 				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
 				GCC_WARN_UNUSED_FUNCTION = YES;
 				GCC_WARN_UNUSED_VARIABLE = YES;
-				MACH_O_TYPE = mh_execute;
 				MACOSX_DEPLOYMENT_TARGET = 11.2;
 				MTL_ENABLE_DEBUG_INFO = NO;
 				MTL_FAST_MATH = YES;
-				ONLY_ACTIVE_ARCH = YES;
 				SDKROOT = macosx;
 			};
 			name = Release;

@@ -11,7 +11,7 @@ static DSDP_INT packFactorize( dsMat *S ) {
     /* Factorize the dsMat matrix */
     DSDP_INT retcode = DSDP_RETCODE_OK;
     
-    assert( (!S->isFactorized) && (S->dim > 0));
+    assert( (!S->isFactorized) && (S->dim > 0) );
     if (S->isFactorized) {
         error(etype, "Matrix is already factorized. \n");
     }

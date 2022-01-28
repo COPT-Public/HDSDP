@@ -170,10 +170,11 @@ extern DSDP_INT r1MatCountNnz( r1Mat *x ) {
         }
     }
     
-    if (!x->nzIdx) {
+    if (x->nzIdx) {
         DSDP_FREE(x->nzIdx);
-        x->nzIdx = (DSDP_INT *) calloc(sizeof(DSDP_INT), nnz);
     }
+    
+    x->nzIdx = (DSDP_INT *) calloc(sizeof(DSDP_INT), nnz);
     
     DSDP_INT idx = 0;
     for (DSDP_INT i = 0; i < x->dim; ++i) {
