@@ -44,7 +44,7 @@ static DSDP_INT packSolve( dsMat *S, DSDP_INT nrhs, double *B, double *X ) {
     
     /* Solve the linear system S * X = B using Lapack packed format */
     DSDP_INT retcode = DSDP_RETCODE_OK;
-    assert( (S->isFactorized) && (S->dim > 0) && (nrhs > 0));
+    assert( (S->isFactorized) && (S->dim > 0) && (nrhs > 0) );
     
     if (!S->isFactorized) {
         error(etype, "Matrix is not yet factorized. \n");
@@ -158,22 +158,20 @@ extern DSDP_INT denseMataXpbY( double alpha, dsMat *dXMat, double beta, dsMat *d
 }
 
 extern DSDP_INT denseMatxTAx( dsMat *dAMat, vec *x, double *xTAx ) {
-    
-    // Compute quadratic for m x' * A * x 
+    // Compute quadratic for x' * A * x
     DSDP_INT retcode = DSDP_RETCODE_OK;
     
     assert( dAMat->dim == x->dim );
     
     char uplo    = DSDP_MAT_LOW;
     DSDP_INT dim = dAMat->dim;
-    double alpha = 1.0;
-    double beta  = 0.0;
+    double alpha = 1.0, beta  = 0.0;
     
     double *y = (double *) calloc(dim, sizeof(double));
     packmatvec(&uplo, &dim, &alpha, dAMat->array, x->x,
                &one, &beta, y, &one);
     
-    *xTAx = ddot(&dim, x->x, &one, y, &one);
+    *xTAx = dot(&dim, x->x, &one, y, &one);
     
     DSDP_FREE(y);
     return retcode;
@@ -183,12 +181,9 @@ extern DSDP_INT denseMatRscale( dsMat *dXMat, double r ) {
     // Scale a matrix by reciprocical without over/under flow
     
     DSDP_INT retcode = DSDP_RETCODE_OK;
-    
-    assert( dXMat->dim );
-    double *array = dXMat->array;
+    assert( dXMat->dim > 0 );
     DSDP_INT n = nsym(dXMat->dim);
-    
-    vecdiv(&n, &r, array, &one);
+    vecdiv(&n, &r, dXMat->array, &one);
     
     return retcode;
 }
@@ -196,7 +191,7 @@ extern DSDP_INT denseMatRscale( dsMat *dXMat, double r ) {
 extern DSDP_INT denseMatFnorm( dsMat *dMat, double *fnrm ) {
     
     DSDP_INT retcode = DSDP_RETCODE_OK;
-    assert(dMat->dim > 0);
+    assert( dMat->dim > 0);
     
     char nrm     = DSDP_MAT_FNORM;
     char uplo    = DSDP_MAT_LOW;
@@ -219,10 +214,8 @@ extern DSDP_INT denseVecSolve( dsMat *dAMat, vec *dbVec, double *Ainvb ) {
     
     // Solve a dense system A * x = b
     DSDP_INT retcode = DSDP_RETCODE_OK;
-    
     assert(dAMat->dim == dbVec->dim);
     retcode = packSolve(dAMat, 1, dbVec->x, Ainvb);
-    
     return retcode;
 }
 
@@ -326,33 +319,41 @@ extern DSDP_INT denseDsSolve( dsMat *dAMat, dsMat *dBMat, double *AinvB ) {
 /* Schur matrix assembly */
 extern DSDP_INT denseSpsTrace( dsMat *dAMat, spsMat *sBMat, double *trace ) {
     
-    // Compute trace (A * B) for dense A and sparse B. Used for trace(SinvASinv * A)
+    // Compute trace (A * B) for dense A and sparse B.
+    /*
+     trace (A1 * A2) = \sum_{i, j} a_{i,j} * b_{i, j}
+     
+     ******************************************
+     *    Computationally critical routine    *
+     ******************************************
+     */
     DSDP_INT retcode = DSDP_RETCODE_OK;
     assert( dAMat->dim == sBMat->dim );
     assert((!dAMat->isFactorized) && (!sBMat->isFactorized));
     
     DSDP_INT n = dAMat->dim;
+    double *A = dAMat->array, *Bx = sBMat->x, t = 0.0, tmp = 0.0;
+    DSDP_INT i, k, nnz = sBMat->nnz, *Bp = sBMat->p, *Bi = sBMat->i;
     
-    // t stores trace, tmp stores the element-wise product
-    double   t = 0.0;
-    double tmp = 0.0;
-    
-    // Get sparse data structure
-    double   *A  = dAMat->array;
-    DSDP_INT *Bp = sBMat->p;
-    DSDP_INT *Bi = sBMat->i;
-    double   *Bx = sBMat->x;
-    DSDP_INT   s = 0;
-    
-    for (DSDP_INT i = 0; i < n; ++i) {
-        for (DSDP_INT k = Bp[i]; k < Bp[i + 1]; ++k) {
-            s   = Bi[k];
-            tmp = Bx[k] * packIdx(A, n, s, i);
-            if (Bi[k] == i) {
-                tmp = tmp / 2;
+    for (i = 0; i < n; ++i) {
+        k = Bp[i];
+        // The sparse column is empty
+        if (k == Bp[i + 1]) {
+            if (k == nnz) {
+                break;
+            } else {
+                continue;
             }
-            t += tmp;
         }
+        if (Bi[k] == i) {
+            tmp = 0.5 * Bx[k] * packIdx(A, n, Bi[k], i);
+        } else {
+            tmp = Bx[k] * packIdx(A, n, Bi[k], i);
+        }
+        for (k = Bp[i] + 1; k < Bp[i + 1]; ++k) {
+            tmp += Bx[k] * packIdx(A, n, Bi[k], i);
+        }
+        t += tmp;
     }
     
     *trace = 2.0 * t;
@@ -366,14 +367,9 @@ extern DSDP_INT denseDsTrace( dsMat *dAMat, dsMat *dBMat, double *trace ) {
     assert( dAMat->dim == dBMat->dim );
     assert((!dAMat->isFactorized) && (!dBMat->isFactorized));
     
-    DSDP_INT n = dAMat->dim;
-    double *A = dAMat->array;
-    double *B = dBMat->array;
-    double res = 0.0;
-    DSDP_INT nmat = nsym(n);
-    
-    // Take care of the diagonal elements
-    res = ddot(&nmat, A, &one, B, &one);
+    DSDP_INT n = dAMat->dim, nmat = nsym(n);;
+    double *A = dAMat->array, *B = dBMat->array, res = 0.0;
+    res = dot(&nmat, A, &one, B, &one);
     
     // Subtract half of diagonal off
     DSDP_INT idx = 0;
@@ -383,7 +379,6 @@ extern DSDP_INT denseDsTrace( dsMat *dAMat, dsMat *dBMat, double *trace ) {
     }
     
     *trace = 2.0 * res;
-    
     return retcode;
 }
 
@@ -391,36 +386,33 @@ extern DSDP_INT denseDiagTrace( dsMat *dAMat, double diag, double *trace ) {
     
     // Compute trace( A * diag * I ) = diag * trace( A ). Used for Ry
     DSDP_INT retcode = DSDP_RETCODE_OK;
-        
     DSDP_INT n = dAMat->dim;
-    double *array = dAMat->array;
-    double mattrace = 0.0;
-    
+    double *array = dAMat->array, mattrace = 0.0;
     register DSDP_INT i, idx = 0;
     
     if (n > 64) {
         
-        for (i = 0; i < n - 7; i++) {
-            mattrace += array[idx]; idx += n - i; i++;
-            mattrace += array[idx]; idx += n - i; i++;
-            mattrace += array[idx]; idx += n - i; i++;
-            mattrace += array[idx]; idx += n - i; i++;
-            mattrace += array[idx]; idx += n - i; i++;
-            mattrace += array[idx]; idx += n - i; i++;
-            mattrace += array[idx]; idx += n - i; i++;
+        for (i = 0; i < n - 7; ++i) {
+            mattrace += array[idx]; idx += n - i; ++i;
+            mattrace += array[idx]; idx += n - i; ++i;
+            mattrace += array[idx]; idx += n - i; ++i;
+            mattrace += array[idx]; idx += n - i; ++i;
+            mattrace += array[idx]; idx += n - i; ++i;
+            mattrace += array[idx]; idx += n - i; ++i;
+            mattrace += array[idx]; idx += n - i; ++i;
             mattrace += array[idx]; idx += n - i;
         }
         
         if (i < n - 3) {
-            mattrace += array[idx]; idx += n - i; i++;
-            mattrace += array[idx]; idx += n - i; i++;
-            mattrace += array[idx]; idx += n - i; i++;
-            mattrace += array[idx]; idx += n - i; i++;
+            mattrace += array[idx]; idx += n - i; ++i;
+            mattrace += array[idx]; idx += n - i; ++i;
+            mattrace += array[idx]; idx += n - i; ++i;
+            mattrace += array[idx]; idx += n - i; ++i;
         }
         
         if (i < n - 1) {
-            mattrace += array[idx]; idx += n - i; i++;
-            mattrace += array[idx]; idx += n - i; i++;
+            mattrace += array[idx]; idx += n - i; ++i;
+            mattrace += array[idx]; idx += n - i; ++i;
         }
         
         if (i < n) {
@@ -429,7 +421,7 @@ extern DSDP_INT denseDiagTrace( dsMat *dAMat, double diag, double *trace ) {
         
     } else {
         for (i = 0; i < n; ++i) {
-            mattrace += array[(DSDP_INT) (2 * n - i + 1) * i / 2];
+            mattrace += packIdx(array, n, i, i);
         }
     }
     
@@ -441,13 +433,13 @@ extern DSDP_INT denseDiagTrace( dsMat *dAMat, double diag, double *trace ) {
 /* Utilities */
 extern DSDP_INT denseMatScatter( dsMat *dMat, vec *b, DSDP_INT k ) {
     
-    // Scatter dMat(:, k) into b
+    // Scatter b = dMat(:, k)
     DSDP_INT retcode = DSDP_RETCODE_OK;
     assert( dMat->dim == b->dim );
     
     // Index conversion
     DSDP_INT n   = dMat->dim;
-    DSDP_INT idx = (DSDP_INT) (2 * n - k + 1) * k / 2;
+    DSDP_INT idx = (DSDP_INT) (2 * n - k + 1) * k / 2; // simplified packIdx
     memcpy(&b->x[k], &dMat->array[idx], sizeof(double) * (n - k));
     idx = k;
     
@@ -463,9 +455,8 @@ extern DSDP_INT denseMatFill( dsMat *dMat, double *fulldMat ) {
     
     // Fill packed matrix to full (there is no structure for symmetric full dense matrix)
     DSDP_INT retcode = DSDP_RETCODE_OK;
-    DSDP_INT n       = dMat->dim;
-    DSDP_INT idx     = 0;
-    double *x        = NULL;
+    DSDP_INT n = dMat->dim, idx;
+    double *x = NULL;
     
     for (DSDP_INT k = 0; k < n; ++k) {
         idx = (DSDP_INT) (2 * n - k + 1) * k / 2;
@@ -490,38 +481,36 @@ extern DSDP_INT denseMatGetdiag( dsMat *dMat, vec *diag ) {
     assert( diag->dim == dMat->dim );
     
     DSDP_INT n    = dMat->dim;
-    double *x     = diag->x;
-    double *array = dMat->array;
-    
+    double *x = diag->x, *array = dMat->array;
     register DSDP_INT i, idx = 0;
     
     if (n > 64) {
         
         for (i = 0; i < n - 7; ++i) {
-            x[i] = array[idx]; idx += n - i; i++;
-            x[i] = array[idx]; idx += n - i; i++;
-            x[i] = array[idx]; idx += n - i; i++;
-            x[i] = array[idx]; idx += n - i; i++;
-            x[i] = array[idx]; idx += n - i; i++;
-            x[i] = array[idx]; idx += n - i; i++;
-            x[i] = array[idx]; idx += n - i; i++;
+            x[i] = array[idx]; idx += n - i; ++i;
+            x[i] = array[idx]; idx += n - i; ++i;
+            x[i] = array[idx]; idx += n - i; ++i;
+            x[i] = array[idx]; idx += n - i; ++i;
+            x[i] = array[idx]; idx += n - i; ++i;
+            x[i] = array[idx]; idx += n - i; ++i;
+            x[i] = array[idx]; idx += n - i; ++i;
             x[i] = array[idx]; idx += n - i;
         }
         
         if (i < n - 3) {
-            x[i] = array[idx]; idx += n - i; i++;
-            x[i] = array[idx]; idx += n - i; i++;
-            x[i] = array[idx]; idx += n - i; i++;
-            x[i] = array[idx]; idx += n - i; i++;
+            x[i] = array[idx]; idx += n - i; ++i;
+            x[i] = array[idx]; idx += n - i; ++i;
+            x[i] = array[idx]; idx += n - i; ++i;
+            x[i] = array[idx]; idx += n - i; ++i;
         }
         
         if (i < n - 1) {
-            x[i] = array[idx]; idx += n - i; i++;
-            x[i] = array[idx]; idx += n - i; i++;
+            x[i] = array[idx]; idx += n - i; ++i;
+            x[i] = array[idx]; idx += n - i; ++i;
         }
         
         if (i < n) {
-            x[i] = array[idx]; idx += n - i; i++;
+            x[i] = array[idx]; idx += n - i; ++i;
         }
         
     } else {

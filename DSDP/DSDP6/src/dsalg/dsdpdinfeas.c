@@ -23,6 +23,11 @@ static const double nomu[1]    = {1.0};
 static const double consvmu[2] = {0.3, 1.0};
 static const double aggmu[4]   = {0.1, 0.4, 0.7, 1.0};
 
+extern void funcA( dsMat *A, DSDP_INT i, DSDP_INT j) {
+    assert( i >= j );
+    printf("%30.20e \n", packIdx(A->array, A->dim, i, j));
+}
+
 extern DSDP_INT DSDPDInfeasEliminator( HSDSolver *dsdpSolver ) {
     
     DSDP_INT retcode = DSDP_RETCODE_OK;

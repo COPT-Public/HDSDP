@@ -36,6 +36,7 @@ static DSDP_INT setupSDPSchurBlock( HSDSolver *dsdpSolver, DSDP_INT blockid ) {
     for (DSDP_INT i = 0; i < dim; ++i) {
         // Compute SinvASinv
         mattype = sdpData->types[i];
+        
         if (mattype == MAT_TYPE_ZERO) {
             continue;
         } else if (mattype == MAT_TYPE_RANK1) {
@@ -43,7 +44,6 @@ static DSDP_INT setupSDPSchurBlock( HSDSolver *dsdpSolver, DSDP_INT blockid ) {
             data = (void *) r1data;
             mattype = MAT_TYPE_RANK1;
             checkCode;
-            retcode = r1MatCountNnz(r1data);
         } else {
             retcode = getSinvASinv(dsdpSolver, blockid, i, dsdata);
             data = (void *) dsdata;

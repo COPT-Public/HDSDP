@@ -5,6 +5,42 @@
  */
 static char etype[] = "DSDP Initialization";
 
+static DSDP_INT isConstant( HSDSolver *dsdpSolver, DSDP_INT *isConstant ) {
+    // Check whether C is a constant
+    DSDP_INT retcode = DSDP_RETCODE_OK;
+    *isConstant = FALSE;
+    
+    DSDP_INT m = dsdpSolver->m;
+    DSDP_INT dim = 0;
+    r1Mat *C = NULL;
+    DSDP_INT isCons = TRUE;
+    double num = 0.0;
+    
+    for (DSDP_INT i = 0; i < dsdpSolver->nBlock; ++i) {
+        isCons = TRUE;
+        if (dsdpSolver->sdpData[i]->types[m] == MAT_TYPE_RANK1) {
+            C = (r1Mat *) dsdpSolver->sdpData[i]->sdpData[m];
+            dim = C->dim;
+            num = C->x[0];
+            for (DSDP_INT j = 1; j < dim; ++j) {
+                if (fabs(num - C->x[j]) > 1e-03) {
+                    isCons = FALSE;
+                    break;
+                }
+            }
+        } else {
+            isCons = FALSE;
+        }
+        
+        if (isCons) {
+            *isConstant = TRUE;
+            break;
+        }
+    }
+    
+    return retcode;
+}
+
 static DSDP_INT inity( HSDSolver *dsdpSolver ) {
     
     DSDP_INT retcode = DSDP_RETCODE_OK;
@@ -45,6 +81,13 @@ static DSDP_INT initresi( HSDSolver *dsdpSolver ) {
     double nrm  = 0.0;
     double tau  = dsdpSolver->tau;
     DSDP_INT m  = dsdpSolver->m;
+    
+    DSDP_INT isCons = FALSE;
+    retcode = isConstant(dsdpSolver, &isCons);
+    
+    if (isCons) {
+        beta *= 10.0;
+    }
     
     for (DSDP_INT i = 0; i < dsdpSolver->nBlock; ++i) {
         // Matrix of index m in each block is C

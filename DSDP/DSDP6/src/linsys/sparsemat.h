@@ -36,6 +36,7 @@ extern DSDP_INT spsMatAllocData    ( spsMat *sMat, DSDP_INT dim, DSDP_INT nnz );
 extern DSDP_INT spsMatFree         ( spsMat *sMat );
 
 /* Basic operations */
+extern DSDP_INT spsMatAx           ( spsMat *A, vec *x, vec *Ax );
 extern DSDP_INT spsMataXpbY        ( double alpha, spsMat *sXMat, double beta,
                                     spsMat *sYMat, DSDP_INT *sumHash );
 extern DSDP_INT spsMatAdddiag      ( spsMat *sMat, double d, DSDP_INT *sumHash );
@@ -49,6 +50,8 @@ extern DSDP_INT spsMatRscale       ( spsMat *sXMat, double r );
 extern DSDP_INT spsMatSymbolic     ( spsMat *sAMat );
 extern DSDP_INT spsMatFactorize    ( spsMat *sAMat );
 extern DSDP_INT spsMatVecSolve     ( spsMat *sAMat, vec    *sbVec, double *Ainvb );
+extern DSDP_INT spsMatVecFSolve    ( spsMat *sAmat, vec *sbVec, vec *Ainvb );
+extern DSDP_INT spsMatVecBSolve    ( spsMat *sAmat, vec *sbVec, vec *Ainvb );
 extern DSDP_INT spsMatSpSolve      ( spsMat *sAMat, spsMat *sBMat, double *AinvB );
 extern DSDP_INT spsMatDsSolve      ( spsMat *sAMat, dsMat  *sBMat, double *AinvB );
 extern DSDP_INT spsMatLspLSolve    ( spsMat *S,     spsMat *dS,    spsMat *spaux );

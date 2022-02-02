@@ -25,9 +25,18 @@ extern DSDP_INT r1MatAlloc( r1Mat *x, const DSDP_INT n ) {
     return DSDP_RETCODE_OK;
 }
 
+extern DSDP_INT r1MatSetData( r1Mat *x, double eigval, double *array ) {
+    // Set rank-one data
+    assert(x->dim > 0);
+    memcpy(x->x, array, sizeof(double) * x->dim);
+    x->sign = eigval;
+    r1MatCountNnz(x);
+    return DSDP_RETCODE_OK;
+}
+
 extern DSDP_INT r1denseSpsUpdate( spsMat *sAMat, double alpha, r1Mat *r1BMat ) {
     // Compute A = A + alpha * B where B is a rank-one matrix.
-    // A is a sparse matrix that is known to be dense later
+    // A is a sparse matrix that is known to be dense actually
     // Also this routine DOES NOT update Ap and Ai
     DSDP_INT retcode = DSDP_RETCODE_OK;
     DSDP_INT n = sAMat->dim;
@@ -36,7 +45,7 @@ extern DSDP_INT r1denseSpsUpdate( spsMat *sAMat, double alpha, r1Mat *r1BMat ) {
     assert( !sAMat->isFactorized );
     assert( sAMat->nnz > 0 );
     
-    if (fabs(alpha) < 1e-10) {
+    if (fabs(alpha) < 1e-15) {
         return retcode;
     }
     
@@ -44,7 +53,7 @@ extern DSDP_INT r1denseSpsUpdate( spsMat *sAMat, double alpha, r1Mat *r1BMat ) {
     alpha = alpha * sign;
     
     double *array = sAMat->x;
-    if (r1BMat->nnz > 0.8 * n) {
+    if (r1BMat->nnz >= 0.8 * n) {
         char uplo = DSDP_MAT_LOW;
         packr1update(&uplo, &n, &alpha, r1BMat->x, &one, array);
     } else {
@@ -52,7 +61,7 @@ extern DSDP_INT r1denseSpsUpdate( spsMat *sAMat, double alpha, r1Mat *r1BMat ) {
         DSDP_INT *nzIdx = r1BMat->nzIdx;
         for (DSDP_INT i = 0; i < r1BMat->nnz; ++i) {
             for (DSDP_INT j = 0; j <= i; ++j) {
-                packIdx(array, n, nzIdx[i], nzIdx[j]) += r1x[nzIdx[i]] * r1x[nzIdx[j]];
+                packIdx(array, n, nzIdx[i], nzIdx[j]) += sign * r1x[nzIdx[i]] * r1x[nzIdx[j]];
             }
         }
     }
@@ -61,84 +70,184 @@ extern DSDP_INT r1denseSpsUpdate( spsMat *sAMat, double alpha, r1Mat *r1BMat ) {
 }
 
 extern DSDP_INT r1Matr1Trace( r1Mat *x, r1Mat *y, double *trace ) {
+    
     // Compute the inner product of two rank one matrices
+    /* trace(A1 * A2) = trace( d1 * a1 * a1' * d2 * a2 * a2' )
+                      = d1 * d2 * (a1' * a2)^2
+       ******************************************
+       *    Computationally critical routine    *
+       ******************************************
+     */
     
     double res = 0.0;
+    DSDP_INT xnnz = x->nnz, ynnz = y->nnz, n = x->dim;
     
-    DSDP_INT xnnz = x->nnz;
-    DSDP_INT ynnz = y->nnz;
-    DSDP_INT n = x->dim;
-    
-    if (MIN(xnnz, ynnz) >= 0.6 * n) {
+    if (MIN(xnnz, ynnz) >= 0.7 * n) {
+        // Use dense dot product if rank-one matrix is dense
         res = dot(&x->dim, x->x, &one, y->x, &one);
-    } else {
         
-        double *xdata = x->x;
-        double *ydata = y->x;
-        DSDP_INT *xidx = x->nzIdx;
-        DSDP_INT *yidx = y->nzIdx;
-        DSDP_INT idx = 0;
+    } else {
+        // Otherwise do sparse computation
+        double *xdata = x->x, *ydata = y->x;
+        DSDP_INT *dataidx = NULL, nnz, i, idx = 0;
         
         if (xnnz < ynnz) {
-            for (DSDP_INT i = 0; i < xnnz; ++i) {
-                idx = xidx[i];
-                res += xdata[idx] * ydata[idx];
-            }
+            dataidx = x->nzIdx;
+            nnz = xnnz;
         } else {
-            
-            for (DSDP_INT i = 0; i < ynnz; ++i) {
-                idx = yidx[i];
-                res += xdata[idx] * ydata[idx];
-            }
+            dataidx = y->nzIdx;
+            nnz = ynnz;
+        }
+        
+        for (i = 0; i < nnz - 7; ++i) {
+            idx = dataidx[i]; res += xdata[idx] * ydata[idx]; ++i;
+            idx = dataidx[i]; res += xdata[idx] * ydata[idx]; ++i;
+            idx = dataidx[i]; res += xdata[idx] * ydata[idx]; ++i;
+            idx = dataidx[i]; res += xdata[idx] * ydata[idx]; ++i;
+            idx = dataidx[i]; res += xdata[idx] * ydata[idx]; ++i;
+            idx = dataidx[i]; res += xdata[idx] * ydata[idx]; ++i;
+            idx = dataidx[i]; res += xdata[idx] * ydata[idx]; ++i;
+            idx = dataidx[i]; res += xdata[idx] * ydata[idx];
+        }
+        
+        if (i < nnz - 3) {
+            idx = dataidx[i]; res += xdata[idx] * ydata[idx]; ++i;
+            idx = dataidx[i]; res += xdata[idx] * ydata[idx]; ++i;
+            idx = dataidx[i]; res += xdata[idx] * ydata[idx]; ++i;
+            idx = dataidx[i]; res += xdata[idx] * ydata[idx]; ++i;
+        }
+        
+        if (i < nnz - 1) {
+            idx = dataidx[i]; res += xdata[idx] * ydata[idx]; ++i;
+            idx = dataidx[i]; res += xdata[idx] * ydata[idx]; ++i;
+        }
+        
+        if (i < nnz) {
+            idx = dataidx[i]; res += xdata[idx] * ydata[idx];
         }
     }
     
-    *trace = res * res;
+    *trace = res * res * x->sign * y->sign;
     return DSDP_RETCODE_OK;
 }
 
 extern DSDP_INT r1MatdenseTrace( r1Mat *x, dsMat *A, double *trace ) {
     // Compute the inner product of a rank-1 matrix and dense A
+    /* trace (A1 * A2) = trace( d * a1 * a1' * A2 )
+                       = d * a1' * A2 * a1
+     
+     ******************************************
+     *    Computationally critical routine    *
+     ******************************************
+     
+     */
     DSDP_INT retcode = DSDP_RETCODE_OK;
     assert( x->dim == A->dim );
     
-    DSDP_INT n   = x->dim;
-    double *Ax   = (double *) calloc(n, sizeof(double));
-    char uplo    = DSDP_MAT_LOW;
-    double alpha = 1.0;
-    double beta  = 0.0;
+    DSDP_INT n = x->dim, nnz = x->nnz;
     
-    packmatvec(&uplo, &n, &alpha, A->array, x->x, &one, &beta, Ax, &one);
-    *trace = dot(&n, x->x, &one, Ax, &one);
+    // Two ways of implementation
+    double res = 0.0, *Ax = NULL, *Adata = A->array, *xdata = x->x;
+    
+    if (nnz >= 0.7 * n) {
+        // If a1 is dense and the quadratic form is computed using Blas routines
+        char uplo = DSDP_MAT_LOW;
+        double alpha = 1.0, beta = 0.0;
+        Ax = (double *) calloc(n, sizeof(double));
+        packmatvec(&uplo, &n, &alpha, A->array, x->x, &one, &beta, Ax, &one);
+        *trace = dot(&n, x->x, &one, Ax, &one) * x->sign;
+    } else {
+        DSDP_INT cidx, ridx, *nzidx = x->nzIdx;
+        double cval = 0.0, csum;
+        // x' * A * x = \sum_{i, j} a_{i,j} * x_i * x_j
+        for (DSDP_INT col = 0; col < nnz; ++col) {
+            cidx = nzidx[col];
+            cval = xdata[cidx];
+            csum = 0.5 * packIdx(Adata, n, cidx, cidx) * cval;
+            // Necessary to unroll loop here ?
+            for (DSDP_INT row = col + 1; row < nnz; ++row) {
+                ridx = nzidx[row];
+                csum += packIdx(Adata, n, ridx, cidx) * xdata[ridx];
+            }
+            res += csum * cval;
+        }
+        *trace = 2 * res * x->sign;
+    }
     
     DSDP_FREE(Ax);
-    
     return retcode;
 }
 
 extern DSDP_INT r1MatspsTrace( r1Mat *x, spsMat *A, double *trace ) {
-    // Compute the inner product of of a rank-1 matrix and sparse A
+    // Compute the inner product of a rank-1 matrix and sparse A
     DSDP_INT retcode = DSDP_RETCODE_OK;
     assert( x->dim == A->dim );
     
-    DSDP_INT n = x->dim;
-    
-    double *datax = x->x;
+    DSDP_INT n = x->dim, r1nnz = x->nnz, spsnnz = A->nnz, idx, idx2, i, j;
+    DSDP_INT *Ap = A->p, *Ai = A->i;
     double *Atimesx = (double *) calloc(n, sizeof(double));
-    DSDP_INT *Ap = A->p;
-    DSDP_INT *Ai = A->i;
-    double *Ax = A->x;
+    double *Ax = A->x, *datax = x->x, res = 0.0, coeff = 0.0;
     
-    for (DSDP_INT i = 0; i < n; ++i) {
-        if (Ap[i] == i) {
-            Atimesx[i] -= 0.5 * Ax[i] * datax[i];
+    if (r1nnz <= 0.7 * n) {
+        for (i = 0; i < r1nnz; ++i) {
+            idx = x->nzIdx[i];
+            coeff = datax[idx];
+            
+            if (coeff == 0.0 ||
+                Ap[idx] == Ap[idx + 1]) {
+                
+                if (Ap[idx] == spsnnz) {
+                    break;
+                } else {
+                    continue;
+                }
+            }
+            
+            idx2 = Ai[Ap[idx]];
+            if (idx2 == idx) {
+                Atimesx[idx] += 0.5 * coeff * Ax[Ap[idx]];
+            } else {
+                Atimesx[idx2] += coeff * Ax[Ap[idx]];
+            }
+            for (j = Ap[idx] + 1; j < Ap[idx + 1]; ++j) {
+                Atimesx[Ai[j]] += coeff * Ax[j];
+            }
         }
-        for (DSDP_INT j = Ap[i]; j < Ap[i + 1]; ++j) {
-            Atimesx[Ai[j]] = Ax[j] * datax[i];
+    } else {
+        for (idx = 0; idx < n; ++idx) {
+            coeff = datax[idx];
+            
+            if (coeff == 0.0 ||
+                Ap[idx] == Ap[idx + 1]) {
+                if (Ap[idx] == spsnnz) {
+                    break;
+                } else {
+                    continue;
+                }
+            }
+            
+            idx2 = Ai[Ap[idx]];
+            if (idx2 == idx) {
+                Atimesx[idx] += 0.5 * coeff * Ax[Ap[idx]];
+            } else {
+                Atimesx[idx2] += coeff * Ax[Ap[idx]];
+            }
+            for (j = Ap[idx] + 1; j < Ap[idx + 1]; ++j) {
+                Atimesx[Ai[j]] += coeff * Ax[j];
+            }
         }
     }
     
-    *trace = 2.0 * dot(&n, Atimesx, &one, datax, &one);
+    if (r1nnz <= 0.7 * n) {
+        for (i = 0; i < r1nnz; ++i) {
+            idx = x->nzIdx[i];
+            res += Atimesx[idx] * datax[idx];
+        }
+    } else {
+        res = dot(&n, Atimesx, &one, datax, &one);
+    }
+    
+    *trace = 2 * res * x->sign;
     DSDP_FREE(Atimesx);
     
     return retcode;
@@ -147,14 +256,20 @@ extern DSDP_INT r1MatspsTrace( r1Mat *x, spsMat *A, double *trace ) {
 extern DSDP_INT r1MatdiagTrace( r1Mat *x, double diag, double *trace ) {
     // Compute trace(a * a' * diag * I) = diag * norm(a)^2
     DSDP_INT retcode = DSDP_RETCODE_OK;
-    
+        
     if (diag == 0.0) {
         *trace = 0.0;
         return retcode;
     }
     
-    double nrm = dnrm2(&x->dim, x->x, &one);
-    *trace = diag * nrm * nrm;
+    double res = 0.0;
+    retcode = r1MatFnorm(x, &res);
+    
+    if (x->sign >= 0) {
+        *trace = diag * res;
+    } else {
+        *trace = - diag * res;
+    }
     
     return retcode;
 }
@@ -163,29 +278,39 @@ extern DSDP_INT r1MatCountNnz( r1Mat *x ) {
     // Count the number of nonzero elements and setup nzIdx
     assert ( (x->x) && (x->dim) );
     
-    DSDP_INT nnz = 0;
-    for (DSDP_INT i = 0; i < x->dim; ++i) {
-        if (x->x[i] != 0) {
-            nnz += 1;
-        }
+    DSDP_INT nnz = 0, n = x->dim, i;
+    
+    if (!x->nzIdx) {
+        x->nzIdx = (DSDP_INT *) calloc(sizeof(DSDP_INT), n);
+    } else {
+        memset(x->nzIdx, 0, sizeof(DSDP_INT) * n);
+    }
+
+    for (i = 0; i < n - 7; ++i) {
+        if (x->x[i]) {x->nzIdx[nnz] = i; nnz += 1;} ++i;
+        if (x->x[i]) {x->nzIdx[nnz] = i; nnz += 1;} ++i;
+        if (x->x[i]) {x->nzIdx[nnz] = i; nnz += 1;} ++i;
+        if (x->x[i]) {x->nzIdx[nnz] = i; nnz += 1;} ++i;
+        if (x->x[i]) {x->nzIdx[nnz] = i; nnz += 1;} ++i;
+        if (x->x[i]) {x->nzIdx[nnz] = i; nnz += 1;} ++i;
+        if (x->x[i]) {x->nzIdx[nnz] = i; nnz += 1;} ++i;
+        if (x->x[i]) {x->nzIdx[nnz] = i; nnz += 1;}
     }
     
-    if (x->nzIdx) {
-        DSDP_FREE(x->nzIdx);
+    if (i < n - 3) {
+        if (x->x[i]) {x->nzIdx[nnz] = i; nnz += 1;} ++i;
+        if (x->x[i]) {x->nzIdx[nnz] = i; nnz += 1;} ++i;
+        if (x->x[i]) {x->nzIdx[nnz] = i; nnz += 1;} ++i;
+        if (x->x[i]) {x->nzIdx[nnz] = i; nnz += 1;} ++i;
     }
     
-    x->nzIdx = (DSDP_INT *) calloc(sizeof(DSDP_INT), nnz);
+    if (i < n - 1) {
+        if (x->x[i]) {x->nzIdx[nnz] = i; nnz += 1;} ++i;
+        if (x->x[i]) {x->nzIdx[nnz] = i; nnz += 1;} ++i;
+    }
     
-    DSDP_INT idx = 0;
-    for (DSDP_INT i = 0; i < x->dim; ++i) {
-        if (x->x[i] != 0) {
-            x->nzIdx[idx] = i;
-            idx ++;
-        }
-        
-        if (idx == nnz) {
-            break;
-        }
+    if (i < n) {
+        if (x->x[i]) {x->nzIdx[nnz] = i; nnz += 1;}
     }
     
     x->nnz = nnz;
@@ -195,12 +320,14 @@ extern DSDP_INT r1MatCountNnz( r1Mat *x ) {
 extern DSDP_INT r1MatFree( r1Mat *x ) {
     // Free the allocated memory in vec structure
     
-    assert( x->dim );
-    x->sign = 0;
-    x->dim  = 0;
-    DSDP_FREE(x->x);
-    DSDP_FREE(x->nzIdx);
-    x->nnz = 0;
+    if (x) {
+        assert( x->dim );
+        x->sign = 0;
+        x->dim  = 0;
+        DSDP_FREE(x->x);
+        DSDP_FREE(x->nzIdx);
+        x->nnz = 0;
+    }
     
     return DSDP_RETCODE_OK;
 }
@@ -208,10 +335,25 @@ extern DSDP_INT r1MatFree( r1Mat *x ) {
 extern DSDP_INT r1MatFnorm( r1Mat *x, double *fnrm ) {
     
     assert( x->dim );
-    *fnrm = norm(&x->dim, x->x, &one);
-    *fnrm = (*fnrm) * (*fnrm);
-    assert(*fnrm > 0);
     
+    if (fabs(x->sign) != 1.0) {
+        *fnrm = fabs(x->sign);
+        return DSDP_RETCODE_OK;
+    }
+    
+    if (x->nnz < 0.6 * x->dim) {
+        double res = 0.0, *xdata = x->x;
+        DSDP_INT idx, i, *nzidx = x->nzIdx;
+        for (i = 0; i < x->nnz; ++i) {
+            idx = nzidx[i];
+            res += xdata[idx] * xdata[idx];
+        }
+        *fnrm = res;
+    } else {
+        *fnrm = norm(&x->dim, x->x, &one);
+        *fnrm = (*fnrm) * (*fnrm);
+    }
+        
     return DSDP_RETCODE_OK;
 }
 
@@ -219,8 +361,8 @@ extern DSDP_INT r1MatRscale( r1Mat *x, double r ) {
     
     double rsqrt = sqrt(r);
     assert( (x->dim) && (r != 0.0));
-    vecdiv(&x->dim, &rsqrt, x->x, &one);
     
+    x->sign = x->sign / rsqrt;
     return DSDP_RETCODE_OK;
 }
 
@@ -229,6 +371,7 @@ extern DSDP_INT r1MatView( r1Mat *x ) {
     assert( x->dim && x->sign );
     
     printf("Matrix View: \n");
+    printf("Matrix dimension "ID" : \n", x->dim);
     for (DSDP_INT i = 0; i < x->dim; ++i) {
         printf("%10.3g, ", x->x[i] * x->sign);
     }

@@ -1,6 +1,7 @@
 #include "sparsemat.h"
 #include "densemat.h"
 #include "dsdpfeast.h"
+#include "dsdplanczos.h"
 
 // Enable hash sum check
 #ifndef VERIFY_HASH
@@ -22,39 +23,6 @@ static DSDP_INT pardisoSymFactorize( spsMat *S ) {
     
     // Get the pardiso parameter
     DSDP_INT phase = PARDISO_SYM;
-    DSDP_INT error = 0;
-    DSDP_INT n     = S->dim;
-    
-    // Invoke pardiso to do symbolic analysis and Cholesky factorization
-    pardiso(S->pdsWorker, &maxfct, &mnum, &mtype, &phase, &n,
-            Sx, Sp, Si, &idummy, &idummy, PARDISO_PARAMS_CHOLESKY,
-            &msglvl, NULL, NULL, &error);
-    
-    assert( error == PARDISO_OK );
-    
-    if (error) {
-        printf("[Pardiso Error]: Matrix factorization failed."
-               " Error code: "ID" \n", error);
-        error(etype, "Pardiso failes to factorize. \n");
-    }
-    
-    // Complete the factorization
-    S->isFactorized = TRUE;
-    return retcode;
-}
-
-static DSDP_INT pardisoFactorize( spsMat *S ) {
-    
-    /* Factorize the spsMat matrix */
-    DSDP_INT retcode = DSDP_RETCODE_OK;
-    
-    // Extract the lower triangular part from CSparse structure
-    DSDP_INT *Sp = S->p;
-    DSDP_INT *Si = S->i;
-    double   *Sx = S->x;
-    
-    // Get the pardiso parameter
-    DSDP_INT phase = PARDISO_SYM_FAC;
     DSDP_INT error = 0;
     DSDP_INT n     = S->dim;
     
@@ -174,7 +142,6 @@ static DSDP_INT pardisoBackwardSolve( spsMat *S, DSDP_INT nrhs, double *B, doubl
         error(etype, "Pardiso failes to factorize. \n");
     }
     
-    DSDP_FREE(aux);
     return retcode;
 }
 
@@ -253,32 +220,6 @@ static DSDP_INT pardisoFree( spsMat *S ) {
     return retcode;
 }
 
-static void fastTranspose( double *A, double *AT, DSDP_INT row,
-                           DSDP_INT col, DSDP_INT m, DSDP_INT n ) {
-    
-    // Cache oblivious transposition of A matrix
-    // Reference: https://github.com/iainkfraser/cache_transpose
-    if (m > 4 || n > 4) {
-        if (n >= m) {
-            DSDP_INT half = n / 2;
-            fastTranspose(A, AT, row, col, m, half);
-            fastTranspose(A, AT, row, col + half, m, half);
-        } else {
-            DSDP_INT half = m / 2;
-            fastTranspose(A, AT, row, col, half, n);
-            fastTranspose(A, AT, row + half, col, half, n);
-        }
-    } else {
-        DSDP_INT r = row + n;
-        DSDP_INT c = col + m;
-        for (DSDP_INT i = row; i < r; ++i) {
-            for (DSDP_INT j = col; j < c; ++j) {
-                AT[n * j + i] = A[n * i + j];
-            }
-        }
-    }
-}
-
 /* Structure operations */
 extern DSDP_INT spsMatInit( spsMat *sMat ) {
     
@@ -355,6 +296,48 @@ extern DSDP_INT spsMatFree( spsMat *sMat ) {
 }
 
 /* Basic operations */
+extern DSDP_INT spsMatAx( spsMat *A, vec *x, vec *Ax ) {
+    /* Sparse matrix multiplication */
+    DSDP_INT retcode = DSDP_RETCODE_OK;
+    
+    assert( A->dim == x->dim && x->dim == Ax->dim );
+    DSDP_INT *Ap = A->p, *Ai = A->i, n = A->dim, nnz = A->nnz, idx;
+    double *Axdata = A->x, *Axres = Ax->x, *xdata = x->x, coeff = 0.0;
+    vec_reset(Ax);
+    
+    for (DSDP_INT i = 0; i < n ; ++i) {
+        coeff = xdata[i];
+        
+        if (coeff == 0.0) {
+            continue;
+        }
+        
+        idx = Ap[i];
+        if (idx == Ap[i + 1]) {
+            if (idx == nnz) {
+                break;
+            } else {
+                continue;
+            }
+        }
+        
+        if (Ai[idx] == i) {
+            Axres[i] -= coeff * Axdata[idx];
+        } else {
+            Axres[Ai[idx]] -= coeff * Axdata[idx];
+            Axres[i] -= xdata[Ai[idx]] * Axdata[idx];
+        }
+        
+        for (DSDP_INT j = Ap[i] + 1; j < Ap[i + 1]; ++j) {
+            idx = Ai[j];
+            Axres[idx] -= coeff * Axdata[j];
+            Axres[i]   -= xdata[idx] * Axdata[j];
+        }
+    }
+    
+    return retcode;
+}
+
 extern DSDP_INT spsMataXpbY( double alpha, spsMat *sXMat, double beta,
                              spsMat *sYMat, DSDP_INT *sumHash ) {
     
@@ -457,25 +440,26 @@ extern DSDP_INT spsMatAddr1( spsMat *sXMat, double alpha, r1Mat *r1YMat, DSDP_IN
         return retcode;
     }
     
-    DSDP_INT dim = sXMat->dim;
-    DSDP_INT idx = 0;
-    DSDP_INT *hash = sumHash;
-    DSDP_INT *nzIdx = r1YMat->nzIdx;
+    DSDP_INT dim = sXMat->dim, idx = 0;
+    DSDP_INT *hash = sumHash, *nzIdx = r1YMat->nzIdx;
+    double sign = r1YMat->sign * alpha, *rx = r1YMat->x;
     
-    double sign = (double) r1YMat->sign;
-    double *rx = r1YMat->x;
-    
-    for (DSDP_INT i = 0; i < r1YMat->nnz; ++i) {
-        for (DSDP_INT j = 0; j <= i; ++j) {
+    if (r1YMat->nnz < 0.7 * dim) {
+        for (DSDP_INT i = 0; i < r1YMat->nnz; ++i) {
+            for (DSDP_INT j = 0; j <= i; ++j) {
 #ifdef VERIFY_HASH
-            idx = packIdx(hash, dim, nzIdx[i], nzIdx[j]);
-            assert( idx > 0 || i == 0 );
-            sXMat->x[idx] += alpha * sign * rx[nzIdx[i]] * rx[nzIdx[j]];
+                idx = packIdx(hash, dim, nzIdx[i], nzIdx[j]);
+                assert( idx > 0 || i == 0 );
+                sXMat->x[idx] += sign * rx[nzIdx[i]] * rx[nzIdx[j]];
 #else
-            sXMat->x[packIdx(hash, dim, nzIdx[i], nzIdx[j])] +=
-            alpha * sign * rx[nzIdx[i]] * rx[nzIdx[j]];
+                sXMat->x[packIdx(hash, dim, nzIdx[i], nzIdx[j])] +=
+                sign * rx[nzIdx[i]] * rx[nzIdx[j]];
 #endif
+            }
         }
+    } else {
+        char uplo = DSDP_MAT_LOW;
+        packr1update(&uplo, &dim, &sign, r1YMat->x, &one, sXMat->x);
     }
     
     return retcode;
@@ -495,29 +479,37 @@ extern DSDP_INT spsMatRscale( spsMat *sXMat, double r ) {
     DSDP_INT retcode = DSDP_RETCODE_OK;
     assert( sXMat->dim );
     
-    if (fabs(r) < 1e-10) {
+    if (fabs(r) < 1e-15) {
         error(etype, "Dividing a matrix by 0. \n");
     }
     
     double *x = sXMat->x;
-    vecdiv(&sXMat->p[sXMat->dim], &r, x, &one);
+    vecdiv(&sXMat->nnz, &r, x, &one);
     return retcode;
 }
 
 extern DSDP_INT spsMatFnorm( spsMat *sMat, double *fnrm ) {
     
-    // Matrix (Approximate) Fronenius norm
+    // Matrix Fronenius norm
     DSDP_INT retcode = DSDP_RETCODE_OK;
     assert( sMat->dim > 0 );
     
-    double nrm = 0.0;
-    nrm = norm(&sMat->p[sMat->dim], sMat->x, &one);
+    DSDP_INT idx;
+    double nrm = 0.0, tmp;
+    nrm = norm(&sMat->nnz, sMat->x, &one);
     nrm = 2 * nrm * nrm;
     
     // Retrieve the diagonal elements
     for (DSDP_INT i = 0; i < sMat->dim; ++i) {
-        if (sMat->p[i] < sMat->nnz && sMat->i[sMat->p[i]] == i) {
-            nrm -= sMat->x[sMat->p[i]] * sMat->x[sMat->p[i]];
+        idx = sMat->p[i];
+        
+        if (idx == sMat->nnz) {
+            break;
+        }
+        
+        if (idx < sMat->p[i + 1] && sMat->i[idx] == i) {
+            tmp = sMat->x[idx];
+            nrm -= tmp * tmp;
         }
     }
     
@@ -555,6 +547,16 @@ extern DSDP_INT spsMatVecSolve( spsMat *sAMat, vec *sbVec, double *Ainvb ) {
     retcode = pardisoSolve(sAMat, 1, sbVec->x, Ainvb);
     
     return retcode;
+}
+
+extern DSDP_INT spsMatVecFSolve( spsMat *sAmat, vec *sbVec, vec *Ainvb ) {
+    /* Forward solve L * x = b */
+    return pardisoForwardSolve(sAmat, 1, sbVec->x, Ainvb->x);
+}
+
+extern DSDP_INT spsMatVecBSolve( spsMat *sAmat, vec *sbVec, vec *Ainvb ) {
+    /* Backward solve L' * x = b */
+    return pardisoBackwardSolve(sAmat, 1, sbVec->x, Ainvb->x);
 }
 
 extern DSDP_INT spsMatSpSolve( spsMat *sAMat, spsMat *sBMat, double *AinvB ) {
@@ -599,7 +601,7 @@ extern DSDP_INT spsMatSpSolve( spsMat *sAMat, spsMat *sBMat, double *AinvB ) {
 extern DSDP_INT spsMatDsSolve( spsMat *sAMat, dsMat *sBMat, double *AinvB ) {
     
     // Matrix operation X = A \ B = inv(A) * B for sparse A and dense B
-    // A full dense matrix inv(A) * B is returned
+    // A full dense matrix inv(A) * B is overwritten
     DSDP_INT retcode = DSDP_RETCODE_OK;
     
     // A is factorized, B is not and sizes must agree
@@ -700,17 +702,23 @@ extern DSDP_INT dsdpGetAlpha( spsMat *S, spsMat *dS, spsMat *spaux, double *alph
     
     DSDP_INT n = S->dim;
     assert( n == dS->dim && n == spaux->dim );
-    // Two ways for computation
-    // The first way computes l1(L^-1 dS L^-T)
-    retcode = spsMatLspLSolve(S, dS, spaux); checkCode;
-    retcode = spsMatMinEig(spaux, &mineig); checkCode;
     
-    if (mineig > 0) {
-        *alpha = DSDP_INFINITY;
+    // Lanczos iteration
+    double lbd = 0.0, delta = 0.0;
+    // retcode = dsdpLanczos(S, dS, &lbd, &delta);
+    
+    if (1 || lbd != lbd || delta != delta || (1 / (lbd + delta) < 1e-08)) {
+        // MKL extremal routine
+        retcode = spsMatLspLSolve(S, dS, spaux); checkCode;
+        retcode = spsMatMinEig(spaux, &mineig); checkCode;
+        if (mineig > 0) {
+            *alpha = DSDP_INFINITY;
+        } else {
+            *alpha = - 1.0 / mineig;
+        }
     } else {
-        *alpha = - 1.0 / mineig;
+        *alpha = 1 / (lbd + delta);
     }
-    
     return retcode;
 }
 
@@ -760,8 +768,104 @@ extern DSDP_INT spsSinvSpSinvSolve( spsMat *S, spsMat *A, dsMat *SinvASinv, doub
     
     // Routine for setting up the Schur matrix
     /*
-        Compute inv(S) * A * inv(S) for sparse A by inv(S) * transpose(inv(S) * A)
-        The routine performs Cholesky - Transpose - Cholesky sequentially
+        Compute inv(S) * A * inv(S) for sparse A
+     
+    */
+    DSDP_INT retcode = DSDP_RETCODE_OK;
+    
+    DSDP_INT n = S->dim;
+    double *Sinv  = (double *) calloc(n * n, sizeof(double)), *rhs, *x;
+    double *ASinv = (double *) calloc(n * n, sizeof(double));
+    double *tmpSinvASinv = (double *) calloc(n * n, sizeof(double));
+    double *sol   = (double *) calloc(n, sizeof(double));
+    DSDP_INT *nzIdx = (DSDP_INT *) calloc(n, sizeof(DSDP_INT));
+    
+    // Sinv
+    rhs = &Sinv[0];
+    rhs[0] = 1.0;
+    nzIdx[0] = 1;
+    pardisoSolve(S, 1, rhs, sol);
+    memcpy(rhs, sol, sizeof(double) * n);
+    
+    for (DSDP_INT i = 1; i < n; ++i) {
+        rhs = &Sinv[n * i];
+        rhs[i] = 1.0;
+        nzIdx[i - 1] = 0;
+        nzIdx[i] = 1;
+        pardisoSolve(S, 1, rhs, sol);
+        memcpy(rhs, sol, sizeof(double) * n);
+    }
+    
+    DSDP_FREE(sol);
+    
+    // A * Sinv
+    DSDP_INT *Ap = A->p, *Ai = A->i, nnz = A->nnz, idx;
+    double *Ax = A->x, coeff = 0.0, res = 0.0;
+    
+    for (DSDP_INT i = 0; i < n; ++i) {
+        // sol = ASinv(:, i) = A * Sinv(:, i) = A * x
+        x = &Sinv[n * i];
+        sol = &ASinv[n * i];
+        for (DSDP_INT col = 0; col < n; ++col) {
+            coeff = x[col];
+            if (fabs(coeff) < 1e-20) {
+                continue;
+            }
+            
+            idx = Ap[col];
+            if (idx == Ap[col + 1]) {
+                if (idx == nnz) {
+                    break;
+                } else {
+                    continue;
+                }
+            }
+            
+            if (Ai[idx] == col) {
+                sol[col] += 0.5 * coeff * Ax[idx];
+            } else {
+                sol[Ai[idx]] += coeff * Ax[idx];
+            }
+            
+            for (DSDP_INT k = idx + 1; k < Ap[col + 1]; ++k) {
+                sol[Ai[k]] += coeff * Ax[k];
+            }
+        }
+    }
+    
+    for (DSDP_INT i = 0; i < n; ++i) {
+        res += ASinv[n * i + i];
+    }
+    
+    *asinv = res * 2;
+
+    // Sinv * Lower(A) * Sinv
+    char side = 'L';
+    char uplo = DSDP_MAT_LOW;
+    double alpha = 1.0, beta = 0.0, *X = SinvASinv->array;
+    
+    dsymm(&side, &uplo, &n, &n, &alpha, Sinv, &n,
+          ASinv, &n, &beta, tmpSinvASinv, &n);
+    
+    // Sinv * Lower(A) * Sinv + (Sinv * Lower(A) * Sinv)'
+    for (DSDP_INT i = 0; i < n; ++i) {
+        for (DSDP_INT j = 0; j <= i; ++j) {
+            packIdx(X, n, i, j) = tmpSinvASinv[j * n + i] + tmpSinvASinv[i * n + j];
+        }
+    }
+    
+    DSDP_FREE(Sinv);
+    DSDP_FREE(ASinv);
+    DSDP_FREE(tmpSinvASinv);
+    DSDP_FREE(nzIdx);
+    return retcode;
+}
+
+extern DSDP_INT spsSinvSpSinvSolveSlow( spsMat *S, spsMat *A, dsMat *SinvASinv, double *asinv ) {
+    
+    // Routine for setting up the Schur matrix
+    /*
+        Compute inv(S) * A * inv(S) for sparse A
      
     */
     DSDP_INT retcode = DSDP_RETCODE_OK;
@@ -776,7 +880,6 @@ extern DSDP_INT spsSinvSpSinvSolve( spsMat *S, spsMat *A, dsMat *SinvASinv, doub
     double *fSinvASinv = NULL;
     SinvA      = (double *) calloc(n * n, sizeof(double));
     fSinvASinv = (double *) calloc(n * n, sizeof(double));
-    
     
     // Solve to get inv(S) * A
     retcode    = spsMatSpSolve(S, A, SinvA);
@@ -882,6 +985,27 @@ extern DSDP_INT spsSinvDsSinvSolve( spsMat *S, dsMat *A, dsMat *SinvASinv, doubl
     return retcode;
 }
 
+extern DSDP_INT spsSinvRkSinvSolve( spsMat *S, rkMat *A, rkMat *SinvASinv, double *asinv ) {
+    
+    DSDP_INT retcode = DSDP_RETCODE_OK;
+    assert( S->dim == A->dim );
+    assert( SinvASinv->dim == S->dim );
+    assert( SinvASinv->isdata );
+    
+    double res = 0.0, tmp;
+    DSDP_INT rank = A->rank;
+    SinvASinv->rank = rank;
+    r1Mat *r1data = NULL;
+
+    for (DSDP_INT i = 0; i < rank; ++i) {
+        r1data = A->data[i];
+        retcode = spsSinvR1SinvSolve(S, r1data, SinvASinv->data[i], &tmp);
+        res += tmp;
+    }
+    
+    return retcode;
+}
+
 extern DSDP_INT spsSinvR1SinvSolve( spsMat *S, r1Mat *A, r1Mat *SinvASinv, double *asinv ) {
     
     // Routine for setting up the Schur matrix
@@ -890,16 +1014,19 @@ extern DSDP_INT spsSinvR1SinvSolve( spsMat *S, r1Mat *A, r1Mat *SinvASinv, doubl
     assert( S->dim == A->dim );
     assert( SinvASinv->dim == S->dim );
     
-    DSDP_INT n = S->dim;
+    DSDP_INT n = S->dim, *perm = NULL;
     
     if (S->dim != A->dim) {
         error(etype, "Matrix size mismatch. \n");
     }
     
-    double *xSinvASinv = SinvASinv->x;
-    double *xA = A->x;
+    double *xSinvASinv = SinvASinv->x, *xA = A->x;
     
+    assert( A->sign );
+    SinvASinv->sign = A->sign;
     retcode = pardisoSolve(S, 1, xA, xSinvASinv); checkCode;
+    SinvASinv->nnz = n;
+
     
     double res = 0.0;
     register DSDP_INT i;
@@ -939,7 +1066,8 @@ extern DSDP_INT spsSinvR1SinvSolve( spsMat *S, r1Mat *A, r1Mat *SinvASinv, doubl
         }
     }
     
-    *asinv = res;
+    *asinv = res * A->sign;
+    DSDP_FREE(perm);
     
     return retcode;
 }

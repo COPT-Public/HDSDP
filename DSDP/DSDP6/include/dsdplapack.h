@@ -38,6 +38,7 @@ CAPBLAS  : Whether routines are given by ROUTINENAME(params) or routinename(para
 #define solve DTRSV_
 #define matvec DGEMV_
 #define symatvec DSYMV_
+#define symmatmat DSYMM_
 #define packmatvec DSPMV_
 #define vecscal DSCAL_
 #define vecdiv DRSCL_
@@ -69,6 +70,7 @@ CAPBLAS  : Whether routines are given by ROUTINENAME(params) or routinename(para
 #define norm DNRM2
 #define solve DTRSV
 #define matvec DGEMV
+#define symmatmat DSYMM
 #define symatvec DSYMV
 #define packmatvec DSPMV
 #define vecscal DSCAL
@@ -102,6 +104,7 @@ CAPBLAS  : Whether routines are given by ROUTINENAME(params) or routinename(para
 #define solve dtrsv_
 #define matvec dgemv_
 #define symatvec dsymv_
+#define symmatmat dsymm_
 #define packmatvec dspmv_
 #define vecscal dscal_
 #define vecdiv drscl_
@@ -134,6 +137,7 @@ CAPBLAS  : Whether routines are given by ROUTINENAME(params) or routinename(para
 #define solve dtrsv
 #define matvec dgemv
 #define symatvec dsymv
+#define symmatmat dsymm
 #define packmatvec dspmv
 #define vecscal dscal
 #define vecdiv drscl
@@ -289,6 +293,19 @@ extern void packmatvec( const char *uplo,
                         const double *beta,
                         double *y,
                         const DSDP_INT *incy );
+
+extern void dsymm( const char     *side,
+                   const char     *uplo,
+                   const DSDP_INT *m,
+                   const DSDP_INT *n,
+                   const double   *alpha,
+                   const double   *a,
+                   const DSDP_INT *lda,
+                   const double   *b,
+                   const DSDP_INT *ldb,
+                   const double   *beta,
+                   double         *c,
+                   const DSDP_INT *ldc);
 
 extern DSDP_INT maxidx( const DSDP_INT *n, const double *x, const DSDP_INT *incx );
 /*

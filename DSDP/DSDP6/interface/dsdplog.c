@@ -84,7 +84,7 @@ extern void dsdpprintPhaseAheader( void ) {
     /*      | niter |   pObj   |   dObj   |  dInf  |  k/t  |  mu  |  alpha  |  pNrm  |  E  |*/
     /*      --------------------------------------------------------------------------------*/
     printf("| %4s | %12s | %12s | %9s | %8s | %8s | %8s | %8s | %3s |\n",
-            "iter", "pObj", "dObj", "dInf", "k/t", "mu", "alpha", "pNrm", "E");
+            "Iter", "pObj", "dObj", "dInf", "k/t", "mu", "alpha", "pNrm", "E");
     dsdpshowdash();
 }
 
@@ -95,7 +95,7 @@ extern void dsdpprintPhaseBheader( void ) {
     /*      | niter |   pObj   |   dObj   |  mu  |  alpha  |  pNrm  |  dPot  |  E  |*/
     /*      --------------------------------------------------------------------------------*/
     printf("| %4s | %12s | %12s | %9s | %8s | %8s | %8s | %3s |\n",
-            "iter", "pObj", "dObj", "mu", "alpha", "pNrm", "dPot", "E");
+            "Iter", "pObj", "dObj", "mu", "alpha", "pNrm", "dPot", "E");
     dsdpshowdash();
 }
 

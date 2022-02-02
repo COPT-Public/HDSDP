@@ -90,6 +90,8 @@
 		19BEEC242756065600C36C9E /* cs_qrsol.c in Sources */ = {isa = PBXBuildFile; fileRef = 19BEEC1E2756065600C36C9E /* cs_qrsol.c */; };
 		19BEEC252756065600C36C9E /* cs_schol.c in Sources */ = {isa = PBXBuildFile; fileRef = 19BEEC1F2756065600C36C9E /* cs_schol.c */; };
 		19BEEC262756065600C36C9E /* cs_lusol.c in Sources */ = {isa = PBXBuildFile; fileRef = 19BEEC202756065600C36C9E /* cs_lusol.c */; };
+		19C3732727A7F2DA0021A708 /* rankkmat.c in Sources */ = {isa = PBXBuildFile; fileRef = 19C3732627A7F2DA0021A708 /* rankkmat.c */; };
+		19C3732B27A98B0D0021A708 /* dsdplanczos.c in Sources */ = {isa = PBXBuildFile; fileRef = 19C3732A27A98B0D0021A708 /* dsdplanczos.c */; };
 		19C3BBDA2794032000F0331B /* dsdplog.c in Sources */ = {isa = PBXBuildFile; fileRef = 19C3BBD92794032000F0331B /* dsdplog.c */; };
 		19C3BBDD2794539600F0331B /* dsdpdinfeas.c in Sources */ = {isa = PBXBuildFile; fileRef = 19C3BBDC2794539600F0331B /* dsdpdinfeas.c */; };
 		19C3BBE0279453F200F0331B /* dsdpinitializer.c in Sources */ = {isa = PBXBuildFile; fileRef = 19C3BBDF279453F200F0331B /* dsdpinitializer.c */; };
@@ -234,6 +236,11 @@
 		19BEEC202756065600C36C9E /* cs_lusol.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = cs_lusol.c; sourceTree = "<group>"; };
 		19BEEC2A2757F14A00C36C9E /* dsdpsolver.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = dsdpsolver.h; sourceTree = "<group>"; };
 		19C1E9D42768E707000FCBF9 /* SDPdata.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = SDPdata.h; sourceTree = "<group>"; };
+		19C3732527A7F2DA0021A708 /* rankkmat.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = rankkmat.h; sourceTree = "<group>"; };
+		19C3732627A7F2DA0021A708 /* rankkmat.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = rankkmat.c; sourceTree = "<group>"; };
+		19C3732827A9063E0021A708 /* data2.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = data2.h; sourceTree = "<group>"; };
+		19C3732927A98B0D0021A708 /* dsdplanczos.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = dsdplanczos.h; sourceTree = "<group>"; };
+		19C3732A27A98B0D0021A708 /* dsdplanczos.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = dsdplanczos.c; sourceTree = "<group>"; };
 		19C3BBD82794032000F0331B /* dsdplog.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = dsdplog.h; sourceTree = "<group>"; };
 		19C3BBD92794032000F0331B /* dsdplog.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = dsdplog.c; sourceTree = "<group>"; };
 		19C3BBDB2794539600F0331B /* dsdpdinfeas.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = dsdpdinfeas.h; sourceTree = "<group>"; };
@@ -342,14 +349,18 @@
 				19F1195C275A9A260051D808 /* dsdpfeast.h */,
 				19118DA42737B72800D51D03 /* dsdppardiso.h */,
 				19BACAF1274EAE4500E987FD /* structs.h */,
+				19C3732927A98B0D0021A708 /* dsdplanczos.h */,
 				19118D9C2737B72800D51D03 /* vec.h */,
 				19118D9D2737B72800D51D03 /* sparsemat.h */,
 				19118D9E2737B72800D51D03 /* densemat.h */,
 				19808F44273817510014086F /* rankonemat.h */,
+				19C3732527A7F2DA0021A708 /* rankkmat.h */,
 				19118D9F2737B72800D51D03 /* vec.c */,
 				19118DA12737B72800D51D03 /* densemat.c */,
 				19118DA22737B72800D51D03 /* sparsemat.c */,
 				19808F45273817510014086F /* rankonemat.c */,
+				19C3732627A7F2DA0021A708 /* rankkmat.c */,
+				19C3732A27A98B0D0021A708 /* dsdplanczos.c */,
 			);
 			path = linsys;
 			sourceTree = "<group>";
@@ -443,6 +454,7 @@
 		19118DE12737B72800D51D03 /* test */ = {
 			isa = PBXGroup;
 			children = (
+				19C3732827A9063E0021A708 /* data2.h */,
 				1947DC1E2799B66B004065D8 /* data.h */,
 				19C1E9D42768E707000FCBF9 /* SDPdata.h */,
 				19808F372737EEA60014086F /* test_vec.c */,
@@ -588,6 +600,7 @@
 				19118E1F2737B72800D51D03 /* cs_norm.c in Sources */,
 				19808F46273817510014086F /* rankonemat.c in Sources */,
 				19118DE62737B72800D51D03 /* schurmat.c in Sources */,
+				19C3732B27A98B0D0021A708 /* dsdplanczos.c in Sources */,
 				19C3BBE62795054900F0331B /* dsdpproxmeasure.c in Sources */,
 				19BACAF5274EBC2D00E987FD /* test_dense.c in Sources */,
 				19BEEC262756065600C36C9E /* cs_lusol.c in Sources */,
@@ -603,6 +616,7 @@
 				19F1195B275A627B0051D808 /* stepdirection.c in Sources */,
 				19118E0D2737B72800D51D03 /* cs_multiply.c in Sources */,
 				19118E212737B72800D51D03 /* cs_counts.c in Sources */,
+				19C3732727A7F2DA0021A708 /* rankkmat.c in Sources */,
 				19118DFD2737B72800D51D03 /* cs_scatter.c in Sources */,
 				19118DFA2737B72800D51D03 /* cs_droptol.c in Sources */,
 				19118E1E2737B72800D51D03 /* cs_qr.c in Sources */,
@@ -701,7 +715,7 @@
 				GCC_C_LANGUAGE_STANDARD = gnu11;
 				GCC_DYNAMIC_NO_PIC = NO;
 				GCC_NO_COMMON_BLOCKS = YES;
-				GCC_OPTIMIZATION_LEVEL = fast;
+				GCC_OPTIMIZATION_LEVEL = 0;
 				GCC_PREPROCESSOR_DEFINITIONS = (
 					"DEBUG=1",
 					"$(inherited)",
@@ -759,7 +773,7 @@
 				ENABLE_STRICT_OBJC_MSGSEND = YES;
 				GCC_C_LANGUAGE_STANDARD = gnu11;
 				GCC_NO_COMMON_BLOCKS = YES;
-				GCC_OPTIMIZATION_LEVEL = fast;
+				GCC_OPTIMIZATION_LEVEL = 0;
 				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
 				GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;
 				GCC_WARN_UNDECLARED_SELECTOR = YES;

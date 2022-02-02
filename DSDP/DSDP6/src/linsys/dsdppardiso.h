@@ -29,7 +29,7 @@ static DSDP_INT PARDISO_PARAMS_CHOLESKY[PARDISOINDEX] = {
     
     1, /* Non-default value */ 3, /* P Nested dissection */ 0, /* Reserved          */
     0, /* No CG             */ 0, /* No user permutation */ 0, /* No overwriting    */
-    0, /* Refinement report */ 0, /* No ItRef steps      */ 0, /* Reserved          */
+    0, /* Refinement report */ 1, /* No ItRef steps      */ 0, /* Reserved          */
     6, /* Perturb           */ 0, /* Disable scaling     */ 0, /* No transpose      */
     0, /* Disable matching  */ 0, /* Report on pivots    */ 0, /* Output            */
     0, /* Output            */ 0, /* Output              */-1, /* No report         */
@@ -107,7 +107,7 @@ static DSDP_INT PARDISO_PARAMS_FORWARD_BACKWORD[PARDISOINDEX] = {
     
     1, /* Non-default value */ 3, /* P Nested dissection */ 0, /* Reserved          */
     0, /* No CG             */ 0, /* No user permutation */ 1, /* Overwriting       */
-    0, /* Refinement report */ 1, /* No ItRef step       */ 0, /* Reserved          */
+    0, /* Refinement report */ 0, /* Auto ItRef step     */ 0, /* Reserved          */
     4, /* Perturb           */ 1, /* Disable scaling     */ 0, /* No transpose      */
     0, /* Disable matching  */ 0, /* Report on pivots    */ 0, /* Output            */
     0, /* Output            */ 0, /* Output              */-1, /* No report         */

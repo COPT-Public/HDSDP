@@ -223,7 +223,6 @@ static DSDP_INT extractR1fromDs( dsMat *dataMat, double *a, DSDP_INT isNeg ) {
     double *A    = dataMat->array;
     DSDP_INT n   = dataMat->dim;
     DSDP_INT col = 0;
-    isNeg = !isNeg;
     
     // Get the first column that contains non-zero elements
     for (DSDP_INT i = 0; i < n; ++i) {
@@ -236,7 +235,7 @@ static DSDP_INT extractR1fromDs( dsMat *dataMat, double *a, DSDP_INT isNeg ) {
     assert( col != n - 1 ); // or it is a zero matrix
     double adiag = packIdx(A, n, col, col);
     
-    if (isNeg) {
+    if (isNeg == -1) {
         adiag = sqrt(- adiag);
     } else {
         adiag = sqrt(adiag);
@@ -260,8 +259,6 @@ static DSDP_INT extractR1fromSps( spsMat *dataMat, double *a, DSDP_INT isNeg ) {
     DSDP_INT col   = 0;
     double adiag   = 0.0;
     
-    isNeg = !isNeg;
-    
     memset(a, 0, sizeof(double) * n);
     
     for (DSDP_INT i = 0; i < n; ++i) {
@@ -273,7 +270,7 @@ static DSDP_INT extractR1fromSps( spsMat *dataMat, double *a, DSDP_INT isNeg ) {
     
     assert( col <= n - 1 ); // Otherwise the matrix is empty
     
-    if (isNeg) {
+    if (isNeg == -1) {
         adiag = sqrt(- Ax[0]);
     } else {
         adiag = sqrt(Ax[0]);
