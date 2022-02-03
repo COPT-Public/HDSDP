@@ -51,8 +51,8 @@ static DSDP_INT inity( HSDSolver *dsdpSolver ) {
 static DSDP_INT initkappatau( HSDSolver *dsdpSolver ) {
     
     DSDP_INT retcode = DSDP_RETCODE_OK;
-    dsdpSolver->kappa = 1.0;
-    dsdpSolver->tau   = 1.0;
+    dsdpSolver->kappa = dsdpSolver->param->initKappa;
+    dsdpSolver->tau   = dsdpSolver->param->initTau;
     return retcode;
 }
 

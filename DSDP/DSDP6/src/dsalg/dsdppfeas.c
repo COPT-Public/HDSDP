@@ -72,9 +72,11 @@ extern DSDP_INT DSDPPFeasPhase( HSDSolver *dsdpSolver ) {
         retcode = dsdpgetPhaseBProxMeasure(dsdpSolver, &muub, &mulb); checkCode;
         // Select new mu
         retcode = selectMu(dsdpSolver, &newmu); checkCode;
+        
         newmu = MIN(newmu, muub);
         newmu = MAX(newmu, mulb);
         dsdpSolver->mu = newmu;
+        // dsdpSolver->mu = MIN(newmu, dsdpSolver->mu);
         
         if (dsdpSolver->Pnrm < 0.1) {
             dsdpSolver->mu *= 0.1;

@@ -81,7 +81,7 @@ static DSDP_INT pardisoNumFactorize( spsMat *S ) {
     return retcode;
 }
 
-static DSDP_INT pardisoForwardSolve( spsMat *S, DSDP_INT nrhs, double *B, double *aux ) {
+static DSDP_INT pardisoForwardSolve( spsMat *S, DSDP_INT nrhs, double *B, double *aux, DSDP_INT overwrite ) {
     // pardiso forward solve
     DSDP_INT retcode = DSDP_RETCODE_OK;
     
@@ -96,10 +96,18 @@ static DSDP_INT pardisoForwardSolve( spsMat *S, DSDP_INT nrhs, double *B, double
     DSDP_INT phase = PARDISO_FORWARD;
     DSDP_INT error = 0;
     DSDP_INT n     = S->dim;
+    DSDP_INT *param;
+    
     
     // Invoke pardiso to do symbolic analysis and Cholesky factorization
+    if (overwrite) {
+        param = PARDISO_PARAMS_FORWARD_BACKWORD;
+    } else {
+        param = PARDISO_PARAMS_FORWARD_BACKWORD_LANCZOS;
+    }
+    
     pardiso(S->pdsWorker, &maxfct, &mnum, &mtype, &phase, &n,
-            Sx, Sp, Si, &idummy, &nrhs, PARDISO_PARAMS_FORWARD_BACKWORD,
+            Sx, Sp, Si, &idummy, &nrhs, param,
             &msglvl, B, aux, &error);
     
     assert( error == PARDISO_OK );
@@ -113,7 +121,7 @@ static DSDP_INT pardisoForwardSolve( spsMat *S, DSDP_INT nrhs, double *B, double
     return retcode;
 }
 
-static DSDP_INT pardisoBackwardSolve( spsMat *S, DSDP_INT nrhs, double *B, double *aux ) {
+static DSDP_INT pardisoBackwardSolve( spsMat *S, DSDP_INT nrhs, double *B, double *aux, DSDP_INT overwrite ) {
     // pardiso forward solve
     DSDP_INT retcode = DSDP_RETCODE_OK;
     
@@ -128,11 +136,17 @@ static DSDP_INT pardisoBackwardSolve( spsMat *S, DSDP_INT nrhs, double *B, doubl
     DSDP_INT phase = PARDISO_BACKWARD;
     DSDP_INT error = 0;
     DSDP_INT n     = S->dim;
+    DSDP_INT *param;
     
     // Invoke pardiso to do symbolic analysis and Cholesky factorization
+    if (overwrite) {
+        param = PARDISO_PARAMS_FORWARD_BACKWORD;
+    } else {
+        param = PARDISO_PARAMS_FORWARD_BACKWORD_LANCZOS;
+    }
     pardiso(S->pdsWorker, &maxfct, &mnum, &mtype, &phase, &n,
-            Sx, Sp, Si, &idummy, &nrhs, PARDISO_PARAMS_FORWARD_BACKWORD,
-            &msglvl, B, aux, &error);
+            Sx, Sp, Si, &idummy, &nrhs, param, &msglvl,
+            B, aux, &error);
     
     assert( error == PARDISO_OK );
     
@@ -551,12 +565,12 @@ extern DSDP_INT spsMatVecSolve( spsMat *sAMat, vec *sbVec, double *Ainvb ) {
 
 extern DSDP_INT spsMatVecFSolve( spsMat *sAmat, vec *sbVec, vec *Ainvb ) {
     /* Forward solve L * x = b */
-    return pardisoForwardSolve(sAmat, 1, sbVec->x, Ainvb->x);
+    return pardisoForwardSolve(sAmat, 1, sbVec->x, Ainvb->x, FALSE);
 }
 
 extern DSDP_INT spsMatVecBSolve( spsMat *sAmat, vec *sbVec, vec *Ainvb ) {
     /* Backward solve L' * x = b */
-    return pardisoBackwardSolve(sAmat, 1, sbVec->x, Ainvb->x);
+    return pardisoBackwardSolve(sAmat, 1, sbVec->x, Ainvb->x, FALSE);
 }
 
 extern DSDP_INT spsMatSpSolve( spsMat *sAMat, spsMat *sBMat, double *AinvB ) {
@@ -650,7 +664,7 @@ extern DSDP_INT spsMatLspLSolve( spsMat *S, spsMat *dS, spsMat *spaux ) {
     
     // L^-1 dS
     retcode = spsMatFill(dS, fulldS);
-    retcode = pardisoForwardSolve(S, n, fulldS, aux);
+    retcode = pardisoForwardSolve(S, n, fulldS, aux, TRUE);
     
     // Transpose
     // fastTranspose(fulldS, aux, 0, 0, n, n);
@@ -670,7 +684,7 @@ extern DSDP_INT spsMatLspLSolve( spsMat *S, spsMat *dS, spsMat *spaux ) {
     DSDP_INT *Ai = spaux->i;
     double   *Ax = spaux->x;
     
-    retcode = pardisoForwardSolve(S, n, fulldS, aux);
+    retcode = pardisoForwardSolve(S, n, fulldS, aux, TRUE);
     
     DSDP_INT nnz = 0;
     DSDP_INT start = 0;
@@ -705,9 +719,9 @@ extern DSDP_INT dsdpGetAlpha( spsMat *S, spsMat *dS, spsMat *spaux, double *alph
     
     // Lanczos iteration
     double lbd = 0.0, delta = 0.0;
-    // retcode = dsdpLanczos(S, dS, &lbd, &delta);
+    retcode = dsdpLanczos(S, dS, &lbd, &delta);
     
-    if (1 || lbd != lbd || delta != delta || (1 / (lbd + delta) < 1e-08)) {
+    if (lbd != lbd || delta != delta || (lbd + delta > 1e+10 )) {
         // MKL extremal routine
         retcode = spsMatLspLSolve(S, dS, spaux); checkCode;
         retcode = spsMatMinEig(spaux, &mineig); checkCode;
@@ -717,7 +731,11 @@ extern DSDP_INT dsdpGetAlpha( spsMat *S, spsMat *dS, spsMat *spaux, double *alph
             *alpha = - 1.0 / mineig;
         }
     } else {
-        *alpha = 1 / (lbd + delta);
+        if (lbd + delta < 0) {
+            *alpha = DSDP_INFINITY;
+        } else {
+            *alpha = 1 / (lbd + delta);
+        }
     }
     return retcode;
 }

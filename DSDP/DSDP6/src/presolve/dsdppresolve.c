@@ -366,6 +366,7 @@ static DSDP_INT preRank1RdcBlock( sdpMat *dataMat ) {
                 dsdata = matdata[i];
                 retcode = extractR1fromDs(dsdata, r1data->x, isRank1);
                 checkCode;
+                r1MatNormalize(r1data);
                 retcode = r1MatCountNnz(r1data); checkCode;
                 // Free and re-allocate
                 retcode = denseMatFree(dsdata); checkCode;
@@ -378,6 +379,7 @@ static DSDP_INT preRank1RdcBlock( sdpMat *dataMat ) {
                 spsdata = matdata[i];
                 retcode = extractR1fromSps(spsdata, r1data->x, isRank1);
                 checkCode;
+                r1MatNormalize(r1data);
                 retcode = r1MatCountNnz(r1data); checkCode;
                 retcode = spsMatFree(spsdata); checkCode;
                 DSDP_FREE(spsdata);

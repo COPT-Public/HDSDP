@@ -791,6 +791,7 @@
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				CODE_SIGN_STYLE = Automatic;
+				GCC_OPTIMIZATION_LEVEL = 0;
 				"HEADER_SEARCH_PATHS[arch=*]" = "./DSDP6/**";
 				LIBRARY_SEARCH_PATHS = (
 					"$(inherited)",
@@ -805,6 +806,7 @@
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				CODE_SIGN_STYLE = Automatic;
+				GCC_OPTIMIZATION_LEVEL = 0;
 				HEADER_SEARCH_PATHS = "./DSDP6/**";
 				LIBRARY_SEARCH_PATHS = (
 					"$(inherited)",

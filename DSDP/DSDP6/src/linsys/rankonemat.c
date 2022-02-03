@@ -49,7 +49,7 @@ extern DSDP_INT r1denseSpsUpdate( spsMat *sAMat, double alpha, r1Mat *r1BMat ) {
         return retcode;
     }
     
-    double sign = (double) r1BMat->sign;
+    double sign = r1BMat->sign;
     alpha = alpha * sign;
     
     double *array = sAMat->x;
@@ -256,15 +256,15 @@ extern DSDP_INT r1MatspsTrace( r1Mat *x, spsMat *A, double *trace ) {
 extern DSDP_INT r1MatdiagTrace( r1Mat *x, double diag, double *trace ) {
     // Compute trace(a * a' * diag * I) = diag * norm(a)^2
     DSDP_INT retcode = DSDP_RETCODE_OK;
-        
+            
     if (diag == 0.0) {
         *trace = 0.0;
         return retcode;
     }
-    
+
     double res = 0.0;
     retcode = r1MatFnorm(x, &res);
-    
+
     if (x->sign >= 0) {
         *trace = diag * res;
     } else {
@@ -332,6 +332,16 @@ extern DSDP_INT r1MatFree( r1Mat *x ) {
     return DSDP_RETCODE_OK;
 }
 
+extern DSDP_INT r1MatNormalize( r1Mat *x ) {
+    
+    assert( x->dim );
+    double nrm = dnrm2(&x->dim, x->x, &one);
+    drscl(&x->dim, &nrm, x->x, &one);
+    x->sign = x->sign * nrm * nrm;
+    
+    return DSDP_RETCODE_OK;
+}
+
 extern DSDP_INT r1MatFnorm( r1Mat *x, double *fnrm ) {
     
     assert( x->dim );
@@ -340,7 +350,7 @@ extern DSDP_INT r1MatFnorm( r1Mat *x, double *fnrm ) {
         *fnrm = fabs(x->sign);
         return DSDP_RETCODE_OK;
     }
-    
+
     if (x->nnz < 0.6 * x->dim) {
         double res = 0.0, *xdata = x->x;
         DSDP_INT idx, i, *nzidx = x->nzIdx;
@@ -353,16 +363,15 @@ extern DSDP_INT r1MatFnorm( r1Mat *x, double *fnrm ) {
         *fnrm = norm(&x->dim, x->x, &one);
         *fnrm = (*fnrm) * (*fnrm);
     }
-        
     return DSDP_RETCODE_OK;
+    
 }
 
 extern DSDP_INT r1MatRscale( r1Mat *x, double r ) {
     
-    double rsqrt = sqrt(r);
     assert( (x->dim) && (r != 0.0));
     
-    x->sign = x->sign / rsqrt;
+    x->sign = x->sign / r;
     return DSDP_RETCODE_OK;
 }
 

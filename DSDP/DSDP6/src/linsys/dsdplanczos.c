@@ -84,7 +84,7 @@ static DSDP_INT lanczosInitialize( vec *v, double *V ) {
      V(:, 1) = v;
     */
     DSDP_INT retcode = DSDP_RETCODE_OK;
-    srand(v->dim);
+    srand(123);
     double nrm = 0.0;
     
     for (DSDP_INT i = 0; i < v->dim; ++i) {
@@ -92,6 +92,7 @@ static DSDP_INT lanczosInitialize( vec *v, double *V ) {
         srand(v->x[i]);
         v->x[i] /= RAND_MAX;
     }
+    
     vec_norm(v, &nrm);
     vec_rscale(v, nrm);
     
@@ -113,7 +114,7 @@ extern DSDP_INT dsdpLanczos( spsMat *S, spsMat *dS, double *lbd, double *delta )
     }
     
     /* Prepare working array */
-    DSDP_INT n = S->dim, maxiter = 30,  one = 1, mH = maxiter + 1,
+    DSDP_INT n = S->dim, maxiter = 10, one = 1, mH = maxiter + 1,
             il, iu, lwork = LWORK * maxiter, iwork = IWORK * maxiter,
             idx, neigs, info, *eigintaux, *isuppz;
     
@@ -213,7 +214,7 @@ extern DSDP_INT dsdpLanczos( spsMat *S, spsMat *dS, double *lbd, double *delta )
             
             res = fabs(H[k * mH + k + 1] * Y[kp1 + kp1 - 1]);
             
-            if (res <= 1e-04 || k == maxiter - 1) {
+            if (res <= 1e-04 || k >= maxiter - 1) {
                 //lambda = eigH(idx(k)); lambda2 = eigH(idx(k - 1));
                 double lambda1 = d[1], lambda2 = d[0], res1, res2, tmp, gamma;
                 alpha = 1.0;
@@ -254,10 +255,13 @@ extern DSDP_INT dsdpLanczos( spsMat *S, spsMat *dS, double *lbd, double *delta )
                 
                 gamma = MIN(res1, res1 * res1 / gamma);
                 
-                if (gamma < 1e-03) {
+                if (gamma < 1e-03 || gamma + lambda1 < 0) {
                     *delta = gamma;
                     *lbd = lambda1;
                     break;
+                } else {
+                    *delta = gamma;
+                    *lbd = lambda1;
                 }
             }
         }

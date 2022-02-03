@@ -119,9 +119,11 @@ extern DSDP_INT getTraceASinvASinv( HSDSolver *dsdpSolver, DSDP_INT blockid, DSD
     // Perturbation of M diagonal element
     if (constrid == constrid2 &&
         dsdpSolver->eventMonitor[EVENT_IN_PHASE_B]) {
-        if (dsdpSolver->mu < 1e-04) {
+        if (dsdpSolver->mu < 1) {
             dsdpSolver->Msdp->isillCond = TRUE;
-        } else {
+        }
+        
+        if (dsdpSolver->mu < 1e-05) {
             trace += 1e-08;
         }
     }

@@ -19,6 +19,7 @@ static DSDP_INT getKappaTauStep( HSDSolver *dsdpSolver, double *kappatauStep ) {
     double dtau   = dsdpSolver->dtau;
     double dkappa = dsdpSolver->dkappa;
     
+    // TODO: Use dkappa to move the primal objective bound
     double step = MIN((dtau / tau), (dkappa / kappa));
     
     if (step < 0.0) {
@@ -300,6 +301,7 @@ extern DSDP_INT dualPotentialReduction( HSDSolver *dsdpSolver ) {
     DSDP_INT retcode = DSDP_RETCODE_OK;
     retcode = checkIterProgress(dsdpSolver, ITER_COMPUTE_STEP);
     
+    // double rho = dsdpSolver->param->rho;
     double rho = (dsdpSolver->pObjVal - dsdpSolver->dObjVal) / dsdpSolver->mu;
     double oldpotential = 0.0;
     double maxstep = 0.0;
@@ -318,7 +320,7 @@ extern DSDP_INT dualPotentialReduction( HSDSolver *dsdpSolver ) {
     double alpha = maxstep;
     double newpotential = 0.0;
     double bestpotential = oldpotential;
-    double bestalpha = maxstep;
+    double bestalpha = 0.0;
     
     // Start line search
     for (DSDP_INT i = 0; ; ++i) {

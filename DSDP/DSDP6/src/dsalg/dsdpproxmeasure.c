@@ -64,7 +64,7 @@ extern DSDP_INT dsdpgetPhaseBProxMeasure( HSDSolver *dsdpSolver, double *muub, d
     vec_zaxpby(dsdpSolver->b1, 1 / dsdpSolver->mu, dsdpSolver->d1, -1.0, dsdpSolver->d2);
     
     retcode = denseMatxTAx(dsdpSolver->Msdp, dsdpSolver->b1, &dsdpSolver->Pnrm);
-    dsdpSolver->Pnrm = sqrt(dsdpSolver->Pnrm);
+    dsdpSolver->Pnrm = sqrt(MAX(dsdpSolver->Pnrm, 1e-08));
     retcode = dsdpCheckBackwardNewton(dsdpSolver, &ispfeas);
     
     if (ispfeas) {
