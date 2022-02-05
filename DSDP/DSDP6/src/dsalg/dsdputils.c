@@ -31,37 +31,33 @@ extern DSDP_INT getSinvASinv( HSDSolver *dsdpSolver, DSDP_INT blockid, DSDP_INT 
     if (typeA == MAT_TYPE_RANKK) {
         rkMat *dataA = (rkMat *) A;
         rkMat *dataSinvASinv = (rkMat *) SinvASinv;
-        retcode = spsSinvRkSinvSolve(S, dataA, dataSinvASinv, asinv);
-//        r1Mat *dataA = (r1Mat *) A;
-//        r1Mat *dataSinvASinv = (r1Mat *) SinvASinv;
-//        retcode = spsSinvR1SinvSolve(S, dataA, dataSinvASinv, asinv); checkCode;
+        retcode = spsSinvRkSinvSolve(S, dataA, dataSinvASinv, &tracediag);
     } else if (typeA == MAT_TYPE_SPARSE) {
         spsMat *dataA = (spsMat *) A;
         dsMat *dataSinvASinv = (dsMat *) SinvASinv;
-        retcode = spsSinvSpSinvSolve(S, dataA, dataSinvASinv, asinv); checkCode;
+        retcode = spsSinvSpSinvSolve(S, dataA, dataSinvASinv, &tracediag); checkCode;
     } else if (typeA == MAT_TYPE_DENSE) {
         dsMat *dataA = (dsMat *) A;
         dsMat *dataSinvASinv = (dsMat *) SinvASinv;
-        retcode = spsSinvDsSinvSolve(S, dataA, dataSinvASinv, asinv); checkCode;
+        retcode = spsSinvDsSinvSolve(S, dataA, dataSinvASinv, &tracediag); checkCode;
     } else {
         error(etype, "Invalid matrix type. \n");
     }
+    
+    *asinv += tracediag;
     
     if (dsdpSolver->eventMonitor[EVENT_IN_PHASE_A]) {
         switch (typeA) {
             case MAT_TYPE_RANKK:
                 retcode = rkMatdiagTrace(SinvASinv, dsdpSolver->Ry, &tracediag);
-                // retcode = r1MatdiagTrace(SinvASinv, dsdpSolver->Ry, &tracediag);
                 break;
             default:
                 retcode = denseDiagTrace(SinvASinv, dsdpSolver->Ry, &tracediag);
                 break;
         }
+        *asinvrysinv += tracediag;
+        checkCode;
     }
-    
-    checkCode;
-    *asinvrysinv += tracediag;
-    
     return retcode;
 }
 

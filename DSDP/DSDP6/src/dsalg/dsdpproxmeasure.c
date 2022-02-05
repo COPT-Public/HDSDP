@@ -37,6 +37,7 @@ extern DSDP_INT dsdpgetPhaseAProxMeasure( HSDSolver *dsdpSolver, double newmu ) 
     vec_zaxpby(dydelta, dtaudelta, dsdpSolver->d12, tau / newmu, dsdpSolver->d2);
     vec_axpy(-1.0, dsdpSolver->d3, dydelta);
     vec_dot(dsdpSolver->u, dydelta, &utd2);
+    
     dsdpSolver->Pnrm = (dsdpSolver->csinvcsinv + 1 / (tau * tau)) * (dtaudelta * dtaudelta);
     dsdpSolver->Pnrm -= 2 * utd2 * dtaudelta;
     denseMatxTAx(dsdpSolver->Msdp, dydelta, &utd2);

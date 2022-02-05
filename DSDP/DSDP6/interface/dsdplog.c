@@ -340,7 +340,7 @@ extern DSDP_INT printPhaseASummary( HSDSolver *dsdpSolver, double time ) {
     dsdpshowdash();
     dsdpstatus(dsdpSolver->solStatus, &sAlog[33]);
     printf("%-80s %18s|\n", sAlog, "");
-    printf("| Elapsed Time: %5f seconds %65s |\n", time, "");
+    printf("| Elapsed Time: %6.5f seconds %65s |\n", time, "");
     dsdpshowdash();
     return retcode;
 }
@@ -353,7 +353,7 @@ extern DSDP_INT printPhaseBSummary( HSDSolver *dsdpSolver, double time ) {
     dsdpshowdash();
     dsdpstatus(dsdpSolver->solStatus, &sBlog[33]);
     printf("%-80s %18s|\n", sBlog, "");
-    printf("| Elapsed Time: %5f seconds %65s |\n", time, "");
+    printf("| Elapsed Time: %6.5f seconds %65s |\n", time, "");
     dsdpshowdash();
     return retcode;
 }
