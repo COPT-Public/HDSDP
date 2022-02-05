@@ -192,28 +192,34 @@ DSDP_INT test_sparse(void) {
     double diff = 0.0;
     double err  = 0.0;
     
-    // Rscale
+//    // Rscale
+//    double r = 0.5;
+//    retcode = spsMatRscale(data, r); checkCodeFree;
+//
+//    // Fnorm
+//    double myfnrm = 0.0;
+//    retcode = spsMatFnorm(data, &myfnrm); checkCodeFree;
+//
+//    if (fabs(myfnrm * r - spfnrm) < 1e-08) {
+//        passed("Rscale");
+//        passed("Fnorm");
+//    }
+//
+//    // Scatter
+//    for (DSDP_INT i = 0; i < spsAdim; ++i) {
+//        retcode = spsMatScatter(data, rhs, i); checkCodeFree;
+//        vec_print(rhs);
+//    }
     double r = 0.5;
-    retcode = spsMatRscale(data, r); checkCodeFree;
-    
-    // Fnorm
-    double myfnrm = 0.0;
-    retcode = spsMatFnorm(data, &myfnrm); checkCodeFree;
-    
-    if (fabs(myfnrm * r - spfnrm) < 1e-08) {
-        passed("Rscale");
-        passed("Fnorm");
-    }
-    
-    // Scatter
-    for (DSDP_INT i = 0; i < spsAdim; ++i) {
-        retcode = spsMatScatter(data, rhs, i); checkCodeFree;
-        vec_print(rhs);
-    }
     
     // Factorization
     retcode = spsMatSymbolic(data); checkCodeFree;
     retcode = spsMatFactorize(data); checkCodeFree;
+    
+    // Lanczos iteration
+    double lbd = 0.0;
+    double delta = 0.0;
+    dsdpLanczos(data, B, &lbd, &delta);
     
     // Vector solve
     memcpy(rhs->x, b, sizeof(double) * spsAdim);
@@ -255,22 +261,6 @@ DSDP_INT test_sparse(void) {
         passed("Spinv Sp Spinv");
     }
     
-    
-    // Eigen value routines
-    double maxEig = 0.0;
-    double minEig = 0.0;
-    
-    retcode = spsMatMaxEig(data2, &maxEig);
-    retcode = spsMatMinEig(data2, &minEig);
-    
-    if (fabs(refeigmax - maxEig) < 1e-06) {
-        passed("Maximum eigenvalue");
-    }
-    
-    if (fabs(refeigmin - minEig) < 1e-06) {
-        passed("Minimum eigenvalue");
-    }
-    
     // Check positive-definiteness
     retcode = spsMatSymbolic(data2); checkCodeFree;
     DSDP_INT ispd = FALSE;
@@ -284,7 +274,7 @@ DSDP_INT test_sparse(void) {
     }
     
     // Take SDP step
-    spsMatLspLSolve(data2, B, data);
+    // spsMatLspLSolve(data2, B, data);
     
 clean_up:
     

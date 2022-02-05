@@ -42,6 +42,7 @@ extern DSDP_INT denseDiagTrace   ( dsMat *dAMat, double diag,   double *trace );
 
 /* Utilities */
 extern DSDP_INT denseMatScatter  ( dsMat *dMat, vec *b, DSDP_INT k );
+extern DSDP_INT denseMatFillLow  ( dsMat *dMat, double *fulldMat );
 extern DSDP_INT denseMatFill     ( dsMat *dMat, double *fulldMat );
 extern DSDP_INT denseMatGetdiag  ( dsMat *dMat, vec *diag );
 extern DSDP_INT denseMatView     ( dsMat *dMat );

@@ -47,6 +47,7 @@ typedef struct {
     double   csinvrysinv; // Store trace(C * Sinv * Ry * Sinv)
     
     dsMat    *Msdp;       // Schur matrix for SDP (dense)
+    double   Mscaler;     // Scaler of Schur complement
     vec      *u;          // A_ls^(-2)c + AS^(-1)CS^(-1)
     
     vec      *b1;         // Auxiliary array 1
@@ -78,7 +79,7 @@ typedef struct {
     /* TODO: Remove spaux by applying Lanczos iterations */
     spsMat   **spaux;     // Used for maximum step computation
     dsMat    **dsaux;     // Used for Schur matrix setup
-    r1Mat    **r1aux;     // Use for Schur matrix setup
+    rkMat    **rkaux;     // Use for Schur matrix setup
     spsMat   **Scker;     // Used for checking positive definiteness
     vec      *ds;         // LP step matrix
     vec      *dy;         // Dual step matrix

@@ -3,6 +3,7 @@
 
 #include "vec.h"
 #include "sparsemat.h"
+#include "dsdplanczos.h"
 #include "densemat.h"
 #include "rankonemat.h"
 

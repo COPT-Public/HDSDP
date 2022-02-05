@@ -1,114 +1,70 @@
-/*******************************************************************************
-* Copyright 2005-2021 Intel Corporation.
-*
-* This software and the related documents are Intel copyrighted  materials,  and
-* your use of  them is  governed by the  express license  under which  they were
-* provided to you (License).  Unless the License provides otherwise, you may not
-* use, modify, copy, publish, distribute,  disclose or transmit this software or
-* the related documents without Intel's prior written permission.
-*
-* This software and the related documents  are provided as  is,  with no express
-* or implied  warranties,  other  than those  that are  expressly stated  in the
-* License.
-*******************************************************************************/
-
-/*
-!   Content: Example for k Max/Min eigenvalue problem based on
-!            Intel(R) Math Kernel Library (Intel(R) MKL) Extended
-!            Eigensolver (CSR sparse format, double precision)
-!
-!*******************************************************************************
-!
-! The following routines are used in the example:
-!          MKL_SPARSE_D_EV
-!
-! Consider the 4x4 matrix A
-!
-!                 |  6   2   0   0   |
-!                 |  2   3   0   0   |
-!     A   =       |  0   0   2  -1   |
-!                 |  0   0  -1   2   |
-!
-! stored as sparse matrix.
-!
-!
-!  The test calls mkl_sparse_d_ev routine to find several largest singular
-!  values and corresponding right-singular vectors. Orthogonality of singular
-!  vectors is tested using DGEMM routine
-!
-!*******************************************************************************/
-
 #include <stdio.h>
 #include <stdlib.h>
 #include <math.h>
 #include "dsdpfeast.h"
+#include "dsdpeigfact.h"
 #include "test.h"
 #ifndef max
 #define max(a, b) (a) < (b) ? (b): (a)
 #endif
 
+char etype[] = "Test feast";
+DSDP_INT n = 10;
+
+DSDP_INT feastAp[] = {0, 2, 3, 6, 6, 7, 8, 8, 9, 9, 9};
+DSDP_INT feastAi[] = {4, 9, 6, 2, 5, 8, 6, 6, 9};
+double feastAx[]  =  {-0.65681593,  1.26155072,  0.47542481, -0.33733642,  0.155489,
+                      -1.48139907,  0.88415371,  0.12694707,  1.12873645};
+
+double feastpackA[] = {145.0902, 107.4532, -2.4046, -0.6691, -11.3401, 9.7020, 137.9264,
+                  188.1493, 22.3598, 81.2420, 495.2369, 32.9430, 25.1972, 4.0607,
+                  2.8208, 190.7778, 122.7086, 80.0744, -2.2327, 29.9940, 11.3035,
+                  14.2333, 12.8114, -0.2192, 1.9181, 23.7690, -2.8766, 87.7535,
+                  71.1435, 5.6926, 4.3115, 5.4869, 3.2918, -0.2061, 254.9858, 44.6697,
+                  1.8421, 43.1823, 0.0087, 7.7144, 70.8160, 3.0342, 67.2678, 1.4728,
+                  16.5201, 172.6808, 188.3668, 24.0036, 41.3076, 406.5596, 7.6074,
+                  214.3802, 61.4641, -22.6640, 349.4797};
+
 DSDP_INT test_feast(void) {
     
-    /* Matrix A of size N in CSR format */
-    DSDP_INT     N = 4;                                   /* number of rows in matrix A */
-    DSDP_INT ia[5] = {1,3,5,7,9};                         /* ia array from CSR format */
-    DSDP_INT ja[8] = {1,2,1,2,3,4,3,4};                   /* ja array from CSR format */
-    double   a[8] = {6.0,2.0,2.0,3.0,2.0,-1.0,-1.0,2.0}; /* val array from CSR format */
-
-    double   Eig[4] = {1.0, 2.0, 3.0, 7.0}; /* Exact eigenvalues */
-
-    /* mkl_sparse_d_ev input parameters */
-    char         which = 'S'; /* Which eigenvalues to calculate. ('L' - largest (algebraic) eigenvalues, 'S' - smallest (algebraic) eigenvalues) */
-    DSDP_INT      k0  = 3;     /* Desired number of max/min eigenvalues */
-
-    /* mkl_sparse_d_ev output parameters */
-    DSDP_INT      k;      /* Number of eigenvalues found (might be less than k0). */
-    double       E[4];   /* Eigenvalues */
-    double       X[4*4]; /* Eigenvectors */
-    double       res[4]; /* Residual */
-
-    /* Local variables */
-    DSDP_INT      info;               /* Errors */
-    DSDP_INT      i, j;
-/* Leading dimension for destination array in GEMM */
-
-    /* Sparse BLAS IE variables */
-    sparse_matrix_t A = NULL; /* Handle containing sparse matrix in internal data structure */
-    struct matrix_descr descr; /* Structure specifying sparse matrix properties */
-
-    /* Create handle for matrix A stored in CSR format */
-    descr.type = SPARSE_MATRIX_TYPE_GENERAL; /* Full matrix is stored */
-    mkl_sparse_d_create_csr ( &A, SPARSE_INDEX_BASE_ONE, N, N, ia, ia+1, ja, a );
-
-    /* Step 2. Call mkl_sparse_ee_init to define default input values */
-    mkl_sparse_ee_init(pm);
-
-    /* Step 3. Solve the standard Ax = ex eigenvalue problem. */
-    info = mkl_sparse_d_ev(&which, pm, A, descr, k0, &k, E, X, res);
-
-    printf("mkl_sparse_d_ev output info %d \n",info);
-    if ( info != 0 )
-    {
-        printf("Routine mkl_sparse_d_ev returns code of ERROR: %i", (int)info);
-        return 1;
-    } else if (pm[9] != 0) {
-        printf("Routine mkl_sparse_d_ev returns success but the reason for"
-               " exiting iterations is %d != 0 (convergence)", (int)pm[9]);
-        return 2;
+    DSDP_INT retcode  = DSDP_RETCODE_OK;
+    
+    DSDP_INT packAnnz = feastAp[n];
+    spsMat *data  = NULL;
+    data    = (spsMat *) calloc(1, sizeof(spsMat));
+    retcode = spsMatInit(data); checkCodeFree;
+    retcode = spsMatAllocData(data, n, packAnnz);
+    
+    memcpy(data->p, feastAp, sizeof(DSDP_INT) * (n + 1));
+    memcpy(data->i, feastAi, sizeof(DSDP_INT) * packAnnz);
+    memcpy(data->x, feastAx, sizeof(double)   * packAnnz);
+    
+    double *eigvals = (double *) calloc(n, sizeof(double));
+    double *eigvecs = (double *) calloc(n * n, sizeof(double));
+    
+    factorizeSparseData(data, -35.0, eigvals, eigvecs);
+    
+    for (DSDP_INT i = 0; i < n; ++i) {
+        printf("lambda %d = %10.5e \n", i + 1, eigvals[i]);
+    }
+    
+    dsMat *data2 = (dsMat *) calloc(1, sizeof(dsMat));
+    retcode = denseMatAlloc(data2, n, FALSE); checkCodeFree;
+    memcpy(data2->array, feastpackA, sizeof(double) * nsym(n));
+    
+    factorizeDenseData(data2, -1064.0, eigvals, eigvecs);
+    for (DSDP_INT i = 0; i < n; ++i) {
+        printf("lambda %d = %10.5e \n", i + 1, eigvals[i]);
     }
 
-    printf("*************************************************\n");
-    printf("************** REPORT ***************************\n");
-    printf("*************************************************\n");
-    printf("#mode found/subspace %d %d \n", k, k0);
-    if (pm[2] == 1)
-        printf("reason for iteration exit %d\n", pm[9]);
-    printf("Index/Exact Eigenvalues/Estimated Eigenvalues/Residuals\n");
-    for (i=0; i<k; i++)
-    {
-        printf("   %d  %.15e %.15e %.15e \n",i, Eig[i], E[i], res[i]);
-    }
-
-    mkl_sparse_destroy(A);
+clean_up:
+    
+    DSDP_FREE(eigvals);
+    DSDP_FREE(eigvecs);
+    spsMatFree(data);
+    DSDP_FREE(data);
+    denseMatFree(data2);
+    DSDP_FREE(data2);
+    
     return 0;
 }

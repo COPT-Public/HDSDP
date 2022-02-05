@@ -57,7 +57,7 @@ static hsdParam defaultParam =
     0.1,
     0.1,
     
-    3.0,
+    4.0,
     
     DSDP_INITMETHOD_FRO,
     1e+05,

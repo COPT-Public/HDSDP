@@ -28,10 +28,13 @@ extern DSDP_INT getSinvASinv( HSDSolver *dsdpSolver, DSDP_INT blockid, DSDP_INT 
         asinvrysinv = &dsdpSolver->csinvrysinv;
     }
     
-    if (typeA == MAT_TYPE_RANK1) {
-        r1Mat *dataA = (r1Mat *) A;
-        r1Mat *dataSinvASinv = (r1Mat *) SinvASinv;
-        retcode = spsSinvR1SinvSolve(S, dataA, dataSinvASinv, asinv); checkCode;
+    if (typeA == MAT_TYPE_RANKK) {
+        rkMat *dataA = (rkMat *) A;
+        rkMat *dataSinvASinv = (rkMat *) SinvASinv;
+        retcode = spsSinvRkSinvSolve(S, dataA, dataSinvASinv, asinv);
+//        r1Mat *dataA = (r1Mat *) A;
+//        r1Mat *dataSinvASinv = (r1Mat *) SinvASinv;
+//        retcode = spsSinvR1SinvSolve(S, dataA, dataSinvASinv, asinv); checkCode;
     } else if (typeA == MAT_TYPE_SPARSE) {
         spsMat *dataA = (spsMat *) A;
         dsMat *dataSinvASinv = (dsMat *) SinvASinv;
@@ -46,8 +49,9 @@ extern DSDP_INT getSinvASinv( HSDSolver *dsdpSolver, DSDP_INT blockid, DSDP_INT 
     
     if (dsdpSolver->eventMonitor[EVENT_IN_PHASE_A]) {
         switch (typeA) {
-            case MAT_TYPE_RANK1:
-                retcode = r1MatdiagTrace(SinvASinv, dsdpSolver->Ry, &tracediag);
+            case MAT_TYPE_RANKK:
+                retcode = rkMatdiagTrace(SinvASinv, dsdpSolver->Ry, &tracediag);
+                // retcode = r1MatdiagTrace(SinvASinv, dsdpSolver->Ry, &tracediag);
                 break;
             default:
                 retcode = denseDiagTrace(SinvASinv, dsdpSolver->Ry, &tracediag);
@@ -80,16 +84,19 @@ extern DSDP_INT getTraceASinvASinv( HSDSolver *dsdpSolver, DSDP_INT blockid, DSD
         return retcode;
     }
     
-    if (mattype == MAT_TYPE_RANK1) {
+    if (mattype == MAT_TYPE_RANKK) {
         switch (Atype) {
             case MAT_TYPE_DENSE:
-                retcode = r1MatdenseTrace((r1Mat *) SinvASinv, (dsMat *) A, &trace);
+                retcode = rkMatdenseTrace((rkMat *) SinvASinv, (dsMat *) A, &trace);
+                // retcode = r1MatdenseTrace((r1Mat *) SinvASinv, (dsMat *) A, &trace);
                 break;
             case MAT_TYPE_SPARSE:
-                retcode = r1MatspsTrace((r1Mat *) SinvASinv, (spsMat *) A, &trace);
+                retcode = rkMatspsTrace((rkMat *) SinvASinv, (spsMat *) A, &trace);
+                // retcode = r1MatspsTrace((r1Mat *) SinvASinv, (spsMat *) A, &trace);
                 break;
-            case MAT_TYPE_RANK1:
-                retcode = r1Matr1Trace((r1Mat *) SinvASinv, (r1Mat *) A, &trace);
+            case MAT_TYPE_RANKK:
+                retcode = rkMatrkTrace((rkMat *) SinvASinv, (rkMat *) A, &trace);
+                // retcode = r1Matr1Trace((r1Mat *) SinvASinv, (r1Mat *) A, &trace);
                 break;
             default:
                 error(etype, "Invalid matrix type. \n");
@@ -103,8 +110,9 @@ extern DSDP_INT getTraceASinvASinv( HSDSolver *dsdpSolver, DSDP_INT blockid, DSD
             case MAT_TYPE_SPARSE:
                 retcode = denseSpsTrace((dsMat *) SinvASinv, (spsMat *) A, &trace);
                 break;
-            case MAT_TYPE_RANK1:
-                retcode = r1MatdenseTrace((r1Mat *) A, (dsMat *) SinvASinv, &trace);
+            case MAT_TYPE_RANKK:
+                retcode = rkMatdenseTrace((rkMat *) A, (dsMat *) SinvASinv, &trace);
+                // retcode = r1MatdenseTrace((r1Mat *) A, (dsMat *) SinvASinv, &trace);
                 break;
             default:
                 error(etype, "Invalid matrix type. \n");
@@ -320,8 +328,8 @@ extern DSDP_INT getMatnrm( HSDSolver *dsdpSolver, DSDP_INT blockid, DSDP_INT con
         case MAT_TYPE_SPARSE:
             retcode = spsMatFnorm(data, nrm);
             break;
-        case MAT_TYPE_RANK1:
-            retcode = r1MatFnorm(data, nrm);
+        case MAT_TYPE_RANKK:
+            retcode = rkMatFnorm(data, nrm);
             break;
         default:
             error(etype, "Unknown matrix type. \n");
@@ -351,8 +359,8 @@ extern DSDP_INT matRScale( HSDSolver *dsdpSolver, DSDP_INT blockid, DSDP_INT con
         case MAT_TYPE_SPARSE:
             retcode = spsMatRscale((spsMat *) data, scaler);
             break;
-        case MAT_TYPE_RANK1:
-            retcode = r1MatRscale((r1Mat *) data, scaler);
+        case MAT_TYPE_RANKK:
+            retcode = rkMatRscale((rkMat *) data, scaler);
             break;
         default:
             error(etype, "Unknown matrix type. \n");
@@ -373,17 +381,19 @@ extern DSDP_INT addMattoS( HSDSolver *dsdpSolver, DSDP_INT blockid, DSDP_INT con
         case MAT_TYPE_ZERO:
             break;
         case MAT_TYPE_DENSE:
-            retcode = spsMatAddds(dsdpSolver->S[blockid], alpha, data);
+            retcode = spsMatAddds(dsdpSolver->S[blockid], alpha, (dsMat *) data);
             checkCode;
             break;
         case MAT_TYPE_SPARSE:
-            retcode = spsMataXpbY(alpha, data, 1.0, dsdpSolver->S[blockid],
+            retcode = spsMataXpbY(alpha, (spsMat *) data, 1.0, dsdpSolver->S[blockid],
                                   dsdpSolver->symS[blockid]);
             checkCode;
             break;
-        case MAT_TYPE_RANK1:
-            retcode = spsMatAddr1(dsdpSolver->S[blockid], alpha,
-                                  data, dsdpSolver->symS[blockid]);
+        case MAT_TYPE_RANKK:
+            retcode = spsMatAddrk(dsdpSolver->S[blockid], alpha,
+                                  (rkMat *) data, dsdpSolver->symS[blockid]);
+//            retcode = spsMatAddr1(dsdpSolver->S[blockid], alpha,
+//                                  data, dsdpSolver->symS[blockid]);
             checkCode;
             break;
         default:
@@ -413,8 +423,8 @@ extern DSDP_INT addMattoChecker( HSDSolver *dsdpSolver, DSDP_INT blockid,
                                   dsdpSolver->symS[blockid]);
             checkCode;
             break;
-        case MAT_TYPE_RANK1:
-            retcode = spsMatAddr1(dsdpSolver->Scker[blockid], alpha,
+        case MAT_TYPE_RANKK:
+            retcode = spsMatAddrk(dsdpSolver->Scker[blockid], alpha,
                                   data, dsdpSolver->symS[blockid]);
             checkCode;
             break;
@@ -448,8 +458,8 @@ extern DSDP_INT addMattodS( HSDSolver *dsdpSolver, DSDP_INT blockid, DSDP_INT co
                                   dsdpSolver->dS[blockid], dsdpSolver->symS[blockid]);
             checkCode;
             break;
-        case MAT_TYPE_RANK1:
-            retcode = spsMatAddr1(dsdpSolver->dS[blockid],
+        case MAT_TYPE_RANKK:
+            retcode = spsMatAddrk(dsdpSolver->dS[blockid],
                                   alpha, data, dsdpSolver->symS[blockid]);
             checkCode;
             break;
@@ -476,8 +486,8 @@ extern DSDP_INT freesdpMat( HSDSolver *dsdpSolver, DSDP_INT blockid, DSDP_INT co
             retcode = spsMatFree(data); checkCode;
             checkCode;
             break;
-        case MAT_TYPE_RANK1:
-            retcode = r1MatFree(data); checkCode;
+        case MAT_TYPE_RANKK:
+            retcode = rkMatFree(data); checkCode;
             break;
         default:
             error(etype, "Unknown matrix type. \n");

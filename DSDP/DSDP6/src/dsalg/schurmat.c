@@ -20,7 +20,7 @@ static DSDP_INT setupSDPSchurBlock( HSDSolver *dsdpSolver, DSDP_INT blockid ) {
     sdpMat *sdpData = dsdpSolver->sdpData[blockid];
     
     // Temporary storage array for SinvASinv
-    r1Mat *r1data = dsdpSolver->r1aux[blockid];
+    rkMat *rkdata = dsdpSolver->rkaux[blockid];
     dsMat *dsdata = dsdpSolver->dsaux[blockid];
     
     DSDP_INT dim = 0;
@@ -39,10 +39,10 @@ static DSDP_INT setupSDPSchurBlock( HSDSolver *dsdpSolver, DSDP_INT blockid ) {
         
         if (mattype == MAT_TYPE_ZERO) {
             continue;
-        } else if (mattype == MAT_TYPE_RANK1) {
-            retcode = getSinvASinv(dsdpSolver, blockid, i, r1data);
-            data = (void *) r1data;
-            mattype = MAT_TYPE_RANK1;
+        } else if (mattype == MAT_TYPE_RANKK) {
+            retcode = getSinvASinv(dsdpSolver, blockid, i, rkdata);
+            data = (void *) rkdata;
+            mattype = MAT_TYPE_RANKK;
             checkCode;
         } else {
             retcode = getSinvASinv(dsdpSolver, blockid, i, dsdata);
@@ -63,6 +63,8 @@ static DSDP_INT setupSDPSchurBlock( HSDSolver *dsdpSolver, DSDP_INT blockid ) {
         for (DSDP_INT i = 0; i < m; ++i) {
             maxdiag = MAX(packIdx(dsdpSolver->Msdp->array, m, i, i), maxdiag);
         }
+        
+        dsdpSolver->Mscaler = maxdiag;
         
         for (DSDP_INT i = 0; i < m; ++i) {
             packIdx(dsdpSolver->Msdp->array, m, i, i) += \
@@ -363,7 +365,16 @@ extern DSDP_INT schurPhaseBMatSolve( HSDSolver *dsdpSolver ) {
     retcode = setupPhaseBdvecs(dsdpSolver); checkCode;
     
     dsMat *M = dsdpSolver->Msdp;
+    double scaler = dsdpSolver->Mscaler;
     assert( !M->isFactorized );
+    
+    if (scaler > 1e+06 || scaler <= 1e-04) {
+        denseMatRscale(M, scaler);
+        vec_rscale(dsdpSolver->d1, scaler);
+        vec_rscale(dsdpSolver->d2, scaler);
+    } else {
+        dsdpSolver->Mscaler = 1.0;
+    }
     
     // Factorize the Schur matrix
     retcode = denseMatFactorize(M);

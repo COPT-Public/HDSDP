@@ -1,13 +1,12 @@
 #include <stdio.h>
 #include "dsdphsd.h"
 #include "dsdpsolver.h"
-#include "data.h"
+#include "data2.h"
 
 
 DSDP_INT test_dsdp(void) {
     
     DSDP_INT retcode = DSDP_RETCODE_OK;
-    
     
     DSDP_INT m = coneM;
     DSDP_INT n = coneN;
@@ -21,6 +20,7 @@ DSDP_INT test_dsdp(void) {
     retcode = DSDPSetSDPConeData(hsdSolver, 0, n, NULL, coneAp, coneAi, coneAx);
     
     retcode = DSDPSetObj(hsdSolver, dObj);
+    
     retcode = DSDPOptimize(hsdSolver);
     
     // mwTrace("End Profiling. \n");

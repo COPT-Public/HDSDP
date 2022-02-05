@@ -255,7 +255,7 @@ extern DSDP_INT dsdpLanczos( spsMat *S, spsMat *dS, double *lbd, double *delta )
                 
                 gamma = MIN(res1, res1 * res1 / gamma);
                 
-                if (gamma < 1e-03 || gamma + lambda1 < 0) {
+                if (gamma < 1e-03 || gamma + lambda1 < 0 || gamma + lambda1 <= 0.8) {
                     *delta = gamma;
                     *lbd = lambda1;
                     break;

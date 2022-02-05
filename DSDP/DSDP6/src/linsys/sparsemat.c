@@ -479,6 +479,23 @@ extern DSDP_INT spsMatAddr1( spsMat *sXMat, double alpha, r1Mat *r1YMat, DSDP_IN
     return retcode;
 }
 
+extern DSDP_INT spsMatAddrk( spsMat *sXMat, double alpha, rkMat *rkYMat, DSDP_INT *sumHash ) {
+
+    // Add a rank k matrix to a sparse matrix
+    DSDP_INT retcode = DSDP_RETCODE_OK;
+    assert( sXMat->dim == rkYMat->dim);
+    
+    if (alpha == 0.0) {
+        return retcode;
+    }
+    
+    for (DSDP_INT i = 0; i < rkYMat->rank; ++i) {
+        retcode = spsMatAddr1(sXMat, alpha, rkYMat->data[i], sumHash);
+    }
+    
+    return retcode;
+}
+
 extern DSDP_INT spsMatScale( spsMat *sXMat, double alpha ) {
     // Scale a sparse matrix by some number.
     DSDP_INT retcode = DSDP_RETCODE_OK;
@@ -721,7 +738,7 @@ extern DSDP_INT dsdpGetAlpha( spsMat *S, spsMat *dS, spsMat *spaux, double *alph
     double lbd = 0.0, delta = 0.0;
     retcode = dsdpLanczos(S, dS, &lbd, &delta);
     
-    if (lbd != lbd || delta != delta || (lbd + delta > 1e+10 )) {
+    if (lbd != lbd || delta != delta || (lbd + delta > 1e+10)) {
         // MKL extremal routine
         retcode = spsMatLspLSolve(S, dS, spaux); checkCode;
         retcode = spsMatMinEig(spaux, &mineig); checkCode;
@@ -1008,7 +1025,7 @@ extern DSDP_INT spsSinvRkSinvSolve( spsMat *S, rkMat *A, rkMat *SinvASinv, doubl
     DSDP_INT retcode = DSDP_RETCODE_OK;
     assert( S->dim == A->dim );
     assert( SinvASinv->dim == S->dim );
-    assert( SinvASinv->isdata );
+    assert( A->isdata && !SinvASinv->isdata );
     
     double res = 0.0, tmp;
     DSDP_INT rank = A->rank;
@@ -1020,6 +1037,8 @@ extern DSDP_INT spsSinvRkSinvSolve( spsMat *S, rkMat *A, rkMat *SinvASinv, doubl
         retcode = spsSinvR1SinvSolve(S, r1data, SinvASinv->data[i], &tmp);
         res += tmp;
     }
+    
+    *asinv = res;
     
     return retcode;
 }
@@ -1224,6 +1243,24 @@ extern DSDP_INT spsMatScatter( spsMat *sMat, vec *b, DSDP_INT k ) {
                 b->x[j] = Ax[i];
                 break;
             }
+        }
+    }
+    
+    return retcode;
+}
+
+extern DSDP_INT spsMatFillLower( spsMat *sMat, double *lowFullMat ) {
+    
+    DSDP_INT retcode = DSDP_RETCODE_OK;
+    assert( sMat->dim > 0 );
+    DSDP_INT n = sMat->dim, ni = 0;
+    DSDP_INT *Ap = sMat->p, *Ai = sMat->i;
+    double *Ax = sMat->x;
+    
+    for (DSDP_INT i = 0; i < n; ++i) {
+        ni = n * i;
+        for (DSDP_INT j = Ap[i]; j < Ap[i + 1]; ++j) {
+            lowFullMat[ni + Ai[j]] = Ax[j];
         }
     }
     

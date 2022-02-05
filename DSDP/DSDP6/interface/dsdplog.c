@@ -78,9 +78,9 @@ extern void dsdpCheckNan( HSDSolver *dsdpSolver ) {
 
 extern void dsdpprintPhaseAheader( void ) {
     
-    printf("| DSDP Phase A starts. Eliminating dual infeasibility\n");
+    printf("| DSDP Phase A starts. Eliminating dual infeasibility %45s|\n", "");
     dsdpshowdash();
-    /*      ________________________________________________________________________________*/
+    /*      --------------------------------------------------------------------------------*/
     /*      | niter |   pObj   |   dObj   |  dInf  |  k/t  |  mu  |  alpha  |  pNrm  |  E  |*/
     /*      --------------------------------------------------------------------------------*/
     printf("| %4s | %12s | %12s | %9s | %8s | %8s | %8s | %8s | %3s |\n",
@@ -92,9 +92,9 @@ extern void dsdpprintPhaseBheader( void ) {
     
     dsdpshowdash();
     /*      --------------------------------------------------------------------------------*/
-    /*      | niter |   pObj   |   dObj   |  mu  |  alpha  |  pNrm  |  dPot  |  E  |*/
+    /*      | niter |     pObj     |     dObj     |  mu  |  alpha  |  pNrm  |  dPot  |  E  |*/
     /*      --------------------------------------------------------------------------------*/
-    printf("| %4s | %12s | %12s | %9s | %8s | %8s | %8s | %3s |\n",
+    printf("| %4s | %17s | %17s | %10s | %8s | %8s | %8s | %3s |\n",
             "Iter", "pObj", "dObj", "mu", "alpha", "pNrm", "dPot", "E");
     dsdpshowdash();
 }
@@ -198,9 +198,11 @@ print_log:
 
 extern DSDP_INT DSDPPhaseBLogging( HSDSolver *dsdpSolver ) {
     
-    /* --------------------------------------------------------------------------------*/
-    /* | niter |   pObj   |   dObj   |  mu  |  alpha  |  pNrm  |  E  |                 */
-    /* --------------------------------------------------------------------------------*/
+    /*
+     ----------------------------------------------------------------------------------------
+    | Iter |         pObj |         dObj |        mu |    alpha |     pNrm |     dPot |   E |
+    -----------------------------------------------------------------------------------------
+     */
     
     // Implement the logging procedure of DSDP phase A
     DSDP_INT retcode = DSDP_RETCODE_OK;
@@ -246,7 +248,7 @@ extern DSDP_INT DSDPPhaseBLogging( HSDSolver *dsdpSolver ) {
     }
     
 print_log:
-    printf("| %4d | %12.3e | %12.3e | %9.2e | %8.2e | %8.2e | %8.1e | %3s |\n",
+    printf("| %4d | %17.10e | %17.10e | %10.3e | %8.2e | %8.2e | %8.1e | %3s |\n",
             dsdpSolver->iterB + 1, dsdpSolver->pObjVal, dsdpSolver->dObjVal,
             dsdpSolver->mu, dsdpSolver->alpha, dsdpSolver->Pnrm, dsdpSolver->dPotential,
             event);
@@ -334,11 +336,11 @@ extern DSDP_INT printPhaseASummary( HSDSolver *dsdpSolver, double time ) {
     
     // Summarize Phase A iteration
     DSDP_INT retcode = DSDP_RETCODE_OK;
-    char sAlog[100] = "| DSDP Phase A ends with status: ";
+    char sAlog[80] = "| DSDP Phase A ends with status: ";
     dsdpshowdash();
     dsdpstatus(dsdpSolver->solStatus, &sAlog[33]);
-    printf("%s \n", sAlog);
-    printf("| Elapsed Time: %5f seconds \n", time);
+    printf("%-80s %18s|\n", sAlog, "");
+    printf("| Elapsed Time: %5f seconds %65s |\n", time, "");
     dsdpshowdash();
     return retcode;
 }
@@ -347,11 +349,11 @@ extern DSDP_INT printPhaseBSummary( HSDSolver *dsdpSolver, double time ) {
     
     // Summarize Phase B iteration
     DSDP_INT retcode = DSDP_RETCODE_OK;
-    char sBlog[100] = "| DSDP Phase B ends with status: ";
+    char sBlog[80] = "| DSDP Phase B ends with status: ";
     dsdpshowdash();
     dsdpstatus(dsdpSolver->solStatus, &sBlog[33]);
-    printf("%s \n", sBlog);
-    printf("| Elapsed Time: %5f seconds \n", time);
+    printf("%-80s %18s|\n", sBlog, "");
+    printf("| Elapsed Time: %5f seconds %65s |\n", time, "");
     dsdpshowdash();
     return retcode;
 }
@@ -452,10 +454,10 @@ extern DSDP_INT printPhaseABConvert( HSDSolver *dsdpSolver, DSDP_INT *goPb ) {
     
     switch (status) {
         case DSDP_PD_FEASIBLE:
-            printf("| DSDP Phase A certificates primal-dual feasibility \n");
+            printf("| DSDP Phase A certificates primal-dual feasibility %47s|\n", "");
             break;
         case DSDP_PUNKNOWN_DFEAS:
-            printf("| DSDP Phase A certificates dual feasibility \n");
+            printf("| DSDP Phase A certificates dual feasibility %54s|\n", "");
             break;
         case DSDP_PFEAS_DINFEAS:
             printf("| DSDP Phase A certificates dual infeasibility "

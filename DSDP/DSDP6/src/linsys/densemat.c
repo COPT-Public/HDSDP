@@ -451,6 +451,22 @@ extern DSDP_INT denseMatScatter( dsMat *dMat, vec *b, DSDP_INT k ) {
     return retcode;
 }
 
+extern DSDP_INT denseMatFillLow( dsMat *dMat, double *fulldMat ) {
+    
+    // Fill packed matrix into a square array
+    DSDP_INT retcode = DSDP_RETCODE_OK;
+    DSDP_INT n = dMat->dim, idx;
+    double *x = NULL;
+    
+    for (DSDP_INT k = 0; k < n; ++k) {
+        idx = (DSDP_INT) (2 * n - k + 1) * k / 2;
+        x = &(fulldMat[k * n + k]);
+        memcpy(x, &dMat->array[idx], sizeof(double) * (n - k));
+    }
+    
+    return retcode;
+}
+
 extern DSDP_INT denseMatFill( dsMat *dMat, double *fulldMat ) {
     
     // Fill packed matrix to full (there is no structure for symmetric full dense matrix)

@@ -52,13 +52,17 @@ static DSDP_INT sdpMatIAllocByType( sdpMat *sdpData, DSDP_INT k, DSDP_INT *Ai,
 #ifdef SHOWALL
         printf("Zero Matrix \n");
 #endif
-    } else if (sdpData->types[k] == MAT_TYPE_RANK1) {
+    } else if (sdpData->types[k] == MAT_TYPE_RANKK) {
         // Rank 1
-        sdpData->nr1Mat += 1;
-        r1Mat *data = NULL;
-        data = (r1Mat *) calloc(1, sizeof(r1Mat));
-        retcode = r1MatInit(data); checkCode;
-        retcode = r1MatAlloc(data, n); checkCode;
+        sdpData->nrkMat += 1;
+        rkMat *data = NULL;
+        data = (rkMat *) calloc(1, sizeof(rkMat));
+        retcode = rkMatInit(data);
+        
+        r1Mat *r1data = NULL;
+        r1data = (r1Mat *) calloc(1, sizeof(r1Mat));
+        retcode = r1MatInit(r1data); checkCode;
+        retcode = r1MatAlloc(r1data, n); checkCode;
         
         // The first non-zero element must be a diagonal element
         double adiag    = Ax[0];
@@ -67,9 +71,9 @@ static DSDP_INT sdpMatIAllocByType( sdpMat *sdpData, DSDP_INT k, DSDP_INT *Ai,
         
         if (adiag > 0) {
             adiag = sqrt(adiag);
-            data->sign = 1.0;
+            r1data->sign = 1.0;
         } else {
-            data->sign = - 1.0;
+            r1data->sign = - 1.0;
             adiag = - sqrt(-adiag);
             isNeg = TRUE;
         }
@@ -95,12 +99,14 @@ static DSDP_INT sdpMatIAllocByType( sdpMat *sdpData, DSDP_INT k, DSDP_INT *Ai,
             if (rowidx >= diagidx + n - where) {
                 break;
             }
-            data->x[rowidx - diagidx + where] = Ax[i] / adiag;
+            r1data->x[rowidx - diagidx + where] = Ax[i] / adiag;
         }
         
-        retcode = r1MatCountNnz(data); checkCode;
+        rkMatAllocAndSetData(data, n, 1, &r1data->sign, r1data->x);
+        r1MatFree(r1data);
+        DSDP_FREE(r1data);
 #ifdef SHOWALL
-        r1MatView(data);
+        rkMatView(data);
 #endif
         userdata = (void *) data;
         
@@ -309,8 +315,8 @@ extern DSDP_INT sdpMatInit( sdpMat *sdpData ) {
     sdpData->spsMatIdx   = NULL;
     sdpData->ndenseMat   = 0;
     sdpData->denseMatIdx = NULL;
-    sdpData->nr1Mat      = 0;
-    sdpData->r1MatIdx    = NULL;
+    sdpData->nrkMat      = 0;
+    sdpData->rkMatIdx    = NULL;
     
     sdpData->types       = NULL;
     sdpData->sdpData     = NULL;
@@ -339,8 +345,8 @@ extern DSDP_INT sdpMatSetHint( sdpMat *sdpData, DSDP_INT *hint ) {
     
     for (DSDP_INT i = 0; i < sdpData->dimy + 1; ++i) {
         switch (hint[i]) {
-            case MAT_TYPE_RANK1:
-                sdpData->types[i] = MAT_TYPE_RANK1;
+            case MAT_TYPE_RANKK:
+                sdpData->types[i] = MAT_TYPE_RANKK;
                 break;
             case MAT_TYPE_DENSE:
                 sdpData->types[i] = MAT_TYPE_DENSE;
@@ -381,12 +387,12 @@ extern DSDP_INT sdpMatFree( sdpMat *sdpData ) {
     
     sdpData->nspsMat   = 0;
     sdpData->ndenseMat = 0;
-    sdpData->nr1Mat    = 0;
+    sdpData->nrkMat    = 0;
     sdpData->nzeroMat  = 0;
     
     DSDP_FREE(sdpData->spsMatIdx);
     DSDP_FREE(sdpData->denseMatIdx);
-    DSDP_FREE(sdpData->r1MatIdx);
+    DSDP_FREE(sdpData->rkMatIdx);
     
     void *data = NULL;
     
@@ -402,8 +408,8 @@ extern DSDP_INT sdpMatFree( sdpMat *sdpData ) {
             case MAT_TYPE_SPARSE:
                 retcode = spsMatFree((spsMat *) data); checkCode;
                 break;
-            case MAT_TYPE_RANK1:
-                retcode = r1MatFree((r1Mat *) data); checkCode;
+            case MAT_TYPE_RANKK:
+                retcode = rkMatFree((rkMat *) data); checkCode;
                 break;
             default:
                 error(etype, "Unknown matrix type. \n");

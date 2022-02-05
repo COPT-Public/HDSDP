@@ -125,13 +125,34 @@ static DSDP_INT getSDPSStep( HSDSolver *dsdpSolver, double *SStep ) {
 }
 
 static DSDP_INT getCurrentyPotential( HSDSolver *dsdpSolver, vec *y,
-                                      double rho, double *potential ) {
+                                      double rho, double *potential, DSDP_INT *inCone ) {
     // Compute the current potential
     // phi(y) = rho * log(pObj - dObj) - log det S
     DSDP_INT retcode = DSDP_RETCODE_OK;
     
     double pval = 0.0;
     double dObjVal = 0.0;
+    
+    if (inCone) {
+        retcode = getPhaseBS(dsdpSolver, y->x);
+        DSDP_INT psd = FALSE;
+        dsdpInCone(dsdpSolver, &psd);
+        
+        if (psd) {
+            *inCone = TRUE;
+            vec_dot(dsdpSolver->dObj, y, &dObjVal);
+            pval = rho * log(dsdpSolver->pObjVal - dObjVal);
+            for (DSDP_INT i = 0; i < dsdpSolver->nBlock; ++i) {
+                spsMatGetlogdet(dsdpSolver->S[i], &dObjVal);
+                pval -= dObjVal;
+            }
+            dsdpSolver->dPotential = pval;
+            *potential = pval;
+        } else {
+            *inCone = FALSE;
+        }
+        return retcode;
+    }
     
     if (y) {
         retcode = getPhaseBS(dsdpSolver, y->x);
@@ -310,7 +331,7 @@ extern DSDP_INT dualPotentialReduction( HSDSolver *dsdpSolver ) {
     vec *y = dsdpSolver->y;
     vec *dy = dsdpSolver->dy;
     
-    retcode = getCurrentyPotential(dsdpSolver, NULL, rho, &oldpotential);
+    retcode = getCurrentyPotential(dsdpSolver, NULL, rho, &oldpotential, NULL);
     checkCode;
     
     getSDPSStep(dsdpSolver, &maxstep); checkCode;
@@ -321,12 +342,22 @@ extern DSDP_INT dualPotentialReduction( HSDSolver *dsdpSolver ) {
     double newpotential = 0.0;
     double bestpotential = oldpotential;
     double bestalpha = 0.0;
+    DSDP_INT inCone = FALSE;
     
     // Start line search
     for (DSDP_INT i = 0; ; ++i) {
         // y = y + alpha * dy
         vec_zaxpby(ytarget, 1.0, y, alpha, dy);
-        getCurrentyPotential(dsdpSolver, ytarget, rho, &newpotential);
+        
+        if (i == 0) {
+            getCurrentyPotential(dsdpSolver, ytarget, rho, &newpotential, &inCone);
+            if (!inCone) {
+                alpha *= 0.6;
+                continue;
+            }
+        } else {
+            getCurrentyPotential(dsdpSolver, ytarget, rho, &newpotential, NULL);
+        }
         
         if (alpha < 1e-03 || newpotential <= oldpotential - 0.05) {
             break;
@@ -336,7 +367,7 @@ extern DSDP_INT dualPotentialReduction( HSDSolver *dsdpSolver ) {
                 bestpotential = newpotential;
             }
         }
-        alpha *= 0.3;
+        alpha *= 0.8;
     }
     
     if (alpha <= 1e-03) {

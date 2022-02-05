@@ -42,6 +42,7 @@ extern DSDP_INT spsMataXpbY        ( double alpha, spsMat *sXMat, double beta,
 extern DSDP_INT spsMatAdddiag      ( spsMat *sMat, double d, DSDP_INT *sumHash );
 extern DSDP_INT spsMatAddds        ( spsMat *sXMat, double alpha, dsMat *sYMat );
 extern DSDP_INT spsMatAddr1        ( spsMat *sXMat, double alpha, r1Mat *r1YMat, DSDP_INT *sumHash );
+extern DSDP_INT spsMatAddrk        ( spsMat *sXMat, double alpha, rkMat *rkYMat, DSDP_INT *sumHash );
 extern DSDP_INT spsMatFnorm        ( spsMat *sMat, double *fnrm );
 extern DSDP_INT spsMatScale        ( spsMat *sXMat, double alpha );
 extern DSDP_INT spsMatRscale       ( spsMat *sXMat, double r );
@@ -62,6 +63,7 @@ extern DSDP_INT dsdpGetAlphaLS     ( spsMat *S, spsMat *dS, spsMat *Scker,
 /* Schur matrix assembly */
 extern DSDP_INT spsSinvSpSinvSolve ( spsMat *S, spsMat *A, dsMat *SinvASinv, double *asinv );
 extern DSDP_INT spsSinvDsSinvSolve ( spsMat *S, dsMat  *A, dsMat *SinvASinv, double *asinv );
+extern DSDP_INT spsSinvRkSinvSolve ( spsMat *S, rkMat  *A, rkMat *SinvASinv, double *asinv );
 extern DSDP_INT spsSinvR1SinvSolve ( spsMat *S, r1Mat  *A, r1Mat *SinvASinv, double *asinv );
 
 /* Eigen value routines */
@@ -74,6 +76,7 @@ extern DSDP_INT dsdpGetAlphaLS     ( spsMat *S, spsMat *dS, spsMat *Scker, doubl
                                      double *alpha, DSDP_INT *sumHash );
 extern DSDP_INT spsMatGetlogdet    ( spsMat *sMat, double *logdet );
 extern DSDP_INT spsMatScatter      ( spsMat *sMat, vec *b, DSDP_INT k );
+extern DSDP_INT spsMatFillLower    ( spsMat *sMat, double *lowFullMat );
 extern DSDP_INT spsMatFill         ( spsMat *sMat, double *fulldMat );
 extern DSDP_INT spsMatReset        ( spsMat *sMat );
 extern DSDP_INT spsMatView         ( spsMat *sMat );

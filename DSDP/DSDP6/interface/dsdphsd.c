@@ -69,8 +69,9 @@ static DSDP_INT DSDPIInit( HSDSolver *dsdpSolver ) {
     dsdpSolver->csinvcsinv  = 0.0;
     dsdpSolver->csinvrysinv = 0.0;
     
-    dsdpSolver->Msdp   = NULL;
-    dsdpSolver->u      = NULL;
+    dsdpSolver->Msdp    = NULL;
+    dsdpSolver->Mscaler = 0.0;
+    dsdpSolver->u       = NULL;
     
     dsdpSolver->b1     = NULL;
     dsdpSolver->b2     = NULL;
@@ -91,6 +92,8 @@ static DSDP_INT DSDPIInit( HSDSolver *dsdpSolver ) {
     dsdpSolver->dS     = NULL;
     dsdpSolver->Scker  = NULL;
     dsdpSolver->spaux  = NULL;
+    dsdpSolver->dsaux  = NULL;
+    dsdpSolver->rkaux  = NULL;
     dsdpSolver->ds     = NULL;
     dsdpSolver->dy     = NULL;
     dsdpSolver->dtau   = 0.0;
@@ -255,21 +258,21 @@ static DSDP_INT DSDPIAllocIter( HSDSolver *dsdpSolver ) {
     dsdpSolver->Scker = (spsMat **) calloc(nblock, sizeof(spsMat *));
     dsdpSolver->spaux = (spsMat **) calloc(nblock, sizeof(spsMat *));
     dsdpSolver->dsaux = (dsMat  **) calloc(nblock, sizeof(dsMat *));
-    dsdpSolver->r1aux = (r1Mat  **) calloc(nblock, sizeof(r1Mat *));
+    dsdpSolver->rkaux = (rkMat  **) calloc(nblock, sizeof(rkMat *));
     
     for (DSDP_INT i = 0; i < nblock; ++i) {
         dim = dsdpSolver->sdpData[i]->dimS;
         dsdpSolver->spaux[i] = (spsMat *) calloc(1, sizeof(spsMat));
         dsdpSolver->Scker[i] = (spsMat *) calloc(1, sizeof(spsMat));
         dsdpSolver->dsaux[i] = (dsMat  *) calloc(1, sizeof(dsMat));
-        dsdpSolver->r1aux[i] = (r1Mat  *) calloc(1, sizeof(r1Mat));
+        dsdpSolver->rkaux[i] = (rkMat  *) calloc(1, sizeof(rkMat));
         
         retcode = spsMatInit(dsdpSolver->spaux[i]); checkCode;
         retcode = spsMatAlloc(dsdpSolver->spaux[i], dim); checkCode;
         retcode = denseMatInit(dsdpSolver->dsaux[i]); checkCode;
         retcode = denseMatAlloc(dsdpSolver->dsaux[i], dim, FALSE);
-        retcode = r1MatInit(dsdpSolver->r1aux[i]);
-        retcode = r1MatAlloc(dsdpSolver->r1aux[i], dim);
+        retcode = rkMatInit(dsdpSolver->rkaux[i]);
+        retcode = rkMatAllocIter(dsdpSolver->rkaux[i], dim);
     }
     
     // Allocate ds
@@ -445,12 +448,12 @@ static DSDP_INT DSDPIFreeAlgIter( HSDSolver *dsdpSolver ) {
     }
     DSDP_FREE(dsdpSolver->dsaux);
     
-    // r1aux
+    // rkaux
     for (DSDP_INT i = 0; i < nblock; ++i) {
-        retcode = r1MatFree(dsdpSolver->r1aux[i]); checkCode;
-        DSDP_FREE(dsdpSolver->r1aux[i]);
+        retcode = rkMatFree(dsdpSolver->rkaux[i]); checkCode;
+        DSDP_FREE(dsdpSolver->rkaux[i]);
     }
-    DSDP_FREE(dsdpSolver->r1aux);
+    DSDP_FREE(dsdpSolver->rkaux);
     
     // ds
     retcode = vec_free(dsdpSolver->ds);
@@ -501,6 +504,7 @@ static DSDP_INT DSDPIFreeCleanUp( HSDSolver *dsdpSolver ) {
     dsdpSolver->nBlock = 0;
     dsdpSolver->lpDim  = 0;
     dsdpSolver->mu     = 0.0;
+    dsdpSolver->Mscaler = 0.0;
     dsdpSolver->csinvrysinv = 0.0;
     dsdpSolver->rtk    = 0.0;
     dsdpSolver->Pnrm   = 0.0;
@@ -533,6 +537,7 @@ static DSDP_INT DSDPIPresolve( HSDSolver *dsdpSolver ) {
     }
     
     retcode = preRank1Rdc(dsdpSolver); checkCode;
+    retcode = preRankkRdc(dsdpSolver); checkCode;
     retcode = preSDPPrimal(dsdpSolver); checkCode;
     // retcode = preSDPDual(dsdpSolver); checkCode;
     retcode = getMatIdx(dsdpSolver); checkCode;
@@ -702,6 +707,7 @@ extern DSDP_INT DSDPSetObj( HSDSolver *dsdpSolver, double *dObj ) {
     if (dObj) {
         memcpy(dsdpSolver->dObj->x, dObj, sizeof(double) * dsdpSolver->m);
     } else {
+        printf("| Warning: Dual objective not set. Using 0 as dObj \n");
         memset(dsdpSolver->dObj, 0, sizeof(double) * dsdpSolver->m);
     }
     
@@ -731,7 +737,7 @@ extern DSDP_INT DSDPOptimize( HSDSolver *dsdpSolver ) {
         retcode = DSDPPFeasPhase(dsdpSolver);
     }
     
-    printf("| DSDP Ends. \n");
+    printf("| DSDP Ends. %86s| \n", "");
     dsdpshowdash();
     
     return retcode;

@@ -73,6 +73,8 @@
 		1985AC3D279B9DB400B7B8EB /* dsdppfeas.c in Sources */ = {isa = PBXBuildFile; fileRef = 1985AC3C279B9DB400B7B8EB /* dsdppfeas.c */; };
 		199220852737D8C500DD975D /* libiomp5.dylib in Frameworks */ = {isa = PBXBuildFile; fileRef = 199220842737D8C500DD975D /* libiomp5.dylib */; settings = {ATTRIBUTES = (Weak, ); }; };
 		199220862737D8C500DD975D /* libiomp5.dylib in Embed Libraries */ = {isa = PBXBuildFile; fileRef = 199220842737D8C500DD975D /* libiomp5.dylib */; settings = {ATTRIBUTES = (CodeSignOnCopy, ); }; };
+		199FC13F27ACD9A00072897D /* prototypes.c in Sources */ = {isa = PBXBuildFile; fileRef = 199FC13E27ACD9A00072897D /* prototypes.c */; };
+		199FC14127AD061A0072897D /* dsdpeigfact.c in Sources */ = {isa = PBXBuildFile; fileRef = 199FC14027AD061A0072897D /* dsdpeigfact.c */; };
 		19B423A4279E846F00E35E0B /* libmkl_sequential.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 19B423A3279E845E00E35E0B /* libmkl_sequential.a */; };
 		19B423A7279E849F00E35E0B /* libmkl_core.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 19B423A5279E849200E35E0B /* libmkl_core.a */; };
 		19B423A8279E84BD00E35E0B /* libmkl_intel_lp64.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 19B423A6279E849200E35E0B /* libmkl_intel_lp64.a */; };
@@ -219,6 +221,9 @@
 		199220792737D8A400DD975D /* libmkl_intel_lp64.1.dylib */ = {isa = PBXFileReference; lastKnownFileType = "compiled.mach-o.dylib"; name = libmkl_intel_lp64.1.dylib; path = ../../../../../../opt/intel/oneapi/mkl/2021.2.0/lib/libmkl_intel_lp64.1.dylib; sourceTree = "<group>"; };
 		1992207A2737D8A400DD975D /* libmkl_mc3.1.dylib */ = {isa = PBXFileReference; lastKnownFileType = "compiled.mach-o.dylib"; name = libmkl_mc3.1.dylib; path = ../../../../../../opt/intel/oneapi/mkl/2021.2.0/lib/libmkl_mc3.1.dylib; sourceTree = "<group>"; };
 		199220842737D8C500DD975D /* libiomp5.dylib */ = {isa = PBXFileReference; lastKnownFileType = "compiled.mach-o.dylib"; name = libiomp5.dylib; path = ../../../../../../opt/intel/oneapi/compiler/2021.2.0/mac/compiler/lib/libiomp5.dylib; sourceTree = "<group>"; };
+		199FC13E27ACD9A00072897D /* prototypes.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = prototypes.c; sourceTree = "<group>"; };
+		199FC14027AD061A0072897D /* dsdpeigfact.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = dsdpeigfact.c; sourceTree = "<group>"; };
+		199FC14227AD82680072897D /* dsdpeigfact.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = dsdpeigfact.h; sourceTree = "<group>"; };
 		19B423A3279E845E00E35E0B /* libmkl_sequential.a */ = {isa = PBXFileReference; lastKnownFileType = archive.ar; name = libmkl_sequential.a; path = ../../../../../opt/intel/oneapi/mkl/2021.2.0/lib/libmkl_sequential.a; sourceTree = "<group>"; };
 		19B423A5279E849200E35E0B /* libmkl_core.a */ = {isa = PBXFileReference; lastKnownFileType = archive.ar; name = libmkl_core.a; path = ../../../../../opt/intel/oneapi/mkl/2021.2.0/lib/libmkl_core.a; sourceTree = "<group>"; };
 		19B423A6279E849200E35E0B /* libmkl_intel_lp64.a */ = {isa = PBXFileReference; lastKnownFileType = archive.ar; name = libmkl_intel_lp64.a; path = ../../../../../opt/intel/oneapi/mkl/2021.2.0/lib/libmkl_intel_lp64.a; sourceTree = "<group>"; };
@@ -310,6 +315,7 @@
 				19808F3C2738074F0014086F /* data */,
 				19118D912737B72800D51D03 /* dsalg */,
 				19118D9A2737B72800D51D03 /* linsys */,
+				199FC13E27ACD9A00072897D /* prototypes.c */,
 			);
 			path = src;
 			sourceTree = "<group>";
@@ -350,6 +356,7 @@
 				19118DA42737B72800D51D03 /* dsdppardiso.h */,
 				19BACAF1274EAE4500E987FD /* structs.h */,
 				19C3732927A98B0D0021A708 /* dsdplanczos.h */,
+				199FC14227AD82680072897D /* dsdpeigfact.h */,
 				19118D9C2737B72800D51D03 /* vec.h */,
 				19118D9D2737B72800D51D03 /* sparsemat.h */,
 				19118D9E2737B72800D51D03 /* densemat.h */,
@@ -361,6 +368,7 @@
 				19808F45273817510014086F /* rankonemat.c */,
 				19C3732627A7F2DA0021A708 /* rankkmat.c */,
 				19C3732A27A98B0D0021A708 /* dsdplanczos.c */,
+				199FC14027AD061A0072897D /* dsdpeigfact.c */,
 			);
 			path = linsys;
 			sourceTree = "<group>";
@@ -639,6 +647,7 @@
 				19118DE82737B72800D51D03 /* residualsetup.c in Sources */,
 				1985AC3D279B9DB400B7B8EB /* dsdppfeas.c in Sources */,
 				19118DF12737B72800D51D03 /* cs_ipvec.c in Sources */,
+				199FC14127AD061A0072897D /* dsdpeigfact.c in Sources */,
 				19BEEC252756065600C36C9E /* cs_schol.c in Sources */,
 				19118DFF2737B72800D51D03 /* cs_post.c in Sources */,
 				19118E0E2737B72800D51D03 /* cs_gaxpy.c in Sources */,
@@ -667,6 +676,7 @@
 				19118DE92737B72800D51D03 /* stepheur.c in Sources */,
 				19118E1C2737B72800D51D03 /* cs_pinv.c in Sources */,
 				19118E072737B72800D51D03 /* cs_cholsol.c in Sources */,
+				199FC13F27ACD9A00072897D /* prototypes.c in Sources */,
 				19118E1D2737B72800D51D03 /* cs_scc.c in Sources */,
 				1929CF162795B40400981C20 /* test_feast.c in Sources */,
 			);

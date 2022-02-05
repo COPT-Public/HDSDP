@@ -54,10 +54,38 @@ extern DSDP_INT rkMatAllocAndSetData( rkMat *R, DSDP_INT n, DSDP_INT rank,
         R->data[i] = r1data;
         r1MatInit(r1data);
         r1MatAlloc(r1data, n);
-        retcode = r1MatSetData(r1data, eigvals[i], &eigvals[i * n]);
+        retcode = r1MatSetData(r1data, eigvals[i], &eigvecs[i * n]);
     }
     
-    return DSDP_RETCODE_OK;
+    return retcode;
+}
+
+extern DSDP_INT rkMatAllocAndSelectData( rkMat *R, DSDP_INT n, DSDP_INT rank, double thresh,
+                                         double *eigvals, double *eigvecs ) {
+    
+    DSDP_INT retcode = DSDP_RETCODE_OK;
+    R->dim  = n;
+    R->data = (r1Mat **) calloc(rank, sizeof(r1Mat *));
+    R->rank = rank;
+    R->isdata = TRUE;
+    r1Mat *r1data = NULL;
+    DSDP_INT counter = 0;
+    
+    for (DSDP_INT i = 0; i < n; ++i) {
+        if (fabs(eigvals[i]) > thresh) {
+            r1data = (r1Mat *) calloc(1, sizeof(r1Mat));
+            R->data[counter] = r1data;
+            r1MatInit(r1data);
+            r1MatAlloc(r1data, n);
+            retcode = r1MatSetData(r1data, eigvals[i], &eigvecs[i * n]);
+            counter += 1;
+            if (counter == rank) {
+                break;
+            }
+        }
+    }
+    
+    return retcode;
 }
 
 extern DSDP_INT rkMatrkTrace( rkMat *R1, rkMat *R2, double *trace ) {
@@ -68,7 +96,7 @@ extern DSDP_INT rkMatrkTrace( rkMat *R1, rkMat *R2, double *trace ) {
                      = \sum_i \sum_j c_i * d_j trace( a_i a_i' * b_j * b_j')
                      = \sum_i \sum_j c_i * d_j (a_i' * b_j)^2
      
-     Implemented by callying r1Matr1Trace
+     Implemented by calling r1Matr1Trace
      
      When this routine is called, R1 is an iterator (SinvASinv) and R2 is data (A)
     */
@@ -87,7 +115,8 @@ extern DSDP_INT rkMatrkTrace( rkMat *R1, rkMat *R2, double *trace ) {
         }
         checkCode;
     }
-
+    
+    *trace = res;
     return retcode;
 }
 
@@ -113,6 +142,7 @@ extern DSDP_INT rkMatdenseTrace( rkMat *R, dsMat *A, double *trace ) {
         res += tmp;
     }
     
+    *trace = res;
     return retcode;
 }
 
@@ -133,6 +163,7 @@ extern DSDP_INT rkMatspsTrace( rkMat *R, spsMat *A, double *trace ) {
         res += tmp;
     }
     
+    *trace = res;
     return retcode;
 }
 
@@ -153,6 +184,7 @@ extern DSDP_INT rkMatdiagTrace( rkMat *R, double diag, double *trace ) {
         res += tmp;
     }
     
+    *trace = res;
     return retcode;
 }
 
@@ -214,6 +246,17 @@ extern DSDP_INT rkMatRscale( rkMat *R, double r ) {
     DSDP_INT rank = R->rank;
     for (DSDP_INT i = 0; i < rank; ++i) {
         r1MatRscale(R->data[i], r);
+    }
+    
+    return DSDP_RETCODE_OK;
+}
+
+extern DSDP_INT rkMatisRank1( rkMat *R, DSDP_INT *isRank1 ) {
+    
+    if (R->rank == 1) {
+        *isRank1 = TRUE;
+    } else {
+        *isRank1 = FALSE;
     }
     
     return DSDP_RETCODE_OK;

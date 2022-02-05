@@ -114,4 +114,81 @@ static DSDP_INT pm[128] = {
     0, 0, 0, 0, 0, 0, 0, 0,
 };
 
+static DSDP_INT fpm[128] = {
+    0,  /*  0: Runtime status */
+    8,  /*  1: Countour points */
+    12, /*  2: Error trace precision */
+    20, /*  3: Max refinement */
+    0,  /*  4: No user initial subspace */
+    0,  /*  5: Stopping test */
+    5,  /*  6: Error trace single precision */
+    0, 0, 0, 0, 0, 0,
+    0,  /* 13: Standard use */
+    0, 0, 0, 0, 0, 0, 0, 0,
+    0, 0, 0, 0,
+    0,  /* 26: No input check */
+    0,  /* 27: Check definite B */
+    0, 0, 0, 0, 0, 0, 0, 0,
+    0, 0, 0, 0, 0, 0, 0, 0,
+    0, 0, 0, 0, 0, 0, 0, 0,
+    0, 0, 0, 0, 0, 0, 0, 0,
+    0, 0, 0,
+    0,  /* 63: Default Pardiso iparam */
+    1, /* Non-default value */ 3, /* P Nested dissection */ 0, /* Reserved          */
+    0, /* No CG             */ 0, /* No user permutation */ 0, /* No overwriting    */
+    0, /* Refinement report */ 0, /* Auto ItRef step     */ 0, /* Reserved          */
+    6, /* Perturb           */ 0, /* Disable scaling     */ 0, /* No transpose      */
+    0, /* Disable matching  */ 0, /* Report on pivots    */ 0, /* Output            */
+    0, /* Output            */ 0, /* Output              */-1, /* No report         */
+    0, /* No report         */ 0, /* Output              */ 1, /* Pivoting          */
+    0, /* nPosEigVals       */ 0, /* nNegEigVals         */ 0, /* Classic factorize */
+    0,                         0,                           0, /* Matrix checker    */
+    0,                         0,                           0,
+    0,                         0,                           0,
+    0,                         1, /* 0-based solve       */ 0,
+    0,                         0,                           0,
+    0,                         0,                           0,
+    0,                         0,                           0,
+    0,                         0,                           0,
+    0,                         0,                           0,
+    0,                         0,                           0,
+    0,                         0, /* No diagonal         */ 0,
+    0,                         0,                           0,
+    0,                         0,                           0,
+    0
+};
+
+void dfeast_scsrev ( const char     *uplo,
+                     const DSDP_INT *n,
+                     const double   *sa,
+                     const DSDP_INT *isa,
+                     const DSDP_INT *jsa,
+                     DSDP_INT       *fpm,
+                     double         *epsout,
+                     DSDP_INT       *loop,
+                     const double   *emin,
+                     const double   *emax,
+                     DSDP_INT       *m0,
+                     double         *e,
+                     double         *x,
+                     DSDP_INT       *m,
+                     double         *res,
+                     DSDP_INT       *info );
+
+void dfeast_syev ( const char       *uplo,
+                   const DSDP_INT   *n,
+                   const double     *a,
+                   const DSDP_INT   *lda,
+                   DSDP_INT         *fpm,
+                   double           *epsout,
+                   DSDP_INT         *loop,
+                   const double     *emin,
+                   const double     *emax,
+                   DSDP_INT         *m0,
+                   double           *e,
+                   double           *x,
+                   DSDP_INT         *m,
+                   double           *res,
+                   DSDP_INT         *info );
+
 #endif /* dsdpfeast_h */

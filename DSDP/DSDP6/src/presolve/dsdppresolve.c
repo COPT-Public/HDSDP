@@ -1,55 +1,8 @@
 #include "dsdppresolve.h"
 #include "dsdputils.h"
+#include "dsdpeigfact.h"
 
 static char etype[] = "Presolving operations";
-
-static DSDP_INT isDenseRank1InAcc( dsMat *dataMat, DSDP_INT *isRank1 ) {
-    // Check if a dense matrix is rank-one
-    // This version is fast but not accurate due to potential numerical error
-    DSDP_INT retcode = DSDP_RETCODE_OK;
-    double *A    = dataMat->array;
-    DSDP_INT n   = dataMat->dim;
-    DSDP_INT r1  = TRUE;
-    DSDP_INT col = 0;
-    
-    double benchCol  = 0.0;
-    double scaleCol  = 0.0;
-    double benchCol2 = 0.0;
-    double scaleCol2 = 0.0;
-    double diff      = 0.0;
-    
-    // Get the first column that contains non-zero elements
-    for (DSDP_INT i = 0; i < n; ++i) {
-        col = i;
-        if (packIdx(A, n, i, i) != 0) {
-            break;
-        }
-    }
-    
-    assert( col != n - 1 ); // or it is a zero matrix
-    
-    // Check the scaling coefficient
-    for (DSDP_INT i = col + 1; i < n; ++i) {
-        scaleCol = packIdx(A, n, i, col);
-        for (DSDP_INT j = col; j < n; ++j) {
-            benchCol2 = packIdx(A, n, j, col);
-            if (i <= j) {
-                scaleCol2 = packIdx(A, n, j, i);
-            } else {
-                scaleCol2 = packIdx(A, n, i, j);
-            }
-            diff = benchCol * scaleCol2 - benchCol2 * scaleCol;
-            if (fabs(diff) > 1e-04 * MAX(1, benchCol)) {
-                r1 = FALSE;
-                break;
-            }
-        }
-    }
-    
-    *isRank1 = r1;
-    
-    return retcode;
-}
 
 static DSDP_INT isDenseRank1Acc( dsMat *dataMat, DSDP_INT *isRank1 ) {
     // Detect if a dense matrix is rank one by directly computing the outer product
@@ -289,31 +242,40 @@ static DSDP_INT extractR1fromSps( spsMat *dataMat, double *a, DSDP_INT isNeg ) {
     return retcode;
 }
 
+static DSDP_INT preGetRank( DSDP_INT n, double *eigvals, double threshold, DSDP_INT *rank ) {
+    // Get low-rank approximation of data
+    
+    DSDP_INT r = 0;
+    for (DSDP_INT i = 0; i < n; ++i) {
+        if (fabs(eigvals[i]) > threshold ) {
+            r += 1;
+        }
+    }
+    *rank = r;
+    return DSDP_RETCODE_OK;
+}
+
 static DSDP_INT preRank1RdcBlock( sdpMat *dataMat ) {
     
     // Detect rank-one structure in SDP data
     DSDP_INT retcode  = DSDP_RETCODE_OK;
     DSDP_INT *types   = dataMat->types;
-    DSDP_INT ndsMat   = dataMat->ndenseMat;
-    DSDP_INT nspsMat  = dataMat->nspsMat;
-    DSDP_INT nr1Mat   = dataMat->nr1Mat;
-    DSDP_INT nzeroMat = dataMat->nzeroMat;
+    DSDP_INT ndsMat   = dataMat->ndenseMat, nspsMat  = dataMat->nspsMat,
+             nr1Mat   = dataMat->nrkMat,    nzeroMat = dataMat->nzeroMat;
     DSDP_INT blockid  = dataMat->blockId;
-    DSDP_INT isRank1  = FALSE;
-    DSDP_INT isDense  = FALSE;
-    DSDP_INT isSparse = FALSE;
-    
-    DSDP_INT m = dataMat->dimy;
-    DSDP_INT n = dataMat->dimS;
+    DSDP_INT isRank1  = FALSE,
+             isDense  = FALSE,
+             isSparse = FALSE;
+    DSDP_INT m = dataMat->dimy, n = dataMat->dimS;
     
     // Matrix number must be correct
     assert( dataMat->nzeroMat + dataMat->ndenseMat \
-           + dataMat->nr1Mat + dataMat->nspsMat == m + 1 );
+           + dataMat->nrkMat + dataMat->nspsMat == m + 1 );
     
     void **matdata = dataMat->sdpData;
     
     printf("| Block %d before reduction: \n", blockid);
-    printf("| Sparse: %-3d | Dense: %-3d | Rank1: %-3d | Zero: %-3d \n",
+    printf("| Sparse: %-3d | Dense: %-3d | Rankk: %-3d | Zero: %-3d \n",
            nspsMat, ndsMat, nr1Mat, nzeroMat);
     
     // If all the matrices are already rank-one
@@ -324,6 +286,12 @@ static DSDP_INT preRank1RdcBlock( sdpMat *dataMat ) {
     dsMat  *dsdata  = NULL;
     spsMat *spsdata = NULL;
     r1Mat  *r1data  = NULL;
+    rkMat  *rkdata  = NULL;
+    
+    // r1data used as buffer
+    r1data  = (r1Mat *) calloc(1, sizeof(r1Mat)); checkCode;
+    retcode = r1MatInit(r1data); checkCode;
+    retcode = r1MatAlloc(r1data, n); checkCode;
     
     // Recall that C is located at the end of the array
     for (DSDP_INT i = 0; i < m + 1; ++i) {
@@ -343,7 +311,7 @@ static DSDP_INT preRank1RdcBlock( sdpMat *dataMat ) {
                 retcode = isSparseRank1((spsMat *) matdata[i], &isRank1); checkCode;
                 isSparse = TRUE;
                 break;
-            case MAT_TYPE_RANK1:
+            case MAT_TYPE_RANKK:
                 break;
             default:
                 error(etype, "Unknown matrix type. \n");
@@ -354,20 +322,18 @@ static DSDP_INT preRank1RdcBlock( sdpMat *dataMat ) {
         // free current structure and use rank-one structure
         if (isRank1) {
             
-            r1data  = (r1Mat *) calloc(1, sizeof(r1Mat)); checkCode;
-            retcode = r1MatInit(r1data); checkCode;
-            retcode = r1MatAlloc(r1data, n); checkCode;
-            
+            rkdata = (rkMat *) calloc(1, sizeof(rkMat)); checkCode;
+            retcode = rkMatInit(rkdata);
+        
             r1data->sign = (double) isRank1;
-            dataMat->nr1Mat += 1;
-            types[i] = MAT_TYPE_RANK1;
+            dataMat->nrkMat += 1;
+            types[i] = MAT_TYPE_RANKK;
             
             if (isDense) {
                 dsdata = matdata[i];
                 retcode = extractR1fromDs(dsdata, r1data->x, isRank1);
                 checkCode;
-                r1MatNormalize(r1data);
-                retcode = r1MatCountNnz(r1data); checkCode;
+                rkMatAllocAndSetData(rkdata, n, 1, &r1data->sign, r1data->x);
                 // Free and re-allocate
                 retcode = denseMatFree(dsdata); checkCode;
                 DSDP_FREE(dsdata);
@@ -379,26 +345,138 @@ static DSDP_INT preRank1RdcBlock( sdpMat *dataMat ) {
                 spsdata = matdata[i];
                 retcode = extractR1fromSps(spsdata, r1data->x, isRank1);
                 checkCode;
-                r1MatNormalize(r1data);
-                retcode = r1MatCountNnz(r1data); checkCode;
+                rkMatAllocAndSetData(rkdata, n, 1, &r1data->sign, r1data->x);
+                // Free and re-allocate
                 retcode = spsMatFree(spsdata); checkCode;
                 DSDP_FREE(spsdata);
                 dataMat->nspsMat -= 1;
                 assert(dataMat->nspsMat >= 0);
             }
             
-            matdata[i] = (void *) r1data;
+            matdata[i] = (void *) rkdata;
         }
         
         assert( dataMat->nzeroMat + dataMat->ndenseMat \
-               + dataMat->nr1Mat + dataMat->nspsMat == m + 1 );
+               + dataMat->nrkMat + dataMat->nspsMat == m + 1 );
     }
     
     printf("| Block %d after reduction: \n", blockid);
-    printf("| Sparse: %-3d | Dense: %-3d | Rank1: %-3d | Zero: %-3d \n",
-           dataMat->nspsMat, dataMat->ndenseMat, dataMat->nr1Mat,
+    printf("| Sparse: %-3d | Dense: %-3d | Rankk(1): %-3d | Zero: %-3d \n",
+           dataMat->nspsMat, dataMat->ndenseMat, dataMat->nrkMat,
            dataMat->nzeroMat);
     
+    r1MatFree(r1data);
+    DSDP_FREE(r1data);
+    
+    return retcode;
+}
+
+// TODO: Add special reduction for diagonal / tridiagonal / matrix of two elements
+static DSDP_INT preRankkEvRdcBlock( sdpMat *dataMat ) {
+    
+    // Detect rank-k structure in SDP data
+    DSDP_INT retcode = DSDP_RETCODE_OK;
+    DSDP_INT *types = dataMat->types;
+    DSDP_INT ndsMat = dataMat->ndenseMat, nspsMat = dataMat->nspsMat,
+             nrkMat = dataMat->nrkMat,    nzeroMat = dataMat->nzeroMat;
+    DSDP_INT blockid = dataMat->blockId;
+    DSDP_INT isDense  = FALSE,
+             isSparse = FALSE;
+    DSDP_INT m = dataMat->dimy, n = dataMat->dimS;
+    
+    // Matrix number must be correct
+    assert( dataMat->nzeroMat + dataMat->ndenseMat \
+           + dataMat->nrkMat + dataMat->nspsMat == m + 1 );
+    
+    void **matdata = dataMat->sdpData;
+    
+    printf("| Block %d before reduction: \n", blockid);
+    printf("| Sparse: %-3d | Dense: %-3d | Rankk: %-3d | Zero: %-3d \n",
+           nspsMat, ndsMat, nrkMat, nzeroMat);
+    
+    if (nrkMat == m + 1) {
+        return retcode;
+    }
+    
+    dsMat  *dsdata  = NULL;
+    spsMat *spsdata = NULL;
+    rkMat  *rkdata  = NULL;
+    
+    double *eigvals = (double *) calloc(n, sizeof(double));
+    double *eigvecs = (double *) calloc(n * n, sizeof(double));
+    double fnrm = 0.0;
+    DSDP_INT rank = 0;
+    
+    for (DSDP_INT i = 0; i < m + 1; ++i) {
+        
+        rank = n + 1;
+        isDense  = FALSE;
+        isSparse = FALSE;
+        
+        switch (types[i]) {
+            case MAT_TYPE_ZERO:
+                break;
+            case MAT_TYPE_DENSE:
+                dsdata = (dsMat *) matdata[i];
+                // TODO: Save the norm information for later scaling
+                retcode = denseMatFnorm(dsdata, &fnrm);
+                retcode = factorizeDenseData(dsdata, -fnrm, eigvals, eigvecs);
+                isDense = TRUE;
+                retcode = preGetRank(n, eigvals, 1e-10, &rank);
+                break;
+            case MAT_TYPE_SPARSE:
+                spsdata = (spsMat *) matdata[i];
+                retcode = spsMatFnorm(spsdata, &fnrm);
+                retcode = factorizeSparseData(spsdata, -fnrm, eigvals, eigvecs);
+                isSparse = TRUE;
+                retcode = preGetRank(n, eigvals, 1e-10, &rank);
+                break;
+            case MAT_TYPE_RANKK:
+                break;
+            default:
+                error(etype, "Unknown matrix type. \n");
+                break;
+        }
+        
+        // Threshold for low-rank matrix
+        if (rank <= 0.1 * n) {
+            rkdata = (rkMat *) calloc(1, sizeof(rkMat)); checkCode;
+            retcode = rkMatInit(rkdata);
+            dataMat->nrkMat += 1;
+            types[i] = MAT_TYPE_RANKK;
+            
+            if (isDense) {
+                dsdata = matdata[i];
+                retcode = denseMatFree(dsdata); checkCode;
+                DSDP_FREE(dsdata);
+                dataMat->ndenseMat -= 1;
+                assert(dataMat->ndenseMat >= 0);
+            }
+            
+            if (isSparse) {
+                spsdata = matdata[i];
+                retcode = spsMatFree(spsdata); checkCode;
+                DSDP_FREE(spsdata);
+                dataMat->nspsMat -= 1;
+                assert(dataMat->nspsMat >= 0);
+            }
+            
+            rkMatAllocAndSelectData(rkdata, n, rank, 1e-10, eigvals, eigvecs);
+            matdata[i] = (void *) rkdata;
+        }
+        
+        assert( dataMat->nzeroMat + dataMat->ndenseMat \
+               + dataMat->nrkMat + dataMat->nspsMat == m + 1 );
+
+    }
+    
+    printf("| Block %d after reduction: \n", blockid);
+    printf("| Sparse: %-3d | Dense: %-3d | Rankk: %-3d | Zero: %-3d \n",
+           dataMat->nspsMat, dataMat->ndenseMat, dataMat->nrkMat,
+           dataMat->nzeroMat);
+    
+    DSDP_FREE(eigvals);
+    DSDP_FREE(eigvecs);
     return retcode;
 }
 
@@ -415,10 +493,10 @@ static DSDP_INT getBlockStatistic( sdpMat *sdpData ) {
     DSDP_INT nr1Mat   = 0;
     
     // Ready to give index
-    assert( (!sdpData->spsMatIdx) && (!sdpData->denseMatIdx) && (!sdpData->r1MatIdx) );
+    assert( (!sdpData->spsMatIdx) && (!sdpData->denseMatIdx) && (!sdpData->rkMatIdx) );
     sdpData->spsMatIdx   = (DSDP_INT *) calloc(sdpData->nspsMat, sizeof(DSDP_INT));
     sdpData->denseMatIdx = (DSDP_INT *) calloc(sdpData->ndenseMat, sizeof(DSDP_INT));
-    sdpData->r1MatIdx    = (DSDP_INT *) calloc(sdpData->nr1Mat, sizeof(DSDP_INT));
+    sdpData->rkMatIdx    = (DSDP_INT *) calloc(sdpData->nrkMat, sizeof(DSDP_INT));
     
 #ifdef SHOWALL
     printf("- Cone "ID"\n", blockid);
@@ -437,8 +515,8 @@ static DSDP_INT getBlockStatistic( sdpMat *sdpData ) {
                 sdpData->spsMatIdx[nspsMat] = i;
                 nspsMat += 1;
                 break;
-            case MAT_TYPE_RANK1:
-                sdpData->r1MatIdx[nr1Mat] = i;
+            case MAT_TYPE_RANKK:
+                sdpData->rkMatIdx[nr1Mat] = i;
                 nr1Mat += 1;
                 break;
             default:
@@ -450,7 +528,7 @@ static DSDP_INT getBlockStatistic( sdpMat *sdpData ) {
     assert( nzeroMat == sdpData->nzeroMat );
     assert( ndsMat   == sdpData->ndenseMat );
     assert( nspsMat  == sdpData->nspsMat );
-    assert( nr1Mat   == sdpData->nr1Mat );
+    assert( nr1Mat   == sdpData->nrkMat );
     
     return retcode;
 }
@@ -597,6 +675,7 @@ static DSDP_INT preSDPgetSymbolic( HSDSolver *dsdpSolver, DSDP_INT blockid ) {
     retcode = spsMatInit(dsdpSolver->dS[blockid]); checkCode;
     
     spsMat *spsdata  = NULL;
+    rkMat  *rkdata   = NULL;
     r1Mat  *r1data   = NULL;
     
     // Get hash table
@@ -605,16 +684,23 @@ static DSDP_INT preSDPgetSymbolic( HSDSolver *dsdpSolver, DSDP_INT blockid ) {
     
     DSDP_INT useDenseS = FALSE;
     DSDP_INT isfirstNz = FALSE;
-    DSDP_INT *matIdx = sdpBlock->r1MatIdx;
+    DSDP_INT *matIdx = sdpBlock->rkMatIdx;
     
     if (sdpBlock->ndenseMat > 0) {
         useDenseS = TRUE;
     } else {
-        for (DSDP_INT i = 0; i < sdpBlock->nr1Mat; ++i) {
-            r1data = (r1Mat *) sdpBlock->sdpData[matIdx[i]];
-            // TODO: Change the threshold
-            if (r1data->nnz > 1.0 * dim) {
-                useDenseS = TRUE;
+        for (DSDP_INT i = 0; i < sdpBlock->nrkMat; ++i) {
+            rkdata = (rkMat *) sdpBlock->sdpData[matIdx[i]];
+            for (DSDP_INT j = 0; j < rkdata->rank; ++j) {
+                r1data = rkdata->data[j];
+                // TODO: Change the threshold
+                if (r1data->nnz > 1.0 * dim) {
+                    useDenseS = TRUE;
+                    break;
+                }
+            }
+            if (useDenseS) {
+                break;
             }
         }
     }
@@ -649,27 +735,28 @@ static DSDP_INT preSDPgetSymbolic( HSDSolver *dsdpSolver, DSDP_INT blockid ) {
         
         if (!useDenseS) {
             // Rank 1 matrix
-            matIdx = sdpBlock->r1MatIdx;
-            for (DSDP_INT i = 0; i < sdpBlock->nr1Mat; ++i) {
-                r1data = (r1Mat *) sdpBlock->sdpData[matIdx[i]];
-                
-                if (r1data->nzIdx[0] == 0) {
-                    isfirstNz = TRUE;
-                }
-                
-                for (DSDP_INT j = 0; j < r1data->nnz; ++j) {
-                    for (DSDP_INT k = 0; k <= j; ++k) {
-                        if (packIdx(hash, dim, r1data->nzIdx[j], r1data->nzIdx[k]) == 0) {
-                            packIdx(hash, dim, r1data->nzIdx[j], r1data->nzIdx[k]) = 1;
-                            nnz += 1;
+            matIdx = sdpBlock->rkMatIdx;
+            for (DSDP_INT i = 0; i < sdpBlock->nrkMat; ++i) {
+                rkdata = (rkMat *) sdpBlock->sdpData[matIdx[i]];
+                for (DSDP_INT r = 0; r < rkdata->rank; ++r) {
+                    r1data = rkdata->data[r];
+                    if (r1data->nzIdx[0] == 0) {
+                        isfirstNz = TRUE;
+                    }
+                    
+                    for (DSDP_INT j = 0; j < r1data->nnz; ++j) {
+                        for (DSDP_INT k = 0; k <= j; ++k) {
+                            if (packIdx(hash, dim, r1data->nzIdx[j], r1data->nzIdx[k]) == 0) {
+                                packIdx(hash, dim, r1data->nzIdx[j], r1data->nzIdx[k]) = 1;
+                                nnz += 1;
+                            }
+                        }
+                        // TODO: Change the threshold
+                        if (nnz > 1.0 * nhash) {
+                            useDenseS = TRUE;
+                            break;
                         }
                     }
-                }
-                
-                // TODO: Change the threshold
-                if (nnz > 1.0 * nhash) {
-                    useDenseS = TRUE;
-                    break;
                 }
             }
         }
@@ -765,6 +852,18 @@ extern DSDP_INT preRank1Rdc( HSDSolver *dsdpSolver ) {
     
     for (DSDP_INT i = 0; i < dsdpSolver->nBlock; ++i) {
         retcode = preRank1RdcBlock(dsdpSolver->sdpData[i]);
+        checkCode;
+    }
+    
+    return retcode;
+}
+
+extern DSDP_INT preRankkRdc( HSDSolver *dsdpSolver ) {
+    // Do rank k reduction
+    DSDP_INT retcode = DSDP_RETCODE_OK;
+    
+    for (DSDP_INT i = 0; i < dsdpSolver->nBlock; ++i) {
+        retcode = preRankkEvRdcBlock(dsdpSolver->sdpData[i]);
         checkCode;
     }
     

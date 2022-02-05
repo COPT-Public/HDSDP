@@ -6,6 +6,7 @@
 #include "dsdphsd.h"
 #include "sparsemat.h"
 #include "densemat.h"
+#include "rankkmat.h"
 #include "rankonemat.h"
 #include "vec.h"
 #include "cs.h"
@@ -13,7 +14,7 @@
 #define MAT_TYPE_UNKNOWN 0
 #define MAT_TYPE_SPARSE  1
 #define MAT_TYPE_DENSE   2
-#define MAT_TYPE_RANK1   3
+#define MAT_TYPE_RANKK   3
 #define MAT_TYPE_ZERO    4
 
 /*
@@ -36,8 +37,8 @@ typedef struct {
     DSDP_INT  *spsMatIdx;    // Index of the sparse matrices
     DSDP_INT  ndenseMat;     // Number of dense matrices
     DSDP_INT  *denseMatIdx;  // Index of the dense matrices
-    DSDP_INT  nr1Mat;        // Number of rank 1 matrices
-    DSDP_INT  *r1MatIdx;     // Index of rank1 matrices
+    DSDP_INT  nrkMat;        // Number of rank 1 matrices
+    DSDP_INT  *rkMatIdx;     // Index of rank1 matrices
     
     DSDP_INT  *types;        // Types of matrices
     void      **sdpData;     // Data of different types

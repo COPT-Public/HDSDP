@@ -214,6 +214,7 @@ extern DSDP_INT r1MatspsTrace( r1Mat *x, spsMat *A, double *trace ) {
             }
         }
     } else {
+        
         for (idx = 0; idx < n; ++idx) {
             coeff = datax[idx];
             
@@ -345,11 +346,6 @@ extern DSDP_INT r1MatNormalize( r1Mat *x ) {
 extern DSDP_INT r1MatFnorm( r1Mat *x, double *fnrm ) {
     
     assert( x->dim );
-    
-    if (fabs(x->sign) != 1.0) {
-        *fnrm = fabs(x->sign);
-        return DSDP_RETCODE_OK;
-    }
 
     if (x->nnz < 0.6 * x->dim) {
         double res = 0.0, *xdata = x->x;
@@ -358,10 +354,10 @@ extern DSDP_INT r1MatFnorm( r1Mat *x, double *fnrm ) {
             idx = nzidx[i];
             res += xdata[idx] * xdata[idx];
         }
-        *fnrm = res;
+        *fnrm = res * fabs(x->sign);
     } else {
         *fnrm = norm(&x->dim, x->x, &one);
-        *fnrm = (*fnrm) * (*fnrm);
+        *fnrm = (*fnrm) * (*fnrm) * fabs(x->sign);
     }
     return DSDP_RETCODE_OK;
     

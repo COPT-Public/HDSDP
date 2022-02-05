@@ -14,20 +14,28 @@ static DSDP_INT isConstant( HSDSolver *dsdpSolver, DSDP_INT *isConstant ) {
     DSDP_INT dim = 0;
     r1Mat *C = NULL;
     DSDP_INT isCons = TRUE;
+    DSDP_INT isRank1 = FALSE;
     double num = 0.0;
     
     for (DSDP_INT i = 0; i < dsdpSolver->nBlock; ++i) {
         isCons = TRUE;
-        if (dsdpSolver->sdpData[i]->types[m] == MAT_TYPE_RANK1) {
-            C = (r1Mat *) dsdpSolver->sdpData[i]->sdpData[m];
-            dim = C->dim;
-            num = C->x[0];
-            for (DSDP_INT j = 1; j < dim; ++j) {
-                if (fabs(num - C->x[j]) > 1e-03) {
-                    isCons = FALSE;
-                    break;
+        if (dsdpSolver->sdpData[i]->types[m] == MAT_TYPE_RANKK) {
+            rkMatisRank1(dsdpSolver->sdpData[i]->sdpData[m], &isRank1);
+            
+            if (isRank1) {
+                C = (r1Mat *) dsdpSolver->sdpData[i]->sdpData[m];
+                dim = C->dim;
+                num = C->x[0];
+                for (DSDP_INT j = 1; j < dim; ++j) {
+                    if (fabs(num - C->x[j]) > 1e-03) {
+                        isCons = FALSE;
+                        break;
+                    }
                 }
+            } else {
+                isCons = FALSE;
             }
+            
         } else {
             isCons = FALSE;
         }
@@ -131,7 +139,8 @@ extern DSDP_INT dsdpInitializeA( HSDSolver *dsdpSolver ) {
     retcode = initmu(dsdpSolver); checkCode;
     retcode = initresi(dsdpSolver); checkCode;
     
-    printf("| DSDP is initialized with Ry = %3.3e * I \n", dsdpSolver->Ry);
+    dsdpSolver->Pnrm = DSDP_INFINITY;
+    printf("| DSDP is initialized with Ry = %3.3e * I %52s|\n", dsdpSolver->Ry, "");
     
     return retcode;
 }
@@ -146,6 +155,7 @@ extern DSDP_INT dsdpInitializeB( HSDSolver *dsdpSolver ) {
     // Reset the number of iterations taking small stepsize
     dsdpSolver->smallIter = 0;
     dsdpSolver->dObjVal = dsdpSolver->dObjVal / dsdpSolver->tau;
+    dsdpSolver->dPotential = DSDP_INFINITY;
     
     // y = y / tau;
     vec_rscale(dsdpSolver->y, dsdpSolver->tau);
@@ -161,7 +171,7 @@ extern DSDP_INT dsdpInitializeB( HSDSolver *dsdpSolver ) {
             // mu = min((pObj - dObj) / rho, muPrimal)
             dsdpSolver->mu = MIN((dsdpSolver->pObjVal - dsdpSolver->dObjVal) / \
                                   dsdpSolver->param->rho, dsdpSolver->mu);
-            printf("| DSDP Phase B starts. Restarting dual-scaling \n");
+            printf("| DSDP Phase B starts. Restarting dual-scaling %51s |\n", "");
             break;
         case DSDP_PUNKNOWN_DFEAS:
             //pObj  = max(dsdpParam{5}, dObj + dsdpParam{5} / 10);
@@ -169,16 +179,16 @@ extern DSDP_INT dsdpInitializeB( HSDSolver *dsdpSolver ) {
                                       dsdpSolver->dObjVal + 0.1 * dsdpSolver->param->initpObj);
             dsdpSolver->mu = (dsdpSolver->pObjVal - dsdpSolver->dObjVal) / dsdpSolver->param->rho;
             printf("| DSDP Phase B starts. "
-                   "Trying to certificate primal feasibility in %d iterations \n",
-                   dsdpSolver->param->BmaxIter);
+                   "Trying to certificate primal feasibility in %d iterations %16s |\n",
+                   dsdpSolver->param->BmaxIter, "");
             break;
         default:
             error(etype, "Invalid starting status for Phase B. \n");
             break;
     }
     
-    printf("| Heuristic start: mu: %10.3e pObj: %10.3e  dObj: %10.3e \n",
-           dsdpSolver->mu, dsdpSolver->pObjVal, dsdpSolver->dObjVal);
+    printf("| Heuristic start: mu: %10.3e pObj: %10.3e  dObj: %10.3e %29s |\n",
+           dsdpSolver->mu, dsdpSolver->pObjVal, dsdpSolver->dObjVal, "");
     
     return retcode;
 }
