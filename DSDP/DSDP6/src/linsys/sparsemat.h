@@ -37,13 +37,14 @@ extern DSDP_INT spsMatFree         ( spsMat *sMat );
 
 /* Basic operations */
 extern DSDP_INT spsMatAx           ( spsMat *A, vec *x, vec *Ax );
-extern DSDP_INT spsMataXpbY        ( double alpha, spsMat *sXMat, double beta,
-                                    spsMat *sYMat, DSDP_INT *sumHash );
-extern DSDP_INT spsMatAdddiag      ( spsMat *sMat, double d, DSDP_INT *sumHash );
+extern DSDP_INT spsMatxTAx         ( spsMat *A, double *x, double *xTAx );
+extern DSDP_INT spsMataXpbY        ( double alpha,  spsMat *sXMat, double beta,
+                                    spsMat *sYMat,  DSDP_INT *sumHash );
+extern DSDP_INT spsMatAdddiag      ( spsMat *sMat,  double d, DSDP_INT *sumHash );
 extern DSDP_INT spsMatAddds        ( spsMat *sXMat, double alpha, dsMat *sYMat );
 extern DSDP_INT spsMatAddr1        ( spsMat *sXMat, double alpha, r1Mat *r1YMat, DSDP_INT *sumHash );
 extern DSDP_INT spsMatAddrk        ( spsMat *sXMat, double alpha, rkMat *rkYMat, DSDP_INT *sumHash );
-extern DSDP_INT spsMatFnorm        ( spsMat *sMat, double *fnrm );
+extern DSDP_INT spsMatFnorm        ( spsMat *sMat,  double *fnrm );
 extern DSDP_INT spsMatScale        ( spsMat *sXMat, double alpha );
 extern DSDP_INT spsMatRscale       ( spsMat *sXMat, double r );
 

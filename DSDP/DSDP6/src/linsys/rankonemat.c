@@ -82,11 +82,7 @@ extern DSDP_INT r1Matr1Trace( r1Mat *x, r1Mat *y, double *trace ) {
     double res = 0.0;
     DSDP_INT xnnz = x->nnz, ynnz = y->nnz, n = x->dim;
     
-    if (MIN(xnnz, ynnz) >= 0.7 * n) {
-        // Use dense dot product if rank-one matrix is dense
-        res = dot(&x->dim, x->x, &one, y->x, &one);
-        
-    } else {
+    if (MIN(xnnz, ynnz) < 0.5 * n) {
         // Otherwise do sparse computation
         double *xdata = x->x, *ydata = y->x;
         DSDP_INT *dataidx = NULL, nnz, i, idx = 0;
@@ -125,6 +121,9 @@ extern DSDP_INT r1Matr1Trace( r1Mat *x, r1Mat *y, double *trace ) {
         if (i < nnz) {
             idx = dataidx[i]; res += xdata[idx] * ydata[idx];
         }
+    } else {
+        // Use dense dot product if rank-one matrix is dense
+        res = dot(&x->dim, x->x, &one, y->x, &one);
     }
     
     *trace = res * res * x->sign * y->sign;

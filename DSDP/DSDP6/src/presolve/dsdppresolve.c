@@ -353,6 +353,7 @@ static DSDP_INT preRank1RdcBlock( sdpMat *dataMat ) {
                 assert(dataMat->nspsMat >= 0);
             }
             
+            rkMatStoreOriginalData(rkdata, MAT_TYPE_RANKK, NULL);
             matdata[i] = (void *) rkdata;
         }
         
@@ -426,6 +427,9 @@ static DSDP_INT preRankkEvRdcBlock( sdpMat *dataMat ) {
                 break;
             case MAT_TYPE_SPARSE:
                 spsdata = (spsMat *) matdata[i];
+                if (spsdata->nnz > n * n) {
+                    continue;
+                }
                 retcode = spsMatFnorm(spsdata, &fnrm);
                 retcode = factorizeSparseData(spsdata, -fnrm, eigvals, eigvecs);
                 isSparse = TRUE;
@@ -439,7 +443,7 @@ static DSDP_INT preRankkEvRdcBlock( sdpMat *dataMat ) {
         }
         
         // Threshold for low-rank matrix
-        if (rank <= 0.1 * n) {
+        if (rank <= n) {
             rkdata = (rkMat *) calloc(1, sizeof(rkMat)); checkCode;
             retcode = rkMatInit(rkdata);
             dataMat->nrkMat += 1;
@@ -447,16 +451,18 @@ static DSDP_INT preRankkEvRdcBlock( sdpMat *dataMat ) {
             
             if (isDense) {
                 dsdata = matdata[i];
-                retcode = denseMatFree(dsdata); checkCode;
-                DSDP_FREE(dsdata);
+                rkMatStoreOriginalData(rkdata, MAT_TYPE_DENSE, dsdata);
+                // retcode = denseMatFree(dsdata); checkCode;
+                // DSDP_FREE(dsdata);
                 dataMat->ndenseMat -= 1;
                 assert(dataMat->ndenseMat >= 0);
             }
             
             if (isSparse) {
                 spsdata = matdata[i];
-                retcode = spsMatFree(spsdata); checkCode;
-                DSDP_FREE(spsdata);
+                rkMatStoreOriginalData(rkdata, MAT_TYPE_SPARSE, spsdata);
+                // retcode = spsMatFree(spsdata); checkCode;
+                // DSDP_FREE(spsdata);
                 dataMat->nspsMat -= 1;
                 assert(dataMat->nspsMat >= 0);
             }

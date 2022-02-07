@@ -17,6 +17,7 @@ extern DSDP_INT rkMatAllocAndSetData ( rkMat  *R,  DSDP_INT n, DSDP_INT rank,
                                        double *eigvals, double *eigvecs       );
 extern DSDP_INT rkMatAllocAndSelectData ( rkMat *R, DSDP_INT n, DSDP_INT rank, double thresh,
                                           double *eigvals, double *eigvecs );
+extern DSDP_INT rkMatStoreOriginalData ( rkMat *R, DSDP_INT mattype, void *data );
 extern DSDP_INT rkMatrkTrace         ( rkMat  *R1, rkMat *R2, double *trace   );
 extern DSDP_INT rkMatdenseTrace      ( rkMat  *R,  dsMat  *A, double *trace   );
 extern DSDP_INT rkMatspsTrace        ( rkMat  *R,  spsMat *A, double *trace   );

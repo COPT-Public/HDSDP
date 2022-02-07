@@ -157,21 +157,19 @@ extern DSDP_INT denseMataXpbY( double alpha, dsMat *dXMat, double beta, dsMat *d
     return retcode;
 }
 
-extern DSDP_INT denseMatxTAx( dsMat *dAMat, vec *x, double *xTAx ) {
-    // Compute quadratic for x' * A * x
+extern DSDP_INT denseMatxTAx( dsMat *dAMat, double *x, double *xTAx ) {
+    // Compute quadratic form x' * A * x
     DSDP_INT retcode = DSDP_RETCODE_OK;
-    
-    assert( dAMat->dim == x->dim );
     
     char uplo    = DSDP_MAT_LOW;
     DSDP_INT dim = dAMat->dim;
     double alpha = 1.0, beta  = 0.0;
     
     double *y = (double *) calloc(dim, sizeof(double));
-    packmatvec(&uplo, &dim, &alpha, dAMat->array, x->x,
+    packmatvec(&uplo, &dim, &alpha, dAMat->array, x,
                &one, &beta, y, &one);
     
-    *xTAx = dot(&dim, x->x, &one, y, &one);
+    *xTAx = dot(&dim, x, &one, y, &one);
     
     DSDP_FREE(y);
     return retcode;

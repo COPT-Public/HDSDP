@@ -3,7 +3,8 @@
 
 static char etype[] = "Schur matrix setup";
 
-static DSDP_INT setupSDPSchurBlock( HSDSolver *dsdpSolver, DSDP_INT blockid ) {
+/* TODO: Rewrite Schur matrix setup */
+static DSDP_INT setupSDPSchurBlockA( HSDSolver *dsdpSolver, DSDP_INT blockid ) {
     /* Set up the schur matrix for a given block. This routine updates
      
      1. Schur matrix Msdp
@@ -20,65 +21,195 @@ static DSDP_INT setupSDPSchurBlock( HSDSolver *dsdpSolver, DSDP_INT blockid ) {
     sdpMat *sdpData = dsdpSolver->sdpData[blockid];
     
     // Temporary storage array for SinvASinv
-    rkMat *rkdata = dsdpSolver->rkaux[blockid];
-    dsMat *dsdata = dsdpSolver->dsaux[blockid];
+    rkMat *rkaux = dsdpSolver->rkaux[blockid], *rkdata = NULL;
+        
+    double coeff = 0.0, res = 0.0, *M = dsdpSolver->Msdp->array, *Ax = NULL;
+    DSDP_INT i, j, r, rank;
     
-    DSDP_INT dim = 0;
-    
-    if (dsdpSolver->eventMonitor[EVENT_IN_PHASE_B]) {
-        dim = m;
-    } else {
-        dim = m + 1;
-    }
-    
-    void *data = NULL;
-    
-    for (DSDP_INT i = 0; i < dim; ++i) {
+    for (i = 0; i < m; ++i) {
         // Compute SinvASinv
         mattype = sdpData->types[i];
         
         if (mattype == MAT_TYPE_ZERO) {
             continue;
         } else if (mattype == MAT_TYPE_RANKK) {
-            retcode = getSinvASinv(dsdpSolver, blockid, i, rkdata);
-            data = (void *) rkdata;
+            retcode = getSinvASinv(dsdpSolver, blockid, i, rkaux);
             mattype = MAT_TYPE_RANKK;
-            checkCode;
-        } else {
-            retcode = getSinvASinv(dsdpSolver, blockid, i, dsdata);
-            data = (void *) dsdata;
-            mattype = MAT_TYPE_DENSE;
             checkCode;
         }
         
-        for (DSDP_INT j = 0; j <= i; ++j) {
-            getTraceASinvASinv(dsdpSolver, blockid, j, mattype, i, data);
+        rank = rkaux->rank;
+        
+        // M2 Technique
+        for (r = 0; r < rank; ++r) {
+            Ax = rkaux->data[r]->x;
+            coeff = rkaux->data[r]->sign;
+            
+            for (j = 0; j <= i; ++j) {
+                rkdata = sdpData->sdpData[j];
+                switch (rkdata->mattype) {
+                    case MAT_TYPE_SPARSE:
+                        spsMatxTAx(rkdata->origdata, Ax, &res);
+                        res = coeff * res;
+                        break;
+                    case MAT_TYPE_DENSE:
+                        denseMatxTAx(rkdata->origdata, Ax, &res);
+                        res = coeff * res;
+                        break;
+                    case MAT_TYPE_RANKK:
+                        r1Matr1Trace(rkdata->data[0], rkaux->data[r], &res);
+                        break;
+                    default:
+                        error(etype, "Invalid matrix type");
+                        break;
+                }
+                packIdx(M, m, i, j) += res;
+            }
+            
+            rkdata = sdpData->sdpData[m];
+            switch (rkdata->mattype) {
+                case MAT_TYPE_SPARSE:
+                    spsMatxTAx(rkdata->origdata, Ax, &res);
+                    res *= coeff;
+                    break;
+                case MAT_TYPE_DENSE:
+                    denseMatxTAx(rkdata->origdata, Ax, &res);
+                    res *= coeff;
+                    break;
+                case MAT_TYPE_RANKK:
+                    r1Matr1Trace(rkdata->data[0], rkaux->data[r], &res);
+                    break;
+                default:
+                    error(etype, "Invalid matrix type");
+                    break;
+            }
+            
+            dsdpSolver->u->x[i] += res;
+        }
+    }
+        
+    // Compute csinvcsinv
+    mattype = sdpData->types[m];
+    retcode = getSinvASinv(dsdpSolver, blockid, m, rkaux);
+    rank = rkaux->rank;
+    for (r = 0; r < rank; ++r) {
+        Ax = rkaux->data[r]->x;
+        coeff = rkaux->data[r]->sign;
+        rkdata = sdpData->sdpData[m];
+        switch (rkdata->mattype) {
+            case MAT_TYPE_SPARSE:
+                spsMatxTAx(rkdata->origdata, Ax, &res);
+                res *= coeff;
+                break;
+            case MAT_TYPE_DENSE:
+                denseMatxTAx(rkdata->origdata, Ax, &res);
+                res *= coeff;
+                break;
+            case MAT_TYPE_RANKK:
+                r1Matr1Trace(rkdata->data[0], rkaux->data[r], &res);
+                break;
+            default:
+                error(etype, "Invalid matrix type");
+                break;
+        }
+        dsdpSolver->csinvcsinv += res;
+    }
+    
+    assert( retcode == DSDP_RETCODE_OK );
+    return retcode;
+}
+
+static DSDP_INT setupSDPSchurBlockB( HSDSolver *dsdpSolver, DSDP_INT blockid ) {
+    /* Set up the schur matrix for a given block. This routine updates
+     
+     1. Schur matrix Msdp
+     2. asinv
+    */
+    
+    DSDP_INT retcode = DSDP_RETCODE_OK;
+    assert( blockid < dsdpSolver->nBlock );
+    
+    DSDP_INT m       = dsdpSolver->m;
+    DSDP_INT mattype = MAT_TYPE_UNKNOWN;
+    sdpMat *sdpData = dsdpSolver->sdpData[blockid];
+    
+    // Temporary storage array for SinvASinv
+    rkMat *rkaux = dsdpSolver->rkaux[blockid], *rkdata = NULL;
+    
+    DSDP_INT shift = 0;
+    
+    if (dsdpSolver->eventMonitor[EVENT_IN_PHASE_B]) {
+        shift = 0;
+    } else {
+        shift = 1;
+    }
+    
+    void *data = NULL;
+    double coeff = 0.0, res = 0.0, *M = dsdpSolver->Msdp->array, *Ax = NULL;
+    DSDP_INT i, j, r, rank;
+    
+    for (i = 0; i < m; ++i) {
+        // Compute SinvASinv
+        mattype = sdpData->types[i];
+        
+        if (mattype == MAT_TYPE_ZERO) {
+            continue;
+        } else if (mattype == MAT_TYPE_RANKK) {
+            retcode = getSinvASinv(dsdpSolver, blockid, i, rkaux);
+            data = (void *) rkaux;
+            mattype = MAT_TYPE_RANKK;
+            checkCode;
+        }
+        
+        rank = rkaux->rank;
+        
+        // M2 Technique
+        for (r = 0; r < rank; ++r) {
+            Ax = rkaux->data[r]->x;
+            coeff = rkaux->data[r]->sign;
+            
+            for (j = 0; j <= i; ++j) {
+                rkdata = sdpData->sdpData[j];
+                switch (rkdata->mattype) {
+                    case MAT_TYPE_SPARSE:
+                        spsMatxTAx(rkdata->origdata, Ax, &res);
+                        res *= coeff;
+                        break;
+                    case MAT_TYPE_DENSE:
+                        denseMatxTAx(rkdata->origdata, Ax, &res);
+                        res *= coeff;
+                        break;
+                    case MAT_TYPE_RANKK:
+                        r1Matr1Trace(rkdata->data[0], rkaux->data[r], &res);
+                        break;
+                    default:
+                        error(etype, "Invalid matrix type. \n");
+                        break;
+                }
+                packIdx(M, m, i, j) += res;
+            }
         }
     }
     
+    double perturb = 0.0, maxdiag = 0.0;
     if (dsdpSolver->eventMonitor[EVENT_IN_PHASE_B] &&
         !dsdpSolver->eventMonitor[EVENT_INVALID_GAP]) {
         
-        double maxdiag = 0.0;
+        if (dsdpSolver->mu < 1) {
+            dsdpSolver->Msdp->isillCond = TRUE;
+        }
+        if (dsdpSolver->mu < 1e-05) {
+            perturb += 1e-08;
+        }
         for (DSDP_INT i = 0; i < m; ++i) {
             maxdiag = MAX(packIdx(dsdpSolver->Msdp->array, m, i, i), maxdiag);
         }
-        
         dsdpSolver->Mscaler = maxdiag;
-        
-        for (DSDP_INT i = 0; i < m; ++i) {
-            packIdx(dsdpSolver->Msdp->array, m, i, i) += \
-            MIN(maxdiag * 1e-06, 1e-08);
+        perturb += MIN(maxdiag * 1e-06, 1e-08);
+        for (i = 0; i < m; ++i) {
+            packIdx(dsdpSolver->Msdp->array, m, i, i) += perturb;
         }
     }
-    
-    // Perturb in Phase A
-//    if (dsdpSolver->eventMonitor[EVENT_IN_PHASE_A]) {
-//        for (DSDP_INT i = 0; i < m; ++i) {
-//            packIdx(dsdpSolver->Msdp->array, m, i, i) += \
-//            MIN(maxdiag * 1e-05, 1e-05);
-//        }
-//    }
     
     assert( retcode == DSDP_RETCODE_OK );
     return retcode;
@@ -114,7 +245,11 @@ static DSDP_INT setupSDPSchur( HSDSolver *dsdpSolver ) {
     
     // Start setting up the Schur matrix
     for (DSDP_INT k = 0; k < nblock; ++k) {
-        retcode = setupSDPSchurBlock(dsdpSolver, k); checkCode;
+        if (dsdpSolver->eventMonitor[EVENT_IN_PHASE_A]) {
+            retcode = setupSDPSchurBlockA(dsdpSolver, k); checkCode;
+        } else {
+            retcode = setupSDPSchurBlockB(dsdpSolver, k); checkCode;
+        }
     }
     
     dsdpSolver->iterProgress[ITER_SCHUR] = TRUE;
@@ -392,6 +527,8 @@ extern DSDP_INT setupSchur( HSDSolver *dsdpSolver ) {
     DSDP_INT retcode = DSDP_RETCODE_OK;
     
     retcode = setupSDPSchur(dsdpSolver);
+    checkCode;
+    dsdpSolver->iterProgress[ITER_SCHUR] = TRUE;
     // retcode = setupLPSchur(dsdpSolver);
     
     if (dsdpSolver->eventMonitor[EVENT_IN_PHASE_A]) {

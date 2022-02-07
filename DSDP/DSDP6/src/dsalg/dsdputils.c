@@ -11,14 +11,10 @@ extern DSDP_INT getSinvASinv( HSDSolver *dsdpSolver, DSDP_INT blockid, DSDP_INT 
                               void *SinvASinv ) {
     
     // Given S and A, the routine computes A, asinv and trace(S, Sinv A Sinv)
-    DSDP_INT retcode = DSDP_RETCODE_OK;
-    DSDP_INT typeA = dsdpSolver->sdpData[blockid]->types[constrid];
+    DSDP_INT retcode;
     spsMat *S = dsdpSolver->S[blockid];
     void *A = dsdpSolver->sdpData[blockid]->sdpData[constrid];
-    
-    double *asinv = NULL;
-    double *asinvrysinv = NULL;
-    double tracediag = 0.0;
+    double *asinv = NULL, *asinvrysinv = NULL, tracediag = 0.0;
     
     if (constrid < dsdpSolver->m) {
         asinv = &dsdpSolver->asinv->x[constrid];
@@ -28,35 +24,12 @@ extern DSDP_INT getSinvASinv( HSDSolver *dsdpSolver, DSDP_INT blockid, DSDP_INT 
         asinvrysinv = &dsdpSolver->csinvrysinv;
     }
     
-    if (typeA == MAT_TYPE_RANKK) {
-        rkMat *dataA = (rkMat *) A;
-        rkMat *dataSinvASinv = (rkMat *) SinvASinv;
-        retcode = spsSinvRkSinvSolve(S, dataA, dataSinvASinv, &tracediag);
-    } else if (typeA == MAT_TYPE_SPARSE) {
-        spsMat *dataA = (spsMat *) A;
-        dsMat *dataSinvASinv = (dsMat *) SinvASinv;
-        retcode = spsSinvSpSinvSolve(S, dataA, dataSinvASinv, &tracediag); checkCode;
-    } else if (typeA == MAT_TYPE_DENSE) {
-        dsMat *dataA = (dsMat *) A;
-        dsMat *dataSinvASinv = (dsMat *) SinvASinv;
-        retcode = spsSinvDsSinvSolve(S, dataA, dataSinvASinv, &tracediag); checkCode;
-    } else {
-        error(etype, "Invalid matrix type. \n");
-    }
-    
+    retcode = spsSinvRkSinvSolve(S, A, SinvASinv, &tracediag);
     *asinv += tracediag;
     
     if (dsdpSolver->eventMonitor[EVENT_IN_PHASE_A]) {
-        switch (typeA) {
-            case MAT_TYPE_RANKK:
-                retcode = rkMatdiagTrace(SinvASinv, dsdpSolver->Ry, &tracediag);
-                break;
-            default:
-                retcode = denseDiagTrace(SinvASinv, dsdpSolver->Ry, &tracediag);
-                break;
-        }
+        retcode = rkMatdiagTrace(SinvASinv, dsdpSolver->Ry, &tracediag);
         *asinvrysinv += tracediag;
-        checkCode;
     }
     return retcode;
 }
@@ -79,6 +52,8 @@ extern DSDP_INT getTraceASinvASinv( HSDSolver *dsdpSolver, DSDP_INT blockid, DSD
     if (mattype == MAT_TYPE_ZERO || Atype == MAT_TYPE_ZERO) {
         return retcode;
     }
+    
+    retcode = rkMatrkTrace((rkMat *) SinvASinv, (rkMat *) A, &trace);
     
     if (mattype == MAT_TYPE_RANKK) {
         switch (Atype) {

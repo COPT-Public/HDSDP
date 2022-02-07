@@ -125,13 +125,15 @@ static DSDP_INT sdpMatIAllocByType( sdpMat *sdpData, DSDP_INT k, DSDP_INT *Ai,
         data->nnz = nnz;
         
         if (n > 10000) {
-            for (DSDP_INT i = 0; i < n - n % 4; i+=4) {
+            DSDP_INT i;
+            
+            for (i = 0; i < n - n % 4; i+=4) {
                 data->p[i + 1] = nnz;
                 data->p[i + 2] = nnz;
                 data->p[i + 3] = nnz;
                 data->p[i + 4] = nnz;
             }
-            for (DSDP_INT i = n - n % 4; i < n; ++i) {
+            for (i = n - n % 4; i < n; ++i) {
                 data->p[i + 1] = nnz;
             }
         } else {
@@ -157,6 +159,8 @@ static DSDP_INT sdpMatIAllocByType( sdpMat *sdpData, DSDP_INT k, DSDP_INT *Ai,
             }
             colnnz += 1;
             data->i[i] = rowidx - idxthresh + n;
+            // Record column index
+            data->nzHash[i] = where;
         }
         
 #ifdef SHOWALL

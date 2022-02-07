@@ -341,7 +341,7 @@ extern DSDP_INT dualPotentialReduction( HSDSolver *dsdpSolver ) {
     double alpha = maxstep;
     double newpotential = 0.0;
     double bestpotential = oldpotential;
-    double bestalpha = 0.0;
+    double bestalpha = alpha;
     DSDP_INT inCone = FALSE;
     
     // Start line search

@@ -7,6 +7,7 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		1901C7F227B15FB30046EFB2 /* dsdpcg.c in Sources */ = {isa = PBXBuildFile; fileRef = 1901C7F127B15FB30046EFB2 /* dsdpcg.c */; };
 		19118DE62737B72800D51D03 /* schurmat.c in Sources */ = {isa = PBXBuildFile; fileRef = 19118D942737B72800D51D03 /* schurmat.c */; };
 		19118DE72737B72800D51D03 /* hsd.c in Sources */ = {isa = PBXBuildFile; fileRef = 19118D952737B72800D51D03 /* hsd.c */; };
 		19118DE82737B72800D51D03 /* residualsetup.c in Sources */ = {isa = PBXBuildFile; fileRef = 19118D962737B72800D51D03 /* residualsetup.c */; };
@@ -130,6 +131,8 @@
 /* End PBXCopyFilesBuildPhase section */
 
 /* Begin PBXFileReference section */
+		1901C7F027B15FB30046EFB2 /* dsdpcg.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = dsdpcg.h; sourceTree = "<group>"; };
+		1901C7F127B15FB30046EFB2 /* dsdpcg.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = dsdpcg.c; sourceTree = "<group>"; };
 		19118D862737B6CF00D51D03 /* DSDP6 */ = {isa = PBXFileReference; explicitFileType = "compiled.mach-o.executable"; includeInIndex = 0; path = DSDP6; sourceTree = BUILT_PRODUCTS_DIR; };
 		19118D922737B72800D51D03 /* residualsetup.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = residualsetup.h; sourceTree = "<group>"; };
 		19118D932737B72800D51D03 /* stepheur.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = stepheur.h; sourceTree = "<group>"; };
@@ -362,6 +365,7 @@
 				19118D9E2737B72800D51D03 /* densemat.h */,
 				19808F44273817510014086F /* rankonemat.h */,
 				19C3732527A7F2DA0021A708 /* rankkmat.h */,
+				1901C7F027B15FB30046EFB2 /* dsdpcg.h */,
 				19118D9F2737B72800D51D03 /* vec.c */,
 				19118DA12737B72800D51D03 /* densemat.c */,
 				19118DA22737B72800D51D03 /* sparsemat.c */,
@@ -369,6 +373,7 @@
 				19C3732627A7F2DA0021A708 /* rankkmat.c */,
 				19C3732A27A98B0D0021A708 /* dsdplanczos.c */,
 				199FC14027AD061A0072897D /* dsdpeigfact.c */,
+				1901C7F127B15FB30046EFB2 /* dsdpcg.c */,
 			);
 			path = linsys;
 			sourceTree = "<group>";
@@ -639,6 +644,7 @@
 				19118E042737B72800D51D03 /* cs_add.c in Sources */,
 				19808F3F273807770014086F /* dsdpdata.c in Sources */,
 				19118E062737B72800D51D03 /* cs_utsolve.c in Sources */,
+				1901C7F227B15FB30046EFB2 /* dsdpcg.c in Sources */,
 				19118E052737B72800D51D03 /* cs_updown.c in Sources */,
 				1947DC1D2799B64B004065D8 /* test_dsdp.c in Sources */,
 				19118E182737B72800D51D03 /* cs_dropzeros.c in Sources */,

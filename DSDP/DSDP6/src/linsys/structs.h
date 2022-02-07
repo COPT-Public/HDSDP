@@ -13,6 +13,7 @@ typedef struct {
     DSDP_INT *i;                        // Row index
     double   *x;                        // Sparse data
     DSDP_INT nnz;                       // Nonzeros entries
+    DSDP_INT *nzHash;                   // Position of non-zero entry in packed format
     void     *pdsWorker[PARDISOINDEX];  // Pardiso working array
     
 } spsMat;
@@ -47,6 +48,8 @@ typedef struct {
     DSDP_INT isdata;
     DSDP_INT rank;
     r1Mat    **data;
+    DSDP_INT mattype;
+    void     *origdata;
     
 } rkMat;
 

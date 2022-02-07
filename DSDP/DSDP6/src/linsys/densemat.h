@@ -24,7 +24,7 @@ extern DSDP_INT denseMatFree     ( dsMat *dMat );
 
 /* Basic operations */
 extern DSDP_INT denseMataXpbY    ( double alpha, dsMat *dXMat, double beta, dsMat *dYMat );
-extern DSDP_INT denseMatxTAx     ( dsMat *dAMat, vec *x, double *xTAx );
+extern DSDP_INT denseMatxTAx     ( dsMat *dAMat, double *x, double *xTAx );
 extern DSDP_INT denseMatFnorm    ( dsMat  *dMat, double *fnrm );
 extern DSDP_INT denseMatRscale   ( dsMat *dXMat, double r );
 
