@@ -1,6 +1,7 @@
 #include "sparsemat.h"
 #include "densemat.h"
 #include "dsdpfeast.h"
+#include "dsdpdata.h"
 #include "dsdplanczos.h"
 
 // Enable hash sum check
@@ -314,41 +315,55 @@ extern DSDP_INT spsMatFree( spsMat *sMat ) {
 
 /* Basic operations */
 extern DSDP_INT spsMatAx( spsMat *A, vec *x, vec *Ax ) {
-    /* Sparse matrix multiplication for Lanczos Method */
+    /* Sparse matrix multiplication for Lanczos Method
+      Warning: This method is only for Lanczos since we compute Ax = - A * x
+     */
     DSDP_INT retcode = DSDP_RETCODE_OK;
     
     assert( A->dim == x->dim && x->dim == Ax->dim );
-    DSDP_INT *Ap = A->p, *Ai = A->i, n = A->dim, nnz = A->nnz, idx;
+    DSDP_INT *cidx = A->nzHash, *Ap = A->p, *Ai = A->i;
+    DSDP_INT n = A->dim, nnz = A->nnz, idx;
     double *Axdata = A->x, *Axres = Ax->x, *xdata = x->x, coeff = 0.0;
     vec_reset(Ax);
     
-    for (DSDP_INT i = 0; i < n ; ++i) {
-        coeff = xdata[i];
-        
-        if (coeff == 0.0) {
-            continue;
-        }
-        
-        idx = Ap[i];
-        if (idx == Ap[i + 1]) {
-            if (idx == nnz) {
-                break;
-            } else {
-                continue;
+    if (nnz <= 0.3 * n * n && cidx) {
+        for (DSDP_INT i, j, k = 0; k < nnz; ++k) {
+            i = Ai[k];
+            j = cidx[k];
+            Axres[i] -= Axdata[k] * xdata[j];
+            if (i != j) {
+                Axres[j] -= Axdata[k] * xdata[i];
             }
         }
-        
-        if (Ai[idx] == i) {
-            Axres[i] -= coeff * Axdata[idx];
-        } else {
-            Axres[Ai[idx]] -= coeff * Axdata[idx];
-            Axres[i] -= xdata[Ai[idx]] * Axdata[idx];
-        }
-        
-        for (DSDP_INT j = Ap[i] + 1; j < Ap[i + 1]; ++j) {
-            idx = Ai[j];
-            Axres[idx] -= coeff * Axdata[j];
-            Axres[i]   -= xdata[idx] * Axdata[j];
+    } else {
+        for (DSDP_INT i = 0; i < n ; ++i) {
+            coeff = xdata[i];
+            
+            if (coeff == 0.0) {
+                continue;
+            }
+            
+            idx = Ap[i];
+            if (idx == Ap[i + 1]) {
+                if (idx == nnz) {
+                    break;
+                } else {
+                    continue;
+                }
+            }
+            
+            if (Ai[idx] == i) {
+                Axres[i] -= coeff * Axdata[idx];
+            } else {
+                Axres[Ai[idx]] -= coeff * Axdata[idx];
+                Axres[i] -= xdata[Ai[idx]] * Axdata[idx];
+            }
+            
+            for (DSDP_INT j = Ap[i] + 1; j < Ap[i + 1]; ++j) {
+                idx = Ai[j];
+                Axres[idx] -= coeff * Axdata[j];
+                Axres[i]   -= xdata[idx] * Axdata[j];
+            }
         }
     }
     
@@ -362,24 +377,22 @@ extern DSDP_INT spsMatxTAx( spsMat *A, double *x, double *xTAx ) {
      x is dense and A is sparse
     */
     
-    DSDP_INT n = A->dim, nnz = A->nnz, i, j, idx;
+    DSDP_INT n = A->dim, nnz = A->nnz, i, j, k, idx;
     DSDP_INT *Ap = A->p, *Ai = A->i, *nzHash = A->nzHash;
     double res = 0.0, *Ax = A->x;
     
-    if (nnz <= 0.1 * n * n) {
-        DSDP_INT k = 0;
+    if (nnz <= 0.01 * n * n) {
         double tmp = 0.0;
         for (k = 0; k < nnz; ++k) {
             i = nzHash[k];
             j = Ai[k];
             tmp = Ax[k] * x[i] * x[j];
             if (i != j) {
-                res += 2 * tmp;
-            } else {
                 res += tmp;
+            } else {
+                res += 0.5 * tmp;
             }
         }
-        *xTAx = res;
     } else {
         for (i = 0; i < n && !Ap[i + 1]; ++i);
         for (; i < n; ++i) {
@@ -402,9 +415,9 @@ extern DSDP_INT spsMatxTAx( spsMat *A, double *x, double *xTAx ) {
                 res += Ax[j] * x[Ai[j]] * x[i];
             }
         }
-        *xTAx = 2.0 * res;
     }
     
+    *xTAx = 2.0 * res;
     
     return DSDP_RETCODE_OK;
 }
@@ -419,9 +432,6 @@ extern DSDP_INT spsMataXpbY( double alpha, spsMat *sXMat, double beta,
     // The matrices added is NEVER factorized since they purely serve as constant data
     assert ( sXMat->dim == sYMat->dim );
     assert ((!sXMat->isFactorized));
-    if (sXMat->isFactorized) {
-        error(etype, "Adding a factorized matrix. \n");
-    }
     
     if (beta != 1.0) {
         retcode = spsMatScale(sYMat, beta);
@@ -432,22 +442,35 @@ extern DSDP_INT spsMataXpbY( double alpha, spsMat *sXMat, double beta,
         return retcode;
     }
     
-    DSDP_INT dim = sXMat->dim;
-    DSDP_INT *Ap = sXMat->p;
-    DSDP_INT *Ai = sXMat->i;
-    double   *Ax = sXMat->x;
-    double   *Bx = sYMat->x;
-    DSDP_INT hash = 0;
+    DSDP_INT dim = sXMat->dim, *Ap = sXMat->p, *Ai = sXMat->i;
+    double   *Ax = sXMat->x, *Bx = sYMat->x;
     
-    for (DSDP_INT i = 0; i < dim; ++i) {
-        for (DSDP_INT j = Ap[i]; j < Ap[i + 1]; ++j) {
+    if (sumHash) {
+        for (DSDP_INT i = 0, hash; i < dim; ++i) {
+            for (DSDP_INT j = Ap[i]; j < Ap[i + 1]; ++j) {
 #ifdef VERIFY_HASH
-            hash = packIdx(sumHash, dim, Ai[j], i);
-            assert( hash > 0 || j == 0 );
-            Bx[hash] += alpha * Ax[j];
+                hash = packIdx(sumHash, dim, Ai[j], i);
+                assert( hash > 0 || j == 0 );
+                Bx[hash] += alpha * Ax[j];
 #else
-            Bx[packIdx(sumHash, dim, Ai[j], i)] += alpha * Ax[j];
+                Bx[packIdx(sumHash, dim, Ai[j], i)] += alpha * Ax[j];
 #endif
+            }
+        }
+    } else {
+        // sYMat is actually dense and Bx is an (n + 1) * n / 2 array
+        assert( sYMat->nnz == nsym(dim) );
+        // If adding sparse data e.g. S += A * y[i]
+        if (sXMat->nzHash) {
+            for (DSDP_INT i, j, k = 0; k < sXMat->nnz; ++k) {
+                i = Ai[k];
+                j = sXMat->nzHash[k];
+                packIdx(Bx, dim, i, j) += alpha * Ax[k];
+            }
+        // If adding iteration e.g. S += dS
+        } else {
+            assert( sXMat->nnz == sYMat->nnz );
+            daxpy(&sXMat->nnz, &alpha, Ax, &one, Bx, &one);
         }
     }
 
@@ -465,18 +488,23 @@ extern DSDP_INT spsMatAdddiag( spsMat *sMat, double d, DSDP_INT *sumHash ) {
         return retcode;
     }
     
-    DSDP_INT *hash = sumHash;
-    DSDP_INT dim = sMat->dim;
-    DSDP_INT idx = 0;
+    DSDP_INT dim = sMat->dim, idx = 0;
     
-    for (DSDP_INT i = 0; i < dim; ++i) {
+    if (sumHash) {
+        for (DSDP_INT i = 0; i < dim; ++i) {
 #ifdef VERIFY_HASH
-        idx = packIdx(hash, dim, i, i);
-        assert( idx > 0 || i == 0 );
-        sMat->x[idx] += d;
+            idx = packIdx(sumHash, dim, i, i);
+            assert( idx > 0 || i == 0 );
+            sMat->x[idx] += d;
 #else
-        sMat->x[packIdx(hash, dim, i, i)] += d;
+            sMat->x[packIdx(sumHash, dim, i, i)] += d;
 #endif
+        }
+    } else {
+        for (DSDP_INT i = 0; i < dim; ++i) {
+            sMat->x[idx] += d;
+            idx += dim - i;
+        }
     }
     
     return retcode;
@@ -494,7 +522,7 @@ extern DSDP_INT spsMatAddds( spsMat *sXMat, double alpha, dsMat *dsYMat ) {
         return retcode;
     }
     
-    DSDP_INT dim = sXMat->dim;
+    DSDP_INT dim = nsym(sXMat->dim);
     axpy(&dim, &alpha, dsYMat->array, &one, sXMat->x, &one);
     
     return retcode;
@@ -505,7 +533,7 @@ extern DSDP_INT spsMatAddr1( spsMat *sXMat, double alpha, r1Mat *r1YMat, DSDP_IN
     // Add a rank 1 matrix to a sparse matrix
     DSDP_INT retcode = DSDP_RETCODE_OK;
     
-    assert( sXMat->dim == r1YMat->dim);
+    assert( sXMat->dim == r1YMat->dim );
     
     if (alpha == 0.0) {
         return retcode;
@@ -515,7 +543,7 @@ extern DSDP_INT spsMatAddr1( spsMat *sXMat, double alpha, r1Mat *r1YMat, DSDP_IN
     DSDP_INT *hash = sumHash, *nzIdx = r1YMat->nzIdx;
     double sign = r1YMat->sign * alpha, *rx = r1YMat->x;
     
-    if (r1YMat->nnz < 0.7 * dim) {
+    if (sumHash) {
         for (DSDP_INT i = 0; i < r1YMat->nnz; ++i) {
             for (DSDP_INT j = 0; j <= i; ++j) {
 #ifdef VERIFY_HASH
@@ -529,8 +557,17 @@ extern DSDP_INT spsMatAddr1( spsMat *sXMat, double alpha, r1Mat *r1YMat, DSDP_IN
             }
         }
     } else {
-        char uplo = DSDP_MAT_LOW;
-        packr1update(&uplo, &dim, &sign, r1YMat->x, &one, sXMat->x);
+        DSDP_INT i, j;
+        if (r1YMat->nnz < 0.5 * dim) {
+            for (i = 0; i < r1YMat->nnz; ++i) {
+                for (j = 0; j <= i; ++j) {
+                    packIdx(sXMat->x, dim, nzIdx[i], nzIdx[j]) += sign * rx[nzIdx[i]] * rx[nzIdx[j]];
+                }
+            }
+        } else {
+            char uplo = DSDP_MAT_LOW;
+            packr1update(&uplo, &dim, &sign, r1YMat->x, &one, sXMat->x);
+        }
     }
     
     return retcode;
@@ -1212,11 +1249,7 @@ extern DSDP_INT spsMatMinEig( spsMat *sMat, double *minEig ) {
 extern DSDP_INT spsMatIspd( spsMat *sMat, DSDP_INT *ispd ) {
     // A critical routine that determines whether a matrix is positive definite
     DSDP_INT retcode = DSDP_RETCODE_OK;
-    
-    // Get the pardiso parameter
-    DSDP_INT phase = PARDISO_FAC;
-    DSDP_INT error = 0;
-    
+    DSDP_INT error = 0, phase = PARDISO_FAC;
     // Invoke pardiso to do symbolic analysis and Cholesky factorization
     pardiso(sMat->pdsWorker, &maxfct, &mnum, &mtype, &phase, &sMat->dim,
             sMat->x, sMat->p, sMat->i, &idummy, &idummy, PARDISO_PARAMS_PSD_CHECK,
@@ -1360,4 +1393,30 @@ extern DSDP_INT spsMatView( spsMat *sMat ) {
     cs_print(&mat, FALSE);
     
     return retcode;
+}
+
+extern void spsMatLinvView( spsMat *S ) {
+    // Lanczos debugging routine. Print P^-1 L^-1 to the screen
+    
+    assert( S->isFactorized );
+    DSDP_INT n = S->dim;
+    
+    double *eye = (double *) calloc(n * n, sizeof(double));
+    double *Linv = (double *) calloc(n * n, sizeof(double));
+    
+    for (DSDP_INT i = 0; i < n; ++i) {
+        eye[n * i + i] = 1.0;
+    }
+    
+    pardisoForwardSolve(S, n, eye, Linv, FALSE);
+    
+    for (DSDP_INT i = 0; i < n; ++i) {
+        for (DSDP_INT j = 0; j < n; ++j) {
+            printf("%20.12e, ", Linv[i * n + j]);
+        }
+        printf("\n");
+    }
+    
+    DSDP_FREE(eye);
+    DSDP_FREE(Linv);
 }

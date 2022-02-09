@@ -195,9 +195,10 @@ static DSDP_INT setupSDPSchurBlockB( HSDSolver *dsdpSolver, DSDP_INT blockid ) {
     if (dsdpSolver->eventMonitor[EVENT_IN_PHASE_B] &&
         !dsdpSolver->eventMonitor[EVENT_INVALID_GAP]) {
         
-        if (dsdpSolver->mu < 1) {
+        if (dsdpSolver->mu < 1e-06) {
             dsdpSolver->Msdp->isillCond = TRUE;
         }
+         
         if (dsdpSolver->mu < 1e-05) {
             perturb += 1e-08;
         }

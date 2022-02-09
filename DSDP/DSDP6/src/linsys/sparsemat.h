@@ -81,6 +81,7 @@ extern DSDP_INT spsMatFillLower    ( spsMat *sMat, double *lowFullMat );
 extern DSDP_INT spsMatFill         ( spsMat *sMat, double *fulldMat );
 extern DSDP_INT spsMatReset        ( spsMat *sMat );
 extern DSDP_INT spsMatView         ( spsMat *sMat );
+extern void spsMatLinvView         ( spsMat *S );
 
 #ifdef __cplusplus
 }

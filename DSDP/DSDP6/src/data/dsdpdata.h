@@ -17,6 +17,9 @@
 #define MAT_TYPE_RANKK   3
 #define MAT_TYPE_ZERO    4
 
+#define denseThresh      (0.6)
+#define rankThresh       (0.1)
+
 /*
  SDP data stucture
  

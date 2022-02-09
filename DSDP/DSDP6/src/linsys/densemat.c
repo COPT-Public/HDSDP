@@ -157,6 +157,14 @@ extern DSDP_INT denseMataXpbY( double alpha, dsMat *dXMat, double beta, dsMat *d
     return retcode;
 }
 
+extern DSDP_INT denseMataAxpby( dsMat *dAMat, double alpha, vec *x, double beta, vec *Ax ) {
+    // Compute Ax = A * x
+    DSDP_INT retcode = DSDP_RETCODE_OK;
+    char uplo = 'L';
+    dspmv(&uplo, &x->dim, &alpha, dAMat->array, x->x, &one, &beta, Ax->x, &one);
+    return retcode;
+}
+
 extern DSDP_INT denseMatxTAx( dsMat *dAMat, double *x, double *xTAx ) {
     // Compute quadratic form x' * A * x
     DSDP_INT retcode = DSDP_RETCODE_OK;

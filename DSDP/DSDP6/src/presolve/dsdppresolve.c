@@ -24,7 +24,11 @@ static DSDP_INT isDenseRank1Acc( dsMat *dataMat, DSDP_INT *isRank1 ) {
         }
     }
     
-    assert( col != n - 1 ); // or it is a zero matrix
+    if (col == n - 1) {
+        *isRank1 = FALSE;
+        return retcode;
+    }
+    
     a = (double *) calloc(n, sizeof(double));
     
     double adiag = packIdx(A, n, col, col);
@@ -688,8 +692,7 @@ static DSDP_INT preSDPgetSymbolic( HSDSolver *dsdpSolver, DSDP_INT blockid ) {
     DSDP_INT *hash = NULL;
     hash = (DSDP_INT *) calloc(nhash, sizeof(DSDP_INT));
     
-    DSDP_INT useDenseS = FALSE;
-    DSDP_INT isfirstNz = FALSE;
+    DSDP_INT useDenseS = FALSE, isfirstNz = FALSE, tmp = 0;
     DSDP_INT *matIdx = sdpBlock->rkMatIdx;
     
     if (sdpBlock->ndenseMat > 0) {
@@ -699,8 +702,7 @@ static DSDP_INT preSDPgetSymbolic( HSDSolver *dsdpSolver, DSDP_INT blockid ) {
             rkdata = (rkMat *) sdpBlock->sdpData[matIdx[i]];
             for (DSDP_INT j = 0; j < rkdata->rank; ++j) {
                 r1data = rkdata->data[j];
-                // TODO: Change the threshold
-                if (r1data->nnz > 1.0 * dim) {
+                if (r1data->nnz > denseThresh * dim) {
                     useDenseS = TRUE;
                     break;
                 }
@@ -732,8 +734,7 @@ static DSDP_INT preSDPgetSymbolic( HSDSolver *dsdpSolver, DSDP_INT blockid ) {
                 }
             }
             
-            // TODO: Change the threshold
-            if (nnz > 1.0 * nhash) {
+            if (nnz > denseThresh * nhash) {
                 useDenseS = TRUE;
                 break;
             }
@@ -757,8 +758,7 @@ static DSDP_INT preSDPgetSymbolic( HSDSolver *dsdpSolver, DSDP_INT blockid ) {
                                 nnz += 1;
                             }
                         }
-                        // TODO: Change the threshold
-                        if (nnz > 1.0 * nhash) {
+                        if (nnz > denseThresh * nhash) {
                             useDenseS = TRUE;
                             break;
                         }
@@ -770,16 +770,16 @@ static DSDP_INT preSDPgetSymbolic( HSDSolver *dsdpSolver, DSDP_INT blockid ) {
     
     if (useDenseS) {
         nnz = nhash;
-        for (DSDP_INT i = 0; i < nhash - nhash % 4; i+=4) {
-            hash[i    ] = i;
-            hash[i + 1] = i + 1;
-            hash[i + 2] = i + 2;
-            hash[i + 3] = i + 3;
-        }
-
-        for (DSDP_INT i = nhash - nhash % 4; i < nhash; ++i) {
-            hash[i] = i;
-        }
+//        for (DSDP_INT i = 0; i < nhash - nhash % 4; i+=4) {
+//            hash[i    ] = i;
+//            hash[i + 1] = i + 1;
+//            hash[i + 2] = i + 2;
+//            hash[i + 3] = i + 3;
+//        }
+//
+//        for (DSDP_INT i = nhash - nhash % 4; i < nhash; ++i) {
+//            hash[i] = i;
+//        }
         
     } else {
         // Get hash table by the symbolic features
@@ -799,27 +799,30 @@ static DSDP_INT preSDPgetSymbolic( HSDSolver *dsdpSolver, DSDP_INT blockid ) {
     retcode = spsMatAllocData(dsdpSolver->dS[blockid], dim, nnz); checkCodeFree;
     retcode = spsMatAllocData(dsdpSolver->Scker[blockid], dim, nnz); checkCodeFree;
     
-//    if (useDenseS) {
-//        DSDP_FREE(hash);
-//        hash = NULL;
-//    }
-    
-    dsdpSolver->symS[blockid] = hash;
-    
-    DSDP_INT tmp = 0;
     if (isfirstNz) {
         dsdpSolver->S[blockid]->i[tmp] = 0;
+        dsdpSolver->S[blockid]->nzHash[tmp] = 0;
         tmp += 1;
     }
     
     for (DSDP_INT i = 0; i < dim; ++i) {
         for (DSDP_INT j = i; j < dim; ++j) {
-            if (packIdx(hash, dim, j, i)) {
+            if (useDenseS) {
                 dsdpSolver->S[blockid]->i[tmp] = j;
+                tmp += 1;
+            } else if (packIdx(hash, dim, j, i)) {
+                dsdpSolver->S[blockid]->i[tmp] = j;
+                dsdpSolver->S[blockid]->nzHash[tmp] = i;
                 tmp += 1;
             }
         }
         dsdpSolver->S[blockid]->p[i + 1] = tmp;
+    }
+    
+    if (useDenseS) {
+        DSDP_FREE(hash);
+    } else {
+        dsdpSolver->symS[blockid] = hash;
     }
     
     memcpy(dsdpSolver->dS[blockid]->p,
@@ -840,6 +843,19 @@ static DSDP_INT preSDPgetSymbolic( HSDSolver *dsdpSolver, DSDP_INT blockid ) {
     memcpy(dsdpSolver->Scker[blockid]->x,
            dsdpSolver->S[blockid]->x,
            sizeof(double) * tmp);
+    
+    if (useDenseS) {
+        DSDP_FREE(dsdpSolver->dS[blockid]->nzHash);
+        DSDP_FREE(dsdpSolver->Scker[blockid]->nzHash);
+        DSDP_FREE(dsdpSolver->S[blockid]->nzHash);
+    } else {
+        memcpy(dsdpSolver->dS[blockid]->nzHash,
+               dsdpSolver->S[blockid]->nzHash,
+               sizeof(DSDP_INT) * nnz);
+        memcpy(dsdpSolver->Scker[blockid]->nzHash,
+               dsdpSolver->S[blockid]->nzHash,
+               sizeof(DSDP_INT) * nnz);
+    }
     
 #ifdef SHOWALL
         printf("Block "ID" goes through symbolic check. \n", blockid);

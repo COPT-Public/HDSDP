@@ -134,7 +134,7 @@ static DSDP_INT PARDISO_PARAMS_FORWARD_BACKWORD_LANCZOS[PARDISOINDEX] = {
     1, /* Non-default value */ 3, /* P Nested dissection */ 0, /* Reserved          */
     0, /* No CG             */ 0, /* No user permutation */ 0, /* Overwriting       */
     0, /* Refinement report */ 0, /* Auto ItRef step     */ 0, /* Reserved          */
-    4, /* Perturb           */ 0, /* Disable scaling     */ 0, /* No transpose      */
+    8, /* Perturb           */ 0, /* Disable scaling     */ 0, /* No transpose      */
     0, /* Disable matching  */ 0, /* Report on pivots    */ 0, /* Output            */
     0, /* Output            */ 0, /* Output              */-1, /* No report         */
     0, /* No report         */ 0, /* Output              */ 1, /* Pivoting          */
@@ -155,32 +155,6 @@ static DSDP_INT PARDISO_PARAMS_FORWARD_BACKWORD_LANCZOS[PARDISOINDEX] = {
     0
 };
 
-// Pardiso CG solver
-static DSDP_INT PARDISO_PARAMS_CG[PARDISOINDEX] = {
-    
-    1, /* Non-default value */ 3, /* P Nested dissection */ 0, /* Reserved          */
-    1, /* CG                */ 0, /* No user permutation */ 0, /* No overwriting    */
-    0, /* Refinement report */ 1, /* Three ItRef steps   */ 0, /* Reserved          */
-    8, /* NO perturb        */ 1, /* Disable scaling     */ 0, /* No transpose      */
-    1, /* Disable matching  */ 0, /* Report on pivots    */ 0, /* Output            */
-    0, /* Output            */ 0, /* Output              */-1, /* No report         */
-    0, /* No report         */ 0, /* Output              */ 1, /* Pivoting          */
-    0, /* nPosEigVals       */ 0, /* nNegEigVals         */ 0, /* Classic factorize */
-    0,                         0,                           0, /* Matrix checker    */
-    0,                         0,                           0,
-    0,                         0,                           0,
-    0,                         1, /* 0-based solve       */ 0,
-    0,                         0,                           0,
-    0,                         0,                           0,
-    0,                         0,                           0,
-    0,                         0,                           0,
-    0,                         0,                           0,
-    0,                         0,                           0,
-    0,                         1, /* Get diagonal        */ 0,
-    0,                         0,                           0,
-    0,                         0,                           0,
-    0
-};
 
 #ifdef DSDP64
 #define pardiso pardiso_64

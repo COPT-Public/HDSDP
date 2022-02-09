@@ -4,9 +4,11 @@
 
 static char etype[] = "Lanczos iteration";
 
-#define LWORK 30
-#define IWORK 12
+#define MAXITER 10
+#define LWORK   30  // >= MAXITER + 6
+#define IWORK   12  // >= 10
 
+// TODO: Fix potential bugs in Lanczos
 static DSDP_INT lanczosAlloc( vec **v,  vec **w,
                               vec **z1, vec **z2,
                               vec **vecaux,
@@ -96,6 +98,7 @@ static DSDP_INT lanczosInitialize( vec *v, double *V ) {
     vec_norm(v, &nrm);
     vec_rscale(v, nrm);
     
+    // V(:, 1) = v;
     memcpy(V, v->x, sizeof(double) * v->dim);
     return retcode;
 }
@@ -104,6 +107,8 @@ extern DSDP_INT dsdpLanczos( spsMat *S, spsMat *dS, double *lbd, double *delta )
     /* Lanczos algorithm that computes lambda_max(L^-1 dS L^-T) */
     DSDP_INT retcode = DSDP_RETCODE_OK;
     assert( S->dim == dS->dim && S->isFactorized );
+    
+    // spsMatLinvView(S);
     
     double fnrm = 0.0;
     spsMatFnorm(dS, &fnrm);
@@ -114,7 +119,7 @@ extern DSDP_INT dsdpLanczos( spsMat *S, spsMat *dS, double *lbd, double *delta )
     }
     
     /* Prepare working array */
-    DSDP_INT n = S->dim, maxiter = 10, one = 1, mH = maxiter + 1,
+    DSDP_INT n = S->dim, maxiter = MAXITER, one = 1, mH = maxiter + 1,
             il, iu, lwork = LWORK * maxiter, iwork = IWORK * maxiter,
             idx, neigs, info, *eigintaux, *isuppz;
     
@@ -125,10 +130,10 @@ extern DSDP_INT dsdpLanczos( spsMat *S, spsMat *dS, double *lbd, double *delta )
     
     double *V = NULL, *H      = NULL, *Y = NULL,
            *d = NULL, *mataux = NULL, *eigaux = NULL,
-           nrm, nrm2, alp, alpha, beta, res;
+            nrm, nrm2, alp, alpha, beta, res, seig1, seig2;
     
     char trans = DSDP_MAT_TRANSPOSE, notrans = DSDP_MAT_NOTRANSPOSE,
-         jobz = 'V', range = 'I', uplo = DSDP_MAT_LOW;
+         jobz = 'V', range = 'I', uplo = DSDP_MAT_UP;
     
     retcode = lanczosAlloc(&v, &w, &z1, &z2, &vecaux,
                            &V, &H, &Y, &d, &mataux, &eigaux, &eigintaux,
@@ -171,6 +176,14 @@ extern DSDP_INT dsdpLanczos( spsMat *S, spsMat *dS, double *lbd, double *delta )
             beta  = 0.0;
             // s = (w' * V(:, 1:k))';
             idx = k + 1;
+            /*
+            memset(mataux, 0, sizeof(double) * idx);
+            for (DSDP_INT p = 0, q; p < idx; ++p) {
+                for (q = 0; q < n; ++q) {
+                    mataux[p] += V[p * n + q] * w->x[q];
+                }
+            }
+            */
             dgemv(&trans, &n, &idx, &alpha, V, &n, w->x,
                   &one, &beta, mataux, &one);
             // w = w - V(:, 1:k) * s;
@@ -187,12 +200,11 @@ extern DSDP_INT dsdpLanczos( spsMat *S, spsMat *dS, double *lbd, double *delta )
         
         // V(:, k + 1) = v;
         memcpy(&V[n * k + n], v->x, sizeof(double) * n);
-        H[mH * k + k + 1] = nrm2;
-        H[mH * k + mH + k] = nrm2;
-        
+        H[mH *  k      + (k + 1)] = nrm2;
+        H[mH * (k + 1) +  k     ] = nrm2;
         
         // Check convergence
-        if ( (k + 1) % 5 == 0 || k >= maxiter - 1) {
+        if ( (k + 1) % 5 == 0 || k >= maxiter - 1 ) {
             DSDP_INT kp1 = k + 1;
             // Hk = H(1:k, 1:k);
             for (DSDP_INT i = 0; i < kp1; ++i) {
@@ -208,11 +220,23 @@ extern DSDP_INT dsdpLanczos( spsMat *S, spsMat *dS, double *lbd, double *delta )
                    Y, &kp1, isuppz, eigaux, &lwork, eigintaux,
                    &iwork, &info);
             
+            if (Y[0] > 0) {
+                seig2 = 1.0;
+            } else {
+                seig2 = -1.0;
+            }
+            
+            if (Y[kp1] > 0) {
+                seig1 = 1.0;
+            } else {
+                seig1 = -1.0;
+            }
+
             if (info) {
                 error(etype, "Lanczos Eigenvalue decomposition failed. \n");
             }
             
-            res = fabs(H[k * mH + k + 1] * Y[kp1 + kp1 - 1]);
+            res = fabs(H[k * mH + k + 1] * Y[kp1 + k]);
             
             if (res <= 1e-04 || k >= maxiter - 1) {
                 //lambda = eigH(idx(k)); lambda2 = eigH(idx(k - 1));
@@ -229,12 +253,12 @@ extern DSDP_INT dsdpLanczos( spsMat *S, spsMat *dS, double *lbd, double *delta )
                 spsMatVecFSolve(S, vecaux, z2);
                 
                 // res1 = norm(L \ tmp - lambda * z);
-                vec_axpby(1.0, z2, -lambda1, z1);
+                vec_axpby(1.0, z2, seig1 * lambda1, z1);
                 vec_norm(z1, &res1);
                 
                 // z2 = V(:, 1:k) * Y(:, idx(k - 1));
                 dgemv(&notrans, &n, &kp1, &alpha, V, &n,
-                      &Y[0], &one, &beta, z2->x, &one);
+                      Y, &one, &beta, z2->x, &one);
                 
                 // tmp  = dS * (LT \ z2);
                 spsMatVecBSolve(S, z2, z1);
@@ -242,7 +266,7 @@ extern DSDP_INT dsdpLanczos( spsMat *S, spsMat *dS, double *lbd, double *delta )
                 spsMatVecFSolve(S, vecaux, z1);
                 
                 // res2 = norm(L \ tmp - lambda * z);
-                vec_axpby(1.0, z1, -lambda1, z2);
+                vec_axpby(1.0, z1, - seig2 * lambda1, z2);
                 vec_norm(z2, &res2);
                 
                 tmp = lambda1 - lambda2 - res2;
@@ -255,7 +279,7 @@ extern DSDP_INT dsdpLanczos( spsMat *S, spsMat *dS, double *lbd, double *delta )
                 
                 gamma = MIN(res1, res1 * res1 / gamma);
                 
-                if (gamma < 1e-03 || gamma + lambda1 < 0 || gamma + lambda1 <= 0.8) {
+                if (gamma < 1e-03 || gamma + lambda1 <= 0.8) {
                     *delta = gamma;
                     *lbd = lambda1;
                     break;

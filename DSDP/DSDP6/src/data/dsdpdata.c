@@ -111,7 +111,7 @@ static DSDP_INT sdpMatIAllocByType( sdpMat *sdpData, DSDP_INT k, DSDP_INT *Ai,
         userdata = (void *) data;
         
     // TODO: Change the threshold
-    } else if (((nnz <= nsym(n)) && (sdpData->types[k] == MAT_TYPE_UNKNOWN)) ||
+    } else if (((nnz <= denseThresh * nsym(n)) && (sdpData->types[k] == MAT_TYPE_UNKNOWN)) ||
                (sdpData->types[k] == MAT_TYPE_SPARSE)) {
         // Sparse
         sdpData->types[k] = MAT_TYPE_SPARSE;

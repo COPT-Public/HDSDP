@@ -6,7 +6,6 @@
 #include "dsdphsd.h"
 #include "vec.h"
 
-
 #ifdef __cplusplus
 extern "C" {
 #endif
