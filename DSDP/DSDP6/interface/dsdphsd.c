@@ -59,19 +59,21 @@ static DSDP_INT DSDPIInit( HSDSolver *dsdpSolver ) {
     dsdpSolver->dObjVal = 0.0;
     dsdpSolver->mu      = 0.0;
     
-    dsdpSolver->S = NULL;
+    dsdpSolver->S    = NULL;
     dsdpSolver->symS = NULL;
-    dsdpSolver->s = NULL;
-    dsdpSolver->x = NULL;
+    dsdpSolver->s    = NULL;
+    dsdpSolver->x    = NULL;
     
     dsdpSolver->asinv       = NULL;
     dsdpSolver->csinv       = 0.0;
     dsdpSolver->csinvcsinv  = 0.0;
     dsdpSolver->csinvrysinv = 0.0;
     
-    dsdpSolver->Msdp    = NULL;
-    dsdpSolver->Mscaler = 0.0;
-    dsdpSolver->u       = NULL;
+    dsdpSolver->Msdp     = NULL;
+    dsdpSolver->cgSolver = NULL;
+    dsdpSolver->Mdiag    = NULL;
+    dsdpSolver->Mscaler  = 0.0;
+    dsdpSolver->u        = NULL;
     
     dsdpSolver->b1     = NULL;
     dsdpSolver->b2     = NULL;
@@ -138,7 +140,10 @@ static DSDP_INT DSDPIAlloc( HSDSolver *dsdpSolver ) {
     dsdpSolver->sdpData   = (sdpMat  **) calloc(nblock, sizeof(sdpMat *));
     dsdpSolver->lpData    = (lpMat    *) calloc(1,      sizeof(lpMat   ));
     dsdpSolver->lpObj     = (vec      *) calloc(1,      sizeof(vec     ));
+    dsdpSolver->cgSolver  = (CGSolver *) calloc(1,      sizeof(CGSolver));
     dsdpSolver->isSDPset  = (DSDP_INT *) calloc(nblock, sizeof(DSDP_INT));
+    
+    retcode = dsdpCGInit(dsdpSolver->cgSolver);
     
     for (DSDP_INT i = 0; i < nblock; ++i) {
         dsdpSolver->sdpData[i] = (sdpMat *) calloc(1, sizeof(sdpMat));
@@ -207,7 +212,21 @@ static DSDP_INT DSDPIAllocIter( HSDSolver *dsdpSolver ) {
     retcode = denseMatInit(dsIter); checkCode;
     retcode = denseMatAlloc(dsIter, m, TRUE); checkCode;
     
-    // Allocate u, b1, b2, d1, d12, d2, d3 and d4
+    // Allocate CG solver
+    retcode = dsdpCGAlloc(dsdpSolver->cgSolver, m);
+    retcode = dsdpCGSetTol(dsdpSolver->cgSolver, 1e-05);
+    retcode = dsdpCGSetPreReuse(dsdpSolver->cgSolver,
+                                dsdpSolver->param->CGreuse);
+    retcode = dsdpCGSetM(dsdpSolver->cgSolver, dsIter);
+    retcode = dsdpCGSetCholPre(dsdpSolver->cgSolver, dsdpSolver->Msdp);
+    
+    // Allocate Mdiag, u, b1, b2, d1, d12, d2, d3 and d4
+    vecIter = (vec *) calloc(1, sizeof(vec));
+    dsdpSolver->Mdiag = vecIter;
+    retcode = vec_init(vecIter); checkCode;
+    retcode = vec_alloc(vecIter, m); checkCode;
+    retcode = dsdpCGSetDPre(dsdpSolver->cgSolver, dsdpSolver->Mdiag);
+    
     vecIter = (vec *) calloc(1, sizeof(vec));
     dsdpSolver->u = vecIter;
     retcode = vec_init(vecIter); checkCode;
@@ -401,6 +420,14 @@ static DSDP_INT DSDPIFreeAlgIter( HSDSolver *dsdpSolver ) {
     // Msdp
     retcode = denseMatFree(dsdpSolver->Msdp);
     DSDP_FREE(dsdpSolver->Msdp);
+    
+    // CGSolver
+    retcode = dsdpCGFree(dsdpSolver->cgSolver);
+    DSDP_FREE(dsdpSolver->cgSolver);
+    
+    // Mdiag
+    retcode = vec_free(dsdpSolver->Mdiag);
+    DSDP_FREE(dsdpSolver->Mdiag);
     
     // u, d1, d2, d3, d4, yp
     retcode = vec_free(dsdpSolver->u ); checkCode;

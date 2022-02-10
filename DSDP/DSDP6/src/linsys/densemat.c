@@ -506,7 +506,7 @@ extern DSDP_INT denseMatGetdiag( dsMat *dMat, vec *diag ) {
     double *x = diag->x, *array = dMat->array;
     register DSDP_INT i, idx = 0;
     
-    if (n > 64) {
+    if (n >= 10000) {
         
         for (i = 0; i < n - 7; ++i) {
             x[i] = array[idx]; idx += n - i; ++i;
@@ -554,9 +554,18 @@ extern DSDP_INT denseMatReset( dsMat *dMat ) {
     assert( n > 0 );
     memset(dMat->array, 0, sizeof(double) * nsym(n));
     
+    return retcode;
+}
+
+extern DSDP_INT denseMatResetFactor( dsMat *dMat ) {
+    
+    DSDP_INT retcode = DSDP_RETCODE_OK;
+    DSDP_INT n = dMat->dim;
+    assert( n > 0 );
+    
     if (dMat->isFactorized) {
         dMat->isFactorized = FALSE;
-        // memset(dMat->lfactor, 0, sizeof(double) * nsym(n));
+        memset(dMat->lfactor, 0, sizeof(double) * nsym(n));
     }
     
     return retcode;

@@ -25,9 +25,9 @@ static void cholPrecond( dsMat *P, vec *x ) {
 static void preCond( CGSolver *cgSolver, vec *x ) {
     
     if (cgSolver->pType == CG_PRECOND_DIAG) {
-        diagPrecond(cgSolver->preCond, x);
+        diagPrecond(cgSolver->vecPre, x);
     } else {
-        cholPrecond(cgSolver->preCond, x);
+        cholPrecond(cgSolver->cholPre, x);
     }
     return;
 }
@@ -44,11 +44,18 @@ extern DSDP_INT dsdpCGInit( CGSolver *cgSolver ) {
     cgSolver->x     = NULL;
     cgSolver->Md    = NULL;
     
+    cgSolver->vecPre  = NULL;
+    cgSolver->cholPre = NULL;
+    cgSolver->pType = CG_PRECOND_DIAG;
+    cgSolver->reuse = 0;
+    cgSolver->nused = 1024;
+    
     cgSolver->dim     = 0;
     cgSolver->tol     = 1e-04;
     cgSolver->resinrm = 0.0;
     cgSolver->niter   = 0;
-    cgSolver->maxiter = 100;
+    cgSolver->maxiter = 20;
+    cgSolver->nfailed = 0;
     
     return retcode;
 }
@@ -88,6 +95,7 @@ extern DSDP_INT dsdpCGFree( CGSolver *cgSolver ) {
     
     DSDP_INT retcode = DSDP_RETCODE_OK;
     
+    cgSolver->M = NULL;
     vec_free(cgSolver->r);
     vec_free(cgSolver->rnew);
     vec_free(cgSolver->d);
@@ -102,10 +110,19 @@ extern DSDP_INT dsdpCGFree( CGSolver *cgSolver ) {
     DSDP_FREE(cgSolver->Md);
     DSDP_FREE(cgSolver->x);
     
-    cgSolver->M     = NULL;
-    cgSolver->tol   = 0.0;
-    cgSolver->dim   = 0;
-    cgSolver->niter = 0;
+    cgSolver->pType = 0;
+    cgSolver->cholPre = NULL;
+    cgSolver->vecPre = NULL;
+    
+    cgSolver->tol     = 0.0;
+    cgSolver->resinrm = 0.0;
+    cgSolver->dim     = 0;
+    cgSolver->niter   = 0;
+    cgSolver->maxiter = 0;
+    cgSolver->status  = 0;
+    cgSolver->reuse   = 0;
+    cgSolver->nused   = 0;
+    cgSolver->nfailed = 0;
     
     return retcode;
 }
@@ -118,7 +135,7 @@ extern DSDP_INT dsdpCGSetTol( CGSolver *cgSolver, double tol ) {
 
 extern DSDP_INT dsdpCGSetMaxIter( CGSolver *cgSolver, DSDP_INT maxiter ) {
     assert( maxiter >= 1 );
-    cgSolver->niter = MAX(maxiter, 1);
+    cgSolver->maxiter = MAX(maxiter, 1);
     return DSDP_RETCODE_OK;
 }
 
@@ -128,23 +145,72 @@ extern DSDP_INT dsdpCGSetM( CGSolver *cgSolver, dsMat *M ) {
     return DSDP_RETCODE_OK;
 }
 
-extern DSDP_INT dsdpCGSetPreCond( CGSolver *cgSolver, DSDP_INT pType, void *preCond ) {
-    
-    assert( pType == CG_PRECOND_DIAG || pType == CG_PRECOND_CHOL );
+extern DSDP_INT dsdpCGSetDPre( CGSolver *cgSolver, vec *preCond ) {
+    cgSolver->vecPre = preCond;
+    return DSDP_RETCODE_OK;
+}
+
+extern DSDP_INT dsdpCGSetCholPre( CGSolver *cgSolver, dsMat *preCond ) {
+    cgSolver->cholPre = preCond;
+    return DSDP_RETCODE_OK;
+}
+
+extern DSDP_INT dsdpCGSetPType( CGSolver *cgSolver, DSDP_INT pType ) {
+    assert( pType == CG_PRECOND_DIAG || pType == CG_PRECOND_CHOL);
     cgSolver->pType = pType;
-    cgSolver->preCond = preCond;
+    return DSDP_RETCODE_OK;
+}
+
+extern DSDP_INT dsdpCGprepareP( CGSolver *cgSolver ) {
     
-    if (pType == CG_PRECOND_CHOL) {
-        if (((dsMat *) preCond)->isillCond) {
-            return DSDP_RETCODE_FAILED;
+    if (cgSolver->status == CG_STATUS_INDEFINITE) {
+        denseMatResetFactor(cgSolver->M);
+        denseMatFactorize(cgSolver->M);
+        return DSDP_RETCODE_OK;
+    }
+    
+    if (cgSolver->reuse == 0) {
+        cgSolver->status = CG_STATUS_INDEFINITE;
+    }
+    
+    // Prepare pre-conditioner in CG Solver
+    if (cgSolver->pType == CG_PRECOND_DIAG) {
+        return DSDP_RETCODE_OK;
+    } else {
+        // Reconstruct Cholesky pre-conditioner
+        if (cgSolver->nused >= cgSolver->reuse) {
+            denseMatResetFactor(cgSolver->M);
+            denseMatFactorize(cgSolver->M);
+            cgSolver->nused = 0;
+        } else {
+            cgSolver->nused += 1;
+        }
+        if (cgSolver->M->isillCond) {
+            cgSolver->status = CG_STATUS_INDEFINITE;
         }
     }
     return DSDP_RETCODE_OK;
 }
 
-extern DSDP_INT dsdpGetCGSolStatistic( CGSolver *cgSolver, DSDP_INT *status, double *resinorm ) {
+extern DSDP_INT dsdpCGGetStatus( CGSolver *cgSolver, DSDP_INT *status ) {
     *status = cgSolver->status;
+    return DSDP_RETCODE_OK;
+}
+
+extern DSDP_INT dsdpCGGetSolStatistic( CGSolver *cgSolver, DSDP_INT *iter, double *resinorm ) {
+    *iter = cgSolver->niter;
     *resinorm = cgSolver->resinrm;
+    return DSDP_RETCODE_OK;
+}
+
+extern DSDP_INT dsdpCGSetPreReuse( CGSolver *cgSolver, DSDP_INT reuse ) {
+    assert( reuse >= 0 );
+    cgSolver->reuse = reuse;
+    return DSDP_RETCODE_OK;
+}
+
+extern DSDP_INT dsdpCGResetPreReuse( CGSolver *cgSolver ) {
+    cgSolver->nused = 0;
     return DSDP_RETCODE_OK;
 }
 
@@ -154,6 +220,11 @@ extern DSDP_INT dsdpCGSolve( CGSolver *cgSolver, vec *b, vec *x0 ) {
        On exit b is over-written
      */
     DSDP_INT retcode = DSDP_RETCODE_OK;
+    
+    if (cgSolver->status == CG_STATUS_INDEFINITE) {
+        denseArrSolveInp(cgSolver->M, 1, b->x);
+        return retcode;
+    }
     
     /* Initialize
      x = x0;
@@ -184,6 +255,11 @@ extern DSDP_INT dsdpCGSolve( CGSolver *cgSolver, vec *b, vec *x0 ) {
         // r = b;
         vec_copy(b, r);
     }
+    
+    // Get initial residual
+    vec_norm(r, &alpha);
+    alpha = MIN(100, alpha);
+    tol = MAX(tol * alpha * 0.1, tol * 1e-02);
     
     // d = P \ r;
     vec_copy(r, d);
@@ -218,7 +294,7 @@ extern DSDP_INT dsdpCGSolve( CGSolver *cgSolver, vec *b, vec *x0 ) {
         // norm(r)
         vec_norm(r, &resinorm);
         
-        printf("%3d %10.3e %20.10e \n", iter + 1, alpha, resinorm);
+        // printf("%3d %10.3e %20.10e \n", iter + 1, alpha, resinorm);
         
         if (resinorm <= tol) {
             cgSolver->status = CG_STATUS_SOLVED;
@@ -226,7 +302,8 @@ extern DSDP_INT dsdpCGSolve( CGSolver *cgSolver, vec *b, vec *x0 ) {
         }
     }
     
-    if (iter == cgSolver->maxiter - 1 && resinorm > tol) {
+    cgSolver->resinrm = resinorm;
+    if (iter >= cgSolver->maxiter - 1 && resinorm > tol) {
         cgSolver->status = CG_STATUS_MAXITER;
     }
     

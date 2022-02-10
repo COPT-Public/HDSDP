@@ -3,6 +3,7 @@
 
 #include "structs.h"
 #include "dsdpdata.h"
+#include "dsdpcg.h"
 #include "dsdpparam.h"
 
 #define IterStep 20
@@ -47,6 +48,8 @@ typedef struct {
     double   csinvrysinv; // Store trace(C * Sinv * Ry * Sinv)
     
     dsMat    *Msdp;       // Schur matrix for SDP (dense)
+    CGSolver *cgSolver;   // Internal CG solvers
+    vec      *Mdiag;      // Diagonal elements of Schur matrix for pre-conditioning
     double   Mscaler;     // Scaler of Schur complement
     vec      *u;          // A_ls^(-2)c + AS^(-1)CS^(-1)
     

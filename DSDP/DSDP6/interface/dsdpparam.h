@@ -37,12 +37,14 @@ typedef struct {
     double AnrmThresh;
     double BpInfeasSusp;
     
-    
     // Tolerance
     double absOptTol;    // Algorithm absolute optimality tolerance
     double relOptTol;    // Algorithm relative optimality tolerance
     double absFeasTol;   // Algorithm absolute feasibility tolerance
     double relFeasTol;   // Algorithm relative feasibility tolerance
+    
+    // Others
+    DSDP_INT CGreuse;
     
     
 
@@ -83,7 +85,9 @@ static hsdParam defaultParam =
     1e-06,
     1e-06,
     1e-06,
-    1e-06
+    1e-06,
+    
+    1,
 };
 
 #endif /* dsdpparam_h */

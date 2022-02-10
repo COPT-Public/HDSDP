@@ -48,6 +48,7 @@ extern DSDP_INT denseMatFill     ( dsMat *dMat, double *fulldMat );
 extern DSDP_INT denseMatGetdiag  ( dsMat *dMat, vec *diag );
 extern DSDP_INT denseMatView     ( dsMat *dMat );
 extern DSDP_INT denseMatReset    ( dsMat *dMat );
+extern DSDP_INT denseMatResetFactor( dsMat *dMat );
 
 #ifdef __cplusplus
 }
