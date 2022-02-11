@@ -186,7 +186,7 @@ extern DSDP_INT getPhaseACheckerS( HSDSolver *dsdpSolver, double *y, double tau 
 }
 
 extern DSDP_INT getPhaseBCheckerS( HSDSolver *dsdpSolver, double *y ) {
-    
+    // C - ATy
     DSDP_INT retcode = DSDP_RETCODE_OK;
     spsMat *checker = NULL;
     DSDP_INT m = dsdpSolver->m;

@@ -1,5 +1,6 @@
 #include "densemat.h"
 #include "sparsemat.h"
+#include "dsdpeigfact.h"
 
 // Error type
 static char etype[] = "Dense Operation Error";
@@ -162,6 +163,17 @@ extern DSDP_INT denseMataAxpby( dsMat *dAMat, double alpha, vec *x, double beta,
     DSDP_INT retcode = DSDP_RETCODE_OK;
     char uplo = 'L';
     dspmv(&uplo, &x->dim, &alpha, dAMat->array, x->x, &one, &beta, Ax->x, &one);
+    return retcode;
+}
+
+extern DSDP_INT denseMatAdddiag( dsMat *dAMat, double d ) {
+    // A = A * d * I
+    DSDP_INT retcode = DSDP_RETCODE_OK;
+    double *array = dAMat->array;
+    for (DSDP_INT i = 0, idx = 0, n = dAMat->dim; i < n; ++i) {
+        array[idx] += d;
+        idx += n - i;
+    }
     return retcode;
 }
 
@@ -335,7 +347,6 @@ extern DSDP_INT denseSpsTrace( dsMat *dAMat, spsMat *sBMat, double *trace ) {
      */
     DSDP_INT retcode = DSDP_RETCODE_OK;
     assert( dAMat->dim == sBMat->dim );
-    assert((!dAMat->isFactorized) && (!sBMat->isFactorized));
     
     DSDP_INT n = dAMat->dim;
     double *A = dAMat->array, *Bx = sBMat->x, t = 0.0, tmp = 0.0;
@@ -352,9 +363,9 @@ extern DSDP_INT denseSpsTrace( dsMat *dAMat, spsMat *sBMat, double *trace ) {
             }
         }
         if (Bi[k] == i) {
-            tmp = 0.5 * Bx[k] * packIdx(A, n, Bi[k], i);
-        } else {
             tmp = Bx[k] * packIdx(A, n, Bi[k], i);
+        } else {
+            tmp = 2 * Bx[k] * packIdx(A, n, Bi[k], i);
         }
         for (k = Bp[i] + 1; k < Bp[i + 1]; ++k) {
             tmp += Bx[k] * packIdx(A, n, Bi[k], i);
@@ -362,7 +373,7 @@ extern DSDP_INT denseSpsTrace( dsMat *dAMat, spsMat *sBMat, double *trace ) {
         t += tmp;
     }
     
-    *trace = 2.0 * t;
+    // *trace = 2.0 * t;
     return retcode;
 }
 
@@ -568,6 +579,28 @@ extern DSDP_INT denseMatResetFactor( dsMat *dMat ) {
         memset(dMat->lfactor, 0, sizeof(double) * nsym(n));
     }
     
+    return retcode;
+}
+
+extern DSDP_INT denseMatMinEig( dsMat *dMat, double *minEig ) {
+    // Compute the minimum eigenvalue of matrix X (for DIMACS Error)
+    DSDP_INT retcode = DSDP_RETCODE_OK;
+    DSDP_INT dim = dMat->dim;
+    
+    double *eigvals = (double *) calloc(dim, sizeof(double));
+    double *eigvecs = (double *) calloc(dim * dim, sizeof(double));
+    
+    double nrm = 0.0;
+    *minEig = DSDP_INFINITY;
+    denseMatFnorm(dMat, &nrm);
+    factorizeDenseData(dMat, -nrm, eigvals, eigvecs);
+    
+    for (DSDP_INT i = 0; i < dim; ++i) {
+        *minEig = MIN(eigvals[i], *minEig);
+    }
+    
+    DSDP_FREE(eigvals);
+    DSDP_FREE(eigvecs);
     return retcode;
 }
 

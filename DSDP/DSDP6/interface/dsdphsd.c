@@ -14,6 +14,7 @@
 #include "dsdputils.h"
 #include "dsdplog.h"
 #include "dsdppfeas.h"
+#include "dsdppsol.h"
 
 static char etype[] = "DSDP Interface";
 
@@ -578,7 +579,15 @@ static DSDP_INT DSDPIPresolve( HSDSolver *dsdpSolver ) {
 static DSDP_INT DSDPIPostsolve( HSDSolver *dsdpSolver ) {
     
     DSDP_INT retcode = DSDP_RETCODE_OK;
-    // TODO: Post-solver
+    
+    if (dsdpSolver->solStatus != DSDP_OPTIMAL) {
+        return retcode;
+    } else {
+        vec *y = dsdpSolver->y;
+        for (DSDP_INT i = 0; i < y->dim; ++i) {
+            y->x[i] /= dsdpSolver->pScaler->x[i];
+        }
+    }
     
     return retcode;
 }
@@ -757,16 +766,82 @@ extern DSDP_INT DSDPOptimize( HSDSolver *dsdpSolver ) {
     
     assert( dsdpSolver->insStatus == DSDP_STATUS_PRESOLVED );
     retcode = DSDPDInfeasEliminator(dsdpSolver); checkCode;
-    
     printPhaseABConvert(dsdpSolver, &gotoB);
     
     if (gotoB) {
         retcode = DSDPPFeasPhase(dsdpSolver);
     }
-    
     printf("| DSDP Ends. %86s| \n", "");
     dsdpshowdash();
     
+    // Compute solution and get DIMACS errors
+    computePrimalX(dsdpSolver);
+    double err1, err2, err3, err4, err5, err6;
+    computeDIMACS(dsdpSolver, &err1, &err2, &err3, &err4, &err5, &err6);
+    
+    printf("| Scaled DIMACS Error: \n");
+    printf("| Err1 = %10.6e \n", err1);
+    printf("| Err2 = %10.6e \n", err2);
+    printf("| Err3 = %10.6e \n", err3);
+    printf("| Err4 = %10.6e \n", err4);
+    printf("| Err5 = %10.6e \n", err5);
+    printf("| Err6 = %10.6e \n", err6);
+    
+    dsdpshowdash();
+
+    double err = 0.0;
+
+    err = MAX(err, err1);
+    err = MAX(err, err2);
+    err = MAX(err, err3);
+    err = MAX(err, err4);
+    err = MAX(err, err5);
+    err = MAX(err, err6);
+    
+    if (err < 1e-04) {
+        printf("| Passed Mittelmann's Benchmark Test (*) \n");
+    } else if (err < 1e-02) {
+        printf("| Passed Mittelmann's Benchmark Test (a) \n");
+    } else {
+        printf("| Failed to pass Mittelmann's Benchmark Test \n");
+    }
+    
+    dsdpshowdash();
+    
+    
+    
+    // Post-solving
+    DSDPIPostsolve(dsdpSolver);
+    dsdpSolver->insStatus = DSDP_STATUS_SOLVED;
+    
+    return retcode;
+}
+
+extern DSDP_INT DSDPGetDual( HSDSolver *dsdpSolver, double *y, double **S ) {
+    // Extract dual solution y and S
+    DSDP_INT retcode = DSDP_RETCODE_OK;
+    
+    if (y) {
+        memcpy(y, dsdpSolver->y->x, sizeof(double) * dsdpSolver->y->dim);
+    }
+    
+    if (S) {
+        for (DSDP_INT i = 0; i < dsdpSolver->nBlock; ++i) {
+            spsMatFill(dsdpSolver->S[i], S[i]);
+        }
+    }
+    
+    return retcode;
+}
+
+extern DSDP_INT DSDPGetPrimal( HSDSolver *dsdpSolver, double **X ) {
+    // Extract primal solution X
+    DSDP_INT retcode = DSDP_RETCODE_OK;
+    retcode = computePrimalX(dsdpSolver);
+    
+    for (DSDP_INT i = 0; i < dsdpSolver->nBlock; ++i) {
+        denseMatFill(dsdpSolver->dsaux[i], X[i]);
+    }
     return retcode;
 }
 

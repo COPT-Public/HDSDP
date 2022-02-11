@@ -57,6 +57,7 @@ extern DSDP_INT spsMatVecBSolve    ( spsMat *sAmat, vec *sbVec, vec *Ainvb );
 extern DSDP_INT spsMatSpSolve      ( spsMat *sAMat, spsMat *sBMat, double *AinvB );
 extern DSDP_INT spsMatDsSolve      ( spsMat *sAMat, dsMat  *sBMat, double *AinvB );
 extern DSDP_INT spsMatLspLSolve    ( spsMat *S,     spsMat *dS,    spsMat *spaux );
+extern DSDP_INT spsMatGetX         ( spsMat *S, spsMat *dS, double *LinvSLTinv   );
 extern DSDP_INT dsdpGetAlpha       ( spsMat *S, spsMat *dS, spsMat *spaux, double *alpha );
 extern DSDP_INT dsdpGetAlphaLS     ( spsMat *S, spsMat *dS, spsMat *Scker,
                                      double alphamax, double *alpha, DSDP_INT *sumHash );

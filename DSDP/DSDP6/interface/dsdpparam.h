@@ -46,8 +46,6 @@ typedef struct {
     // Others
     DSDP_INT CGreuse;
     
-    
-
 } hsdParam;
 
 static hsdParam defaultParam =
@@ -82,12 +80,12 @@ static hsdParam defaultParam =
     1e+20,
     1e+08,
     
-    1e-06,
-    1e-06,
-    1e-06,
-    1e-06,
+    1e-04,
+    1e-04,
+    1e-04,
+    1e-04,
     
-    1,
+    2,
 };
 
 #endif /* dsdpparam_h */

@@ -5,6 +5,8 @@
 #include "dsdpdata.h"
 
 static char etype[] = "Rank-k matrix computation";
+static char uplolow = DSDP_MAT_LOW;
+static DSDP_INT one = 1;
 
 extern DSDP_INT rkMatInit( rkMat *R ) {
     // Initialize rank k matrix
@@ -136,6 +138,31 @@ extern DSDP_INT rkMatrkTrace( rkMat *R1, rkMat *R2, double *trace ) {
     }
     
     *trace = res;
+    return retcode;
+}
+
+extern DSDP_INT rkMatdenseUpdate( dsMat *dAMat, rkMat *rkBMat ) {
+    // Compute rank-1 update A = A + \sum_i alpha_i * b_i * b_i'
+    // Used for schur M1 technique and final solution setup
+    // Computationally critical and not calling r1 routines
+    DSDP_INT retcode = DSDP_RETCODE_OK;
+    DSDP_INT rank = rkBMat->rank, dim = rkBMat->dim, *nzIdx;
+    r1Mat *r1data = NULL;
+    for (DSDP_INT i = 0, j, k; i < rank; ++i) {
+        r1data = rkBMat->data[i];
+        if (r1data->nnz > 0.5 * dim) {
+            dspr(&uplolow, &dim, &r1data->sign, r1data->x, &one, dAMat->array);
+        } else {
+            double sign = r1data->sign, *rx = r1data->x;
+            nzIdx = r1data->nzIdx;
+            for (j = 0; j < r1data->nnz; ++j) {
+                for (k = 0; k <= j; ++k) {
+                    packIdx(dAMat->array, dim, nzIdx[i], nzIdx[j]) += \
+                    sign * rx[nzIdx[i]] * rx[nzIdx[j]];
+                }
+            }
+        }
+    }
     return retcode;
 }
 

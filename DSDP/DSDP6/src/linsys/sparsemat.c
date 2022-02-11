@@ -11,6 +11,8 @@
 
 static char *etype = "Sparse matrix";
 static DSDP_INT one = 1;
+static double dzero = 0.0;
+static char uplolow = 'L';
 
 /* Internal Pardiso Wrapper */
 static DSDP_INT pardisoSymFactorize( spsMat *S ) {
@@ -235,6 +237,17 @@ static DSDP_INT pardisoFree( spsMat *S ) {
     return retcode;
 }
 
+static void arrayTranspose( double *A, DSDP_INT n ) {
+    double tmp = 0.0;
+    for (DSDP_INT i = 0; i < n; ++i) {
+        for (DSDP_INT j = 0; j < i; ++j) {
+            tmp = A[i * n + j];
+            A[i * n + j] = A[j * n + i];
+            A[j * n + i] = tmp;
+        }
+    }
+}
+
 /* Structure operations */
 extern DSDP_INT spsMatInit( spsMat *sMat ) {
     
@@ -323,10 +336,12 @@ extern DSDP_INT spsMatAx( spsMat *A, vec *x, vec *Ax ) {
     assert( A->dim == x->dim && x->dim == Ax->dim );
     DSDP_INT *cidx = A->nzHash, *Ap = A->p, *Ai = A->i;
     DSDP_INT n = A->dim, nnz = A->nnz, idx;
-    double *Axdata = A->x, *Axres = Ax->x, *xdata = x->x, coeff = 0.0;
+    double *Axdata = A->x, *Axres = Ax->x, *xdata = x->x, coeff = -1.0;
     vec_reset(Ax);
     
-    if (nnz <= 0.3 * n * n && cidx) {
+    if (nnz == nsym(n)) {
+        dspmv(&uplolow, &n, &coeff, Axdata, xdata, &one, &dzero, Axres, &one);
+    } else if (nnz <= 1.0 * n * n && cidx) {
         for (DSDP_INT i, j, k = 0; k < nnz; ++k) {
             i = Ai[k];
             j = cidx[k];
@@ -561,7 +576,8 @@ extern DSDP_INT spsMatAddr1( spsMat *sXMat, double alpha, r1Mat *r1YMat, DSDP_IN
         if (r1YMat->nnz < 0.5 * dim) {
             for (i = 0; i < r1YMat->nnz; ++i) {
                 for (j = 0; j <= i; ++j) {
-                    packIdx(sXMat->x, dim, nzIdx[i], nzIdx[j]) += sign * rx[nzIdx[i]] * rx[nzIdx[j]];
+                    packIdx(sXMat->x, dim, nzIdx[i], nzIdx[j]) += \
+                    sign * rx[nzIdx[i]] * rx[nzIdx[j]];
                 }
             }
         } else {
@@ -789,8 +805,8 @@ extern DSDP_INT spsMatLspLSolve( spsMat *S, spsMat *dS, spsMat *spaux ) {
     }
     
     // L^-T (L^-1 dS)
-    // TODO: write a Lanczos algorithm to compute the maximum eigenvalue
     // Currently FEAST is used by transferring the matrix into dense format and is INEFFICIENT
+    // But it may still be used at the end of the solver to recover highly accurate X
     DSDP_INT *Ap = spaux->p;
     DSDP_INT *Ai = spaux->i;
     double   *Ax = spaux->x;
@@ -816,6 +832,32 @@ extern DSDP_INT spsMatLspLSolve( spsMat *S, spsMat *dS, spsMat *spaux ) {
     DSDP_FREE(fulldS);
     DSDP_FREE(aux);
     
+    return retcode;
+}
+
+extern DSDP_INT spsMatGetX( spsMat *S, spsMat *dS, double *LinvSLTinv ) {
+    // Routine for retrieving X
+    DSDP_INT retcode = DSDP_RETCODE_OK;
+    
+    DSDP_INT n = S->dim;
+    assert( dS->dim == n );
+    double *fulldS = LinvSLTinv;
+    double *aux    = (double *) calloc(n * n, sizeof(double));
+    // L^-1 dS
+    retcode = spsMatFill(dS, fulldS);
+    retcode = pardisoForwardSolve(S, n, fulldS, aux, TRUE);
+    // Transpose
+    arrayTranspose(fulldS, n);
+    retcode = pardisoForwardSolve(S, n, fulldS, aux, TRUE);
+    // I + L^-1 * dS * LT^-1
+    for (DSDP_INT i = 0; i < n; ++i) {
+        fulldS[i * n + i] += 1.0;
+    }
+    pardisoBackwardSolve(S, n, fulldS, aux, TRUE);
+    arrayTranspose(fulldS, n);
+    pardisoBackwardSolve(S, n, fulldS, aux, TRUE);
+    
+    DSDP_FREE(aux);
     return retcode;
 }
 
