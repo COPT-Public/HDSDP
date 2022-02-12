@@ -2,6 +2,10 @@
 #include "dsdputils.h"
 #include "dsdpeigfact.h"
 
+#ifdef SHOW_PRESOLVER
+#undef SHOW_PRESOLVER
+#endif
+
 static char etype[] = "Presolving operations";
 
 static DSDP_INT isDenseRank1Acc( dsMat *dataMat, DSDP_INT *isRank1 ) {
@@ -278,10 +282,11 @@ static DSDP_INT preRank1RdcBlock( sdpMat *dataMat ) {
     
     void **matdata = dataMat->sdpData;
     
+#ifdef SHOW_PRESOLVER
     printf("| Block %d before reduction: \n", blockid);
     printf("| Sparse: %-3d | Dense: %-3d | Rankk: %-3d | Zero: %-3d \n",
            nspsMat, ndsMat, nr1Mat, nzeroMat);
-    
+#endif
     // If all the matrices are already rank-one
     if (nr1Mat == m + 1) {
         return retcode;
@@ -365,10 +370,12 @@ static DSDP_INT preRank1RdcBlock( sdpMat *dataMat ) {
                + dataMat->nrkMat + dataMat->nspsMat == m + 1 );
     }
     
+#ifdef SHOW_PRESOLVER
     printf("| Block %d after reduction: \n", blockid);
     printf("| Sparse: %-3d | Dense: %-3d | Rankk(1): %-3d | Zero: %-3d \n",
            dataMat->nspsMat, dataMat->ndenseMat, dataMat->nrkMat,
            dataMat->nzeroMat);
+#endif
     
     r1MatFree(r1data);
     DSDP_FREE(r1data);
@@ -395,9 +402,11 @@ static DSDP_INT preRankkEvRdcBlock( sdpMat *dataMat ) {
     
     void **matdata = dataMat->sdpData;
     
+#ifdef SHOW_PRESOLVER
     printf("| Block %d before reduction: \n", blockid);
     printf("| Sparse: %-3d | Dense: %-3d | Rankk: %-3d | Zero: %-3d \n",
            nspsMat, ndsMat, nrkMat, nzeroMat);
+#endif
     
     if (nrkMat == m + 1) {
         return retcode;
@@ -480,10 +489,12 @@ static DSDP_INT preRankkEvRdcBlock( sdpMat *dataMat ) {
 
     }
     
+#ifdef SHOW_PRESOLVER
     printf("| Block %d after reduction: \n", blockid);
     printf("| Sparse: %-3d | Dense: %-3d | Rankk: %-3d | Zero: %-3d \n",
            dataMat->nspsMat, dataMat->ndenseMat, dataMat->nrkMat,
            dataMat->nzeroMat);
+#endif
     
     DSDP_FREE(eigvals);
     DSDP_FREE(eigvecs);

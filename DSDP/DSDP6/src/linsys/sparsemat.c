@@ -240,7 +240,7 @@ static DSDP_INT pardisoFree( spsMat *S ) {
 static void arrayTranspose( double *A, DSDP_INT n ) {
     double tmp = 0.0;
     for (DSDP_INT i = 0; i < n; ++i) {
-        for (DSDP_INT j = 0; j < i; ++j) {
+        for (DSDP_INT j = i + 1; j < n; ++j) {
             tmp = A[i * n + j];
             A[i * n + j] = A[j * n + i];
             A[j * n + i] = tmp;
@@ -844,18 +844,35 @@ extern DSDP_INT spsMatGetX( spsMat *S, spsMat *dS, double *LinvSLTinv ) {
     double *fulldS = LinvSLTinv;
     double *aux    = (double *) calloc(n * n, sizeof(double));
     // L^-1 dS
+    double tmp = 0.0;
     retcode = spsMatFill(dS, fulldS);
     retcode = pardisoForwardSolve(S, n, fulldS, aux, TRUE);
     // Transpose
     arrayTranspose(fulldS, n);
     retcode = pardisoForwardSolve(S, n, fulldS, aux, TRUE);
+    
     // I + L^-1 * dS * LT^-1
     for (DSDP_INT i = 0; i < n; ++i) {
         fulldS[i * n + i] += 1.0;
+        for (DSDP_INT j = i + 1; j < n; ++j) {
+            tmp = (fulldS[i * n + j] + fulldS[j * n + i]) * 0.5;
+            fulldS[i * n + j] = tmp;
+            fulldS[j * n + i] = tmp;
+        }
     }
+    
     pardisoBackwardSolve(S, n, fulldS, aux, TRUE);
     arrayTranspose(fulldS, n);
     pardisoBackwardSolve(S, n, fulldS, aux, TRUE);
+    
+    // Fix numerical instability
+    for (DSDP_INT i = 0; i < n; ++i) {
+        for (DSDP_INT j = i + 1; j < n; ++j) {
+            tmp = (fulldS[i * n + j] + fulldS[j * n + i]) * 0.5;
+            fulldS[i * n + j] = tmp;
+            fulldS[j * n + i] = tmp;
+        }
+    }
     
     DSDP_FREE(aux);
     return retcode;
@@ -1394,18 +1411,15 @@ extern DSDP_INT spsMatFill( spsMat *sMat, double *fulldMat ) {
     DSDP_INT retcode = DSDP_RETCODE_OK;
     assert( sMat->dim > 0 );
     
-    DSDP_INT n = sMat->dim;
-    vec b;
-    vec *pb = &b;
-    vec_init(pb);
-    vec_alloc(pb, n);
+    DSDP_INT n = sMat->dim, *Ap = sMat->p, *Ai = sMat->i;
+    double *Ax = sMat->x;
     
-    for (DSDP_INT k = 0; k < n; ++k) {
-        retcode = spsMatScatter(sMat, pb, k); checkCode;
-        memcpy(&(fulldMat[k * n]), pb->x, sizeof(double) * n);
+    for (DSDP_INT i = 0; i < n; ++i) {
+        for (DSDP_INT j = Ap[i]; j < Ap[i + 1]; ++j) {
+            fulldMat[i * n + Ai[j]] = Ax[j];
+            fulldMat[Ai[j] * n + i] = Ax[j];
+        }
     }
-    
-    vec_free(pb);
     return retcode;
 }
 

@@ -352,6 +352,17 @@ extern DSDP_INT denseSpsTrace( dsMat *dAMat, spsMat *sBMat, double *trace ) {
     double *A = dAMat->array, *Bx = sBMat->x, t = 0.0, tmp = 0.0;
     DSDP_INT i, k, nnz = sBMat->nnz, *Bp = sBMat->p, *Bi = sBMat->i;
     
+    if (nnz == nsym(n)) {
+        *trace = ddot(&nnz, A, &one, Bx, &one);
+        for (DSDP_INT i = 0; i < n; ++i) {
+            if (Bi[Bp[i]] == i) {
+                *trace -= 0.5 * packIdx(A, n, i, i) * Bx[Bp[i]];
+            }
+        }
+        *trace *= 2;
+        return retcode;
+    }
+    
     for (i = 0; i < n; ++i) {
         k = Bp[i];
         // The sparse column is empty
@@ -363,9 +374,9 @@ extern DSDP_INT denseSpsTrace( dsMat *dAMat, spsMat *sBMat, double *trace ) {
             }
         }
         if (Bi[k] == i) {
-            tmp = Bx[k] * packIdx(A, n, Bi[k], i);
+            tmp = 0.5 * Bx[k] * packIdx(A, n, Bi[k], i);
         } else {
-            tmp = 2 * Bx[k] * packIdx(A, n, Bi[k], i);
+            tmp = Bx[k] * packIdx(A, n, Bi[k], i);
         }
         for (k = Bp[i] + 1; k < Bp[i + 1]; ++k) {
             tmp += Bx[k] * packIdx(A, n, Bi[k], i);
@@ -373,7 +384,7 @@ extern DSDP_INT denseSpsTrace( dsMat *dAMat, spsMat *sBMat, double *trace ) {
         t += tmp;
     }
     
-    // *trace = 2.0 * t;
+    *trace = 2.0 * t;
     return retcode;
 }
 

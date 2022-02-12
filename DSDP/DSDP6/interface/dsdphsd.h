@@ -88,6 +88,9 @@ typedef int DSDP_INT;
 // Error log
 #define error(etype, x)          printf("[%s]: %s", (etype), (x)); \
                                  retcode = DSDP_RETCODE_FAILED; return retcode;
+#define error_clean(etype, x)    printf("[%s]: %s", (etype), (x)); \
+                                 retcode = DSDP_RETCODE_FAILED; \
+                                 goto exit_cleanup;
 #define checkCode                if (retcode != DSDP_RETCODE_OK) {error(etype, "\n") return retcode;}
 #define checkCodeFree            if (retcode != DSDP_RETCODE_OK) {error(etype, "\n") goto clean_up;}
 
@@ -101,5 +104,8 @@ typedef int DSDP_INT;
 #define DSDP_ATTEMPT_CONSV      107
 #define DSDP_ATTEMPT_AGG        108
 
+#define VERSION_MAJOR           0
+#define VERSION_MINOR           1
+#define VERSION_TECHNICAL       0
 
 #endif /* dsdphsd_h */

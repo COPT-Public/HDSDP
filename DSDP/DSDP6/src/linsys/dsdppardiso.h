@@ -24,10 +24,11 @@ static DSDP_INT idummy = 0; // Dummy variable for taking up space
 // Pardiso cholesky solver
 // A good choice of iterative refinement parameter is 3
 
+#define SYMBOLIC 0
 // TODO: Disable matrix checker iparam[26] when the debugging is done
 static DSDP_INT PARDISO_PARAMS_CHOLESKY[PARDISOINDEX] = {
     
-    1, /* Non-default value */ 3, /* P Nested dissection */ 0, /* Reserved          */
+    1, /* Non-default value */ SYMBOLIC, /* P Nested dissection */ 0, /* Reserved          */
     0, /* No CG             */ 0, /* No user permutation */ 0, /* No overwriting    */
     0, /* Refinement report */ 0, /* Auto ItRef step     */ 0, /* Reserved          */
     6, /* Perturb           */ 0, /* Disable scaling     */ 0, /* No transpose      */
@@ -53,7 +54,7 @@ static DSDP_INT PARDISO_PARAMS_CHOLESKY[PARDISOINDEX] = {
 
 static DSDP_INT PARDISO_PARAMS_PARTIAL_SOLVE[PARDISOINDEX] = {
     
-    1, /* Non-default value */ 3, /* P Nested dissection */ 0, /* Reserved          */
+    1, /* Non-default value */ SYMBOLIC, /* P Nested dissection */ 0, /* Reserved          */
     0, /* No CG             */ 0, /* No user permutation */ 0, /* No overwriting    */
     0, /* Refinement report */ 1, /* No ItRef step       */ 0, /* Reserved          */
     6, /* Perturb           */ 0, /* Disable scaling     */ 0, /* No transpose      */
@@ -79,10 +80,10 @@ static DSDP_INT PARDISO_PARAMS_PARTIAL_SOLVE[PARDISOINDEX] = {
 
 static DSDP_INT PARDISO_PARAMS_PSD_CHECK[PARDISOINDEX] = {
     
-    1, /* Non-default value */ 3, /* P Nested dissection */ 0, /* Reserved          */
+    1, /* Non-default value */ SYMBOLIC, /* P Nested dissection */ 0, /* Reserved          */
     0, /* No CG             */ 0, /* No user permutation */ 0, /* No overwriting    */
     0, /* Refinement report */ 1, /* No ItRef step       */ 0, /* Reserved          */
-    -100, /* Perturb           */ 0, /* Disable scaling     */ 0, /* No transpose      */
+    100, /* Perturb           */ 0, /* Disable scaling     */ 0, /* No transpose      */
     0, /* Disable matching  */ 0, /* Report on pivots    */ 0, /* Output            */
     0, /* Output            */ 0, /* Output              */-1, /* No report         */
     0, /* No report         */ 0, /* Output              */ 1, /* Pivoting          */
@@ -105,10 +106,10 @@ static DSDP_INT PARDISO_PARAMS_PSD_CHECK[PARDISOINDEX] = {
 
 static DSDP_INT PARDISO_PARAMS_FORWARD_BACKWORD[PARDISOINDEX] = {
     
-    1, /* Non-default value */ 3, /* P Nested dissection */ 0, /* Reserved          */
+    1, /* Non-default value */ SYMBOLIC, /* P Nested dissection */ 0, /* Reserved          */
     0, /* No CG             */ 0, /* No user permutation */ 1, /* Overwriting       */
     0, /* Refinement report */ 0, /* Auto ItRef step     */ 0, /* Reserved          */
-    4, /* Perturb           */ 0, /* Disable scaling     */ 0, /* No transpose      */
+    8, /* Perturb           */ 0, /* Disable scaling     */ 0, /* No transpose      */
     0, /* Disable matching  */ 0, /* Report on pivots    */ 0, /* Output            */
     0, /* Output            */ 0, /* Output              */-1, /* No report         */
     0, /* No report         */ 0, /* Output              */ 1, /* Pivoting          */
@@ -131,7 +132,7 @@ static DSDP_INT PARDISO_PARAMS_FORWARD_BACKWORD[PARDISOINDEX] = {
 
 static DSDP_INT PARDISO_PARAMS_FORWARD_BACKWORD_LANCZOS[PARDISOINDEX] = {
     
-    1, /* Non-default value */ 3, /* P Nested dissection */ 0, /* Reserved          */
+    1, /* Non-default value */ SYMBOLIC, /* P Nested dissection */ 0, /* Reserved          */
     0, /* No CG             */ 0, /* No user permutation */ 0, /* Overwriting       */
     0, /* Refinement report */ 0, /* Auto ItRef step     */ 0, /* Reserved          */
     8, /* Perturb           */ 0, /* Disable scaling     */ 0, /* No transpose      */

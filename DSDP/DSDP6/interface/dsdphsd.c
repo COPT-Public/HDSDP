@@ -592,6 +592,14 @@ static DSDP_INT DSDPIPostsolve( HSDSolver *dsdpSolver ) {
     return retcode;
 }
 
+extern void DSDPPrintVersion(void) {
+    dsdpshowdash();
+    printf("| Homogeneous Dual Scaling Interior Point Solver. Version %d.%d.%d "
+           "                                   |\n",
+           VERSION_MAJOR, VERSION_MINOR, VERSION_TECHNICAL);
+    dsdpshowdash();
+}
+
 extern DSDP_INT DSDPCreate( HSDSolver **dsdpSolver ) {
     
     /* Create solver */
@@ -633,6 +641,7 @@ extern DSDP_INT DSDPSetDim( HSDSolver *dsdpSolver,
     
     if (dsdpSolver->verbosity) {
         // printf("Dimension is successfully set. \n");
+        dsdpshowdash();
         printf("| nBlock: "ID" "
                "| nConstrs: "ID" "
                "| nLPVars : "ID" "
@@ -753,8 +762,9 @@ extern DSDP_INT DSDPSetObj( HSDSolver *dsdpSolver, double *dObj ) {
 extern DSDP_INT DSDPOptimize( HSDSolver *dsdpSolver ) {
     // Optimization routine for DSDP
     DSDP_INT retcode = DSDP_RETCODE_OK;
-    
     DSDP_INT gotoB = FALSE;
+    
+    // DSDPPrintVersion();
     
     if (!dsdpSolver->dObj) {
         retcode = DSDPSetObj(dsdpSolver, NULL);
@@ -776,17 +786,19 @@ extern DSDP_INT DSDPOptimize( HSDSolver *dsdpSolver ) {
     
     // Compute solution and get DIMACS errors
     computePrimalX(dsdpSolver);
+    printf("| Primal solution is extracted. Computing DIMACS error. "
+           "                                           |\n");
+    dsdpshowdash();
     double err1, err2, err3, err4, err5, err6;
+    
+    
     computeDIMACS(dsdpSolver, &err1, &err2, &err3, &err4, &err5, &err6);
-    
-    printf("| Scaled DIMACS Error: \n");
-    printf("| Err1 = %10.6e \n", err1);
-    printf("| Err2 = %10.6e \n", err2);
-    printf("| Err3 = %10.6e \n", err3);
-    printf("| Err4 = %10.6e \n", err4);
-    printf("| Err5 = %10.6e \n", err5);
-    printf("| Err6 = %10.6e \n", err6);
-    
+    printf("| Scaled DIMACS Error:                                  "
+           "                                           |\n");
+    dsdpshowdash();
+    printf("| err1: %6.2e | err2: %6.1e | err3: %6.1e "
+           "| err4: %6.1e | err5: %6.2e | err6: %6.2e |\n",
+           err1, err2, err3, err4, err5, err6);
     dsdpshowdash();
 
     double err = 0.0;

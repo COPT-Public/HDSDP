@@ -15,6 +15,7 @@ extern DSDP_INT computePrimalX( HSDSolver *dsdpSolver ) {
     double mumaker = dsdpSolver->mumaker;
     double *Xtmp = NULL;
     
+    // getPhaseBS(dsdpSolver, dsdpSolver->y->x);
     // Smaker = C - dsdpgetATy(A, ymaker);
     getPhaseBCheckerS(dsdpSolver, ymaker->x);
     // bnmaker = dsdpgetATy(A, dymaker);
@@ -35,6 +36,11 @@ extern DSDP_INT computePrimalX( HSDSolver *dsdpSolver ) {
         Xtmp    = (double *) calloc(dim * dim, sizeof(double));
         spsMatFactorize(Smaker);
         spsMatGetX(Smaker, bnmaker, Xtmp);
+        
+        double *Stmp = (double *) calloc(dim * dim, sizeof(double));
+        spsMatFill(dsdpSolver->S[blockid], Stmp);
+        
+        DSDP_FREE(Stmp);
         
         // X = mu * D * (speye(n) + D' * bnmaker * D) * D';
         for (DSDP_INT i = 0, idx = 0; i < dim; ++i) {
@@ -65,6 +71,22 @@ extern DSDP_INT computeDIMACS( HSDSolver *dsdpSolver,
            gap, trace, tmp, minEigX, minEigS, compslack;
     DSDP_INT nblock = dsdpSolver->nBlock, m = dsdpSolver->m;
     vec_norm(dsdpSolver->dObj, &bnrm);
+    
+    DSDP_INT dim = dsdpSolver->dsaux[0]->dim;
+    double res = 0.0;
+    double *aux1 = (double *) calloc(dim * dim, sizeof(double));
+    double *aux2 = (double *) calloc(dim * dim, sizeof(double));
+    spsMatFill(dsdpSolver->S[0], aux1);
+    denseMatFill(dsdpSolver->dsaux[0], aux2);
+    
+    for (DSDP_INT i = 0; i < dim; ++i) {
+        for (DSDP_INT j = 0; j < dim; ++j) {
+            res += aux1[i * dim + j] * aux2[i * dim + j];
+        }
+    }
+    
+    DSDP_FREE(aux1);
+    DSDP_FREE(aux2);
     
     // TODO: Replace Cnrm by 1-norm
     Cnrm = 0.0;
@@ -115,7 +137,6 @@ extern DSDP_INT computeDIMACS( HSDSolver *dsdpSolver,
 
     /*  DIMACS Error 5    */
     gap = pObj - dObj;
-    
     
     /*  DIMACS Error 6    */
     compslack = 0.0;

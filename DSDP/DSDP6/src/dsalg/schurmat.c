@@ -536,7 +536,7 @@ static DSDP_INT schurCGSetup( HSDSolver *dsdpSolver ) {
         maxiter = 12;
     }
     
-    cgsolver->status = CG_STATUS_INDEFINITE;
+    // cgsolver->status = CG_STATUS_INDEFINITE;
     // dsdpCGSetPreReuse(cgsolver, 0);
     dsdpCGSetTol(cgsolver, tol);
     dsdpCGSetMaxIter(cgsolver, maxiter);

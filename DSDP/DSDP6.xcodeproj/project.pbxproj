@@ -65,8 +65,9 @@
 		19118E242737B72800D51D03 /* dsdphsd.c in Sources */ = {isa = PBXBuildFile; fileRef = 19118DE42737B72800D51D03 /* dsdphsd.c */; };
 		1929CF162795B40400981C20 /* test_feast.c in Sources */ = {isa = PBXBuildFile; fileRef = 1929CF152795B40400981C20 /* test_feast.c */; };
 		192B24B22768D1A900F5C7C0 /* test_data.c in Sources */ = {isa = PBXBuildFile; fileRef = 192B24B12768D1A900F5C7C0 /* test_data.c */; };
+		1934771327B7E1A00048A772 /* dsdpreadsdpa.c in Sources */ = {isa = PBXBuildFile; fileRef = 1934771227B7E1A00048A772 /* dsdpreadsdpa.c */; };
 		1947DC1D2799B64B004065D8 /* test_dsdp.c in Sources */ = {isa = PBXBuildFile; fileRef = 1947DC1C2799B64B004065D8 /* test_dsdp.c */; };
-		1947DC222799B8CD004065D8 /* memwatch.c in Sources */ = {isa = PBXBuildFile; fileRef = 1947DC202799B8CD004065D8 /* memwatch.c */; };
+		1950371627B625C400C723FC /* dsdppsol.c in Sources */ = {isa = PBXBuildFile; fileRef = 1950371527B625C400C723FC /* dsdppsol.c */; };
 		19808F382737EEA60014086F /* test_vec.c in Sources */ = {isa = PBXBuildFile; fileRef = 19808F372737EEA60014086F /* test_vec.c */; };
 		19808F3F273807770014086F /* dsdpdata.c in Sources */ = {isa = PBXBuildFile; fileRef = 19808F3E273807770014086F /* dsdpdata.c */; };
 		19808F4327380A990014086F /* dsdppresolve.c in Sources */ = {isa = PBXBuildFile; fileRef = 19808F4227380A990014086F /* dsdppresolve.c */; };
@@ -203,10 +204,12 @@
 		19118DE52737B72800D51D03 /* dsdphsd.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = dsdphsd.h; sourceTree = "<group>"; };
 		1929CF152795B40400981C20 /* test_feast.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = test_feast.c; sourceTree = "<group>"; };
 		192B24B12768D1A900F5C7C0 /* test_data.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = test_data.c; sourceTree = "<group>"; };
+		1934771127B7E1A00048A772 /* dsdpreadsdpa.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = dsdpreadsdpa.h; sourceTree = "<group>"; };
+		1934771227B7E1A00048A772 /* dsdpreadsdpa.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = dsdpreadsdpa.c; sourceTree = "<group>"; };
 		1947DC1C2799B64B004065D8 /* test_dsdp.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = test_dsdp.c; sourceTree = "<group>"; };
 		1947DC1E2799B66B004065D8 /* data.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = data.h; sourceTree = "<group>"; };
-		1947DC202799B8CD004065D8 /* memwatch.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = memwatch.c; sourceTree = "<group>"; };
-		1947DC212799B8CD004065D8 /* memwatch.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = memwatch.h; sourceTree = "<group>"; };
+		1950371427B625C400C723FC /* dsdppsol.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = dsdppsol.h; sourceTree = "<group>"; };
+		1950371527B625C400C723FC /* dsdppsol.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = dsdppsol.c; sourceTree = "<group>"; };
 		19808F372737EEA60014086F /* test_vec.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = test_vec.c; sourceTree = "<group>"; };
 		19808F392737FEDA0014086F /* test.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = test.h; sourceTree = "<group>"; };
 		19808F3D273807770014086F /* dsdpdata.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = dsdpdata.h; sourceTree = "<group>"; };
@@ -318,7 +321,6 @@
 				19808F3C2738074F0014086F /* data */,
 				19118D912737B72800D51D03 /* dsalg */,
 				19118D9A2737B72800D51D03 /* linsys */,
-				199FC13E27ACD9A00072897D /* prototypes.c */,
 			);
 			path = src;
 			sourceTree = "<group>";
@@ -348,6 +350,9 @@
 				19C3BBE52795054900F0331B /* dsdpproxmeasure.c */,
 				1985AC3B279B9DB400B7B8EB /* dsdppfeas.h */,
 				1985AC3C279B9DB400B7B8EB /* dsdppfeas.c */,
+				1950371427B625C400C723FC /* dsdppsol.h */,
+				1950371527B625C400C723FC /* dsdppsol.c */,
+				199FC13E27ACD9A00072897D /* prototypes.c */,
 			);
 			path = dsalg;
 			sourceTree = "<group>";
@@ -389,7 +394,6 @@
 		19118DA62737B72800D51D03 /* externals */ = {
 			isa = PBXGroup;
 			children = (
-				1947DC1F2799B8CD004065D8 /* memwatch */,
 				19118DA72737B72800D51D03 /* config */,
 				19118DAA2737B72800D51D03 /* csparse */,
 			);
@@ -493,17 +497,10 @@
 				19BEEC2A2757F14A00C36C9E /* dsdpsolver.h */,
 				19C3BBD82794032000F0331B /* dsdplog.h */,
 				19C3BBD92794032000F0331B /* dsdplog.c */,
+				1934771127B7E1A00048A772 /* dsdpreadsdpa.h */,
+				1934771227B7E1A00048A772 /* dsdpreadsdpa.c */,
 			);
 			path = interface;
-			sourceTree = "<group>";
-		};
-		1947DC1F2799B8CD004065D8 /* memwatch */ = {
-			isa = PBXGroup;
-			children = (
-				1947DC202799B8CD004065D8 /* memwatch.c */,
-				1947DC212799B8CD004065D8 /* memwatch.h */,
-			);
-			path = memwatch;
 			sourceTree = "<group>";
 		};
 		19808F3C2738074F0014086F /* data */ = {
@@ -598,7 +595,6 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				1947DC222799B8CD004065D8 /* memwatch.c in Sources */,
 				19808F4327380A990014086F /* dsdppresolve.c in Sources */,
 				19118E002737B72800D51D03 /* cs_dupl.c in Sources */,
 				19BACAFA2753C0D600E987FD /* test_presolve.c in Sources */,
@@ -616,6 +612,7 @@
 				19C3732B27A98B0D0021A708 /* dsdplanczos.c in Sources */,
 				19C3BBE62795054900F0331B /* dsdpproxmeasure.c in Sources */,
 				19BACAF5274EBC2D00E987FD /* test_dense.c in Sources */,
+				1934771327B7E1A00048A772 /* dsdpreadsdpa.c in Sources */,
 				19BEEC262756065600C36C9E /* cs_lusol.c in Sources */,
 				19118E162737B72800D51D03 /* cs_amd.c in Sources */,
 				19118DED2737B72800D51D03 /* sparsemat.c in Sources */,
@@ -666,6 +663,7 @@
 				192B24B22768D1A900F5C7C0 /* test_data.c in Sources */,
 				19C3BBDD2794539600F0331B /* dsdpdinfeas.c in Sources */,
 				19118DE72737B72800D51D03 /* hsd.c in Sources */,
+				1950371627B625C400C723FC /* dsdppsol.c in Sources */,
 				19BEEC232756065600C36C9E /* cs_chol.c in Sources */,
 				19118E112737B72800D51D03 /* cs_fkeep.c in Sources */,
 				19BACAFD2753C17500E987FD /* gen_test_data.c in Sources */,
@@ -731,7 +729,7 @@
 				GCC_C_LANGUAGE_STANDARD = gnu11;
 				GCC_DYNAMIC_NO_PIC = NO;
 				GCC_NO_COMMON_BLOCKS = YES;
-				GCC_OPTIMIZATION_LEVEL = fast;
+				GCC_OPTIMIZATION_LEVEL = 0;
 				GCC_PREPROCESSOR_DEFINITIONS = (
 					"DEBUG=1",
 					"$(inherited)",
@@ -789,7 +787,7 @@
 				ENABLE_STRICT_OBJC_MSGSEND = YES;
 				GCC_C_LANGUAGE_STANDARD = gnu11;
 				GCC_NO_COMMON_BLOCKS = YES;
-				GCC_OPTIMIZATION_LEVEL = fast;
+				GCC_OPTIMIZATION_LEVEL = 0;
 				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
 				GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;
 				GCC_WARN_UNDECLARED_SELECTOR = YES;
