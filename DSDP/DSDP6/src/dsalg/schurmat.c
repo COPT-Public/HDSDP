@@ -523,17 +523,17 @@ static DSDP_INT schurCGSetup( HSDSolver *dsdpSolver ) {
     
     // Set parameters
     if (dsdpSolver->mu > 1.0) {
-        tol = 1e-05;
+        tol = 1e-03;
         maxiter = 6;
     } else if (dsdpSolver->mu > 1e-02) {
-        tol = 1e-06;
-        maxiter = 8;
-    } else if (dsdpSolver->mu > 1e-05){
-        tol = 1e-07;
+        tol = 1e-04;
         maxiter = 10;
-    } else {
-        tol = 1e-07;
+    } else if (dsdpSolver->mu > 1e-05){
+        tol = 1e-05;
         maxiter = 12;
+    } else {
+        tol = 1e-06;
+        maxiter = 14;
     }
     
     // cgsolver->status = CG_STATUS_INDEFINITE;

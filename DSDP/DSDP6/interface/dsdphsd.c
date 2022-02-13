@@ -615,7 +615,8 @@ extern DSDP_INT DSDPSetDim( HSDSolver *dsdpSolver,
                             DSDP_INT  sdpDim,
                             DSDP_INT  nBlock,
                             DSDP_INT  nConstrs,
-                            DSDP_INT  lpDim ) {
+                            DSDP_INT  lpDim,
+                            DSDP_INT  *nNzs ) {
     
     /* Set dimension of the DSDP problem instance
        
@@ -639,14 +640,21 @@ extern DSDP_INT DSDPSetDim( HSDSolver *dsdpSolver,
         error(etype, "Invalid dimension. \n");
     }
     
+    DSDP_INT nnz;
+    if (nNzs) {
+        nnz = *nNzs;
+    } else {
+        nnz = -1;
+    }
+    
     if (dsdpSolver->verbosity) {
         // printf("Dimension is successfully set. \n");
         dsdpshowdash();
         printf("| nBlock: "ID" "
                "| nConstrs: "ID" "
-               "| nLPVars : "ID" "
-               "| nSDPVars: "ID" | \n", nBlock, nConstrs, lpDim, sdpDim);
-        
+               "| nLPVars: "ID" "
+               "| nSDPVars: "ID" "
+               "| nNonzeros: "ID" |\n", nBlock, nConstrs, lpDim, sdpDim, nnz);
     }
     
     dsdpSolver->nBlock = nBlock;

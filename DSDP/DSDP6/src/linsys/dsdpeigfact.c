@@ -65,7 +65,7 @@ static DSDP_INT C2FIndex( spsMat *A ) {
     }
     
     if (i < A->dim + 1) {
-        Ap[i] += 1; ++i;
+        Ap[i] += 1;
     }
     
     return DSDP_RETCODE_OK;

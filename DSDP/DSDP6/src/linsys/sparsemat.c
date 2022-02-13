@@ -73,6 +73,12 @@ static DSDP_INT pardisoNumFactorize( spsMat *S ) {
             Sx, Sp, Si, &idummy, &idummy, PARDISO_PARAMS_CHOLESKY,
             &msglvl, NULL, NULL, &error);
     
+    if (error == -4) {
+        double eig = 0.0;
+        spsMatMinEig(S, &eig);
+        printf("Minimum Eigenvalue: %g \n", eig);
+    }
+    
     assert( error == PARDISO_OK );
     
     if (error) {

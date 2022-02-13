@@ -278,7 +278,8 @@ extern DSDP_INT selectMu( HSDSolver *dsdpSolver, double *newmu ) {
         for (DSDP_INT i = 0; i < dsdpSolver->nBlock; ++i) {
             memcpy(dsdpSolver->Scker[i]->x, dsdpSolver->S[i]->x,
                    sizeof(double) * dsdpSolver->S[i]->nnz);
-            retcode = spsMataXpbY(MIN(0.95 * tmp, 1.0), dsdpSolver->dS[i],
+            // This step sometimes fails due to inaccurate Lanczos
+            retcode = spsMataXpbY(MIN(0.3 * tmp, 1.0), dsdpSolver->dS[i],
                                   1.0, dsdpSolver->Scker[i], dsdpSolver->symS[i]);
         }
 #ifdef ROUGH_MU

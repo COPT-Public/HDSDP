@@ -145,7 +145,7 @@ static DSDP_INT fpm[128] = {
     0,                         0,                           0, /* Matrix checker    */
     0,                         0,                           0,
     0,                         0,                           0,
-    0,                         1, /* 0-based solve       */ 0,
+    0,                         0, /* 1-based solve       */ 0,
     0,                         0,                           0,
     0,                         0,                           0,
     0,                         0,                           0,

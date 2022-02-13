@@ -1,4 +1,5 @@
 #include "dsdpdata.h"
+#include "dsdpsort.h"
 // Implement the data interface for DSDP-HSD Solver
 /*
  Problem data is presented using two structures
@@ -10,6 +11,13 @@
 */
 
 static char *etype = "Data interface";
+
+/* Index sorting */
+static DSDP_INT idxsort( DSDP_INT *Ai, double *Ax, DSDP_INT nnz ) {
+    // Sort the Ai and Ax by Ai in ascending order
+    dsdpSort(Ax, Ai, 0, nnz - 1);
+    return DSDP_RETCODE_OK;
+}
 
 /* LP internal methods */
 static DSDP_INT lpMatIAlloc( lpMat *lpData, DSDP_INT nnz ) {
@@ -37,6 +45,9 @@ static DSDP_INT sdpMatIAllocByType( sdpMat *sdpData, DSDP_INT k, DSDP_INT *Ai,
     
     DSDP_INT m = sdpData->dimy;
     DSDP_INT n = sdpData->dimS;
+    
+    // Sort the arrays
+    idxsort(Ai, Ax, nnz);
     assert( k < m + 1 );
     
     void *userdata = NULL;
@@ -376,6 +387,9 @@ extern DSDP_INT sdpMatSetData( sdpMat *sdpData, DSDP_INT *Ap, DSDP_INT *Ai, doub
     DSDP_INT retcode = DSDP_RETCODE_OK;
     
     for (DSDP_INT i = 0; i < sdpData->dimy + 1; ++i) {
+        if (i == sdpData->dimy) {
+            
+        }
         retcode = sdpMatIAllocByType(sdpData, i, &Ai[Ap[i]],
                                      &Ax[Ap[i]], Ap[i + 1] - Ap[i]);
         checkCode;

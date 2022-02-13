@@ -123,7 +123,8 @@ extern DSDP_INT DSDPSetDim( Solver    *dsdpSolver,
                             DSDP_INT  nVars,
                             DSDP_INT  nBlock,
                             DSDP_INT  nConstrs,
-                            DSDP_INT  lpDim );
+                            DSDP_INT  lpDim,
+                            DSDP_INT  *nNzs );
 
 extern DSDP_INT DSDPSetLPData( Solver    *dsdpSolver,
                                DSDP_INT  nCol,
