@@ -8,6 +8,20 @@ static char etype[] = "Lanczos iteration";
 #define LWORK   30  // >= MAXITER + 6
 #define IWORK   12  // >= 10
 
+static double firstNnzSign( double *Yk, DSDP_INT k ) {
+    // Return the sign of the first non-zero element
+    for (DSDP_INT i = 0; i < k; ++i) {
+        if (Yk[i] > 0) {
+            return (-1.0);
+        } else if (Yk[i] < 0) {
+            return ( 1.0);
+        }
+    }
+    // We should never be here
+    assert( 0 );
+    return 0.0;
+}
+
 // TODO: Fix potential bugs in Lanczos
 static DSDP_INT lanczosAlloc( vec **v,  vec **w,
                               vec **z1, vec **z2,
@@ -89,10 +103,16 @@ static DSDP_INT lanczosInitialize( vec *v, double *V ) {
     srand(123);
     double nrm = 0.0;
     
+    /*
+     for (DSDP_INT i = 0; i < v->dim; ++i) {
+         v->x[i] = rand();
+         srand(v->x[i]);
+         v->x[i] /= RAND_MAX;
+     }
+    */
+    
     for (DSDP_INT i = 0; i < v->dim; ++i) {
-        v->x[i] = rand();
-        srand(v->x[i]);
-        v->x[i] /= RAND_MAX;
+        v->x[i] = 1;
     }
     
     vec_norm(v, &nrm);
@@ -104,6 +124,7 @@ static DSDP_INT lanczosInitialize( vec *v, double *V ) {
 }
 
 extern DSDP_INT dsdpLanczos( spsMat *S, spsMat *dS, double *lbd, double *delta ) {
+    
     /* Lanczos algorithm that computes lambda_max(L^-1 dS L^-T) */
     DSDP_INT retcode = DSDP_RETCODE_OK;
     assert( S->dim == dS->dim && S->isFactorized );
@@ -164,28 +185,30 @@ extern DSDP_INT dsdpLanczos( spsMat *S, spsMat *dS, double *lbd, double *delta )
         // alp = w' * V(:, k);
         idx = k * n;
         alp = ddot(&n, w->x, &one, &V[idx], &one);
+        
         // w = w - alp * V(:, k);
         memcpy(vecaux->x, &V[idx], sizeof(double) * n);
         vec_axpy(- alp, vecaux, w);
         // H(k, k) = alp;
         H[k * mH + k] = alp;
         vec_norm(w, &nrm2);
-        
+            
         if (nrm2 < 0.8 * nrm) {
+            
             alpha = 1.0;
             beta  = 0.0;
             // s = (w' * V(:, 1:k))';
             idx = k + 1;
-            /*
             memset(mataux, 0, sizeof(double) * idx);
             for (DSDP_INT p = 0, q; p < idx; ++p) {
                 for (q = 0; q < n; ++q) {
                     mataux[p] += V[p * n + q] * w->x[q];
                 }
             }
-            */
+            /*
             dgemv(&trans, &n, &idx, &alpha, V, &n, w->x,
                   &one, &beta, mataux, &one);
+            */
             // w = w - V(:, 1:k) * s;
             dgemv(&notrans, &n, &idx, &alpha, V, &n, mataux,
                   &one, &alpha, w->x, &one);
@@ -195,6 +218,9 @@ extern DSDP_INT dsdpLanczos( spsMat *S, spsMat *dS, double *lbd, double *delta )
         }
         
         // v = w / nrm;
+        
+        assert( nrm2 > 0 );
+        
         vec_rscale(w, nrm2);
         vec_copy(w, v);
         
@@ -204,7 +230,7 @@ extern DSDP_INT dsdpLanczos( spsMat *S, spsMat *dS, double *lbd, double *delta )
         H[mH * (k + 1) +  k     ] = nrm2;
         
         // Check convergence
-        if ( (k + 1) % 5 == 0 || k >= maxiter - 1 ) {
+        if ( ((k + 1) % 5 == 0 || k >= maxiter - 1) ) {
             DSDP_INT kp1 = k + 1;
             // Hk = H(1:k, 1:k);
             for (DSDP_INT i = 0; i < kp1; ++i) {
@@ -220,17 +246,21 @@ extern DSDP_INT dsdpLanczos( spsMat *S, spsMat *dS, double *lbd, double *delta )
                    Y, &kp1, isuppz, eigaux, &lwork, eigintaux,
                    &iwork, &info);
             
-            if (Y[0] > 0) {
-                seig2 = 1.0;
-            } else {
-                seig2 = -1.0;
-            }
             
-            if (Y[kp1] > 0) {
-                seig1 = 1.0;
-            } else {
-                seig1 = -1.0;
-            }
+            seig1 = firstNnzSign(&Y[0], kp1);
+            seig2 = firstNnzSign(&Y[kp1], kp1);
+            
+//            if (Y[0] > 0) {
+//                seig2 = -1.0;
+//            } else {
+//                seig2 = 1.0;
+//            }
+//
+//            if (Y[kp1] > 0) {
+//                seig1 = -1.0;
+//            } else {
+//                seig1 = 1.0;
+//            }
 
             if (info) {
                 error(etype, "Lanczos Eigenvalue decomposition failed. \n");
@@ -266,7 +296,7 @@ extern DSDP_INT dsdpLanczos( spsMat *S, spsMat *dS, double *lbd, double *delta )
                 spsMatVecFSolve(S, vecaux, z1);
                 
                 // res2 = norm(L \ tmp - lambda * z);
-                vec_axpby(1.0, z1, - seig2 * lambda1, z2);
+                vec_axpby(1.0, z1, seig2 * lambda1, z2);
                 vec_norm(z2, &res2);
                 
                 tmp = lambda1 - lambda2 - res2;

@@ -53,6 +53,11 @@ static DSDP_INT setupSDPSchurBlockA( HSDSolver *dsdpSolver, DSDP_INT blockid ) {
             rkMatdenseUpdate(dsaux, rkaux);
             
             for (j = 0; j <= i; ++j) {
+                
+                if (sdpData->types[j] == MAT_TYPE_ZERO) {
+                    continue;
+                }
+                
                 rkdata = sdpData->sdpData[j];
                 switch (rkdata->mattype) {
                     case MAT_TYPE_SPARSE:
@@ -69,6 +74,10 @@ static DSDP_INT setupSDPSchurBlockA( HSDSolver *dsdpSolver, DSDP_INT blockid ) {
                         break;
                 }
                 packIdx(M, m, i, j) += res;
+            }
+            
+            if (sdpData->types[m] == MAT_TYPE_ZERO) {
+                continue;
             }
             
             rkdata = sdpData->sdpData[m];
@@ -96,6 +105,11 @@ static DSDP_INT setupSDPSchurBlockA( HSDSolver *dsdpSolver, DSDP_INT blockid ) {
                 coeff = rkaux->data[r]->sign;
                 
                 for (j = 0; j <= i; ++j) {
+                    
+                    if (sdpData->types[j] == MAT_TYPE_ZERO) {
+                        continue;
+                    }
+                    
                     rkdata = sdpData->sdpData[j];
                     switch (rkdata->mattype) {
                         case MAT_TYPE_SPARSE:
@@ -114,6 +128,10 @@ static DSDP_INT setupSDPSchurBlockA( HSDSolver *dsdpSolver, DSDP_INT blockid ) {
                             break;
                     }
                     packIdx(M, m, i, j) += res;
+                }
+                
+                if (sdpData->types[m] == MAT_TYPE_ZERO) {
+                    continue;
                 }
                 
                 rkdata = sdpData->sdpData[m];
@@ -141,6 +159,11 @@ static DSDP_INT setupSDPSchurBlockA( HSDSolver *dsdpSolver, DSDP_INT blockid ) {
         
     // Compute csinvcsinv
     mattype = sdpData->types[m];
+    
+    if (mattype == MAT_TYPE_ZERO) {
+        return retcode;
+    }
+    
     retcode = getSinvASinv(dsdpSolver, blockid, m, rkaux);
     rank = rkaux->rank;
     for (r = 0; r < rank; ++r) {
@@ -227,7 +250,13 @@ static DSDP_INT setupSDPSchurBlockB( HSDSolver *dsdpSolver, DSDP_INT blockid ) {
             rkMatdenseUpdate(dsaux, rkaux);
             
             for (j = 0; j <= i; ++j) {
+                
+                if (sdpData->types[j] == MAT_TYPE_ZERO) {
+                    continue;
+                }
+                
                 rkdata = sdpData->sdpData[j];
+                
                 switch (rkdata->mattype) {
                     case MAT_TYPE_SPARSE:
                         denseSpsTrace(dsaux, rkdata->origdata, &res);
@@ -252,6 +281,11 @@ static DSDP_INT setupSDPSchurBlockB( HSDSolver *dsdpSolver, DSDP_INT blockid ) {
                 coeff = rkaux->data[r]->sign;
                 
                 for (j = 0; j <= i; ++j) {
+                    
+                    if (sdpData->types[j] == MAT_TYPE_ZERO) {
+                        continue;
+                    }
+                    
                     rkdata = sdpData->sdpData[j];
                     switch (rkdata->mattype) {
                         case MAT_TYPE_SPARSE:

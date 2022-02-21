@@ -116,7 +116,7 @@ static DSDP_INT pardisoForwardSolve( spsMat *S, DSDP_INT nrhs, double *B, double
     }
     
     pardiso(S->pdsWorker, &maxfct, &mnum, &mtype, &phase, &n,
-            Sx, Sp, Si, &idummy, &nrhs, param,
+            NULL, Sp, Si, &idummy, &nrhs, param,
             &msglvl, B, aux, &error);
     
     assert( error == PARDISO_OK );
@@ -154,7 +154,7 @@ static DSDP_INT pardisoBackwardSolve( spsMat *S, DSDP_INT nrhs, double *B, doubl
         param = PARDISO_PARAMS_FORWARD_BACKWORD_LANCZOS;
     }
     pardiso(S->pdsWorker, &maxfct, &mnum, &mtype, &phase, &n,
-            Sx, Sp, Si, &idummy, &nrhs, param, &msglvl,
+            NULL, Sp, Si, &idummy, &nrhs, param, &msglvl,
             B, aux, &error);
     
     assert( error == PARDISO_OK );
@@ -893,11 +893,22 @@ extern DSDP_INT dsdpGetAlpha( spsMat *S, spsMat *dS, spsMat *spaux, double *alph
     DSDP_INT n = S->dim;
     assert( n == dS->dim && n == spaux->dim );
     
+    // Check block size of 1
+    if (n == 1) {
+        if (dS->x[0] > 0) {
+            *alpha = DSDP_INFINITY;
+        } else {
+            *alpha = - S->x[0] / dS->x[0];
+        }
+        
+        return retcode;
+    }
+    
     // Lanczos iteration
     double lbd = 0.0, delta = 0.0;
-    retcode = dsdpLanczos(S, dS, &lbd, &delta);
+    // retcode = dsdpLanczos(S, dS, &lbd, &delta);
     
-    if (lbd != lbd || delta != delta || (lbd + delta > 1e+10)) {
+    if (1 || lbd != lbd || delta != delta || (lbd + delta > 1e+10)) {
         // MKL extremal routine
         retcode = spsMatLspLSolve(S, dS, spaux); checkCode;
         retcode = spsMatMinEig(spaux, &mineig); checkCode;
@@ -1472,6 +1483,7 @@ extern void spsMatLinvView( spsMat *S ) {
     
     pardisoForwardSolve(S, n, eye, Linv, FALSE);
     
+    printf("Matrix view: \n");
     for (DSDP_INT i = 0; i < n; ++i) {
         for (DSDP_INT j = 0; j < n; ++j) {
             printf("%20.12e, ", Linv[i * n + j]);

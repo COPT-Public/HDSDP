@@ -78,7 +78,8 @@ extern DSDP_INT DSDPPFeasPhase( HSDSolver *dsdpSolver ) {
         dsdpSolver->mu = newmu;
         // dsdpSolver->mu = MIN(newmu, dsdpSolver->mu);
         
-        if (dsdpSolver->Pnrm < 0.1) {
+        if (dsdpSolver->Pnrm < 0.1 &&
+            dsdpSolver->solStatus == DSDP_PD_FEASIBLE) {
             dsdpSolver->mu *= 0.1;
         }
         

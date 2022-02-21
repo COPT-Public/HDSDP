@@ -179,6 +179,12 @@ extern DSDP_INT rkMatdenseTrace( rkMat *R, dsMat *A, double *trace ) {
    */
     
     DSDP_INT retcode = DSDP_RETCODE_OK;
+    
+    if (!R) {
+        *trace = 0.0;
+        return retcode;
+    }
+    
     assert( R->dim == A->dim );
     DSDP_INT rank = R->rank;
     double res = 0.0, tmp;

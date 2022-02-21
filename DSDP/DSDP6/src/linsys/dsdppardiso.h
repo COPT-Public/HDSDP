@@ -22,9 +22,8 @@ static DSDP_INT msglvl = 0; // Print no information
 static DSDP_INT idummy = 0; // Dummy variable for taking up space
 
 // Pardiso cholesky solver
-// A good choice of iterative refinement parameter is 3
-
 #define SYMBOLIC 3
+#define PIVOTING 1
 // TODO: Disable matrix checker iparam[26] when the debugging is done
 static DSDP_INT PARDISO_PARAMS_CHOLESKY[PARDISOINDEX] = {
     
@@ -34,7 +33,7 @@ static DSDP_INT PARDISO_PARAMS_CHOLESKY[PARDISOINDEX] = {
     4, /* Perturb           */ 0, /* Disable scaling     */ 0, /* No transpose      */
     0, /* Disable matching  */ 0, /* Report on pivots    */ 0, /* Output            */
     0, /* Output            */ 0, /* Output              */-1, /* No report         */
-    0, /* No report         */ 0, /* Output              */ 1, /* Pivoting          */
+    0, /* No report         */ 0, /* Output              */ PIVOTING, /* Pivoting          */
     0, /* nPosEigVals       */ 0, /* nNegEigVals         */ 0, /* Classic factorize */
     0,                         0,                           0, /* Matrix checker    */
     0,                         0,                           0,
@@ -56,11 +55,11 @@ static DSDP_INT PARDISO_PARAMS_PARTIAL_SOLVE[PARDISOINDEX] = {
     
     1, /* Non-default value */ SYMBOLIC, /* P Nested dissection */ 0, /* Reserved          */
     0, /* No CG             */ 0, /* No user permutation */ 0, /* No overwriting    */
-    0, /* Refinement report */ 1, /* No ItRef step       */ 0, /* Reserved          */
+    0, /* Refinement report */ 0, /* No ItRef step       */ 0, /* Reserved          */
     6, /* Perturb           */ 0, /* Disable scaling     */ 0, /* No transpose      */
     0, /* Disable matching  */ 0, /* Report on pivots    */ 0, /* Output            */
     0, /* Output            */ 0, /* Output              */-1, /* No report         */
-    0, /* No report         */ 0, /* Output              */ 1, /* Pivoting          */
+    0, /* No report         */ 0, /* Output              */ PIVOTING, /* Pivoting          */
     0, /* nPosEigVals       */ 0, /* nNegEigVals         */ 0, /* Classic factorize */
     0,                         0,                           0, /* Matrix checker    */
     0,                         0,                           0,
@@ -82,11 +81,11 @@ static DSDP_INT PARDISO_PARAMS_PSD_CHECK[PARDISOINDEX] = {
     
     1, /* Non-default value */ SYMBOLIC, /* P Nested dissection */ 0, /* Reserved          */
     0, /* No CG             */ 0, /* No user permutation */ 0, /* No overwriting    */
-    0, /* Refinement report */ 1, /* No ItRef step       */ 0, /* Reserved          */
+    0, /* Refinement report */ 0, /* No ItRef step       */ 0, /* Reserved          */
     8, /* Perturb           */ 0, /* Disable scaling     */ 0, /* No transpose      */
     0, /* Disable matching  */ 0, /* Report on pivots    */ 0, /* Output            */
     0, /* Output            */ 0, /* Output              */-1, /* No report         */
-    0, /* No report         */ 0, /* Output              */ 1, /* Pivoting          */
+    0, /* No report         */ 0, /* Output              */ PIVOTING, /* Pivoting          */
     0, /* nPosEigVals       */ 0, /* nNegEigVals         */ 0, /* Classic factorize */
     0,                         0,                           0, /* Matrix checker    */
     0,                         0,                           0,
@@ -112,7 +111,7 @@ static DSDP_INT PARDISO_PARAMS_FORWARD_BACKWORD[PARDISOINDEX] = {
     8, /* Perturb           */ 0, /* Disable scaling     */ 0, /* No transpose      */
     0, /* Disable matching  */ 0, /* Report on pivots    */ 0, /* Output            */
     0, /* Output            */ 0, /* Output              */-1, /* No report         */
-    0, /* No report         */ 0, /* Output              */ 1, /* Pivoting          */
+    0, /* No report         */ 0, /* Output              */ PIVOTING, /* Pivoting          */
     0, /* nPosEigVals       */ 0, /* nNegEigVals         */ 0, /* Classic factorize */
     0,                         0,                           0, /* Matrix checker    */
     0,                         0,                           0,
@@ -138,7 +137,7 @@ static DSDP_INT PARDISO_PARAMS_FORWARD_BACKWORD_LANCZOS[PARDISOINDEX] = {
     8, /* Perturb           */ 0, /* Disable scaling     */ 0, /* No transpose      */
     0, /* Disable matching  */ 0, /* Report on pivots    */ 0, /* Output            */
     0, /* Output            */ 0, /* Output              */-1, /* No report         */
-    0, /* No report         */ 0, /* Output              */ 1, /* Pivoting          */
+    0, /* No report         */ 0, /* Output              */ PIVOTING, /* Pivoting          */
     0, /* nPosEigVals       */ 0, /* nNegEigVals         */ 0, /* Classic factorize */
     0,                         0,                           0, /* Matrix checker    */
     0,                         0,                           0,

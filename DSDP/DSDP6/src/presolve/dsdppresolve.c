@@ -104,6 +104,7 @@ static DSDP_INT isSparseRank1( spsMat *dataMat, DSDP_INT *isRank1 ) {
     DSDP_INT n     = dataMat->dim;
     DSDP_INT col   = 0;
     DSDP_INT isNeg = FALSE;
+    DSDP_INT nnz   = 0;
     double   err   = 0.0;
     double   diff  = 0.0;
     
@@ -136,36 +137,44 @@ static DSDP_INT isSparseRank1( spsMat *dataMat, DSDP_INT *isRank1 ) {
         adiag = sqrt(adiag);
     }
     
+    nnz = 0;
     // Get the sparse rank 1 matrix
     for (DSDP_INT j = Ap[col]; j < Ap[col + 1]; ++j) {
         // If the diagonal is zero but other rows contain non-zeros
         a[Ai[j]] = Ax[j] / adiag;
+        nnz += (Ax[j] != 0);
     }
     
-    // Ready to check rank-one property
-    if (isNeg) {
-        for (DSDP_INT i = 0; i < n; ++i) {
-            for (DSDP_INT j = Ap[i]; j < Ap[i + 1]; ++j) {
-                diff = Ax[j] + a[i] * a[Ai[j]];
-                err += diff * diff;
-            }
-            if (err > 1e-06) {
-                isR1 = FALSE;
-                break;
-            }
-        }
+    if (dataMat->nnz != (DSDP_INT) (nnz + 1) * nnz / 2) {
+        // Currently only nnz is checked and there is still chance of mismatch
+        isR1 = FALSE;
     } else {
-        for (DSDP_INT i = 0; i < n; ++i) {
-            for (DSDP_INT j = Ap[i]; j < Ap[i + 1]; ++j) {
-                diff = Ax[j] - a[i] * a[Ai[j]];
-                err += diff * diff;
+        // Ready to check rank-one property
+        if (isNeg) {
+            for (DSDP_INT i = 0; i < n; ++i) {
+                for (DSDP_INT j = Ap[i]; j < Ap[i + 1]; ++j) {
+                    diff = Ax[j] + a[i] * a[Ai[j]];
+                    err += diff * diff;
+                }
+                if (err > 1e-06) {
+                    isR1 = FALSE;
+                    break;
+                }
             }
-            if (err > 1e-06) {
-                isR1 = FALSE;
-                break;
+        } else {
+            for (DSDP_INT i = 0; i < n; ++i) {
+                for (DSDP_INT j = Ap[i]; j < Ap[i + 1]; ++j) {
+                    diff = Ax[j] - a[i] * a[Ai[j]];
+                    err += diff * diff;
+                }
+                if (err > 1e-06) {
+                    isR1 = FALSE;
+                    break;
+                }
             }
         }
     }
+    
     DSDP_FREE(a);
     
     if (isR1) {
@@ -434,7 +443,7 @@ static DSDP_INT preRankkEvRdcBlock( sdpMat *dataMat ) {
                 dsdata = (dsMat *) matdata[i];
                 // TODO: Save the norm information for later scaling
                 retcode = denseMatFnorm(dsdata, &fnrm);
-                retcode = factorizeDenseData(dsdata, -fnrm, eigvals, eigvecs);
+                retcode = factorizeDenseData(dsdata, -(fnrm + 1e-03), eigvals, eigvecs);
                 isDense = TRUE;
                 retcode = preGetRank(n, eigvals, 1e-10, &rank);
                 break;
@@ -518,10 +527,6 @@ static DSDP_INT getBlockStatistic( sdpMat *sdpData ) {
     sdpData->spsMatIdx   = (DSDP_INT *) calloc(sdpData->nspsMat, sizeof(DSDP_INT));
     sdpData->denseMatIdx = (DSDP_INT *) calloc(sdpData->ndenseMat, sizeof(DSDP_INT));
     sdpData->rkMatIdx    = (DSDP_INT *) calloc(sdpData->nrkMat, sizeof(DSDP_INT));
-    
-#ifdef SHOWALL
-    printf("- Cone "ID"\n", blockid);
-#endif
     
     for (DSDP_INT i = 0; i < m + 1; ++i) {
         switch (type[i]) {
@@ -810,7 +815,7 @@ static DSDP_INT preSDPgetSymbolic( HSDSolver *dsdpSolver, DSDP_INT blockid ) {
     retcode = spsMatAllocData(dsdpSolver->dS[blockid], dim, nnz); checkCodeFree;
     retcode = spsMatAllocData(dsdpSolver->Scker[blockid], dim, nnz); checkCodeFree;
     
-    if (isfirstNz) {
+    if (isfirstNz && !useDenseS) {
         dsdpSolver->S[blockid]->i[tmp] = 0;
         dsdpSolver->S[blockid]->nzHash[tmp] = 0;
         tmp += 1;

@@ -101,13 +101,13 @@ static DSDP_INT initresi( HSDSolver *dsdpSolver ) {
         // Matrix of index m in each block is C
         retcode = getMatnrm(dsdpSolver, i, m, &nrm);
         checkCode;
-        Cnrm = MAX(nrm, Cnrm);
+        Cnrm = nrm * nrm + Cnrm;
     }
         
     if (fabs(Cnrm) < 1e-08) {
         dsdpSolver->Ry = - beta;
     } else {
-        dsdpSolver->Ry = - Cnrm * tau * beta;
+        dsdpSolver->Ry = - sqrt(Cnrm) * tau * beta;
     }
     
     for (DSDP_INT i = 0; i < dsdpSolver->nBlock; ++i) {

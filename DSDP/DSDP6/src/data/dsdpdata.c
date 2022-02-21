@@ -47,13 +47,12 @@ static DSDP_INT sdpMatIAllocByType( sdpMat *sdpData, DSDP_INT k, DSDP_INT *Ai,
     DSDP_INT n = sdpData->dimS;
     
     // Sort the arrays
-    idxsort(Ai, Ax, nnz);
     assert( k < m + 1 );
     
     void *userdata = NULL;
     
 #ifdef SHOWALL
-        printf("Block "ID" \n", k);
+        printf("Constraint "ID" \n", k);
 #endif
     
     // Check sparsity
@@ -124,6 +123,9 @@ static DSDP_INT sdpMatIAllocByType( sdpMat *sdpData, DSDP_INT k, DSDP_INT *Ai,
     // TODO: Change the threshold
     } else if (((nnz <= denseThresh * nsym(n)) && (sdpData->types[k] == MAT_TYPE_UNKNOWN)) ||
                (sdpData->types[k] == MAT_TYPE_SPARSE)) {
+        
+        // May be put in earlier parts
+        idxsort(Ai, Ax, nnz);
         // Sparse
         sdpData->types[k] = MAT_TYPE_SPARSE;
         sdpData->nspsMat += 1;
@@ -387,9 +389,6 @@ extern DSDP_INT sdpMatSetData( sdpMat *sdpData, DSDP_INT *Ap, DSDP_INT *Ai, doub
     DSDP_INT retcode = DSDP_RETCODE_OK;
     
     for (DSDP_INT i = 0; i < sdpData->dimy + 1; ++i) {
-        if (i == sdpData->dimy) {
-            
-        }
         retcode = sdpMatIAllocByType(sdpData, i, &Ai[Ap[i]],
                                      &Ax[Ap[i]], Ap[i + 1] - Ap[i]);
         checkCode;

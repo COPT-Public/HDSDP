@@ -62,8 +62,38 @@ extern DSDP_INT vec_scale( vec *x, double a ) {
 
 extern DSDP_INT vec_rscale( vec *x, double r ) {
     // Compute x = x / r; No over or under flow.
-    assert( x->dim );
-    vecdiv(&x->dim, &r, x->x, &one);
+    assert( x->dim && r != 0);
+    
+    DSDP_INT i;
+    
+    for (i = 0; i < x->dim - 7; ++i) {
+        x->x[i] /= r; ++i;
+        x->x[i] /= r; ++i;
+        x->x[i] /= r; ++i;
+        x->x[i] /= r; ++i;
+        x->x[i] /= r; ++i;
+        x->x[i] /= r; ++i;
+        x->x[i] /= r; ++i;
+        x->x[i] /= r;
+    }
+    
+    if (i < x->dim - 3) {
+        x->x[i] /= r; ++i;
+        x->x[i] /= r; ++i;
+        x->x[i] /= r; ++i;
+        x->x[i] /= r; ++i;
+    }
+    
+    if (i < x->dim - 1) {
+        x->x[i] /= r; ++i;
+        x->x[i] /= r; ++i;
+    }
+    
+    if (i < x->dim) {
+        x->x[i] /= r;
+    }
+    
+    // vecdiv(&x->dim, &r, x->x, &one);
     return DSDP_RETCODE_OK;
 }
 

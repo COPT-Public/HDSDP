@@ -144,6 +144,12 @@ static DSDP_INT factorizeSpecial( spsMat *A, double *eigvals, double *eigvecs, D
     DSDP_INT *Ap = A->p, *Ai = A->i, n = A->dim, nelem, idx;
     double *Ax = A->x;
     
+    // Stop if nnz is large
+    if (A->nnz > n) {
+        *isSpecial = FALSE;
+        return retcode;
+    }
+    
     for (DSDP_INT i = 0; i < n; ++i) {
         nelem = Ap[i + 1] - Ap[i];
         if (nelem > 1) {
@@ -184,24 +190,35 @@ static DSDP_INT factorizeSpecial( spsMat *A, double *eigvals, double *eigvecs, D
                 break;
             }
             for (DSDP_INT j = Ap[i]; j < Ap[i + 1]; ++j) {
+                if (counter >= n) {
+                    *isSpecial = FALSE;
+                    return retcode;
+                }
                 eigvec = &eigvecs[counter * n];
                 idx = Ai[j];
+                
                 if (idx == i) {
                     eigvec[idx] = 1.0;
                     eigvals[counter] = Ax[j];
                     counter += 1;
                 } else {
+                    
                     eigvec[idx] = tmp;
                     eigvec[i] = tmp;
+                    
                     eigvals[counter] = Ax[j];
-                    
                     counter += 1;
-                    eigvec = &eigvecs[counter * n];
                     
+                    if (counter >= n) {
+                        *isSpecial = FALSE;
+                        return retcode;
+                    }
+                    
+                    eigvec = &eigvecs[counter * n];
                     eigvec[idx] = tmp;
                     eigvec[i] = - tmp;
-                    eigvals[counter] = - Ax[j];
                     
+                    eigvals[counter] = - Ax[j];
                     counter += 1;
                 }
             }
@@ -258,6 +275,9 @@ extern DSDP_INT factorizeSparseData( spsMat *A, double elow, double *eigvals, do
     if (special) {
         return retcode;
     }
+    
+    memset(eigvals, 0, sizeof(double) * n);
+    memset(eigvecs, 0, sizeof(double) * n * n);
     
     C2FIndex(A);
     DSDP_INT *Ap = A->p, *Ai = A->i, loop, neigsfound, info;

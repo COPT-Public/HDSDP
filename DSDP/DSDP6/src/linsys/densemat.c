@@ -596,22 +596,42 @@ extern DSDP_INT denseMatResetFactor( dsMat *dMat ) {
 extern DSDP_INT denseMatMinEig( dsMat *dMat, double *minEig ) {
     // Compute the minimum eigenvalue of matrix X (for DIMACS Error)
     DSDP_INT retcode = DSDP_RETCODE_OK;
-    DSDP_INT dim = dMat->dim;
+    DSDP_INT dim = dMat->dim, il = 1, iu = 1, neigs, info, lwork = 30, iwork = 12;
     
+    double *X = (double *) calloc(dim * dim, sizeof(double));
+    denseMatFill(dMat, X);
     double *eigvals = (double *) calloc(dim, sizeof(double));
-    double *eigvecs = (double *) calloc(dim * dim, sizeof(double));
+    double *eigvecs = (double *) calloc(dim, sizeof(double));
+    double *eigaux = (double *) calloc(dim * lwork, sizeof(double));
+    double *d = (double *) calloc(dim, sizeof(double));
+
+    DSDP_INT *eigintaux = (DSDP_INT *) calloc(dim * iwork, sizeof(DSDP_INT));
+    DSDP_INT isuppz[2] = {0};
     
-    double nrm = 0.0;
+    char jobz = 'V', range = 'I', uplo = DSDP_MAT_UP;
+    
+    double alpha = -1.0;
     *minEig = DSDP_INFINITY;
-    denseMatFnorm(dMat, &nrm);
-    factorizeDenseData(dMat, -nrm, eigvals, eigvecs);
     
-    for (DSDP_INT i = 0; i < dim; ++i) {
-        *minEig = MIN(eigvals[i], *minEig);
-    }
+    lwork *= dim;
+    iwork *= dim;
     
+    dsyevr(&jobz, &range, &uplo, &dim, X, &dim,
+           NULL, NULL, &il, &iu, &alpha, &neigs, d,
+           eigvecs, &dim, isuppz, eigaux, &lwork, eigintaux,
+           &iwork, &info);
+    
+    *minEig = d[0];
+    
+    DSDP_FREE(X);
+    DSDP_FREE(d);
     DSDP_FREE(eigvals);
     DSDP_FREE(eigvecs);
+    DSDP_FREE(eigaux);
+    DSDP_FREE(eigintaux);
+    
+//    denseMatFnorm(dMat, &nrm);
+//    factorizeDenseData(dMat, -nrm, eigvals, eigvecs);
     return retcode;
 }
 
