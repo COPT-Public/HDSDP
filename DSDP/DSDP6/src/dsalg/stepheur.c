@@ -14,16 +14,16 @@ static DSDP_INT getKappaTauStep( HSDSolver *dsdpSolver, double *kappatauStep ) {
     // Compute the maximum step size to take at kappa and tau
     DSDP_INT retcode = DSDP_RETCODE_OK;
     
-    double tau    = dsdpSolver->tau;
-    double kappa  = dsdpSolver->kappa;
-    double dtau   = dsdpSolver->dtau;
-    double dkappa = dsdpSolver->dkappa;
+    double Aalpha, tau, kappa, dtau, dkappa, step;
+    retcode = DSDPGetDblParam(dsdpSolver, DBL_PARAM_AALPHA, &Aalpha);
     
-    // TODO: Use dkappa to move the primal objective bound
-    double step = MIN((dtau / tau), (dkappa / kappa));
+    tau = dsdpSolver->tau; kappa = dsdpSolver->kappa;
+    dtau = dsdpSolver->dtau; dkappa = dsdpSolver->dkappa;
+    
+    step = MIN((dtau / tau), (dkappa / kappa));
     
     if (step < 0.0) {
-        *kappatauStep = fabs(dsdpSolver->param->Aalpha / step);
+        *kappatauStep = fabs(Aalpha / step);
     } else {
         *kappatauStep = DSDP_INFINITY;
     }
@@ -192,15 +192,13 @@ extern DSDP_INT getMaxStep( HSDSolver *dsdpSolver ) {
         error(etype, "Stepsize has been computed. \n");
     }
     
-    double stepkappatau = 0.0;
-    double steplps = 100.0;
-    double sdpS = 0.0;
-    
+    double stepkappatau = 0.0, steplps = 100.0, sdpS = 0.0, Aalpha;
+    retcode = DSDPGetDblParam(dsdpSolver, DBL_PARAM_AALPHA, &Aalpha);
     retcode = getKappaTauStep(dsdpSolver, &stepkappatau);
     // retcode = getLPsStep(dsdpSolver, &steplps);
     retcode = getSDPSStep(dsdpSolver, &sdpS); checkCode;
     sdpS = MIN(sdpS, steplps);
-    dsdpSolver->alpha = MIN(sdpS * dsdpSolver->param->Aalpha, stepkappatau);
+    dsdpSolver->alpha = MIN(sdpS * Aalpha, stepkappatau);
     dsdpSolver->alpha = MIN(dsdpSolver->alpha, 1.0);
     
     dsdpSolver->iterProgress[ITER_COMPUTE_STEP] = TRUE;

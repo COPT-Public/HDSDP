@@ -36,13 +36,19 @@ extern DSDP_INT DSDPDInfeasEliminator( HSDSolver *dsdpSolver ) {
     dsdpSolver->pObjVal = DSDP_INFINITY;
     
     // Initialize
-    double muprimal = dsdpSolver->param->initMu;
-    double tol      = dsdpSolver->param->absOptTol;
-    double sigma    = dsdpSolver->param->Asigma;
-    double attempt  = dsdpSolver->param->Aattempt;
+    double muprimal, tol, sigma;
+    DSDP_INT attempt, agiter;
+    
+    retcode = DSDPGetDblParam(dsdpSolver, DBL_PARAM_INIT_MU,    &muprimal);
+    retcode = DSDPGetDblParam(dsdpSolver, DBL_PARAM_ABS_OPTTOL, &tol     );
+    retcode = DSDPGetDblParam(dsdpSolver, DBL_PARAM_ASIGMA,     &sigma   );
+    retcode = DSDPGetIntParam(dsdpSolver, INT_PARAM_AATTEMPT,   &attempt );
+    retcode = DSDPGetIntParam(dsdpSolver, INT_PARAM_AMAXITER,   &agiter  );
+    agiter = MIN(agiter, 30);
+    
     double trymu    = 0.0;
     double time     = 0.0;
-    DSDP_INT agiter = MIN(dsdpSolver->param->AmaxIter, 30);
+    
     DSDP_INT ntry   = 0;
     double start    = my_clock();
     
@@ -131,7 +137,7 @@ extern DSDP_INT DSDPDInfeasEliminator( HSDSolver *dsdpSolver ) {
         // Be more aggressive if
         if (i == agiter) {
             sigma = 0.1;
-            dsdpSolver->param->Aalpha = 0.2;
+            DSDPSetDblParam(dsdpSolver, DBL_PARAM_AALPHA, 0.2);
         }
         
         checkIterProgress(dsdpSolver, ITER_NEXT_ITERATION);

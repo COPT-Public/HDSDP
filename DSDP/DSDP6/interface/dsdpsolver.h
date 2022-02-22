@@ -143,7 +143,14 @@ extern DSDP_INT DSDPSetSDPConeData( Solver    *dsdpSolver,
 
 extern DSDP_INT DSDPSetObj   ( HSDSolver *dsdpSolver, double *dObj );
 extern DSDP_INT DSDPOptimize ( Solver *dsdpSolver );
+
+extern DSDP_INT DSDPSetDblParam ( HSDSolver *dsdpSolver, DSDP_INT pName, double   dblVal  );
+extern DSDP_INT DSDPSetIntParam ( HSDSolver *dsdpSolver, DSDP_INT pName, DSDP_INT intVal  );
+extern DSDP_INT DSDPGetDblParam ( HSDSolver *dsdpSolver, DSDP_INT pName, double   *dblVal );
+extern DSDP_INT DSDPGetIntParam ( HSDSolver *dsdpSolver, DSDP_INT pName, DSDP_INT *intVal );
+
 extern DSDP_INT DSDPDestroy  ( Solver *dsdpSolver );
+
 extern void     DSDPPrintVersion (void);
 
 #ifdef __cplusplus

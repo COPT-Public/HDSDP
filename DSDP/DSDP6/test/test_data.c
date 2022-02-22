@@ -5,7 +5,6 @@
 #include "test.h"
 
 /* Test the data interface of DSDP */
-
 DSDP_INT test_data(void) {
     
     DSDP_INT retcode = DSDP_RETCODE_OK;
@@ -14,7 +13,7 @@ DSDP_INT test_data(void) {
     Solver **phsdSolver = &hsdSolver;
     
     retcode = DSDPCreate(phsdSolver);
-    retcode = DSDPSetDim(hsdSolver, cdim1 + cdim2 + cdim3, ncones, m, 0);
+    retcode = DSDPSetDim(hsdSolver, cdim1 + cdim2 + cdim3, ncones, m, 0, NULL);
     
     DSDP_INT typehint[11] = {
         MAT_TYPE_RANKK, MAT_TYPE_UNKNOWN, MAT_TYPE_UNKNOWN, MAT_TYPE_UNKNOWN, MAT_TYPE_UNKNOWN,

@@ -216,9 +216,11 @@ DSDP_INT test_sparse(void) {
     retcode = spsMatSymbolic(data); checkCodeFree;
     retcode = spsMatFactorize(data); checkCodeFree;
     
+    DSDP_FREE(B->nzHash);
     // Lanczos iteration
     double lbd = 0.0;
     double delta = 0.0;
+    spsMatScale(B, -1.0);
     dsdpLanczos(data, B, &lbd, &delta);
     
     // Vector solve

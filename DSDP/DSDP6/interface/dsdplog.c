@@ -262,13 +262,18 @@ extern DSDP_INT DSDPCheckPhaseAConvergence( HSDSolver *dsdpSolver, DSDP_INT *isO
     /* Check convergence of DSDP */
     DSDP_INT retcode = DSDP_RETCODE_OK;
     DSDP_INT *monitor = dsdpSolver->eventMonitor;
+    
+    DSDP_INT AmaxIter;
+    double absOptTol;
+    retcode = DSDPGetDblParam(dsdpSolver, DBL_PARAM_ABS_OPTTOL, &absOptTol);
+    retcode = DSDPGetIntParam(dsdpSolver, INT_PARAM_AMAXITER, &AmaxIter);
+    
     *isOK = FALSE;
     
     assert( dsdpSolver->eventMonitor[EVENT_IN_PHASE_A] );
     
     // Dual infeasibility eliminated
-    if (fabs(dsdpSolver->Ry) * sqrt(dsdpSolver->n) < \
-        dsdpSolver->param->absOptTol * 0.1 * dsdpSolver->tau) {
+    if (fabs(dsdpSolver->Ry) * sqrt(dsdpSolver->n) < absOptTol * 0.1 * dsdpSolver->tau) {
         monitor[EVENT_NO_RY] = TRUE;
         
         if (dsdpSolver->pObjVal != DSDP_INFINITY) {
@@ -286,7 +291,7 @@ extern DSDP_INT DSDPCheckPhaseAConvergence( HSDSolver *dsdpSolver, DSDP_INT *isO
         monitor[EVENT_KT_QUALIFIES] = TRUE;
     }
     
-    if (dsdpSolver->mu < dsdpSolver->param->absOptTol) {
+    if (dsdpSolver->mu < absOptTol) {
         monitor[EVENT_MU_QUALIFIES] = TRUE;
     }
     
@@ -302,7 +307,7 @@ extern DSDP_INT DSDPCheckPhaseAConvergence( HSDSolver *dsdpSolver, DSDP_INT *isO
     }
 
     // Maximum iteration
-    if (dsdpSolver->iterA >= dsdpSolver->param->AmaxIter) {
+    if (dsdpSolver->iterA >= AmaxIter) {
         monitor[EVENT_MAX_ITERATION] = TRUE;
         dsdpSolver->solStatus = DSDP_MAXITER;
         *isOK = TRUE;
@@ -362,8 +367,9 @@ extern DSDP_INT DSDPCheckPhaseBConvergence( HSDSolver *dsdpSolver, DSDP_INT *isO
     
     /* Check convergence of DSDP */
     DSDP_INT retcode = DSDP_RETCODE_OK;
-    DSDP_INT *monitor = dsdpSolver->eventMonitor;
+    DSDP_INT *monitor = dsdpSolver->eventMonitor, BmaxIter;
     
+    retcode = DSDPGetIntParam(dsdpSolver, INT_PARAM_BMAXITER, &BmaxIter);
     assert( dsdpSolver->eventMonitor[EVENT_IN_PHASE_B] );
     *isOK = FALSE;
     
@@ -400,7 +406,7 @@ extern DSDP_INT DSDPCheckPhaseBConvergence( HSDSolver *dsdpSolver, DSDP_INT *isO
         dsdpSolver->eventMonitor[EVENT_LARGE_DOBJ] = TRUE;
     }
     
-    if (gap < 1e-06) {
+    if (gap < 1e-04) {
         monitor[EVENT_MU_QUALIFIES] = TRUE;
         dsdpSolver->solStatus = DSDP_OPTIMAL;
         *isOK = TRUE;
@@ -408,7 +414,7 @@ extern DSDP_INT DSDPCheckPhaseBConvergence( HSDSolver *dsdpSolver, DSDP_INT *isO
     }
     
     // Maximum iteration
-    if (dsdpSolver->iterB >= dsdpSolver->param->BmaxIter) {
+    if (dsdpSolver->iterB >= BmaxIter) {
         monitor[EVENT_MAX_ITERATION] = TRUE;
         dsdpSolver->solStatus = DSDP_MAXITER;
         *isOK = TRUE;

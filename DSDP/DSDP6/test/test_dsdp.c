@@ -1,7 +1,7 @@
 #include <stdio.h>
 #include "dsdphsd.h"
 #include "dsdpsolver.h"
-#include "data2.h"
+#include "data.h"
 
 
 DSDP_INT test_dsdp(void) {
@@ -11,14 +11,13 @@ DSDP_INT test_dsdp(void) {
     DSDP_INT m = coneM;
     DSDP_INT n = coneN;
     
-    
     Solver *hsdSolver = NULL;
     Solver **phsdSolver = &hsdSolver;
     
     retcode = DSDPCreate(phsdSolver);
-    retcode = DSDPSetDim(hsdSolver, n, 1, m, 0);
+    retcode = DSDPSetDim(hsdSolver, n, 1, m, 0, NULL);
     retcode = DSDPSetSDPConeData(hsdSolver, 0, n, NULL, coneAp, coneAi, coneAx);
-    
+    // retcode = DSDPSetSDPConeData(hsdSolver, 1, n, NULL, coneAp, coneAi, coneAx);
     retcode = DSDPSetObj(hsdSolver, dObj);
     
     retcode = DSDPOptimize(hsdSolver);

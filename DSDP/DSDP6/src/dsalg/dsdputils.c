@@ -257,6 +257,9 @@ extern DSDP_INT dsdpCheckerInCone( HSDSolver *dsdpSolver, DSDP_INT *ispsd ) {
     DSDP_INT incone = FALSE;
     
     for (DSDP_INT i = 0; i < dsdpSolver->nBlock; ++i) {
+        if (dsdpSolver->iterB >= 50) {
+            spsMatAdddiag(dsdpSolver->Scker[i], 1e-06, dsdpSolver->symS[i]);
+        }
         spsMatIspd(dsdpSolver->Scker[i], &incone);
         if (!incone) {
             break;

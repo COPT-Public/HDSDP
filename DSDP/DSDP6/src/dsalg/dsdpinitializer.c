@@ -59,15 +59,15 @@ static DSDP_INT inity( HSDSolver *dsdpSolver ) {
 static DSDP_INT initkappatau( HSDSolver *dsdpSolver ) {
     
     DSDP_INT retcode = DSDP_RETCODE_OK;
-    dsdpSolver->kappa = dsdpSolver->param->initKappa;
-    dsdpSolver->tau   = dsdpSolver->param->initTau;
+    retcode = DSDPGetDblParam(dsdpSolver, DBL_PARAM_INIT_KAPPA, &dsdpSolver->kappa);
+    retcode = DSDPGetDblParam(dsdpSolver, DBL_PARAM_INIT_TAU, &dsdpSolver->tau);
     return retcode;
 }
 
 static DSDP_INT initmu( HSDSolver *dsdpSolver ) {
     
     DSDP_INT retcode = DSDP_RETCODE_OK;
-    dsdpSolver->mu = dsdpSolver->param->initMu;
+    retcode = DSDPGetDblParam(dsdpSolver, DBL_PARAM_INIT_MU, &dsdpSolver->mu);
     return retcode;
 }
 
@@ -84,17 +84,14 @@ static DSDP_INT initresi( HSDSolver *dsdpSolver ) {
     
     DSDP_INT retcode = DSDP_RETCODE_OK;
     
-    double beta = dsdpSolver->param->initBeta;
-    double Cnrm = 0.0;
-    double nrm  = 0.0;
-    double tau  = dsdpSolver->tau;
-    DSDP_INT m  = dsdpSolver->m;
-    
-    DSDP_INT isCons = FALSE;
+    double beta;
+    retcode = DSDPGetDblParam(dsdpSolver, DBL_PARAM_INIT_BETA, &beta);
+    double Cnrm = 0.0, nrm  = 0.0, tau = dsdpSolver->tau;
+    DSDP_INT m  = dsdpSolver->m, isCons = FALSE;
     retcode = isConstant(dsdpSolver, &isCons);
     
     if (isCons) {
-        beta *= 10.0;
+        beta *= 3.0;
     }
     
     for (DSDP_INT i = 0; i < dsdpSolver->nBlock; ++i) {
@@ -150,6 +147,11 @@ extern DSDP_INT dsdpInitializeB( HSDSolver *dsdpSolver ) {
     
     assert( dsdpSolver->eventMonitor[EVENT_IN_PHASE_B] );
     
+    DSDP_INT BmaxIter; double rho, initpObj;
+    retcode = DSDPGetDblParam(dsdpSolver, DBL_PARAM_RHO, &rho);
+    retcode = DSDPGetDblParam(dsdpSolver, DBL_PARAM_INIT_POBJ, &initpObj);
+    retcode = DSDPGetIntParam(dsdpSolver, INT_PARAM_BMAXITER, &BmaxIter);
+
     // Reset the number of iterations taking small stepsize
     dsdpSolver->smallIter = 0;
     dsdpSolver->dObjVal = dsdpSolver->dObjVal / dsdpSolver->tau;
@@ -167,18 +169,15 @@ extern DSDP_INT dsdpInitializeB( HSDSolver *dsdpSolver ) {
             
         case DSDP_PD_FEASIBLE:
             // mu = min((pObj - dObj) / rho, muPrimal)
-            dsdpSolver->mu = MIN((dsdpSolver->pObjVal - dsdpSolver->dObjVal) / \
-                                  dsdpSolver->param->rho, dsdpSolver->mu);
+            dsdpSolver->mu = MIN((dsdpSolver->pObjVal - dsdpSolver->dObjVal) / rho, dsdpSolver->mu);
             printf("| DSDP Phase B starts. Restarting dual-scaling %51s |\n", "");
             break;
         case DSDP_PUNKNOWN_DFEAS:
             //pObj  = max(dsdpParam{5}, dObj + dsdpParam{5} / 10);
-            dsdpSolver->pObjVal = MAX(dsdpSolver->param->initpObj,
-                                      dsdpSolver->dObjVal + 0.1 * dsdpSolver->param->initpObj);
-            dsdpSolver->mu = (dsdpSolver->pObjVal - dsdpSolver->dObjVal) / dsdpSolver->param->rho;
+            dsdpSolver->pObjVal = MAX(initpObj, dsdpSolver->dObjVal + 0.1 * initpObj);
+            dsdpSolver->mu = (dsdpSolver->pObjVal - dsdpSolver->dObjVal) / rho;
             printf("| DSDP Phase B starts. "
-                   "Trying to certificate primal feasibility in %d iterations %16s |\n",
-                   dsdpSolver->param->BmaxIter, "");
+                   "Trying to certificate primal feasibility in %d iterations %16s |\n", BmaxIter, "");
             break;
         default:
             error(etype, "Invalid starting status for Phase B. \n");

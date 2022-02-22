@@ -173,9 +173,9 @@ static DSDP_INT DSDPIAllocIter( HSDSolver *dsdpSolver ) {
     // Invoked after the getIdx routine is called
     // Allocate memory for the iterates
     DSDP_INT retcode = DSDP_RETCODE_OK;
-    DSDP_INT nblock  = dsdpSolver->nBlock;
-    DSDP_INT dim     = 0;
-    DSDP_INT m       = dsdpSolver->m;
+    DSDP_INT nblock = dsdpSolver->nBlock, dim = 0, m = dsdpSolver->m, CGreuse;
+    
+    retcode = DSDPGetIntParam(dsdpSolver, INT_PARAM_CG_REUSE, &CGreuse);
     
     dsMat *dsIter   = NULL;
     vec *vecIter    = NULL;
@@ -216,8 +216,7 @@ static DSDP_INT DSDPIAllocIter( HSDSolver *dsdpSolver ) {
     // Allocate CG solver
     retcode = dsdpCGAlloc(dsdpSolver->cgSolver, m);
     retcode = dsdpCGSetTol(dsdpSolver->cgSolver, 1e-05);
-    retcode = dsdpCGSetPreReuse(dsdpSolver->cgSolver,
-                                dsdpSolver->param->CGreuse);
+    retcode = dsdpCGSetPreReuse(dsdpSolver->cgSolver, CGreuse);
     retcode = dsdpCGSetM(dsdpSolver->cgSolver, dsIter);
     retcode = dsdpCGSetCholPre(dsdpSolver->cgSolver, dsdpSolver->Msdp);
     
@@ -719,7 +718,7 @@ extern DSDP_INT DSDPSetSDPConeData( HSDSolver *dsdpSolver,
                                     double    *Asdpx ) {
     
     DSDP_INT retcode = DSDP_RETCODE_OK;
-    assert( blockid < dsdpSolver->m );
+    assert( blockid < dsdpSolver->nBlock );
     assert( coneSize > 0 );
     
     if (dsdpSolver->insStatus != DSDP_STATUS_INIT_UNSET) {
@@ -782,6 +781,12 @@ extern DSDP_INT DSDPOptimize( HSDSolver *dsdpSolver ) {
     assert( dsdpSolver->insStatus == DSDP_STATUS_SET );
     retcode = DSDPIPresolve(dsdpSolver); checkCode;
     
+    /*
+     // Print parameters
+        dsdpshowdash();
+        printParams(dsdpSolver->param);
+    */
+    
     assert( dsdpSolver->insStatus == DSDP_STATUS_PRESOLVED );
     retcode = DSDPDInfeasEliminator(dsdpSolver); checkCode;
     printPhaseABConvert(dsdpSolver, &gotoB);
@@ -799,24 +804,23 @@ extern DSDP_INT DSDPOptimize( HSDSolver *dsdpSolver ) {
     dsdpshowdash();
     double err1, err2, err3, err4, err5, err6;
     
-    
     computeDIMACS(dsdpSolver, &err1, &err2, &err3, &err4, &err5, &err6);
     printf("| Scaled DIMACS Error:                                  "
            "                                           |\n");
     dsdpshowdash();
     printf("| err1: %6.2e | err2: %6.1e | err3: %6.1e "
-           "| err4: %6.1e | err5: %6.2e | err6: %6.2e |\n",
+           "| err4: %6.1e | err5: %7.1e | err6: %7.1e |\n",
            err1, err2, err3, err4, err5, err6);
     dsdpshowdash();
 
     double err = 0.0;
 
-    err = MAX(err, err1);
-    err = MAX(err, err2);
-    err = MAX(err, err3);
-    err = MAX(err, err4);
-    err = MAX(err, err5);
-    err = MAX(err, err6);
+    err = MAX(err, fabs(err1));
+    err = MAX(err, fabs(err2));
+    err = MAX(err, fabs(err3));
+    err = MAX(err, fabs(err4));
+    err = MAX(err, fabs(err5));
+    err = MAX(err, fabs(err6));
     
     if (err < 1e-04) {
         printf("| Passed Mittelmann's Benchmark Test (*) \n");
@@ -827,8 +831,6 @@ extern DSDP_INT DSDPOptimize( HSDSolver *dsdpSolver ) {
     }
     
     dsdpshowdash();
-    
-    
     
     // Post-solving
     DSDPIPostsolve(dsdpSolver);
@@ -863,6 +865,26 @@ extern DSDP_INT DSDPGetPrimal( HSDSolver *dsdpSolver, double **X ) {
         denseMatFill(dsdpSolver->dsaux[i], X[i]);
     }
     return retcode;
+}
+
+extern DSDP_INT DSDPSetDblParam( HSDSolver *dsdpSolver, DSDP_INT pName, double dblVal ) {
+    // Set double parameter
+    return setDblParam(dsdpSolver->param, pName, dblVal);
+}
+
+extern DSDP_INT DSDPSetIntParam( HSDSolver *dsdpSolver, DSDP_INT pName, DSDP_INT intVal ) {
+    // Set integer parameter
+    return setIntParam(dsdpSolver->param, pName, intVal);
+}
+
+extern DSDP_INT DSDPGetDblParam( HSDSolver *dsdpSolver, DSDP_INT pName, double *dblVal ) {
+    // Get double parameter
+    return getDblParam(dsdpSolver->param, pName, dblVal);
+}
+
+extern DSDP_INT DSDPGetIntParam( HSDSolver *dsdpSolver, DSDP_INT pName, DSDP_INT *intVal ) {
+    // Get double parameter
+    return getIntParam(dsdpSolver->param, pName, intVal);
 }
 
 extern DSDP_INT DSDPDestroy( HSDSolver *dsdpSolver ) {

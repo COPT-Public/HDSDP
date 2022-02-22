@@ -61,7 +61,9 @@ extern DSDP_INT dsdpgetPhaseBProxMeasure( HSDSolver *dsdpSolver, double *muub, d
     DSDP_INT retcode = DSDP_RETCODE_OK;
     DSDP_INT ispfeas = FALSE;
     
-    double gap = 0.0;
+    double gap = 0.0, rho;
+    retcode = DSDPGetDblParam(dsdpSolver, DBL_PARAM_RHO, &rho);
+    
     vec_zaxpby(dsdpSolver->b1, 1 / dsdpSolver->mu, dsdpSolver->d1, -1.0, dsdpSolver->d2);
     
     retcode = denseMatxTAx(dsdpSolver->Msdp, dsdpSolver->b1->x, &dsdpSolver->Pnrm);
@@ -85,7 +87,7 @@ extern DSDP_INT dsdpgetPhaseBProxMeasure( HSDSolver *dsdpSolver, double *muub, d
         *muub = (dsdpSolver->pObjVal - dsdpSolver->dObjVal) / dsdpSolver->n;
     }
     
-    *mulb = (*muub) / dsdpSolver->param->rho;
+    *mulb = (*muub) / rho;
     
     return retcode;
 }

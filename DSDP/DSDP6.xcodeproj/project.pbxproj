@@ -78,6 +78,7 @@
 		199220862737D8C500DD975D /* libiomp5.dylib in Embed Libraries */ = {isa = PBXBuildFile; fileRef = 199220842737D8C500DD975D /* libiomp5.dylib */; settings = {ATTRIBUTES = (CodeSignOnCopy, ); }; };
 		199FC13F27ACD9A00072897D /* prototypes.c in Sources */ = {isa = PBXBuildFile; fileRef = 199FC13E27ACD9A00072897D /* prototypes.c */; };
 		199FC14127AD061A0072897D /* dsdpeigfact.c in Sources */ = {isa = PBXBuildFile; fileRef = 199FC14027AD061A0072897D /* dsdpeigfact.c */; };
+		19ABC01227C09F6B00105887 /* dsdpparam.c in Sources */ = {isa = PBXBuildFile; fileRef = 19ABC01127C09F6B00105887 /* dsdpparam.c */; };
 		19B423A4279E846F00E35E0B /* libmkl_sequential.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 19B423A3279E845E00E35E0B /* libmkl_sequential.a */; };
 		19B423A7279E849F00E35E0B /* libmkl_core.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 19B423A5279E849200E35E0B /* libmkl_core.a */; };
 		19B423A8279E84BD00E35E0B /* libmkl_intel_lp64.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 19B423A6279E849200E35E0B /* libmkl_intel_lp64.a */; };
@@ -233,6 +234,7 @@
 		199FC13E27ACD9A00072897D /* prototypes.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = prototypes.c; sourceTree = "<group>"; };
 		199FC14027AD061A0072897D /* dsdpeigfact.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = dsdpeigfact.c; sourceTree = "<group>"; };
 		199FC14227AD82680072897D /* dsdpeigfact.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = dsdpeigfact.h; sourceTree = "<group>"; };
+		19ABC01127C09F6B00105887 /* dsdpparam.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = dsdpparam.c; sourceTree = "<group>"; };
 		19B423A3279E845E00E35E0B /* libmkl_sequential.a */ = {isa = PBXFileReference; lastKnownFileType = archive.ar; name = libmkl_sequential.a; path = ../../../../../opt/intel/oneapi/mkl/2021.2.0/lib/libmkl_sequential.a; sourceTree = "<group>"; };
 		19B423A5279E849200E35E0B /* libmkl_core.a */ = {isa = PBXFileReference; lastKnownFileType = archive.ar; name = libmkl_core.a; path = ../../../../../opt/intel/oneapi/mkl/2021.2.0/lib/libmkl_core.a; sourceTree = "<group>"; };
 		19B423A6279E849200E35E0B /* libmkl_intel_lp64.a */ = {isa = PBXFileReference; lastKnownFileType = archive.ar; name = libmkl_intel_lp64.a; path = ../../../../../opt/intel/oneapi/mkl/2021.2.0/lib/libmkl_intel_lp64.a; sourceTree = "<group>"; };
@@ -494,13 +496,14 @@
 		19118DE32737B72800D51D03 /* interface */ = {
 			isa = PBXGroup;
 			children = (
-				19118DE42737B72800D51D03 /* dsdphsd.c */,
 				19118DE52737B72800D51D03 /* dsdphsd.h */,
 				19808F47273833760014086F /* dsdpparam.h */,
 				19BEEC2A2757F14A00C36C9E /* dsdpsolver.h */,
 				19C3BBD82794032000F0331B /* dsdplog.h */,
-				19C3BBD92794032000F0331B /* dsdplog.c */,
 				1934771127B7E1A00048A772 /* dsdpreadsdpa.h */,
+				19118DE42737B72800D51D03 /* dsdphsd.c */,
+				19C3BBD92794032000F0331B /* dsdplog.c */,
+				19ABC01127C09F6B00105887 /* dsdpparam.c */,
 				1934771227B7E1A00048A772 /* dsdpreadsdpa.c */,
 			);
 			path = interface;
@@ -662,6 +665,7 @@
 				19118DF62737B72800D51D03 /* cs_lsolve.c in Sources */,
 				19BEEC222756065600C36C9E /* cs_load.c in Sources */,
 				19118E142737B72800D51D03 /* cs_ereach.c in Sources */,
+				19ABC01227C09F6B00105887 /* dsdpparam.c in Sources */,
 				19118DF22737B72800D51D03 /* cs_reach.c in Sources */,
 				19118E132737B72800D51D03 /* cs_happly.c in Sources */,
 				19118E0A2737B72800D51D03 /* cs_maxtrans.c in Sources */,
@@ -793,7 +797,7 @@
 				ENABLE_STRICT_OBJC_MSGSEND = YES;
 				GCC_C_LANGUAGE_STANDARD = gnu11;
 				GCC_NO_COMMON_BLOCKS = YES;
-				GCC_OPTIMIZATION_LEVEL = 0;
+				GCC_OPTIMIZATION_LEVEL = fast;
 				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
 				GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;
 				GCC_WARN_UNDECLARED_SELECTOR = YES;
@@ -803,6 +807,7 @@
 				MACOSX_DEPLOYMENT_TARGET = 11.2;
 				MTL_ENABLE_DEBUG_INFO = NO;
 				MTL_FAST_MATH = YES;
+				ONLY_ACTIVE_ARCH = YES;
 				SDKROOT = macosx;
 			};
 			name = Release;
@@ -826,7 +831,7 @@
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				CODE_SIGN_STYLE = Automatic;
-				GCC_OPTIMIZATION_LEVEL = 0;
+				GCC_OPTIMIZATION_LEVEL = fast;
 				HEADER_SEARCH_PATHS = "./DSDP6/**";
 				LIBRARY_SEARCH_PATHS = (
 					"$(inherited)",

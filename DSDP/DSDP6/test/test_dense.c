@@ -1,5 +1,6 @@
 #include <time.h>
 #include "test.h"
+#include "dsdpcg.h"
 static char etype[] = "Test dense";
 /* Packed data
  
@@ -264,6 +265,27 @@ DSDP_INT test_dense(void) {
     
     /* Get diagonal */
     retcode = denseMatGetdiag(data, vecrhs); checkCodeFree;
+    
+    /* Conjugate gradient */
+    vec *cgsol = (vec *) calloc(1, sizeof(vec));
+    vec_alloc(cgsol, packAdim);
+
+    CGSolver *cgsolver = NULL;
+    cgsolver = (CGSolver *) calloc(1, sizeof(CGSolver));
+    dsdpCGInit(cgsolver);
+    dsdpCGAlloc(cgsolver, packAdim);
+    dsdpCGSetM(cgsolver, data);
+    dsdpCGSetMaxIter(cgsolver, 100);
+    dsdpCGSetTol(cgsolver, 1e-06);
+    dsdpCGSetDPre(cgsolver, vecrhs);
+    dsdpCGSolve(cgsolver, vecrhs, cgsol);
+    
+    vec_free(cgsol);
+    DSDP_FREE(cgsol);
+    dsdpCGFree(cgsolver);
+    DSDP_FREE(cgsolver);
+    
+    
     DSDP_INT npassed = 0;
     for (DSDP_INT i = 0; i < packAdim; ++i) {
         if (fabs(vecrhs->x[i] - diag[i] / 10) / diag[i] < 1e-08) {
