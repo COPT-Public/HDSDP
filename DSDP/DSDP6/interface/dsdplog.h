@@ -17,14 +17,14 @@ extern void dsdpCheckNan          ( HSDSolver *dsdpSolver );
 extern void     DSDPResetPhaseAMonitor     ( HSDSolver *dsdpSolver );
 extern DSDP_INT DSDPCheckPhaseAConvergence ( HSDSolver *dsdpSolver, DSDP_INT *isOK );
 extern DSDP_INT DSDPPhaseALogging          ( HSDSolver *dsdpSolver );
-extern DSDP_INT printPhaseASummary         ( HSDSolver *dsdpSolver, double time );
+extern DSDP_INT printPhaseASummary         ( HSDSolver *dsdpSolver );
 extern DSDP_INT printPhaseABConvert        ( HSDSolver *dsdpSolver, DSDP_INT *goPb );
 
 /* Phase B operations */
 extern void     DSDPResetPhaseBMonitor     ( HSDSolver *dsdpSolver );
 extern DSDP_INT DSDPCheckPhaseBConvergence ( HSDSolver *dsdpSolver, DSDP_INT *isOK );
 extern DSDP_INT DSDPPhaseBLogging          ( HSDSolver *dsdpSolver );
-extern DSDP_INT printPhaseBSummary         ( HSDSolver *dsdpSolver, double time );
+extern DSDP_INT printPhaseBSummary         ( HSDSolver *dsdpSolver );
 
 /* Timer */
 extern inline double my_clock(void);

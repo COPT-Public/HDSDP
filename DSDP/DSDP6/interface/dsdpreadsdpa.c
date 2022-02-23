@@ -177,7 +177,7 @@ static DSDP_INT DSDPPrepareSDPData( char     *filename,    // 'xxx.dat-s'
     *dObjVec = (double *) calloc(nconstr, sizeof(double));
     memcpy(*dObjVec, dObj, sizeof(double) * nconstr);
     
-    *nBlock = nblock;
+    *nBlock = nblock; 
     *nBlockVars = (DSDP_INT *) calloc(nblock, sizeof(DSDP_INT));
     memcpy(*nBlockVars, blocksizes, sizeof(DSDP_INT) * nblock);
     *nVars = nvars;

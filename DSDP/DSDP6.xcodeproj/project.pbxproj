@@ -8,6 +8,7 @@
 
 /* Begin PBXBuildFile section */
 		1901C7F227B15FB30046EFB2 /* dsdpcg.c in Sources */ = {isa = PBXBuildFile; fileRef = 1901C7F127B15FB30046EFB2 /* dsdpcg.c */; };
+		1905E06327C4AD240020D1B2 /* dsdpstats.c in Sources */ = {isa = PBXBuildFile; fileRef = 1905E06227C4AD240020D1B2 /* dsdpstats.c */; };
 		19118DE62737B72800D51D03 /* schurmat.c in Sources */ = {isa = PBXBuildFile; fileRef = 19118D942737B72800D51D03 /* schurmat.c */; };
 		19118DE72737B72800D51D03 /* hsd.c in Sources */ = {isa = PBXBuildFile; fileRef = 19118D952737B72800D51D03 /* hsd.c */; };
 		19118DE82737B72800D51D03 /* residualsetup.c in Sources */ = {isa = PBXBuildFile; fileRef = 19118D962737B72800D51D03 /* residualsetup.c */; };
@@ -74,8 +75,6 @@
 		19808F4327380A990014086F /* dsdppresolve.c in Sources */ = {isa = PBXBuildFile; fileRef = 19808F4227380A990014086F /* dsdppresolve.c */; };
 		19808F46273817510014086F /* rankonemat.c in Sources */ = {isa = PBXBuildFile; fileRef = 19808F45273817510014086F /* rankonemat.c */; };
 		1985AC3D279B9DB400B7B8EB /* dsdppfeas.c in Sources */ = {isa = PBXBuildFile; fileRef = 1985AC3C279B9DB400B7B8EB /* dsdppfeas.c */; };
-		199220852737D8C500DD975D /* libiomp5.dylib in Frameworks */ = {isa = PBXBuildFile; fileRef = 199220842737D8C500DD975D /* libiomp5.dylib */; settings = {ATTRIBUTES = (Weak, ); }; };
-		199220862737D8C500DD975D /* libiomp5.dylib in Embed Libraries */ = {isa = PBXBuildFile; fileRef = 199220842737D8C500DD975D /* libiomp5.dylib */; settings = {ATTRIBUTES = (CodeSignOnCopy, ); }; };
 		199FC13F27ACD9A00072897D /* prototypes.c in Sources */ = {isa = PBXBuildFile; fileRef = 199FC13E27ACD9A00072897D /* prototypes.c */; };
 		199FC14127AD061A0072897D /* dsdpeigfact.c in Sources */ = {isa = PBXBuildFile; fileRef = 199FC14027AD061A0072897D /* dsdpeigfact.c */; };
 		19ABC01227C09F6B00105887 /* dsdpparam.c in Sources */ = {isa = PBXBuildFile; fileRef = 19ABC01127C09F6B00105887 /* dsdpparam.c */; };
@@ -126,7 +125,6 @@
 				19B423A9279E84D900E35E0B /* libmkl_core.a in Embed Libraries */,
 				19B423AA279E84D900E35E0B /* libmkl_intel_lp64.a in Embed Libraries */,
 				19B423AB279E84D900E35E0B /* libmkl_sequential.a in Embed Libraries */,
-				199220862737D8C500DD975D /* libiomp5.dylib in Embed Libraries */,
 			);
 			name = "Embed Libraries";
 			runOnlyForDeploymentPostprocessing = 0;
@@ -136,6 +134,8 @@
 /* Begin PBXFileReference section */
 		1901C7F027B15FB30046EFB2 /* dsdpcg.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = dsdpcg.h; sourceTree = "<group>"; };
 		1901C7F127B15FB30046EFB2 /* dsdpcg.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = dsdpcg.c; sourceTree = "<group>"; };
+		1905E06127C4AD240020D1B2 /* dsdpstats.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = dsdpstats.h; sourceTree = "<group>"; };
+		1905E06227C4AD240020D1B2 /* dsdpstats.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = dsdpstats.c; sourceTree = "<group>"; };
 		19118D862737B6CF00D51D03 /* DSDP6 */ = {isa = PBXFileReference; explicitFileType = "compiled.mach-o.executable"; includeInIndex = 0; path = DSDP6; sourceTree = BUILT_PRODUCTS_DIR; };
 		19118D922737B72800D51D03 /* residualsetup.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = residualsetup.h; sourceTree = "<group>"; };
 		19118D932737B72800D51D03 /* stepheur.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = stepheur.h; sourceTree = "<group>"; };
@@ -282,7 +282,6 @@
 				19B423A8279E84BD00E35E0B /* libmkl_intel_lp64.a in Frameworks */,
 				19B423A4279E846F00E35E0B /* libmkl_sequential.a in Frameworks */,
 				19B423A7279E849F00E35E0B /* libmkl_core.a in Frameworks */,
-				199220852737D8C500DD975D /* libiomp5.dylib in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -500,9 +499,11 @@
 				19808F47273833760014086F /* dsdpparam.h */,
 				19BEEC2A2757F14A00C36C9E /* dsdpsolver.h */,
 				19C3BBD82794032000F0331B /* dsdplog.h */,
+				1905E06127C4AD240020D1B2 /* dsdpstats.h */,
 				1934771127B7E1A00048A772 /* dsdpreadsdpa.h */,
 				19118DE42737B72800D51D03 /* dsdphsd.c */,
 				19C3BBD92794032000F0331B /* dsdplog.c */,
+				1905E06227C4AD240020D1B2 /* dsdpstats.c */,
 				19ABC01127C09F6B00105887 /* dsdpparam.c */,
 				1934771227B7E1A00048A772 /* dsdpreadsdpa.c */,
 			);
@@ -620,6 +621,7 @@
 				19C3732B27A98B0D0021A708 /* dsdplanczos.c in Sources */,
 				19C3BBE62795054900F0331B /* dsdpproxmeasure.c in Sources */,
 				19BACAF5274EBC2D00E987FD /* test_dense.c in Sources */,
+				1905E06327C4AD240020D1B2 /* dsdpstats.c in Sources */,
 				1934771327B7E1A00048A772 /* dsdpreadsdpa.c in Sources */,
 				19BEEC262756065600C36C9E /* cs_lusol.c in Sources */,
 				19118E162737B72800D51D03 /* cs_amd.c in Sources */,

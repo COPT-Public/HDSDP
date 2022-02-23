@@ -149,8 +149,8 @@ extern DSDP_INT DSDPPhaseALogging( HSDSolver *dsdpSolver ) {
     
     char event[3] = " ";
     double nRy = fabs(dsdpSolver->Ry) * sqrt(dsdpSolver->n);
-    double tau = dsdpSolver->tau;
-    double kovert = dsdpSolver->kappa / tau;
+    double tau = dsdpSolver->tau, kovert = dsdpSolver->kappa / tau;
+    double statval;
     
     DSDP_INT *moniter = dsdpSolver->eventMonitor;
     
@@ -171,7 +171,8 @@ extern DSDP_INT DSDPPhaseALogging( HSDSolver *dsdpSolver ) {
         goto print_log;
     }
     
-    if (dsdpSolver->smallIter == 3 ||
+    DSDPGetStats(&dsdpSolver->dsdpStats, STAT_NUM_SMALL_ITER, &statval);
+    if ((DSDP_INT) statval >= 3 ||
         moniter[EVENT_NAN_IN_ITER] ||
         moniter[EVENT_BAD_SCHUR]) {
         strcpy(&event[0], "F");
@@ -187,8 +188,9 @@ extern DSDP_INT DSDPPhaseALogging( HSDSolver *dsdpSolver ) {
     }
     
 print_log:
+    DSDPGetStats(&dsdpSolver->dsdpStats, STAT_PHASE_A_ITER, &statval);
     printf("| %4d | %12.3e | %12.3e | %9.2e | %8.2e | %8.2e | %8.2e | %8.2e | %3s |\n",
-            dsdpSolver->iterA + 1, dsdpSolver->pObjVal, dsdpSolver->dObjVal / tau,
+            (DSDP_INT) statval + 1, dsdpSolver->pObjVal, dsdpSolver->dObjVal / tau,
             nRy / tau, kovert, dsdpSolver->mu, dsdpSolver->alpha, dsdpSolver->Pnrm,
             event);
     
@@ -211,6 +213,8 @@ extern DSDP_INT DSDPPhaseBLogging( HSDSolver *dsdpSolver ) {
     char event[3] = " ";
     DSDP_INT *moniter = dsdpSolver->eventMonitor;
     
+    double statval;
+    
     assert( moniter[EVENT_IN_PHASE_B] );
     
     if (moniter[EVENT_PFEAS_FOUND]) {
@@ -227,7 +231,8 @@ extern DSDP_INT DSDPPhaseBLogging( HSDSolver *dsdpSolver ) {
         goto print_log;
     }
     
-    if (dsdpSolver->smallIter == 3 ||
+    DSDPGetStats(&dsdpSolver->dsdpStats, STAT_NUM_SMALL_ITER, &statval);
+    if (statval >= 3 ||
         moniter[EVENT_NAN_IN_ITER] ||
         moniter[EVENT_BAD_SCHUR]   ||
         dsdpSolver->solStatus == DSDP_INTERNAL_ERROR) {
@@ -248,8 +253,9 @@ extern DSDP_INT DSDPPhaseBLogging( HSDSolver *dsdpSolver ) {
     }
     
 print_log:
+    DSDPGetStats(&dsdpSolver->dsdpStats, STAT_PHASE_B_ITER, &statval);
     printf("| %4d | %17.10e | %17.10e | %10.3e | %8.2e | %8.2e | %8.1e | %3s |\n",
-            dsdpSolver->iterB + 1, dsdpSolver->pObjVal, dsdpSolver->dObjVal,
+            (DSDP_INT) statval + 1, dsdpSolver->pObjVal, dsdpSolver->dObjVal,
             dsdpSolver->mu, dsdpSolver->alpha, dsdpSolver->Pnrm, dsdpSolver->dPotential,
             event);
     
@@ -264,7 +270,8 @@ extern DSDP_INT DSDPCheckPhaseAConvergence( HSDSolver *dsdpSolver, DSDP_INT *isO
     DSDP_INT *monitor = dsdpSolver->eventMonitor;
     
     DSDP_INT AmaxIter;
-    double absOptTol;
+    double absOptTol, statval1, statval2;
+    DSDPStats *stat = &dsdpSolver->dsdpStats;
     retcode = DSDPGetDblParam(dsdpSolver, DBL_PARAM_ABS_OPTTOL, &absOptTol);
     retcode = DSDPGetIntParam(dsdpSolver, INT_PARAM_AMAXITER, &AmaxIter);
     
@@ -307,7 +314,8 @@ extern DSDP_INT DSDPCheckPhaseAConvergence( HSDSolver *dsdpSolver, DSDP_INT *isO
     }
 
     // Maximum iteration
-    if (dsdpSolver->iterA >= AmaxIter) {
+    DSDPGetStats(stat, STAT_PHASE_A_ITER, &statval1);
+    if (statval1 >= AmaxIter) {
         monitor[EVENT_MAX_ITERATION] = TRUE;
         dsdpSolver->solStatus = DSDP_MAXITER;
         *isOK = TRUE;
@@ -315,10 +323,14 @@ extern DSDP_INT DSDPCheckPhaseAConvergence( HSDSolver *dsdpSolver, DSDP_INT *isO
     }
     
     // Small step
-    if (dsdpSolver->iterA > 0 && dsdpSolver->alpha < 1e-04 &&
+    DSDPGetStats(stat, STAT_PHASE_A_ITER, &statval1);
+    DSDPGetStats(stat, STAT_NUM_SMALL_ITER, &statval2);
+    
+    if (statval1 > 0 && dsdpSolver->alpha < 1e-04 &&
         !monitor[EVENT_PFEAS_FOUND]) {
         monitor[EVENT_SMALL_STEP] = TRUE;
-        dsdpSolver->smallIter += 1;
+        statval2 += 1.0;
+        DSDPStatUpdate(stat, STAT_NUM_SMALL_ITER, statval2);
     }
     
     // NAN in iteration
@@ -337,26 +349,30 @@ extern DSDP_INT DSDPCheckPhaseAConvergence( HSDSolver *dsdpSolver, DSDP_INT *isO
     return retcode;
 }
 
-extern DSDP_INT printPhaseASummary( HSDSolver *dsdpSolver, double time ) {
+extern DSDP_INT printPhaseASummary( HSDSolver *dsdpSolver ) {
     
     // Summarize Phase A iteration
     DSDP_INT retcode = DSDP_RETCODE_OK;
     char sAlog[80] = "| DSDP Phase A ends with status: ";
     dsdpshowdash();
     dsdpstatus(dsdpSolver->solStatus, &sAlog[33]);
+    double time;
+    DSDPGetStats(&dsdpSolver->dsdpStats, STAT_PHASE_A_TIME, &time);
     printf("%-80s %18s|\n", sAlog, "");
     printf("| Elapsed Time: %6.2e seconds %65s |\n", time, "");
     dsdpshowdash();
     return retcode;
 }
 
-extern DSDP_INT printPhaseBSummary( HSDSolver *dsdpSolver, double time ) {
+extern DSDP_INT printPhaseBSummary( HSDSolver *dsdpSolver ) {
     
     // Summarize Phase B iteration
     DSDP_INT retcode = DSDP_RETCODE_OK;
     char sBlog[80] = "| DSDP Phase B ends with status: ";
     dsdpshowdash();
     dsdpstatus(dsdpSolver->solStatus, &sBlog[33]);
+    double time;
+    DSDPGetStats(&dsdpSolver->dsdpStats, STAT_PHASE_B_TIME, &time);
     printf("%-80s %18s|\n", sBlog, "");
     printf("| Elapsed Time: %6.2e seconds %65s |\n", time, "");
     dsdpshowdash();
@@ -373,6 +389,9 @@ extern DSDP_INT DSDPCheckPhaseBConvergence( HSDSolver *dsdpSolver, DSDP_INT *isO
     assert( dsdpSolver->eventMonitor[EVENT_IN_PHASE_B] );
     *isOK = FALSE;
     
+    DSDPStats *stat = &dsdpSolver->dsdpStats;
+    double statval1, statval2;
+    
     // Dual objective exceeds primal
     /*
        This may happen due to the perturbation on Schur matrix but once instability
@@ -386,9 +405,11 @@ extern DSDP_INT DSDPCheckPhaseBConvergence( HSDSolver *dsdpSolver, DSDP_INT *isO
         return retcode;
     }
     
+    DSDPGetStats(stat, STAT_GAP_BROKEN, &statval1);
     if (dsdpSolver->dObjVal > dsdpSolver->pObjVal) {
-        if (!dsdpSolver->gapBroken) {
-            dsdpSolver->gapBroken = TRUE;
+        if (statval1 == 0.0) {
+            statval1 += 1.0;
+            DSDPStatUpdate(stat, STAT_GAP_BROKEN, statval1);
             dsdpSolver->pObjVal = dsdpSolver->dObjVal + 1e+08;
             monitor[EVENT_INVALID_GAP] = TRUE;
         } else {
@@ -414,20 +435,22 @@ extern DSDP_INT DSDPCheckPhaseBConvergence( HSDSolver *dsdpSolver, DSDP_INT *isO
     }
     
     // Maximum iteration
-    if (dsdpSolver->iterB >= BmaxIter) {
+    DSDPGetStats(stat, STAT_PHASE_B_ITER, &statval1);
+    if (statval1 >= BmaxIter) {
         monitor[EVENT_MAX_ITERATION] = TRUE;
         dsdpSolver->solStatus = DSDP_MAXITER;
         *isOK = TRUE;
     }
     
     // Small step
-    if (dsdpSolver->iterB > 0 && dsdpSolver->alpha < 1e-04 &&
+    DSDPGetStats(stat, STAT_NUM_SMALL_ITER, &statval2);
+    if (statval1 > 0 && dsdpSolver->alpha < 1e-04 &&
         !monitor[EVENT_PFEAS_FOUND]) {
         monitor[EVENT_SMALL_STEP] = TRUE;
-        dsdpSolver->smallIter += 1;
+        DSDPStatUpdate(stat, STAT_NUM_SMALL_ITER, statval2);
     }
     
-    if (dsdpSolver->smallIter == 3) {
+    if (statval2 >= 3) {
         dsdpSolver->solStatus = DSDP_INTERNAL_ERROR;
         return retcode;
     }

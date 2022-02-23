@@ -1,6 +1,7 @@
 #include <stdio.h>
 #include "dsdphsd.h"
 #include "dsdpparam.h"
+#include "dsdplog.h"
 
 /* Implement DSDP parameter interface */
 static void printDblParam( const double *dblParams, DSDP_INT pName ) {
@@ -236,6 +237,20 @@ extern void printParams( hsdParam *param ) {
     for (DSDP_INT pName = 0; pName < NUM_INT_PARAM; ++pName ) {
         printIntParam(param->intParams, pName);
     }
+    
+    return;
+}
+
+/* DSDP Summary parameters printer */
+extern void DSDPParamPrint( hsdParam *param ) {
+    // Print DSDP Parameters at the beginning. Invoked before solution
+    
+    dsdpshowdash();
+    printf("| Parameter Summary: \n");
+    dsdpshowdash();
+    printDblParam(param->dblParams, DBL_PARAM_RHO);
+    printIntParam(param->intParams, INT_PARAM_PRESOLVE);
+    printIntParam(param->intParams, INT_PARAM_AATTEMPT);
     
     return;
 }

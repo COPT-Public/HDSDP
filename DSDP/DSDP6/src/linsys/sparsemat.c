@@ -641,26 +641,76 @@ extern DSDP_INT spsMatFnorm( spsMat *sMat, double *fnrm ) {
     DSDP_INT retcode = DSDP_RETCODE_OK;
     assert( sMat->dim > 0 );
     
-    DSDP_INT idx;
+    DSDP_INT idx, i, n = sMat->dim;
     double nrm = 0.0, tmp;
-    nrm = norm(&sMat->nnz, sMat->x, &one);
-    nrm = 2 * nrm * nrm;
     
-    // Retrieve the diagonal elements
-    for (DSDP_INT i = 0; i < sMat->dim; ++i) {
-        idx = sMat->p[i];
-        
-        if (idx == sMat->nnz) {
-            break;
+    if (sMat->nzHash) {
+        DSDP_INT j, k;
+        for (i = 0; i < sMat->nnz; ++i) {
+            j = sMat->i[i];
+            k = sMat->nzHash[i];
+            if (j == k) {
+                nrm += sMat->x[i] * sMat->x[i];
+            } else {
+                nrm += 2 * sMat->x[i] * sMat->x[i];
+            }
         }
-        
-        if (idx < sMat->p[i + 1] && sMat->i[idx] == i) {
-            tmp = sMat->x[idx];
-            nrm -= tmp * tmp;
+        *fnrm = sqrt(nrm);
+    } else if (sMat->nnz == nsym(n)) {
+        char ntype = 'F';
+        char low = DSDP_MAT_LOW;
+        *fnrm = dlansp(&ntype, &low, &n, sMat->x, NULL);
+    } else {
+        assert( FALSE );
+        nrm = norm(&sMat->nnz, sMat->x, &one);
+        nrm = 2 * nrm * nrm;
+        for (i = 0; i < sMat->dim; ++i) {
+            idx = sMat->p[i];
+            if (idx == sMat->nnz) { break;}
+            if (idx < sMat->p[i + 1] && sMat->i[idx] == i) {
+                tmp = sMat->x[idx];
+                nrm -= tmp * tmp;
+            }
         }
+        *fnrm = sqrt(nrm);
     }
     
-    *fnrm = sqrt(nrm);
+    return retcode;
+}
+
+extern DSDP_INT spsMatOneNorm( spsMat *sMat, double *onenrm ) {
+    
+    // Element-wise sum of absolute values
+    DSDP_INT retcode = DSDP_RETCODE_OK;
+    
+    double nrm = 0.0;
+    DSDP_INT i, j, k;
+    if (sMat->nzHash) {
+        for (i = 0; i < sMat->nnz; ++i) {
+            j = sMat->i[i];
+            k = sMat->nzHash[i];
+            if (j == k) {
+                nrm += 0.5 * fabs(sMat->x[i]);
+            } else {
+                nrm += fabs(sMat->x[i]);
+            }
+        }
+        nrm *= 2;
+    } else {
+        assert( sMat->nnz == nsym(sMat->dim) );
+        for (i = 0; i < sMat->nnz; ++i) {
+            nrm += fabs(sMat->x[i]);
+        }
+        
+        j = 0; k = sMat->dim;
+        for (i = 0; i < k; ++i) {
+            nrm -= 0.5 * sMat->x[j];
+            j += k - i;
+        }
+        nrm *= 2;
+    }
+
+    *onenrm = nrm;
     return retcode;
 }
 
@@ -862,8 +912,7 @@ extern DSDP_INT spsMatGetX( spsMat *S, spsMat *dS, double *LinvSLTinv ) {
         fulldS[i * n + i] += 1.0;
         for (DSDP_INT j = i + 1; j < n; ++j) {
             tmp = (fulldS[i * n + j] + fulldS[j * n + i]) * 0.5;
-            fulldS[i * n + j] = tmp;
-            fulldS[j * n + i] = tmp;
+            fulldS[i * n + j] = fulldS[j * n + i] = tmp;
         }
     }
     
@@ -875,8 +924,7 @@ extern DSDP_INT spsMatGetX( spsMat *S, spsMat *dS, double *LinvSLTinv ) {
     for (DSDP_INT i = 0; i < n; ++i) {
         for (DSDP_INT j = i + 1; j < n; ++j) {
             tmp = (fulldS[i * n + j] + fulldS[j * n + i]) * 0.5;
-            fulldS[i * n + j] = tmp;
-            fulldS[j * n + i] = tmp;
+            fulldS[i * n + j] = fulldS[j * n + i] = tmp;
         }
     }
     

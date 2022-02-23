@@ -32,16 +32,14 @@ extern DSDP_INT DSDPPFeasPhase( HSDSolver *dsdpSolver ) {
     // Start dual scaling
     DSDP_INT stop = FALSE;
     double start = my_clock();
+    double newmu = 0.0, muub = 0.0, mulb = 0.0, time = 0.0;
+    DSDPStats *stat = &dsdpSolver->dsdpStats;
     
-    double newmu = 0.0;
-    double muub  = 0.0;
-    double mulb  = 0.0;
-    double time  = 0.0;
-    
-    for (DSDP_INT i = 0; ; ++i) {
+    DSDP_INT i;
+    for (i = 0; ; ++i) {
 
         // Start iteration
-        dsdpSolver->iterB = i;
+        DSDPStatUpdate(&dsdpSolver->dsdpStats, STAT_PHASE_B_ITER, (double) i);
         dsdpSolver->iterProgress[ITER_LOGGING] = FALSE;
 
         // Check NAN
@@ -96,10 +94,12 @@ extern DSDP_INT DSDPPFeasPhase( HSDSolver *dsdpSolver ) {
         
         checkIterProgress(dsdpSolver, ITER_NEXT_ITERATION);
 
-        time =  my_clock() - start;
+        time = my_clock() - start;
     }
     
-    printPhaseBSummary(dsdpSolver, time);
+    DSDPStatUpdate(stat, STAT_PHASE_B_TIME, time);
+    DSDPStatUpdate(stat, STAT_PHASE_B_ITER, i + 1);
+    printPhaseBSummary(dsdpSolver);
     
     return retcode;
 }

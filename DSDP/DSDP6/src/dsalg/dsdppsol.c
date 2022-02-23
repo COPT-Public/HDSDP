@@ -9,11 +9,12 @@ extern DSDP_INT computePrimalX( HSDSolver *dsdpSolver ) {
     assert( dsdpSolver->solStatus == DSDP_OPTIMAL );
     
     DSDP_INT nblock = dsdpSolver->nBlock, dim = 0;
-    vec *dymaker = dsdpSolver->dymaker;
-    vec *ymaker = dsdpSolver->ymaker;
+    vec *dymaker = dsdpSolver->dymaker, *ymaker = dsdpSolver->ymaker;
     spsMat *Smaker = NULL, *bnmaker = NULL;
     double mumaker = dsdpSolver->mumaker;
     double *Xtmp = NULL;
+    
+    clock_t start = clock();
     
     // getPhaseBS(dsdpSolver, dsdpSolver->y->x);
     // Smaker = C - dsdpgetATy(A, ymaker);
@@ -56,45 +57,24 @@ extern DSDP_INT computePrimalX( HSDSolver *dsdpSolver ) {
         DSDP_FREE(Xtmp);
     }
     
+    DSDPStatUpdate(&dsdpSolver->dsdpStats, STAT_GET_X_TIME,
+                   (double) (clock() - start) / CLOCKS_PER_SEC);
+    
     return retcode;
 }
 
-extern DSDP_INT computeDIMACS( HSDSolver *dsdpSolver,
-                               double *err1, double *err2,
-                               double *err3, double *err4,
-                               double *err5, double *err6 ) {
+extern DSDP_INT computeDIMACS( HSDSolver *dsdpSolver ) {
     
     /* Compute the DIMACS error after solution is setup */
     DSDP_INT retcode = DSDP_RETCODE_OK;
     
+    DSDPStats *stat = &dsdpSolver->dsdpStats;
     double bnrm, Cnrm, pObj, dObj, dInf, pInf,
            gap, trace, tmp, minEigX, minEigS, compslack;
     DSDP_INT nblock = dsdpSolver->nBlock, m = dsdpSolver->m;
-    vec_norm(dsdpSolver->dObj, &bnrm);
     
-    DSDP_INT dim = dsdpSolver->dsaux[0]->dim;
-    double res = 0.0;
-    double *aux1 = (double *) calloc(dim * dim, sizeof(double));
-    double *aux2 = (double *) calloc(dim * dim, sizeof(double));
-    spsMatFill(dsdpSolver->S[0], aux1);
-    denseMatFill(dsdpSolver->dsaux[0], aux2);
-    
-    for (DSDP_INT i = 0; i < dim; ++i) {
-        for (DSDP_INT j = 0; j < dim; ++j) {
-            res += aux1[i * dim + j] * aux2[i * dim + j];
-        }
-    }
-    
-    DSDP_FREE(aux1);
-    DSDP_FREE(aux2);
-    
-    // TODO: Replace Cnrm by 1-norm
-    Cnrm = 0.0;
-    for (DSDP_INT i = 0; i < dsdpSolver->nBlock; ++i) {
-        getMatnrm(dsdpSolver, i, dsdpSolver->m, &tmp);
-        Cnrm += tmp * tmp;
-    }
-    Cnrm = sqrt(Cnrm);
+    DSDPGetStats(stat, STAT_ONE_NORM_C, &Cnrm);
+    DSDPGetStats(stat, STAT_ONE_NORM_B, &bnrm);
     
     vec_dot(dsdpSolver->dObj, dsdpSolver->y, &dObj);
     
@@ -146,12 +126,12 @@ extern DSDP_INT computeDIMACS( HSDSolver *dsdpSolver,
     }
     
     // Collect errors
-    *err1 = pInf / (1 + bnrm);
-    *err2 = MAX(0.0, -minEigX) / (1 + bnrm);
-    *err3 = 0.0;
-    *err4 = MAX(0.0, -minEigS) / (1 + Cnrm);
-    *err5 = gap / (1 + fabs(pObj) + fabs(dObj));
-    *err6 = compslack / (1 + fabs(pObj) + fabs(dObj));
-
+    DSDPStatUpdate(stat, STAT_DIMACS_ERR1, pInf / (1 + bnrm));
+    DSDPStatUpdate(stat, STAT_DIMACS_ERR2, MAX(0.0, -minEigX) / (1 + bnrm));
+    DSDPStatUpdate(stat, STAT_DIMACS_ERR3, 0.0);
+    DSDPStatUpdate(stat, STAT_DIMACS_ERR4, MAX(0.0, -minEigS) / (1 + Cnrm));
+    DSDPStatUpdate(stat, STAT_DIMACS_ERR5, gap / (1 + fabs(pObj) + fabs(dObj)));
+    DSDPStatUpdate(stat, STAT_DIMACS_ERR6, compslack / (1 + fabs(pObj) + fabs(dObj)));
+                   
     return retcode;
 }

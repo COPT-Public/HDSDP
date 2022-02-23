@@ -219,6 +219,25 @@ extern DSDP_INT denseMatFnorm( dsMat *dMat, double *fnrm ) {
     return retcode;
 }
 
+extern DSDP_INT denseMatOneNorm( dsMat *dMat, double *onenrm ) {
+    
+    DSDP_INT retcode = DSDP_RETCODE_OK;
+    DSDP_INT i, n = dMat->dim;
+    double nrm = 0.0;
+    
+    for (i = 0; i < nsym(n); ++i) {
+        nrm += fabs(dMat->array[i]);
+    }
+    
+    for (i = 0; i < n; ++i) {
+        nrm -= 0.5 * packIdx(dMat->array, n, i, i);
+    }
+    
+    *onenrm = 2 * nrm;
+    
+    return retcode;
+}
+
 /* Factorization and linear system solver */
 extern DSDP_INT denseMatFactorize( dsMat *dAMat ) {
     

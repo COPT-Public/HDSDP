@@ -67,7 +67,7 @@ static double defaultDblParam[NUM_DBL_PARAM] = {
     4.0,   // DBL_PARAM_RHO
     1e+05, // DBL_PARAM_INIT_POBJ
     1.0,   // DBL_PARAM_INIT_BETA
-    1e+06,   // DBL_PARAM_INIT_MU
+    1e+06, // DBL_PARAM_INIT_MU
     1.0,   // DBL_PARAM_INIT_TAU
     1.0,   // DBL_PARAM_INIT_KAPPA
     0.75,  // DBL_PARAM_AALPHA
@@ -90,5 +90,6 @@ extern DSDP_INT getDblParam ( hsdParam *param, DSDP_INT pName, double   *dblVal 
 extern DSDP_INT setIntParam ( hsdParam *param, DSDP_INT pName, DSDP_INT  intVal );
 extern DSDP_INT getIntParam ( hsdParam *param, DSDP_INT pName, DSDP_INT *intVal );
 extern void     printParams ( hsdParam *param                                   );
+extern void     DSDPParamPrint ( hsdParam *param );
 
 #endif /* dsdpparam_h */

@@ -33,6 +33,8 @@ extern DSDP_INT DSDPDInfeasEliminator( HSDSolver *dsdpSolver ) {
     DSDP_INT retcode = DSDP_RETCODE_OK;
     DSDP_INT goOn = TRUE;
     
+    DSDPStats *stat = &dsdpSolver->dsdpStats;
+    
     dsdpSolver->pObjVal = DSDP_INFINITY;
     
     // Initialize
@@ -75,10 +77,11 @@ extern DSDP_INT DSDPDInfeasEliminator( HSDSolver *dsdpSolver ) {
     /* Print algorithm header */
     dsdpprintPhaseAheader();
     
-    for (DSDP_INT i = 0; ; ++i) {
+    DSDP_INT i;
+    for (i = 0; ; ++i) {
         
         // Start iteration
-        dsdpSolver->iterA = i;
+        DSDPStatUpdate(stat, STAT_PHASE_A_ITER, (double) i);
         dsdpSolver->iterProgress[ITER_LOGGING] = FALSE;
         dsdpSolver->iterProgress[ITER_DUAL_OBJ] = FALSE;
         
@@ -145,8 +148,10 @@ extern DSDP_INT DSDPDInfeasEliminator( HSDSolver *dsdpSolver ) {
     }
     
     dsdpSolver->mu = muprimal;
-    printPhaseASummary(dsdpSolver, time);
     
-        
+    DSDPStatUpdate(stat, STAT_PHASE_A_TIME, (double) time);
+    DSDPStatUpdate(stat, STAT_PHASE_A_ITER, (double) i + 1);
+    printPhaseASummary(dsdpSolver);
+    
     return retcode;
 }

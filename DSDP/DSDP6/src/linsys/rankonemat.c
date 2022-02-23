@@ -12,7 +12,6 @@ extern DSDP_INT r1MatInit( r1Mat *x ) {
     x->sign  = 0;
     x->nnz   = 0;
     x->nzIdx = NULL;
-    
     return DSDP_RETCODE_OK;
 }
 
@@ -358,13 +357,41 @@ extern DSDP_INT r1MatFnorm( r1Mat *x, double *fnrm ) {
         *fnrm = norm(&x->dim, x->x, &one);
         *fnrm = (*fnrm) * (*fnrm) * fabs(x->sign);
     }
-    return DSDP_RETCODE_OK;
     
+    return DSDP_RETCODE_OK;
+}
+
+extern DSDP_INT r1MatOneNorm( r1Mat *x, double *onenrm ) {
+    
+    assert( x->dim );
+    double res = 0.0, *xdata = x->x;
+    DSDP_INT i, j, *nzIdx = x->nzIdx;
+    
+    if (x->nnz < 0.6 * x->dim) {
+        DSDP_INT nnz = x->nnz;
+        for (i = 0; i < nnz; ++i) {
+            for (j = 0; j < i; ++j) {
+                res += fabs(xdata[nzIdx[i]] * xdata[nzIdx[j]]);
+            }
+            res += 0.5 * fabs(xdata[nzIdx[i]] * xdata[nzIdx[i]]);
+        }
+    } else {
+        DSDP_INT n = x->dim;
+        for (i = 0; i < n; ++i) {
+            for (j = 0; j < i; ++j) {
+                res += fabs(xdata[i] * xdata[j]);
+            }
+            res += 0.5 * fabs(xdata[i] * xdata[i]);
+        }
+    }
+    
+    *onenrm = 2 * fabs(x->sign) * res;
+    return DSDP_RETCODE_OK;
 }
 
 extern DSDP_INT r1MatRscale( r1Mat *x, double r ) {
     
-    assert( (x->dim) && (r != 0.0));
+    assert( (x->dim) && (r != 0.0) );
     
     x->sign = x->sign / r;
     return DSDP_RETCODE_OK;

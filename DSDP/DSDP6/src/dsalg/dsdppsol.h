@@ -11,11 +11,8 @@
 extern "C" {
 #endif
 
-extern DSDP_INT computePrimalX( HSDSolver *dsdpSolver );
-extern DSDP_INT computeDIMACS( HSDSolver *dsdpSolver,
-                               double *err1, double *err2,
-                               double *err3, double *err4,
-                               double *err5, double *err6 );
+extern DSDP_INT computePrimalX ( HSDSolver *dsdpSolver );
+extern DSDP_INT computeDIMACS  ( HSDSolver *dsdpSolver );
 
 #ifdef __cplusplus
 }

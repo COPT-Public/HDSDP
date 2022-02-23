@@ -81,25 +81,9 @@
             filePath = "DSDP6/interface/dsdphsd.c"
             startingColumnNumber = "9223372036854775807"
             endingColumnNumber = "9223372036854775807"
-            startingLineNumber = "571"
-            endingLineNumber = "571"
+            startingLineNumber = "539"
+            endingLineNumber = "539"
             landmarkName = "DSDPIPresolve(dsdpSolver)"
-            landmarkType = "9">
-         </BreakpointContent>
-      </BreakpointProxy>
-      <BreakpointProxy
-         BreakpointExtensionID = "Xcode.Breakpoint.FileBreakpoint">
-         <BreakpointContent
-            uuid = "92CE6B70-5E0D-442F-A1AB-8923AD355BAD"
-            shouldBeEnabled = "No"
-            ignoreCount = "0"
-            continueAfterRunningActions = "No"
-            filePath = "DSDP6/src/dsalg/schurmat.c"
-            startingColumnNumber = "9223372036854775807"
-            endingColumnNumber = "9223372036854775807"
-            startingLineNumber = "663"
-            endingLineNumber = "663"
-            landmarkName = "setupFactorize(dsdpSolver)"
             landmarkType = "9">
          </BreakpointContent>
       </BreakpointProxy>
@@ -113,8 +97,8 @@
             filePath = "DSDP6/src/dsalg/dsdputils.c"
             startingColumnNumber = "9223372036854775807"
             endingColumnNumber = "9223372036854775807"
-            startingLineNumber = "360"
-            endingLineNumber = "360"
+            startingLineNumber = "392"
+            endingLineNumber = "392"
             landmarkName = "addMattoIter(data, alpha, iterS, sumHash)"
             landmarkType = "9">
          </BreakpointContent>
@@ -161,8 +145,8 @@
             filePath = "DSDP6/src/presolve/dsdppresolve.c"
             startingColumnNumber = "9223372036854775807"
             endingColumnNumber = "9223372036854775807"
-            startingLineNumber = "754"
-            endingLineNumber = "754"
+            startingLineNumber = "743"
+            endingLineNumber = "743"
             landmarkName = "preSDPgetSymbolic(dsdpSolver, blockid)"
             landmarkType = "9">
          </BreakpointContent>
@@ -177,8 +161,8 @@
             filePath = "DSDP6/src/dsalg/schurmat.c"
             startingColumnNumber = "9223372036854775807"
             endingColumnNumber = "9223372036854775807"
-            startingLineNumber = "690"
-            endingLineNumber = "690"
+            startingLineNumber = "692"
+            endingLineNumber = "692"
             landmarkName = "schurPhaseAMatSolve(dsdpSolver)"
             landmarkType = "9">
          </BreakpointContent>
@@ -330,22 +314,6 @@
       <BreakpointProxy
          BreakpointExtensionID = "Xcode.Breakpoint.FileBreakpoint">
          <BreakpointContent
-            uuid = "F565234C-E643-4FC9-BA47-F84066C42997"
-            shouldBeEnabled = "Yes"
-            ignoreCount = "0"
-            continueAfterRunningActions = "No"
-            filePath = "DSDP6/src/dsalg/stepheur.c"
-            startingColumnNumber = "9223372036854775807"
-            endingColumnNumber = "9223372036854775807"
-            startingLineNumber = "266"
-            endingLineNumber = "266"
-            landmarkName = "selectMu(dsdpSolver, newmu)"
-            landmarkType = "9">
-         </BreakpointContent>
-      </BreakpointProxy>
-      <BreakpointProxy
-         BreakpointExtensionID = "Xcode.Breakpoint.FileBreakpoint">
-         <BreakpointContent
             uuid = "3B404353-84CE-4F22-B96D-5CEF90B885F5"
             shouldBeEnabled = "No"
             ignoreCount = "0"
@@ -353,8 +321,8 @@
             filePath = "DSDP6/src/linsys/sparsemat.c"
             startingColumnNumber = "9223372036854775807"
             endingColumnNumber = "9223372036854775807"
-            startingLineNumber = "911"
-            endingLineNumber = "911"
+            startingLineNumber = "959"
+            endingLineNumber = "959"
             landmarkName = "dsdpGetAlpha(S, dS, spaux, alpha)"
             landmarkType = "9">
          </BreakpointContent>
@@ -385,8 +353,8 @@
             filePath = "DSDP6/src/dsalg/dsdputils.c"
             startingColumnNumber = "9223372036854775807"
             endingColumnNumber = "9223372036854775807"
-            startingLineNumber = "261"
-            endingLineNumber = "261"
+            startingLineNumber = "263"
+            endingLineNumber = "263"
             landmarkName = "dsdpCheckerInCone(dsdpSolver, ispsd)"
             landmarkType = "9">
          </BreakpointContent>

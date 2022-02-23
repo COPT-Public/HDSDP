@@ -96,7 +96,7 @@ static DSDP_INT initresi( HSDSolver *dsdpSolver ) {
     
     for (DSDP_INT i = 0; i < dsdpSolver->nBlock; ++i) {
         // Matrix of index m in each block is C
-        retcode = getMatnrm(dsdpSolver, i, m, &nrm);
+        retcode = getMatFnorm(dsdpSolver, i, m, &nrm);
         checkCode;
         Cnrm = nrm * nrm + Cnrm;
     }
@@ -153,7 +153,7 @@ extern DSDP_INT dsdpInitializeB( HSDSolver *dsdpSolver ) {
     retcode = DSDPGetIntParam(dsdpSolver, INT_PARAM_BMAXITER, &BmaxIter);
 
     // Reset the number of iterations taking small stepsize
-    dsdpSolver->smallIter = 0;
+    DSDPStatUpdate(&dsdpSolver->dsdpStats, STAT_NUM_SMALL_ITER, 0.0);
     dsdpSolver->dObjVal = dsdpSolver->dObjVal / dsdpSolver->tau;
     dsdpSolver->dPotential = DSDP_INFINITY;
     

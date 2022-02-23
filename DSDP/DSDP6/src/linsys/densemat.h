@@ -28,6 +28,7 @@ extern DSDP_INT denseMataAxpby   ( dsMat *dAMat, double alpha, vec *x, double be
 extern DSDP_INT denseMatAdddiag  ( dsMat *dAMat, double d                                   );
 extern DSDP_INT denseMatxTAx     ( dsMat *dAMat, double *x, double *xTAx                    );
 extern DSDP_INT denseMatFnorm    ( dsMat  *dMat, double *fnrm                               );
+extern DSDP_INT denseMatOneNorm  ( dsMat *dMat, double *onenrm                              );
 extern DSDP_INT denseMatRscale   ( dsMat *dXMat, double r                                   );
 
 /* Factorization and linear system solver */

@@ -5,6 +5,7 @@
 #include "dsdpdata.h"
 #include "dsdpcg.h"
 #include "dsdpparam.h"
+#include "dsdpstats.h"
 
 #define IterStep 20
 #define nEvent   20
@@ -93,10 +94,6 @@ typedef struct {
     hsdParam *param;      // Solver parameters
     
     // Solver status
-    DSDP_INT iterA;       // Iteration in phase A
-    DSDP_INT iterB;       // Iteration in phase B
-    DSDP_INT smallIter;   // Number of iteration admitting small stepsize
-    DSDP_INT gapBroken;   // Duality gap violated
     DSDP_INT insStatus;   // Solver instance status
     DSDP_INT solStatus;   // Solver solution status
     
@@ -108,6 +105,9 @@ typedef struct {
     vec      *ymaker;     // y
     vec      *dymaker;    // dy
     double   mumaker;     // mu
+    
+    // Solver statistics
+    DSDPStats dsdpStats;  // Solver statistics
     
 } HSDSolver;
 

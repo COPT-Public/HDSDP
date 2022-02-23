@@ -255,9 +255,11 @@ extern DSDP_INT dsdpCheckerInCone( HSDSolver *dsdpSolver, DSDP_INT *ispsd ) {
     // Determine whether the current checking auxiliary variable lies in the cone
     DSDP_INT retcode = DSDP_RETCODE_OK;
     DSDP_INT incone = FALSE;
+    double iterB;
     
+    DSDPGetStats(&dsdpSolver->dsdpStats, STAT_PHASE_B_ITER, &iterB);
     for (DSDP_INT i = 0; i < dsdpSolver->nBlock; ++i) {
-        if (dsdpSolver->iterB >= 50) {
+        if (iterB >= 50) {
             spsMatAdddiag(dsdpSolver->Scker[i], 1e-06, dsdpSolver->symS[i]);
         }
         spsMatIspd(dsdpSolver->Scker[i], &incone);
@@ -287,7 +289,7 @@ extern DSDP_INT dsdpInCone( HSDSolver *dsdpSolver, DSDP_INT *ispsd ) {
 }
 
 /* Coefficient norm computer */
-extern DSDP_INT getMatnrm( HSDSolver *dsdpSolver, DSDP_INT blockid, DSDP_INT constrid, double *nrm ) {
+extern DSDP_INT getMatFnorm( HSDSolver *dsdpSolver, DSDP_INT blockid, DSDP_INT constrid, double *nrm ) {
     
     DSDP_INT retcode = DSDP_RETCODE_OK;
     void *data = dsdpSolver->sdpData[blockid]->sdpData[constrid];
@@ -312,6 +314,36 @@ extern DSDP_INT getMatnrm( HSDSolver *dsdpSolver, DSDP_INT blockid, DSDP_INT con
     
     checkCode;
     return retcode;
+}
+
+extern DSDP_INT getMatOneNorm( HSDSolver *dsdpSolver, DSDP_INT blockid, DSDP_INT constrid, double *nrm ) {
+    
+    DSDP_INT retcode = DSDP_RETCODE_OK;
+    void *data = dsdpSolver->sdpData[blockid]->sdpData[constrid];
+    
+    switch (dsdpSolver->sdpData[blockid]->types[constrid]) {
+        case MAT_TYPE_ZERO:
+            *nrm = 0.0;
+            break;
+        case MAT_TYPE_DENSE:
+            retcode = denseMatOneNorm(data, nrm);
+            break;
+        case MAT_TYPE_SPARSE:
+            retcode = spsMatOneNorm(data, nrm);
+            break;
+        case MAT_TYPE_RANKK:
+            retcode = r1MatOneNorm(data, nrm);
+            break;
+        default:
+            error(etype, "Unknown matrix type. \n");
+            break;
+    }
+    
+    checkCode;
+    return retcode;
+    
+    
+    
 }
 
 /* Matrix Scaler */
