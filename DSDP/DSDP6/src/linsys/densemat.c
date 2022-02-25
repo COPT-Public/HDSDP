@@ -1,5 +1,6 @@
 #include "densemat.h"
 #include "sparsemat.h"
+#include "rankkmat.h"
 #include "dsdpeigfact.h"
 
 // Error type
@@ -94,7 +95,11 @@ extern DSDP_INT denseMatAlloc( dsMat *dMat, DSDP_INT dim, DSDP_INT doFactor ) {
     assert( dMat->dim == 0 );
     
     dMat->dim   = dim;
-    dMat->array = (double *) calloc((DSDP_INT) nsym(dim), sizeof(double));
+    if (FALSE) {
+        dMat->array = (double *) calloc(dim * dim, sizeof(double)); // For dsaux
+    } else {
+        dMat->array = (double *) calloc((DSDP_INT) nsym(dim), sizeof(double));
+    }
     
     if (doFactor) {
         dMat->lfactor = (double *) calloc((DSDP_INT) nsym(dim), sizeof(double));
@@ -116,6 +121,10 @@ extern DSDP_INT denseMatFree( dsMat *dMat ) {
         DSDP_FREE(dMat->array);
         DSDP_FREE(dMat->lfactor);
         DSDP_FREE(dMat->ipiv);
+    }
+    
+    if (dMat->factor) {
+        rkMatFree(dMat->factor);
     }
     
     return retcode;
@@ -203,6 +212,10 @@ extern DSDP_INT denseMatRscale( dsMat *dXMat, double r ) {
     DSDP_INT n = nsym(dXMat->dim);
     vecdiv(&n, &r, dXMat->array, &one);
     
+    if (dXMat->factor) {
+        rkMatRscale(dXMat->factor, r);
+    }
+    
     return retcode;
 }
 
@@ -211,11 +224,16 @@ extern DSDP_INT denseMatFnorm( dsMat *dMat, double *fnrm ) {
     DSDP_INT retcode = DSDP_RETCODE_OK;
     assert( dMat->dim > 0);
     
-    char nrm     = DSDP_MAT_FNORM;
-    char uplo    = DSDP_MAT_LOW;
-    double *work = NULL;
+    char nrm = DSDP_MAT_FNORM, uplo = DSDP_MAT_LOW;
+    double *work = NULL; DSDP_INT rank;
+    denseMatGetRank(dMat, &rank);
     
-    *fnrm = fnorm(&nrm, &uplo, &dMat->dim, dMat->array, work);
+    if (rank < dMat->dim * 0.3) {
+        rkMatFnorm(dMat->factor, fnrm);
+    } else {
+        *fnrm = fnorm(&nrm, &uplo, &dMat->dim, dMat->array, work);
+    }
+    
     return retcode;
 }
 
@@ -225,14 +243,8 @@ extern DSDP_INT denseMatOneNorm( dsMat *dMat, double *onenrm ) {
     DSDP_INT i, n = dMat->dim;
     double nrm = 0.0;
     
-    for (i = 0; i < nsym(n); ++i) {
-        nrm += fabs(dMat->array[i]);
-    }
-    
-    for (i = 0; i < n; ++i) {
-        nrm -= 0.5 * packIdx(dMat->array, n, i, i);
-    }
-    
+    for (i = 0; i < nsym(n); ++i) { nrm += fabs(dMat->array[i]); }
+    for (i = 0; i < n; ++i) { nrm -= 0.5 * packIdx(dMat->array, n, i, i); }
     *onenrm = 2 * nrm;
     
     return retcode;
@@ -498,6 +510,28 @@ extern DSDP_INT denseMatScatter( dsMat *dMat, vec *b, DSDP_INT k ) {
     return retcode;
 }
 
+extern DSDP_INT denseMatStoreFactor( dsMat *dMat, rkMat *factor ) {
+    
+    DSDP_INT retcode = DSDP_RETCODE_OK;
+    dMat->factor = factor;
+    return retcode;
+}
+
+extern rkMat* denseMatGetFactor( dsMat *dMat ) {
+    return dMat->factor;
+}
+
+extern DSDP_INT denseMatGetRank( dsMat *dMat, DSDP_INT *rank ) {
+    
+    if (dMat->factor) {
+        *rank = dMat->factor->rank;
+    } else {
+        *rank = dMat->dim;
+    }
+    
+    return DSDP_RETCODE_OK;
+}
+
 extern DSDP_INT denseMatFillLow( dsMat *dMat, double *fulldMat ) {
     
     // Fill packed matrix into a square array
@@ -600,6 +634,7 @@ extern DSDP_INT denseMatReset( dsMat *dMat ) {
 
 extern DSDP_INT denseMatResetFactor( dsMat *dMat ) {
     
+    // Reset Cholesky factor
     DSDP_INT retcode = DSDP_RETCODE_OK;
     DSDP_INT n = dMat->dim;
     assert( n > 0 );

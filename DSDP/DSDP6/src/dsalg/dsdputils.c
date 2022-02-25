@@ -378,7 +378,7 @@ extern DSDP_INT matRScale( HSDSolver *dsdpSolver, DSDP_INT blockid, DSDP_INT con
 }
 
 /* Compute S + alpha * some matrix */
-extern DSDP_INT addMattoIter( rkMat *data, double alpha, spsMat *iterS, DSDP_INT *sumHash ) {
+extern DSDP_INT addMattoIter( void *data, DSDP_INT mattype, double alpha, spsMat *iterS, DSDP_INT *sumHash ) {
     // Add a data matrix to iteration S, dS or Scker
     
     DSDP_INT retcode = DSDP_RETCODE_OK;
@@ -387,15 +387,15 @@ extern DSDP_INT addMattoIter( rkMat *data, double alpha, spsMat *iterS, DSDP_INT
         return retcode;
     }
     
-    switch (data->mattype) {
+    switch (mattype) {
         case MAT_TYPE_SPARSE:
-            spsMataXpbY(alpha, data->origdata, 1.0, iterS, sumHash);
+            spsMataXpbY(alpha, data, 1.0, iterS, sumHash);
             break;
         case MAT_TYPE_DENSE:
-            spsMatAddds(iterS, alpha, data->origdata);
+            spsMatAddds(iterS, alpha, data);
             break;
         case MAT_TYPE_RANKK:
-            spsMatAddr1(iterS, alpha, data->data[0], sumHash);
+            spsMatAddr1(iterS, alpha, data, sumHash);
             break;
         default:
             error(etype, "Invalid matrix type. \n");
@@ -414,8 +414,9 @@ extern DSDP_INT addMattoS( HSDSolver *dsdpSolver, DSDP_INT blockid, DSDP_INT con
         return retcode;
     }
     
-    rkMat *rkdata = (rkMat *) dsdpSolver->sdpData[blockid]->sdpData[constrid];
-    retcode = addMattoIter(rkdata, alpha, dsdpSolver->S[blockid], dsdpSolver->symS[blockid]);
+    void *data = dsdpSolver->sdpData[blockid]->sdpData[constrid];
+    retcode = addMattoIter(data, dsdpSolver->sdpData[blockid]->types[constrid],
+                           alpha, dsdpSolver->S[blockid], dsdpSolver->symS[blockid]);
     
     return retcode;
 }
@@ -430,8 +431,9 @@ extern DSDP_INT addMattoChecker( HSDSolver *dsdpSolver, DSDP_INT blockid, DSDP_I
         return retcode;
     }
     
-    rkMat *rkdata = (rkMat *) dsdpSolver->sdpData[blockid]->sdpData[constrid];
-    retcode = addMattoIter(rkdata, alpha, dsdpSolver->Scker[blockid], dsdpSolver->symS[blockid]);
+    void *data = dsdpSolver->sdpData[blockid]->sdpData[constrid];
+    retcode = addMattoIter(data, dsdpSolver->sdpData[blockid]->types[constrid],
+                           alpha, dsdpSolver->Scker[blockid], dsdpSolver->symS[blockid]);
     
     return retcode;
 }
@@ -445,8 +447,9 @@ extern DSDP_INT addMattodS( HSDSolver *dsdpSolver, DSDP_INT blockid, DSDP_INT co
         return retcode;
     }
     
-    rkMat *rkdata = (rkMat *) dsdpSolver->sdpData[blockid]->sdpData[constrid];
-    retcode = addMattoIter(rkdata, alpha, dsdpSolver->dS[blockid], dsdpSolver->symS[blockid]);
+    void *data = dsdpSolver->sdpData[blockid]->sdpData[constrid];
+    retcode = addMattoIter(data, dsdpSolver->sdpData[blockid]->types[constrid],
+                           alpha, dsdpSolver->dS[blockid], dsdpSolver->symS[blockid]);
     
     return retcode;
 }

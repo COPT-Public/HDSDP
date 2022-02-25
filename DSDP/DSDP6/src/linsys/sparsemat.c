@@ -266,6 +266,7 @@ extern DSDP_INT spsMatInit( spsMat *sMat ) {
     sMat->x            = NULL;
     sMat->isFactorized = FALSE;
     sMat->nzHash       = NULL;
+    sMat->factor       = NULL;
     
     memset(sMat->pdsWorker, 0, PARDISOINDEX * sizeof(void *));
     
@@ -327,6 +328,11 @@ extern DSDP_INT spsMatFree( spsMat *sMat ) {
     if (sMat->isFactorized) {
         retcode = pardisoFree(sMat);
         sMat->isFactorized = FALSE;
+    }
+    
+    if (sMat->factor) {
+        rkMatFree(sMat->factor);
+        DSDP_FREE(sMat->factor);
     }
         
     return retcode;
@@ -630,6 +636,10 @@ extern DSDP_INT spsMatRscale( spsMat *sXMat, double r ) {
         error(etype, "Dividing a matrix by 0. \n");
     }
     
+    if (sXMat->factor) {
+        rkMatRscale(sXMat->factor, r);
+    }
+    
     double *x = sXMat->x;
     vecdiv(&sXMat->nnz, &r, x, &one);
     return retcode;
@@ -643,6 +653,12 @@ extern DSDP_INT spsMatFnorm( spsMat *sMat, double *fnrm ) {
     
     DSDP_INT idx, i, n = sMat->dim;
     double nrm = 0.0, tmp;
+    
+    spsMatGetRank(sMat, &i);
+    
+    if (i < 0.1 * n) {
+        rkMatFnorm(sMat->factor, fnrm);
+    }
     
     if (sMat->nzHash) {
         DSDP_INT j, k;
@@ -1452,6 +1468,29 @@ extern DSDP_INT spsMatScatter( spsMat *sMat, vec *b, DSDP_INT k ) {
     return retcode;
 }
 
+extern DSDP_INT spsMatStoreFactor( spsMat *sMat, rkMat *factor ) {
+    
+    // Save factorized data
+    DSDP_INT retcode = DSDP_RETCODE_OK;
+    sMat->factor = factor;
+    return retcode;
+}
+
+extern rkMat* spsMatGetFactor( spsMat *sMat ) {
+    return sMat->factor;
+}
+
+extern DSDP_INT spsMatGetRank( spsMat *sMat, DSDP_INT *rank ) {
+    
+    if (sMat->factor) {
+        *rank = sMat->factor->rank;
+    } else {
+        *rank = sMat->dim;
+    }
+    
+    return DSDP_RETCODE_OK;
+}
+
 extern DSDP_INT spsMatFillLower( spsMat *sMat, double *lowFullMat ) {
     
     DSDP_INT retcode = DSDP_RETCODE_OK;
@@ -1492,7 +1531,7 @@ extern DSDP_INT spsMatReset( spsMat *sMat ) {
     
     // Reset a sparse matrix to be 0
     DSDP_INT retcode = DSDP_RETCODE_OK;
-    assert( sMat->dim > 0 );
+    assert( sMat->dim > 0 && !sMat->factor ); // Never reset an (eigen) factorized sparse matrix
     memset(sMat->x, 0, sizeof(double) * sMat->nnz);
     return retcode;
 }

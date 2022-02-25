@@ -336,7 +336,7 @@ static DSDP_INT setupSDPSchur( HSDSolver *dsdpSolver ) {
     if (dsdpSolver->eventMonitor[EVENT_IN_PHASE_A]) {
         dsdpSolver->csinv = 0.0;
         dsdpSolver->csinvrysinv = 0.0;
-        dsdpSolver->csinvcsinv  = 0.0;
+        dsdpSolver->csinvcsinv = 0.0;
         retcode = vec_reset(u);
         retcode = vec_reset(d4);
     }

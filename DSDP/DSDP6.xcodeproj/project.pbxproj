@@ -70,6 +70,7 @@
 		1947DC1D2799B64B004065D8 /* test_dsdp.c in Sources */ = {isa = PBXBuildFile; fileRef = 1947DC1C2799B64B004065D8 /* test_dsdp.c */; };
 		1950371627B625C400C723FC /* dsdppsol.c in Sources */ = {isa = PBXBuildFile; fileRef = 1950371527B625C400C723FC /* dsdppsol.c */; };
 		195EE4C727B92AD400065A4B /* dsdpsort.c in Sources */ = {isa = PBXBuildFile; fileRef = 195EE4C627B92AD400065A4B /* dsdpsort.c */; };
+		197A770627C7889A00D3A50B /* symschur.c in Sources */ = {isa = PBXBuildFile; fileRef = 197A770527C7889A00D3A50B /* symschur.c */; };
 		19808F382737EEA60014086F /* test_vec.c in Sources */ = {isa = PBXBuildFile; fileRef = 19808F372737EEA60014086F /* test_vec.c */; };
 		19808F3F273807770014086F /* dsdpdata.c in Sources */ = {isa = PBXBuildFile; fileRef = 19808F3E273807770014086F /* dsdpdata.c */; };
 		19808F4327380A990014086F /* dsdppresolve.c in Sources */ = {isa = PBXBuildFile; fileRef = 19808F4227380A990014086F /* dsdppresolve.c */; };
@@ -214,6 +215,8 @@
 		1950371527B625C400C723FC /* dsdppsol.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = dsdppsol.c; sourceTree = "<group>"; };
 		195EE4C527B92AD400065A4B /* dsdpsort.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = dsdpsort.h; sourceTree = "<group>"; };
 		195EE4C627B92AD400065A4B /* dsdpsort.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = dsdpsort.c; sourceTree = "<group>"; };
+		197A770427C7889A00D3A50B /* symschur.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = symschur.h; sourceTree = "<group>"; };
+		197A770527C7889A00D3A50B /* symschur.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = symschur.c; sourceTree = "<group>"; };
 		19808F372737EEA60014086F /* test_vec.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = test_vec.c; sourceTree = "<group>"; };
 		19808F392737FEDA0014086F /* test.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = test.h; sourceTree = "<group>"; };
 		19808F3D273807770014086F /* dsdpdata.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = dsdpdata.h; sourceTree = "<group>"; };
@@ -332,31 +335,33 @@
 		19118D912737B72800D51D03 /* dsalg */ = {
 			isa = PBXGroup;
 			children = (
-				19118D942737B72800D51D03 /* schurmat.c */,
 				19C3BC03279527BA00F0331B /* dsdppfeascheck.h */,
-				19C3BC04279527BA00F0331B /* dsdppfeascheck.c */,
 				19118D992737B72800D51D03 /* schurmat.h */,
 				19118D922737B72800D51D03 /* residualsetup.h */,
 				19118D932737B72800D51D03 /* stepheur.h */,
+				1950371427B625C400C723FC /* dsdppsol.h */,
+				19C3BBE1279454D600F0331B /* dsdputils.h */,
+				19F11959275A627B0051D808 /* stepdirection.h */,
+				19C3BBDB2794539600F0331B /* dsdpdinfeas.h */,
+				19C3BBDE279453F200F0331B /* dsdpinitializer.h */,
+				19C3BBE42795054900F0331B /* dsdpproxmeasure.h */,
+				1985AC3B279B9DB400B7B8EB /* dsdppfeas.h */,
 				19118D952737B72800D51D03 /* hsd.c */,
 				19118D962737B72800D51D03 /* residualsetup.c */,
 				19118D972737B72800D51D03 /* stepheur.c */,
-				19118D982737B72800D51D03 /* hsd.h */,
-				19F11959275A627B0051D808 /* stepdirection.h */,
+				19C3BC04279527BA00F0331B /* dsdppfeascheck.c */,
 				19F1195A275A627B0051D808 /* stepdirection.c */,
-				19C3BBDB2794539600F0331B /* dsdpdinfeas.h */,
 				19C3BBDC2794539600F0331B /* dsdpdinfeas.c */,
-				19C3BBDE279453F200F0331B /* dsdpinitializer.h */,
 				19C3BBDF279453F200F0331B /* dsdpinitializer.c */,
-				19C3BBE1279454D600F0331B /* dsdputils.h */,
+				19118D982737B72800D51D03 /* hsd.h */,
 				19C3BBE2279454D600F0331B /* dsdputils.c */,
-				19C3BBE42795054900F0331B /* dsdpproxmeasure.h */,
 				19C3BBE52795054900F0331B /* dsdpproxmeasure.c */,
-				1985AC3B279B9DB400B7B8EB /* dsdppfeas.h */,
+				19118D942737B72800D51D03 /* schurmat.c */,
 				1985AC3C279B9DB400B7B8EB /* dsdppfeas.c */,
-				1950371427B625C400C723FC /* dsdppsol.h */,
 				1950371527B625C400C723FC /* dsdppsol.c */,
 				199FC13E27ACD9A00072897D /* prototypes.c */,
+				197A770427C7889A00D3A50B /* symschur.h */,
+				197A770527C7889A00D3A50B /* symschur.c */,
 			);
 			path = dsalg;
 			sourceTree = "<group>";
@@ -661,6 +666,7 @@
 				1985AC3D279B9DB400B7B8EB /* dsdppfeas.c in Sources */,
 				19118DF12737B72800D51D03 /* cs_ipvec.c in Sources */,
 				199FC14127AD061A0072897D /* dsdpeigfact.c in Sources */,
+				197A770627C7889A00D3A50B /* symschur.c in Sources */,
 				19BEEC252756065600C36C9E /* cs_schol.c in Sources */,
 				19118DFF2737B72800D51D03 /* cs_post.c in Sources */,
 				19118E0E2737B72800D51D03 /* cs_gaxpy.c in Sources */,

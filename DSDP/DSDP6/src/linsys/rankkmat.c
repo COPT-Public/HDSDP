@@ -14,8 +14,7 @@ extern DSDP_INT rkMatInit( rkMat *R ) {
     R->dim  = 0;
     R->isdata = FALSE;
     R->data = NULL;
-    R->mattype = DSDP_UNKNOWN;
-    R->origdata = NULL;
+    
     return DSDP_RETCODE_OK;
 }
 
@@ -64,15 +63,6 @@ extern DSDP_INT rkMatAllocAndSetData( rkMat *R, DSDP_INT n, DSDP_INT rank,
     return retcode;
 }
 
-extern DSDP_INT rkMatStoreOriginalData( rkMat *R, DSDP_INT mattype, void *data ) {
-    
-    assert( data || mattype == MAT_TYPE_RANKK );
-    R->origdata = data;
-    R->mattype = mattype;
-    
-    return DSDP_RETCODE_OK;
-}
-
 extern DSDP_INT rkMatAllocAndSelectData( rkMat *R, DSDP_INT n, DSDP_INT rank, double thresh,
                                          double *eigvals, double *eigvecs ) {
     
@@ -116,24 +106,12 @@ extern DSDP_INT rkMatrkTrace( rkMat *R1, rkMat *R2, double *trace ) {
     
     DSDP_INT retcode = DSDP_RETCODE_OK;
     double res = 0.0, tmp = 0.0;
-    DSDP_INT n = R1->dim, i, j, useRk = TRUE;
-    if (R2->mattype == MAT_TYPE_SPARSE) {
-        spsMat *spsdata = R2->origdata;
-        if (spsdata->nnz < 2 * n) {
-            useRk = FALSE;
-            for (i = 0; i < R2->rank; ++i) {
-                spsMatxTAx(spsdata, R2->data[i]->x, &tmp);
-                res += tmp;
-            }
-        }
-    }
+    DSDP_INT i, j;
     
-    if (useRk) {
-        for (i = 0; i < R1->rank; ++i) {
-            for (j = 0; j < R2->rank; ++j) {
-                retcode = r1Matr1Trace(R1->data[i], R2->data[j], &tmp);
-                res += tmp;
-            }
+    for (i = 0; i < R1->rank; ++i) {
+        for (j = 0; j < R2->rank; ++j) {
+            retcode = r1Matr1Trace(R1->data[i], R2->data[j], &tmp);
+            res += tmp;
         }
     }
     
@@ -268,16 +246,6 @@ extern DSDP_INT rkMatFree( rkMat *R ) {
     R->dim    = 0;
     R->rank   = 0;
     R->isdata = FALSE;
-    
-    if (R->mattype == MAT_TYPE_DENSE) {
-        denseMatFree(R->origdata);
-        DSDP_FREE(R->origdata);
-    }
-    
-    if (R->mattype == MAT_TYPE_SPARSE) {
-        spsMatFree(R->origdata);
-        DSDP_FREE(R->origdata);
-    }
         
     return DSDP_RETCODE_OK;
 }
@@ -309,22 +277,6 @@ extern DSDP_INT rkMatRscale( rkMat *R, double r ) {
     DSDP_INT rank = R->rank;
     for (DSDP_INT i = 0; i < rank; ++i) {
         r1MatRscale(R->data[i], r);
-    }
-    
-    switch (R->mattype) {
-        case MAT_TYPE_SPARSE:
-            spsMatRscale(R->origdata, r);
-            break;
-        case MAT_TYPE_DENSE:
-            denseMatRscale(R->origdata, r);
-            break;
-        case MAT_TYPE_RANKK:
-            break;
-        case MAT_TYPE_ZERO:
-            break;
-        default:
-            error(etype, "Invalid Matrix type. \n");
-            break;
     }
     
     return retcode;

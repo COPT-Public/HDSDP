@@ -6,6 +6,7 @@
 #include "dsdpcg.h"
 #include "dsdpparam.h"
 #include "dsdpstats.h"
+#include "symschur.h"
 
 #define IterStep 20
 #define nEvent   20
@@ -48,6 +49,8 @@ typedef struct {
     double   csinv;       // Store csinv
     double   csinvrysinv; // Store trace(C * Sinv * Ry * Sinv)
     
+    
+    DSDPSchur *M;         // Advanced Schur matrix setup
     dsMat    *Msdp;       // Schur matrix for SDP (dense)
     CGSolver *cgSolver;   // Internal CG solvers
     vec      *Mdiag;      // Diagonal elements of Schur matrix for pre-conditioning

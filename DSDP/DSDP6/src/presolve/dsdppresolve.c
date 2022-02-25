@@ -458,35 +458,15 @@ static DSDP_INT preRankkEvRdcBlock( sdpMat *dataMat, DSDPStats *stat ) {
                 break;
         }
         
-        if (i < m) {
-            Anrm += onenrm;
-        } else {
-            Cnrm += onenrm;
-        }
+        if (i < m) { Anrm += onenrm; } else { Cnrm += onenrm; }
         
         // Threshold for low-rank matrix
         if (rank <= n) { // rank = n + 1 if the matrix is already rank-one
             rkdata = (rkMat *) calloc(1, sizeof(rkMat)); checkCode;
             retcode = rkMatInit(rkdata);
-            dataMat->nrkMat += 1;
-            types[i] = MAT_TYPE_RANKK;
-            
-            if (isDense) {
-                dsdata = matdata[i];
-                rkMatStoreOriginalData(rkdata, MAT_TYPE_DENSE, dsdata);
-                dataMat->ndenseMat -= 1;
-                assert(dataMat->ndenseMat >= 0);
-            }
-            
-            if (isSparse) {
-                spsdata = matdata[i];
-                rkMatStoreOriginalData(rkdata, MAT_TYPE_SPARSE, spsdata);
-                dataMat->nspsMat -= 1;
-                assert(dataMat->nspsMat >= 0);
-            }
-            
+            if (isDense) { dsdata = matdata[i]; denseMatStoreFactor(dsdata, rkdata); }
+            if (isSparse) { spsdata = matdata[i]; spsMatStoreFactor(spsdata, rkdata); }
             rkMatAllocAndSelectData(rkdata, n, rank, 1e-10, eigvals, eigvecs);
-            matdata[i] = (void *) rkdata;
         }
         
         assert( dataMat->nzeroMat + dataMat->ndenseMat \

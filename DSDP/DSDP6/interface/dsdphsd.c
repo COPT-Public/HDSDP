@@ -267,7 +267,7 @@ static DSDP_INT DSDPIAllocIter( HSDSolver *dsdpSolver ) {
         retcode = spsMatInit(dsdpSolver->spaux[i]); checkCode;
         retcode = spsMatAlloc(dsdpSolver->spaux[i], dim); checkCode;
         retcode = denseMatInit(dsdpSolver->dsaux[i]); checkCode;
-        retcode = denseMatAlloc(dsdpSolver->dsaux[i], dim, FALSE); checkCode;
+        retcode = denseMatAlloc(dsdpSolver->dsaux[i], dim, -1); checkCode;
         retcode = rkMatInit(dsdpSolver->rkaux[i]); checkCode;
         retcode = rkMatAllocIter(dsdpSolver->rkaux[i], dim); checkCode;
     }
