@@ -1,5 +1,6 @@
 #include "dsdppresolve.h"
 #include "dsdputils.h"
+#include "symschur.h"
 #include "dsdpeigfact.h"
 
 #ifdef SHOWALL
@@ -368,7 +369,6 @@ static DSDP_INT preRank1RdcBlock( sdpMat *dataMat ) {
                 assert(dataMat->nspsMat >= 0);
             }
             
-            rkMatStoreOriginalData(rkdata, MAT_TYPE_RANKK, NULL);
             matdata[i] = (void *) rkdata;
         }
         
@@ -568,7 +568,7 @@ static DSDP_INT preSDPMatgetPScaler( HSDSolver *dsdpSolver ) {
             }
         }
         
-        bnrm += bval / dsdpSolver->pScaler->x[i];
+        bnrm += bval; // dsdpSolver->pScaler->x[i];
     }
     
     DSDPStatUpdate(&dsdpSolver->dsdpStats, STAT_ONE_NORM_B, bnrm);
@@ -839,6 +839,30 @@ static DSDP_INT preSDPgetSymbolic( HSDSolver *dsdpSolver, DSDP_INT blockid ) {
     
 clean_up:
     DSDP_FREE(hash);
+    return retcode;
+}
+
+extern DSDP_INT DSDPPrepareMAssembler( HSDSolver *dsdpSolver ) {
+    // Initialize the internal Schur matrix structure
+    DSDP_INT retcode = DSDP_RETCODE_OK;
+    
+    DSDPSchur *M = dsdpSolver->M;
+    retcode = SchurMatInit(M);
+    retcode = SchurMatSetDim(M, dsdpSolver->m, dsdpSolver->nBlock);
+    retcode = SchurMatAlloc(M);
+    retcode = SchurMatRegister(M, dsdpSolver->S,
+                               dsdpSolver->dsaux,
+                               dsdpSolver->sdpData,
+                               dsdpSolver->Msdp,
+                               dsdpSolver->asinv,
+                               dsdpSolver->d4,
+                               dsdpSolver->u,
+                               &dsdpSolver->csinvrysinv,
+                               &dsdpSolver->csinv,
+                               &dsdpSolver->csinvcsinv,
+                               &dsdpSolver->Ry,
+                               dsdpSolver->rkaux,
+                               &dsdpSolver->eventMonitor[EVENT_IN_PHASE_A]);
     return retcode;
 }
 

@@ -145,34 +145,47 @@ extern DSDP_INT r1MatdenseTrace( r1Mat *x, dsMat *A, double *trace ) {
     DSDP_INT n = x->dim, nnz = x->nnz;
     
     // Two ways of implementation
-    double res = 0.0, *Ax = NULL, *Adata = A->array, *xdata = x->x;
+    double res = 0.0, *Adata = A->array, *xdata = x->x;
     
     if (nnz >= 0.7 * n) {
-        // If a1 is dense and the quadratic form is computed using Blas routines
-        char uplo = DSDP_MAT_LOW;
-        double alpha = 1.0, beta = 0.0;
-        Ax = (double *) calloc(n, sizeof(double));
-        packmatvec(&uplo, &n, &alpha, A->array, x->x, &one, &beta, Ax, &one);
-        *trace = dot(&n, x->x, &one, Ax, &one) * x->sign;
+        double cval = 0.0, csum;
+        
+        for (DSDP_INT i = 0, j; i < n; ++i) {
+            cval = xdata[i]; csum = 0.5 * packIdx(Adata, n, i, i) * cval;
+            for (j = i + 1; j < n; ++j) {
+                csum += packIdx(Adata, n, j, i) * xdata[j];
+            }
+            res += csum * cval;
+        }
+        /*
+         TODO: try the following implementation that avoids casting
+         for (DSDP_INT i = 0, j = 0, k = 0; i < n; ++i) {
+             cval = xdata[i]; csum = 0.5 * Adata[j] * cval; k = j + 1;
+             for (j = k; j < k + n - i; ++j) {
+                 csum += Adata[j] * xdata[j - k];
+             }
+             res += csum * cval;
+         }
+        */
     } else {
         DSDP_INT cidx, ridx, *nzidx = x->nzIdx;
         double cval = 0.0, csum;
         // x' * A * x = \sum_{i, j} a_{i,j} * x_i * x_j
-        for (DSDP_INT col = 0; col < nnz; ++col) {
+        for (DSDP_INT col = 0, row; col < nnz; ++col) {
             cidx = nzidx[col];
             cval = xdata[cidx];
             csum = 0.5 * packIdx(Adata, n, cidx, cidx) * cval;
             // Necessary to unroll loop here ?
-            for (DSDP_INT row = col + 1; row < nnz; ++row) {
+            for (row = col + 1; row < nnz; ++row) {
                 ridx = nzidx[row];
                 csum += packIdx(Adata, n, ridx, cidx) * xdata[ridx];
             }
             res += csum * cval;
         }
-        *trace = 2 * res * x->sign;
     }
     
-    DSDP_FREE(Ax);
+    *trace = 2.0 * res * x->sign;
+    
     return retcode;
 }
 

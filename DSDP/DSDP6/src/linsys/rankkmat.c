@@ -124,23 +124,27 @@ extern DSDP_INT rkMatdenseUpdate( dsMat *dAMat, rkMat *rkBMat ) {
     // Used for schur M1 technique and final solution setup
     // Computationally critical and not calling r1 routines
     DSDP_INT retcode = DSDP_RETCODE_OK;
-    DSDP_INT rank = rkBMat->rank, dim = rkBMat->dim, *nzIdx;
+    DSDP_INT dim = rkBMat->dim;
     r1Mat *r1data = NULL;
-    for (DSDP_INT i = 0, j, k; i < rank; ++i) {
+    for (DSDP_INT i = 0; i < rkBMat->rank; ++i) {
         r1data = rkBMat->data[i];
-        if (r1data->nnz > 0.5 * dim) {
-            dspr(&uplolow, &dim, &r1data->sign, r1data->x, &one, dAMat->array);
-        } else {
-            double sign = r1data->sign, *rx = r1data->x;
-            nzIdx = r1data->nzIdx;
-            for (j = 0; j < r1data->nnz; ++j) {
-                for (k = 0; k <= j; ++k) {
-                    packIdx(dAMat->array, dim, nzIdx[i], nzIdx[j]) += \
-                    sign * rx[nzIdx[i]] * rx[nzIdx[j]];
-                }
-            }
-        }
+        dspr(&uplolow, &dim, &r1data->sign, r1data->x, &one, dAMat->array);
     }
+    /*
+     if (r1data->nnz > 0.5 * dim) {
+         dspr(&uplolow, &dim, &r1data->sign, r1data->x, &one, dAMat->array);
+     } else {
+         double sign = r1data->sign, *rx = r1data->x;
+         nzIdx = r1data->nzIdx;
+         for (j = 0; j < r1data->nnz; ++j) {
+             for (k = 0; k <= j; ++k) {
+                 packIdx(dAMat->array, dim, nzIdx[i], nzIdx[j]) += \
+                 sign * rx[nzIdx[i]] * rx[nzIdx[j]];
+             }
+         }
+     }
+     
+    */
     return retcode;
 }
 
@@ -157,17 +161,10 @@ extern DSDP_INT rkMatdenseTrace( rkMat *R, dsMat *A, double *trace ) {
    */
     
     DSDP_INT retcode = DSDP_RETCODE_OK;
-    
-    if (!R) {
-        *trace = 0.0;
-        return retcode;
-    }
-    
     assert( R->dim == A->dim );
-    DSDP_INT rank = R->rank;
     double res = 0.0, tmp;
     
-    for (DSDP_INT i = 0; i < rank; ++i) {
+    for (DSDP_INT i = 0; i < R->rank; ++i) {
         retcode = r1MatdenseTrace(R->data[i], A, &tmp); checkCode;
         res += tmp;
     }
@@ -291,6 +288,15 @@ extern DSDP_INT rkMatisRank1( rkMat *R, DSDP_INT *isRank1 ) {
     }
     
     return DSDP_RETCODE_OK;
+}
+
+extern DSDP_INT rkMatGetRank( rkMat *R ) {
+    return R->rank;
+}
+
+extern r1Mat *rkMatGetBase( rkMat *R, DSDP_INT i) {
+    assert( i < R->rank );
+    return R->data[i];
 }
 
 extern DSDP_INT rkMatView( rkMat *R ) {

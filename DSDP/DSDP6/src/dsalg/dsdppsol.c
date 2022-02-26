@@ -1,6 +1,8 @@
 #include "dsdppsol.h"
 #include "dsdputils.h"
 
+static char etype[] = "Primal solution extraction";
+
 extern DSDP_INT computePrimalX( HSDSolver *dsdpSolver ) {
     
     // Extract primal solution of the current block
@@ -83,11 +85,34 @@ extern DSDP_INT computeDIMACS( HSDSolver *dsdpSolver ) {
     for (DSDP_INT i = 0; i < m; ++i) {
         trace = 0.0;
         for (DSDP_INT j = 0; j < nblock; ++j) {
-            rkMatdenseTrace(dsdpSolver->sdpData[j]->sdpData[i],
-                            dsdpSolver->dsaux[j], &tmp);
+            switch (dsdpSolver->sdpData[j]->types[i]) {
+                case MAT_TYPE_ZERO:
+                    tmp = 0.0;
+                    break;
+                case MAT_TYPE_DENSE:
+                    denseDsTrace(dsdpSolver->dsaux[j],
+                                 dsdpSolver->sdpData[j]->sdpData[i],
+                                 &tmp);
+                    break;
+                case MAT_TYPE_SPARSE:
+                    denseSpsTrace(dsdpSolver->dsaux[j],
+                                  dsdpSolver->sdpData[j]->sdpData[i],
+                                  &tmp);
+                    break;
+                case MAT_TYPE_RANKK:
+                    rkMatdenseTrace(dsdpSolver->sdpData[j]->sdpData[i],
+                                    dsdpSolver->dsaux[j], &tmp);
+                    break;
+                default:
+                    error(etype, "Invalid matrix type. \n");
+                    break;
+            }
             trace += tmp;
         }
         tmp = dsdpSolver->dObj->x[i] - trace;
+        if (fabs(tmp) > 0.1) {
+            
+        }
         pInf += tmp * tmp;
     }
         
@@ -101,10 +126,29 @@ extern DSDP_INT computeDIMACS( HSDSolver *dsdpSolver ) {
     /*  DIMACS Error 3    */
     dInf = 0.0;
     
-    pObj = 0.0;
+    pObj = 0.0; tmp = 0.0;
     for (DSDP_INT i = 0; i < nblock; ++i) {
-        rkMatdenseTrace(dsdpSolver->sdpData[i]->sdpData[m],
-                        dsdpSolver->dsaux[i], &tmp);
+        switch (dsdpSolver->sdpData[i]->types[m]) {
+            case MAT_TYPE_ZERO:
+                break;
+            case MAT_TYPE_DENSE:
+                denseDsTrace(dsdpSolver->dsaux[i],
+                             dsdpSolver->sdpData[i]->sdpData[m],
+                             &tmp);
+                break;
+            case MAT_TYPE_SPARSE:
+                denseSpsTrace(dsdpSolver->dsaux[i],
+                              dsdpSolver->sdpData[i]->sdpData[m],
+                              &tmp);
+                break;
+            case MAT_TYPE_RANKK:
+                rkMatdenseTrace(dsdpSolver->sdpData[i]->sdpData[m],
+                                dsdpSolver->dsaux[i],
+                                &tmp);
+                break;
+            default:
+                break;
+        }
         pObj += tmp;
     }
     

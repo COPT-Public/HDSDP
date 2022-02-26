@@ -70,6 +70,7 @@ static DSDP_INT DSDPIInit( HSDSolver *dsdpSolver ) {
     dsdpSolver->csinvcsinv  = 0.0;
     dsdpSolver->csinvrysinv = 0.0;
     
+    dsdpSolver->M        = NULL;
     dsdpSolver->Msdp     = NULL;
     dsdpSolver->cgSolver = NULL;
     dsdpSolver->Mdiag    = NULL;
@@ -139,6 +140,7 @@ static DSDP_INT DSDPIAlloc( HSDSolver *dsdpSolver ) {
     dsdpSolver->sdpData   = (sdpMat  **) calloc(nblock, sizeof(sdpMat *));
     dsdpSolver->lpData    = (lpMat    *) calloc(1,      sizeof(lpMat   ));
     dsdpSolver->lpObj     = (vec      *) calloc(1,      sizeof(vec     ));
+    dsdpSolver->M         = (DSDPSchur*) calloc(1,      sizeof(DSDPSchur));
     dsdpSolver->cgSolver  = (CGSolver *) calloc(1,      sizeof(CGSolver));
     dsdpSolver->isSDPset  = (DSDP_INT *) calloc(nblock, sizeof(DSDP_INT));
     
@@ -447,6 +449,8 @@ static DSDP_INT DSDPIFreeAlgIter( HSDSolver *dsdpSolver ) {
     DSDP_FREE(dsdpSolver->ymaker);
     DSDP_FREE(dsdpSolver->dymaker);
     
+    SchurMatFree(dsdpSolver->M); DSDP_FREE(dsdpSolver->M);
+    
     return retcode;
 }
 
@@ -538,8 +542,15 @@ static DSDP_INT DSDPIPresolve( HSDSolver *dsdpSolver ) {
     center = clock();
     retcode = preSymbolic(dsdpSolver); checkCode;
     t = (double) (clock() - center) / CLOCKS_PER_SEC;
-    printf("| - Dual symbolic ordering completes in %g seconds \n", t);
+    printf("| - Dual symbolic check completes in %g seconds \n", t);
     DSDPStatUpdate(stat, STAT_SYMBOLIC_TIME, t);
+    
+    center = clock();
+    retcode = DSDPPrepareMAssembler(dsdpSolver); checkCode;
+    retcode = DSDPSchurReorder(dsdpSolver->M); checkCode;
+    t = (double) (clock() - center) / CLOCKS_PER_SEC;
+    printf("| - Schur matrix re-ordering completes in %g seconds \n", t);
+    DSDPStatUpdate(stat, STAT_SCHURORD_TIME, t);
     
     dsdpSolver->insStatus = DSDP_STATUS_PRESOLVED;
     t = (double) (clock() - start) / CLOCKS_PER_SEC;

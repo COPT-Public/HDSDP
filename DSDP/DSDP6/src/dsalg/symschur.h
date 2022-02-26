@@ -16,6 +16,8 @@
 #define SCHUR_M4 4
 #define SCHUR_M5 5
 
+#define KAPPA (1.5)  // Ratio between sparse and dense memory access efficiency
+
 typedef struct {
     
     DSDP_INT m;       // Dimension of the dual matrix
@@ -34,6 +36,7 @@ typedef struct {
     dsMat    *M;      // Schur matrix
     
     // Auxiliary
+    DSDP_INT *phaseA;  // Which phase DSDP is in Phase A
     vec      *asinv;
     vec      *asinvrysinv;
     vec      *asinvcsinv;
@@ -45,6 +48,16 @@ typedef struct {
     
 } DSDPSchur;
 
-#define KAPPA (1.5)  // Ratio between sparse and dense memory access efficiency
+
+extern DSDP_INT SchurMatInit    ( DSDPSchur *M );
+extern DSDP_INT SchurMatSetDim  ( DSDPSchur *M, DSDP_INT m, DSDP_INT nblock );
+extern DSDP_INT SchurMatAlloc   ( DSDPSchur *M );
+extern DSDP_INT SchurMatRegister( DSDPSchur *M, spsMat **S, dsMat **B, sdpMat **Adata, dsMat *Msdp,
+                                  vec *asinv, vec *asinvrysinv, vec *asinvcsinv, double *csinvrysinv,
+                                  double *csinv, double *csinvcsinv, double *Ry, rkMat **rkaux,
+                                  DSDP_INT *phaseA );
+extern DSDP_INT SchurMatFree    ( DSDPSchur *M );
+extern DSDP_INT DSDPSchurReorder( DSDPSchur *M );
+extern DSDP_INT DSDPSchurSetup  ( DSDPSchur *M );
 
 #endif /* symschur_h */

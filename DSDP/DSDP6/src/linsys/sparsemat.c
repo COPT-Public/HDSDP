@@ -397,56 +397,24 @@ extern DSDP_INT spsMatAx( spsMat *A, vec *x, vec *Ax ) {
     return retcode;
 }
 
-extern DSDP_INT spsMatxTAx( spsMat *A, double *x, double *xTAx ) {
+extern double spsMatxTAx( spsMat *A, double *x ) {
     // Compute quadratic form x' * A * x
     /*
      Computationally Critical Routine
      x is dense and A is sparse
     */
     
-    DSDP_INT n = A->dim, nnz = A->nnz, i, j, k, idx;
-    DSDP_INT *Ap = A->p, *Ai = A->i, *nzHash = A->nzHash;
-    double res = 0.0, *Ax = A->x;
+    DSDP_INT *Ai = A->i, *nzHash = A->nzHash, k;
+    register double res = 0.0, tmp = 0.0, *Ax = A->x;
+    register DSDP_INT i, j;
     
-    if (nnz <= 0.01 * n * n) {
-        double tmp = 0.0;
-        for (k = 0; k < nnz; ++k) {
-            i = nzHash[k];
-            j = Ai[k];
-            tmp = Ax[k] * x[i] * x[j];
-            if (i != j) {
-                res += tmp;
-            } else {
-                res += 0.5 * tmp;
-            }
-        }
-    } else {
-        for (i = 0; i < n && !Ap[i + 1]; ++i);
-        for (; i < n; ++i) {
-            idx = Ap[i];
-            
-            if (idx == Ap[i + 1]) {
-                if (idx == nnz) {
-                    break;
-                } else {
-                    continue;
-                }
-            }
-            if (Ai[idx] != i) {
-                res += Ax[idx] * x[i] * x[Ai[idx]];
-            } else {
-                res += 0.5 * Ax[idx] * x[i] * x[i];
-            }
-            
-            for (j = Ap[i] + 1; j < Ap[i + 1]; ++j) {
-                res += Ax[j] * x[Ai[j]] * x[i];
-            }
-        }
+    for (k = 0; k < A->nnz; ++k) {
+        i = nzHash[k]; j = Ai[k];
+        tmp = *Ax * x[i] * x[j]; Ax += 1;
+        res += (i == j) ? (0.5 * tmp) : tmp;
     }
     
-    *xTAx = 2.0 * res;
-    
-    return DSDP_RETCODE_OK;
+    return 2.0 * res;
 }
 
 extern DSDP_INT spsMataXpbY( double alpha, spsMat *sXMat, double beta,
@@ -720,7 +688,7 @@ extern DSDP_INT spsMatOneNorm( spsMat *sMat, double *onenrm ) {
         
         j = 0; k = sMat->dim;
         for (i = 0; i < k; ++i) {
-            nrm -= 0.5 * sMat->x[j];
+            nrm -= 0.5 * fabs(sMat->x[j]);
             j += k - i;
         }
         nrm *= 2;
@@ -1401,7 +1369,7 @@ extern DSDP_INT spsMatIspd( spsMat *sMat, DSDP_INT *ispd ) {
     } else if (error == -4) {
         *ispd = FALSE;
     } else {
-        error(etype, "Pardiso failes for some reason. \n");
+        error(etype, "Pardiso fails for some reason. \n");
     }
     
     return retcode;

@@ -30,8 +30,9 @@
 #define STAT_EIG_TIME        18
 #define STAT_MATSTAT_TIME    19
 #define STAT_SYMBOLIC_TIME   20
+#define STAT_SCHURORD_TIME   21
 
-#define STAT_ONE_NORM_A      21
+#define STAT_ONE_NORM_A      22
 
 // 20 ~ 50 left for event profiling
 #define STAT_PHASE_A_ITER    51

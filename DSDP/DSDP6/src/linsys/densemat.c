@@ -244,7 +244,7 @@ extern DSDP_INT denseMatOneNorm( dsMat *dMat, double *onenrm ) {
     double nrm = 0.0;
     
     for (i = 0; i < nsym(n); ++i) { nrm += fabs(dMat->array[i]); }
-    for (i = 0; i < n; ++i) { nrm -= 0.5 * packIdx(dMat->array, n, i, i); }
+    for (i = 0; i < n; ++i) { nrm -= 0.5 * fabs(packIdx(dMat->array, n, i, i)); }
     *onenrm = 2 * nrm;
     
     return retcode;
@@ -381,13 +381,28 @@ extern DSDP_INT denseSpsTrace( dsMat *dAMat, spsMat *sBMat, double *trace ) {
     
     DSDP_INT n = dAMat->dim;
     double *A = dAMat->array, *Bx = sBMat->x, t = 0.0, tmp = 0.0;
-    DSDP_INT i, k, nnz = sBMat->nnz, *Bp = sBMat->p, *Bi = sBMat->i;
+    DSDP_INT i, j, k, nnz = sBMat->nnz, *Bp = sBMat->p, *Bi = sBMat->i;
+    *trace = 0.0;
     
     if (nnz == nsym(n)) {
         *trace = ddot(&nnz, A, &one, Bx, &one);
         for (DSDP_INT i = 0; i < n; ++i) {
             if (Bi[Bp[i]] == i) {
                 *trace -= 0.5 * packIdx(A, n, i, i) * Bx[Bp[i]];
+            }
+        }
+        *trace *= 2;
+        return retcode;
+    }
+    
+    if (sBMat->nzHash) {
+        for (i = 0; i < nnz; ++i) {
+            j = sBMat->nzHash[i]; k = Bi[i];
+            tmp = Bx[i] * packIdx(A, n, k, j);
+            if (k == j) {
+                *trace += 0.5 * tmp;
+            } else {
+                *trace += tmp;
             }
         }
         *trace *= 2;
@@ -420,21 +435,26 @@ extern DSDP_INT denseSpsTrace( dsMat *dAMat, spsMat *sBMat, double *trace ) {
 }
 
 extern DSDP_INT denseDsTrace( dsMat *dAMat, dsMat *dBMat, double *trace ) {
-    
     // Compute trace (A * B) for dense A and dense B
+    
+    /*
+     ******************************************
+     *    Computationally critical routine    *
+     ******************************************
+    */
+    
     DSDP_INT retcode = DSDP_RETCODE_OK;
     assert( dAMat->dim == dBMat->dim );
     assert((!dAMat->isFactorized) && (!dBMat->isFactorized));
     
-    DSDP_INT n = dAMat->dim, nmat = nsym(n);;
+    DSDP_INT n = dAMat->dim;
     double *A = dAMat->array, *B = dBMat->array, res = 0.0;
-    res = dot(&nmat, A, &one, B, &one);
     
-    // Subtract half of diagonal off
-    DSDP_INT idx = 0;
-    for (DSDP_INT i = 0; i < n; ++i) {
-        res -= 0.5 * A[idx] * B[idx];
-        idx += n - i;
+    for (DSDP_INT i = 0, j = 0, k = 0; i < n; ++i) {
+        res += 0.5 * A[j] * B[j]; k = j;
+        for (j = k + 1; j < k + n - i; ++j) {
+            res += A[j] * B[j];
+        }
     }
     
     *trace = 2.0 * res;

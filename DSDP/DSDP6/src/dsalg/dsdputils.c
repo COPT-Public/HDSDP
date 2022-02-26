@@ -395,7 +395,7 @@ extern DSDP_INT addMattoIter( void *data, DSDP_INT mattype, double alpha, spsMat
             spsMatAddds(iterS, alpha, data);
             break;
         case MAT_TYPE_RANKK:
-            spsMatAddr1(iterS, alpha, data, sumHash);
+            spsMatAddrk(iterS, alpha, data, sumHash);
             break;
         default:
             error(etype, "Invalid matrix type. \n");

@@ -37,7 +37,7 @@ extern DSDP_INT spsMatFree         ( spsMat *sMat );
 
 /* Basic operations */
 extern DSDP_INT spsMatAx           ( spsMat *A, vec *x, vec *Ax );
-extern DSDP_INT spsMatxTAx         ( spsMat *A, double *x, double *xTAx );
+extern double spsMatxTAx           ( spsMat *A, double *x       );
 extern DSDP_INT spsMataXpbY        ( double alpha,  spsMat *sXMat, double beta,
                                     spsMat *sYMat,  DSDP_INT *sumHash );
 extern DSDP_INT spsMatAdddiag      ( spsMat *sMat,  double d, DSDP_INT *sumHash );
