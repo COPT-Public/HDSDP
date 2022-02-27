@@ -546,7 +546,7 @@ extern DSDP_INT denseMatGetRank( dsMat *dMat, DSDP_INT *rank ) {
     if (dMat->factor) {
         *rank = dMat->factor->rank;
     } else {
-        *rank = dMat->dim;
+        *rank = DSDP_INFINITY;
     }
     
     return DSDP_RETCODE_OK;

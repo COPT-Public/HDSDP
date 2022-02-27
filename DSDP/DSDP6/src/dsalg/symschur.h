@@ -42,8 +42,9 @@ typedef struct {
     vec      *asinvcsinv;
     double   *csinvrysinv;
     double   *csinvcsinv;
-    double   *csinv;   
+    double   *csinv;
     
+    double   *schurAux;
     DSDP_INT *useTwo;  // Only two strategies used ?
     
 } DSDPSchur;

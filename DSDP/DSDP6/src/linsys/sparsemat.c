@@ -12,6 +12,7 @@
 static char *etype = "Sparse matrix";
 static DSDP_INT one = 1;
 static double dzero = 0.0;
+static double done = 1.0;
 static char uplolow = 'L';
 
 /* Internal Pardiso Wrapper */
@@ -55,18 +56,9 @@ static DSDP_INT pardisoNumFactorize( spsMat *S ) {
      Reuse symbolic ordering after the first iteration
      */
     
-    DSDP_INT retcode = DSDP_RETCODE_OK;
-    assert( S->isFactorized == TRUE );
-    
-    // Extract the lower triangular part from CSparse structure
-    DSDP_INT *Sp = S->p;
-    DSDP_INT *Si = S->i;
+    DSDP_INT retcode = DSDP_RETCODE_OK; assert( S->isFactorized == TRUE );
+    DSDP_INT *Sp = S->p, *Si = S->i, phase = PARDISO_FAC, error = 0, n = S->dim;
     double   *Sx = S->x;
-    
-    // Get the pardiso parameter
-    DSDP_INT phase = PARDISO_FAC;
-    DSDP_INT error = 0;
-    DSDP_INT n     = S->dim;
     
     // Invoke pardiso to do symbolic analysis and Cholesky factorization
     pardiso(S->pdsWorker, &maxfct, &mnum, &mtype, &phase, &n,
@@ -74,8 +66,7 @@ static DSDP_INT pardisoNumFactorize( spsMat *S ) {
             &msglvl, NULL, NULL, &error);
     
     if (error == -4) {
-        double eig = 0.0;
-        spsMatMinEig(S, &eig);
+        double eig = 0.0; spsMatMinEig(S, &eig);
         printf("Minimum Eigenvalue: %g \n", eig);
     }
     
@@ -92,79 +83,36 @@ static DSDP_INT pardisoNumFactorize( spsMat *S ) {
 
 static DSDP_INT pardisoForwardSolve( spsMat *S, DSDP_INT nrhs, double *B, double *aux, DSDP_INT overwrite ) {
     // pardiso forward solve
-    DSDP_INT retcode = DSDP_RETCODE_OK;
-    
-    assert( S->isFactorized == TRUE );
-    
-    // Extract the lower triangular part from CSparse structure
-    DSDP_INT *Sp = S->p;
-    DSDP_INT *Si = S->i;
-    double   *Sx = S->x;
-    
-    // Get the pardiso parameter
-    DSDP_INT phase = PARDISO_FORWARD;
-    DSDP_INT error = 0;
-    DSDP_INT n     = S->dim;
-    DSDP_INT *param;
-    
-    
-    // Invoke pardiso to do symbolic analysis and Cholesky factorization
-    if (overwrite) {
-        param = PARDISO_PARAMS_FORWARD_BACKWORD;
-    } else {
-        param = PARDISO_PARAMS_FORWARD_BACKWORD_LANCZOS;
-    }
-    
-    pardiso(S->pdsWorker, &maxfct, &mnum, &mtype, &phase, &n,
-            NULL, Sp, Si, &idummy, &nrhs, param,
-            &msglvl, B, aux, &error);
-    
-    assert( error == PARDISO_OK );
-    
-    if (error) {
-        printf("[Pardiso Error]: Matrix forward solve failed."
-               " Error code: "ID" \n", error);
-        error(etype, "Pardiso failes to factorize. \n");
-    }
-    
-    return retcode;
-}
-
-static DSDP_INT pardisoBackwardSolve( spsMat *S, DSDP_INT nrhs, double *B, double *aux, DSDP_INT overwrite ) {
-    // pardiso forward solve
-    DSDP_INT retcode = DSDP_RETCODE_OK;
-    
-    assert( S->isFactorized == TRUE );
-    
-    // Extract the lower triangular part from CSparse structure
-    DSDP_INT *Sp = S->p;
-    DSDP_INT *Si = S->i;
-    double   *Sx = S->x;
-    
-    // Get the pardiso parameter
-    DSDP_INT phase = PARDISO_BACKWARD;
-    DSDP_INT error = 0;
-    DSDP_INT n     = S->dim;
-    DSDP_INT *param;
-    
-    // Invoke pardiso to do symbolic analysis and Cholesky factorization
-    if (overwrite) {
-        param = PARDISO_PARAMS_FORWARD_BACKWORD;
-    } else {
-        param = PARDISO_PARAMS_FORWARD_BACKWORD_LANCZOS;
-    }
+    DSDP_INT retcode = DSDP_RETCODE_OK; assert( S->isFactorized == TRUE );
+    DSDP_INT *Sp = S->p, *Si = S->i;
+    DSDP_INT phase = PARDISO_FORWARD, error = 0, n = S->dim, *param;
+    param = (overwrite) ? PARDISO_PARAMS_FORWARD_BACKWORD : PARDISO_PARAMS_FORWARD_BACKWORD_LANCZOS;
     pardiso(S->pdsWorker, &maxfct, &mnum, &mtype, &phase, &n,
             NULL, Sp, Si, &idummy, &nrhs, param, &msglvl,
-            B, aux, &error);
-    
-    assert( error == PARDISO_OK );
-    
+            B, aux, &error); assert( error == PARDISO_OK );
     if (error) {
         printf("[Pardiso Error]: Matrix backward solve failed."
                " Error code: "ID" \n", error);
         error(etype, "Pardiso failes to factorize. \n");
     }
+    return retcode;
+}
+
+static DSDP_INT pardisoBackwardSolve( spsMat *S, DSDP_INT nrhs, double *B, double *aux, DSDP_INT overwrite ) {
     
+    // pardiso forward solve
+    DSDP_INT retcode = DSDP_RETCODE_OK; assert( S->isFactorized == TRUE );
+    DSDP_INT *Sp = S->p, *Si = S->i;
+    DSDP_INT phase = PARDISO_BACKWARD, error = 0, n = S->dim, *param;
+    param = (overwrite) ? PARDISO_PARAMS_FORWARD_BACKWORD : PARDISO_PARAMS_FORWARD_BACKWORD_LANCZOS;
+    pardiso(S->pdsWorker, &maxfct, &mnum, &mtype, &phase, &n,
+            NULL, Sp, Si, &idummy, &nrhs, param, &msglvl,
+            B, aux, &error); assert( error == PARDISO_OK );
+    if (error) {
+        printf("[Pardiso Error]: Matrix backward solve failed."
+               " Error code: "ID" \n", error);
+        error(etype, "Pardiso failes to factorize. \n");
+    }
     return retcode;
 }
 
@@ -173,18 +121,34 @@ static DSDP_INT pardisoSolve( spsMat *S, DSDP_INT nrhs, double *B, double *X ) {
     /* Solve the linear system S * X = B using Pardiso */
     DSDP_INT retcode = DSDP_RETCODE_OK;
     assert( S->isFactorized == TRUE );
-    DSDP_INT phase = PARDISO_SOLVE;
-    DSDP_INT error = 0;
-    DSDP_INT n     = S->dim;
-    
+    DSDP_INT phase = PARDISO_SOLVE, error = 0, n = S->dim;
     // Invoke pardiso to perform solution
     pardiso(S->pdsWorker, &maxfct, &mnum, &mtype, &phase, &n,
             S->x, S->p, S->i, &idummy,
             &nrhs, PARDISO_PARAMS_CHOLESKY, &msglvl,
             B, X, &error);
-    
     assert( error == PARDISO_OK );
+    if (error) {
+        printf("[Pardiso Error]: Matrix solution failed."
+               " Error code: "ID" \n", error);
+        error(etype, "Pardiso failes to solve system. \n");
+    }
     
+    return retcode;
+}
+
+static DSDP_INT pardisoSolveInplace( spsMat *S, DSDP_INT nrhs, double *B, double *aux ) {
+    
+    /* Solve the linear system S * X = B using Pardiso */
+    DSDP_INT retcode = DSDP_RETCODE_OK;
+    assert( S->isFactorized == TRUE );
+    DSDP_INT phase = PARDISO_SOLVE, error = 0, n = S->dim;
+    // Invoke pardiso to perform solution
+    pardiso(S->pdsWorker, &maxfct, &mnum, &mtype, &phase, &n,
+            S->x, S->p, S->i, &idummy,
+            &nrhs, PARDISO_PARAMS_CHOLESKY_INPLACE, &msglvl,
+            B, aux, &error);
+    assert( error == PARDISO_OK );
     if (error) {
         printf("[Pardiso Error]: Matrix solution failed."
                " Error code: "ID" \n", error);
@@ -198,17 +162,12 @@ static DSDP_INT pardisoPartialSolve( spsMat *S, DSDP_INT *colNnz, double *xIn, d
     
     /* Apply pardiso partial solve strategy */
     DSDP_INT retcode = DSDP_RETCODE_OK;
-    
     assert( S->isFactorized == TRUE );
-    DSDP_INT phase = PARDISO_SOLVE;
-    DSDP_INT error = 0;
-    DSDP_INT n     = S->dim;
-    
+    DSDP_INT phase = PARDISO_SOLVE, error = 0, n = S->dim;
     // Invoke pardiso to perform solution
     pardiso(S->pdsWorker, &maxfct, &mnum, &mtype, &phase, &n,
             S->x, S->p, S->i, colNnz, &one, PARDISO_PARAMS_PARTIAL_SOLVE,
             &msglvl, xIn, xOut, &error);
-    
     if (error) {
         printf("[Pardiso Error]: Matrix partial solution failed."
                " Error code: "ID" \n", error);
@@ -223,17 +182,11 @@ static DSDP_INT pardisoFree( spsMat *S ) {
     /* Free the internal structure of pardiso */
     DSDP_INT retcode = DSDP_RETCODE_OK;
     assert( S->isFactorized == TRUE );
-    
-    DSDP_INT phase = PARDISO_FREE;
-    DSDP_INT error = 0;
-    DSDP_INT n     = S->dim;
-    
+    DSDP_INT phase = PARDISO_FREE, error = 0, n = S->dim;
     pardiso(S->pdsWorker, &maxfct, &mnum, &mtype, &phase, &n,
             S->x, S->p, S->i, &idummy, &idummy,
             PARDISO_PARAMS_CHOLESKY, &msglvl, NULL, NULL, &error);
-    
     assert( error == PARDISO_OK );
-    
     if (error) {
         printf("[Pardiso Error]: Pardiso free failed."
                " Error code: "ID" \n", error);
@@ -291,11 +244,9 @@ extern DSDP_INT spsMatAllocData( spsMat *sMat, DSDP_INT dim, DSDP_INT nnz ) {
     
     // Allocate memory for sparse matrix data
     DSDP_INT retcode = DSDP_RETCODE_OK;
-    assert( sMat->dim == 0 );
-    assert( nnz <= nsym(dim));
+    assert( sMat->dim == 0 ); assert( nnz <= nsym(dim));
     
-    sMat->dim = dim;
-    sMat->nnz = nnz;
+    sMat->dim = dim; sMat->nnz = nnz;
     
     // Currently do nothing here. TODO: Do Optimization if S is dense
     if (nnz < nsym(dim)) {
@@ -316,23 +267,17 @@ extern DSDP_INT spsMatFree( spsMat *sMat ) {
     
     // Free memory allocated
     DSDP_INT retcode = DSDP_RETCODE_OK;
-    sMat->dim = 0;
-    sMat->nnz = 0;
+    sMat->dim = 0; sMat->nnz = 0;
     
     // Note that we first free p, i and x before calling pardiso to destroy the working array
-    DSDP_FREE(sMat->p);
-    DSDP_FREE(sMat->i);
-    DSDP_FREE(sMat->x);
+    DSDP_FREE(sMat->p); DSDP_FREE(sMat->i); DSDP_FREE(sMat->x);
     DSDP_FREE(sMat->nzHash);
     
     if (sMat->isFactorized) {
-        retcode = pardisoFree(sMat);
-        sMat->isFactorized = FALSE;
+        retcode = pardisoFree(sMat); sMat->isFactorized = FALSE;
     }
-    
     if (sMat->factor) {
-        rkMatFree(sMat->factor);
-        DSDP_FREE(sMat->factor);
+        rkMatFree(sMat->factor); DSDP_FREE(sMat->factor);
     }
         
     return retcode;
@@ -355,12 +300,8 @@ extern DSDP_INT spsMatAx( spsMat *A, vec *x, vec *Ax ) {
         dspmv(&uplolow, &n, &coeff, Axdata, xdata, &one, &dzero, Axres, &one);
     } else if (nnz <= 1.0 * n * n && cidx) {
         for (DSDP_INT i, j, k = 0; k < nnz; ++k) {
-            i = Ai[k];
-            j = cidx[k];
-            Axres[i] -= Axdata[k] * xdata[j];
-            if (i != j) {
-                Axres[j] -= Axdata[k] * xdata[i];
-            }
+            i = Ai[k]; j = cidx[k]; Axres[i] -= Axdata[k] * xdata[j];
+            if (i != j) { Axres[j] -= Axdata[k] * xdata[i]; }
         }
     } else {
         for (DSDP_INT i = 0; i < n ; ++i) {
@@ -389,7 +330,7 @@ extern DSDP_INT spsMatAx( spsMat *A, vec *x, vec *Ax ) {
             for (DSDP_INT j = Ap[i] + 1; j < Ap[i + 1]; ++j) {
                 idx = Ai[j];
                 Axres[idx] -= coeff * Axdata[j];
-                Axres[i]   -= xdata[idx] * Axdata[j];
+                Axres[i] -= xdata[idx] * Axdata[j];
             }
         }
     }
@@ -427,21 +368,15 @@ extern DSDP_INT spsMataXpbY( double alpha, spsMat *sXMat, double beta,
     assert ( sXMat->dim == sYMat->dim );
     assert ((!sXMat->isFactorized));
     
-    if (beta != 1.0) {
-        retcode = spsMatScale(sYMat, beta);
-    }
-    
-    // Case if alpha = 0.0
-    if (alpha == 0.0) {
-        return retcode;
-    }
+    if (beta != 1.0) { retcode = spsMatScale(sYMat, beta); }
+    if (alpha == 0.0) { return retcode; }
     
     DSDP_INT dim = sXMat->dim, *Ap = sXMat->p, *Ai = sXMat->i;
     double   *Ax = sXMat->x, *Bx = sYMat->x;
     
     if (sumHash) {
-        for (DSDP_INT i = 0, hash; i < dim; ++i) {
-            for (DSDP_INT j = Ap[i]; j < Ap[i + 1]; ++j) {
+        for (DSDP_INT i = 0, j, hash; i < dim; ++i) {
+            for (j = Ap[i]; j < Ap[i + 1]; ++j) {
 #ifdef VERIFY_HASH
                 hash = packIdx(sumHash, dim, Ai[j], i);
                 assert( hash > 0 || j == 0 );
@@ -457,8 +392,7 @@ extern DSDP_INT spsMataXpbY( double alpha, spsMat *sXMat, double beta,
         // If adding sparse data e.g. S += A * y[i]
         if (sXMat->nzHash) {
             for (DSDP_INT i, j, k = 0; k < sXMat->nnz; ++k) {
-                i = Ai[k];
-                j = sXMat->nzHash[k];
+                i = Ai[k]; j = sXMat->nzHash[k];
                 packIdx(Bx, dim, i, j) += alpha * Ax[k];
             }
         // If adding iteration e.g. S += dS
@@ -1000,228 +934,74 @@ extern DSDP_INT dsdpGetAlphaLS( spsMat *S, spsMat *dS, spsMat *Scker,
     return retcode;
 }
 
-extern DSDP_INT spsSinvSpSinvSolve( spsMat *S, spsMat *A, dsMat *SinvASinv, double *asinv ) {
+extern double spsSinvSpSinvSolve( const double *Sinv, double *aux, spsMat *A, dsMat *SinvASinv ) {
     
     // Routine for setting up the Schur matrix
     /*
         Compute inv(S) * A * inv(S) for sparse A
      
     */
-    DSDP_INT retcode = DSDP_RETCODE_OK;
     
-    DSDP_INT n = S->dim;
-    double *Sinv  = (double *) calloc(n * n, sizeof(double)), *rhs, *x;
-    double *ASinv = (double *) calloc(n * n, sizeof(double));
-    double *tmpSinvASinv = (double *) calloc(n * n, sizeof(double));
-    double *sol   = (double *) calloc(n, sizeof(double));
-    DSDP_INT *nzIdx = (DSDP_INT *) calloc(n, sizeof(DSDP_INT));
+    DSDP_INT n = A->dim, *Ai = A->i, *nzHash = A->nzHash, i, j, k;
+    double *SinvASinvdata = SinvASinv->array;
+    double *SinvA = aux, *Ax = A->x, *SinvAj, coeff = 0.0, res = 0.0;
+    const double *Sinvi; memset(SinvA, 0, sizeof(double) * n * n);
     
-    // Sinv
-    rhs = &Sinv[0];
-    rhs[0] = 1.0;
-    nzIdx[0] = 1;
-    pardisoSolve(S, 1, rhs, sol);
-    memcpy(rhs, sol, sizeof(double) * n);
-    
-    for (DSDP_INT i = 1; i < n; ++i) {
-        rhs = &Sinv[n * i];
-        rhs[i] = 1.0;
-        nzIdx[i - 1] = 0;
-        nzIdx[i] = 1;
-        pardisoSolve(S, 1, rhs, sol);
-        memcpy(rhs, sol, sizeof(double) * n);
-    }
-    
-    DSDP_FREE(sol);
-    
-    // A * Sinv
-    DSDP_INT *Ap = A->p, *Ai = A->i, nnz = A->nnz, idx;
-    double *Ax = A->x, coeff = 0.0, res = 0.0;
-    
-    for (DSDP_INT i = 0; i < n; ++i) {
-        // sol = ASinv(:, i) = A * Sinv(:, i) = A * x
-        x = &Sinv[n * i];
-        sol = &ASinv[n * i];
-        for (DSDP_INT col = 0; col < n; ++col) {
-            coeff = x[col];
-            if (fabs(coeff) < 1e-20) {
-                continue;
-            }
-            
-            idx = Ap[col];
-            if (idx == Ap[col + 1]) {
-                if (idx == nnz) {
-                    break;
-                } else {
-                    continue;
-                }
-            }
-            
-            if (Ai[idx] == col) {
-                sol[col] += 0.5 * coeff * Ax[idx];
-            } else {
-                sol[Ai[idx]] += coeff * Ax[idx];
-            }
-            
-            for (DSDP_INT k = idx + 1; k < Ap[col + 1]; ++k) {
-                sol[Ai[k]] += coeff * Ax[k];
-            }
+    // n f_sigma
+    for (k = 0; k < A->nnz; ++k) {
+        i = Ai[k]; j = nzHash[k]; coeff = Ax[k];
+        SinvAj = SinvA + n * j; Sinvi = Sinv + n * i;
+        daxpy(&n, &coeff, Sinvi, &one, SinvAj, &one);
+        if (i != j) {
+            SinvAj = SinvA + n * i; Sinvi = Sinv + n * j;
+            daxpy(&n, &coeff, Sinvi, &one, SinvAj, &one);
         }
     }
     
-    for (DSDP_INT i = 0; i < n; ++i) {
-        res += ASinv[n * i + i];
-    }
-    
-    *asinv = res * 2;
-
-    // Sinv * Lower(A) * Sinv
-    char side = 'L';
-    char uplo = DSDP_MAT_LOW;
-    double alpha = 1.0, beta = 0.0, *X = SinvASinv->array;
-    
-    dsymm(&side, &uplo, &n, &n, &alpha, Sinv, &n,
-          ASinv, &n, &beta, tmpSinvASinv, &n);
-    
-    // Sinv * Lower(A) * Sinv + (Sinv * Lower(A) * Sinv)'
-    for (DSDP_INT i = 0; i < n; ++i) {
-        for (DSDP_INT j = 0; j <= i; ++j) {
-            packIdx(X, n, i, j) = tmpSinvASinv[j * n + i] + tmpSinvASinv[i * n + j];
+    // Set up inv(S) * A * inv(S) n^3
+    for (j = 0; j < n; ++j) {
+        SinvAj = SinvA + j; res += SinvAj[j * n];
+        for (i = 0; i <= j; ++i) {
+            Sinvi = Sinv + n * i;
+            packIdx(SinvASinvdata, n, j, i) = ddot(&n, SinvAj, &n, Sinvi, &one);
         }
     }
     
-    DSDP_FREE(Sinv);
-    DSDP_FREE(ASinv);
-    DSDP_FREE(tmpSinvASinv);
-    DSDP_FREE(nzIdx);
-    return retcode;
+    return res;
 }
 
-extern DSDP_INT spsSinvSpSinvSolveSlow( spsMat *S, spsMat *A, dsMat *SinvASinv, double *asinv ) {
-    
-    // Routine for setting up the Schur matrix
-    /*
-        Compute inv(S) * A * inv(S) for sparse A
-     
-    */
-    DSDP_INT retcode = DSDP_RETCODE_OK;
-    assert( S->dim == A->dim );
-    assert( S->dim == SinvASinv->dim );
-    assert( S->isFactorized );
-    
-    DSDP_INT n         = S->dim;
-    DSDP_INT inc       = n + 1;
-    DSDP_INT idx       = 0;
-    double *SinvA      = NULL;
-    double *fSinvASinv = NULL;
-    SinvA      = (double *) calloc(n * n, sizeof(double));
-    fSinvASinv = (double *) calloc(n * n, sizeof(double));
-    
-    // Solve to get inv(S) * A
-    retcode    = spsMatSpSolve(S, A, SinvA);
-    
-#ifdef TRANS
-    double res = *asinv;
-    
-    for (DSDP_INT i = 0; i < n - n % 8; i+=8) {
-        res += SinvA[idx]; idx += inc;
-        res += SinvA[idx]; idx += inc;
-        res += SinvA[idx]; idx += inc;
-        res += SinvA[idx]; idx += inc;
-        res += SinvA[idx]; idx += inc;
-        res += SinvA[idx]; idx += inc;
-        res += SinvA[idx]; idx += inc;
-        res += SinvA[idx]; idx += inc;
-    }
-    
-    for (DSDP_INT i = n - n % 8; i < n; ++i) {
-        res += SinvA[idx]; idx += inc;
-    }
-    *asinv = res;
-    MKL_Dimatcopy('C', 'T', n, n, 1.0, SinvA, n, n);
-#else
-    double tmp = 0.0;
-    // Transpose
-    for (DSDP_INT i = 0; i < n; ++i) {
-        for (DSDP_INT j = 0; j <= i; ++j) {
-            if (i == j) {
-                *asinv += SinvA[n * i + i];
-            } else {
-                tmp = SinvA[i * n + j];
-                SinvA[i * n + j] = SinvA[j * n + i];
-                SinvA[j * n + i] = tmp;
-            }
-        }
-    }
-#endif
-    
-    idx = 0;
-    // Solve
-    retcode = pardisoSolve(S, n, SinvA, fSinvASinv);
-    
-    // Extract solution
-    for (DSDP_INT k = 0; k < n; ++k) {
-        memcpy(&(SinvASinv->array[idx]), &(fSinvASinv[k * n + k]),
-               sizeof(double) * (n - k));
-        idx += n - k;
-    }
-    
-    DSDP_FREE(SinvA);
-    DSDP_FREE(fSinvASinv);
-    return retcode;
-}
-
-extern DSDP_INT spsSinvDsSinvSolve( spsMat *S, dsMat *A, dsMat *SinvASinv, double *asinv ) {
+extern double spsSinvDsSinvSolve( const double *Sinv, double *aux, dsMat *A, dsMat *SinvASinv ) {
     
     // Routine for setting up the Schur matrix
     /*
         Compute inv(S) * A * inv(S) for packed A by inv(S) * transpose(inv(S) * A)
-        The routine performs Cholesky - Transpose - Cholesky sequentially
-    
     */
     
-    DSDP_INT retcode = DSDP_RETCODE_OK;
+    DSDP_INT n = A->dim, i, j;
+    double *Adata = A->array, *ASinv = aux, *ASinvi,
+           *SinvASinvdata = SinvASinv->array, res = 0.0;
+    const double *Sinvi;
     
-    assert( S->dim == A->dim );
-    assert( S->dim == SinvASinv->dim );
-    assert( S->isFactorized );
+    // Get A * S^-1 (A is dense and in packed form). Calling level-2 blas
+    memset(ASinv, 0, sizeof(double) * n * n);
+    for (i = 0; i < n; ++i) {
+        Sinvi = Sinv + n * i; ASinvi = ASinv + n * i;
+        dspmv(&uplolow, &n, &done, Adata, Sinvi, &one, &dzero, ASinvi, &one);
+    }
     
-    DSDP_INT n          = S->dim;
-    double *SinvA       = NULL;
-    double *fSinvASinv  = NULL;
-    SinvA               = (double *) calloc(n * n, sizeof(double));
-    fSinvASinv          = (double *) calloc(n * n, sizeof(double));
-    retcode             = spsMatDsSolve(S, A, SinvA);
-    double tmp          = 0.0;
-    *asinv              = 0.0;
-    
-    // TODO: Replace the transpose by a cache-aware version
-    for (DSDP_INT i = 0; i < n; ++i) {
-        for (DSDP_INT j = 0; j <= i; ++j) {
-            if (i == j) {
-                *asinv += SinvA[n * i + i];
-            } else {
-                tmp = SinvA[i * n + j];
-                SinvA[i * n + j] = SinvA[j * n + i];
-                SinvA[j * n + i] = tmp;
-            }
+    // Set up inv(S) * A * inv(S) n^3
+    for (j = 0; j < n; ++j) {
+        ASinvi = ASinv + n * j; res += ASinvi[j];
+        for (i = 0; i <= j; ++i) {
+            Sinvi = Sinv + n * i;
+            packIdx(SinvASinvdata, n, j, i) = ddot(&n, ASinvi, &one, Sinvi, &one);
         }
     }
     
-    retcode = pardisoSolve(S, n, SinvA, fSinvASinv);
-    DSDP_INT idx = 0;
-    for (DSDP_INT k = 0; k < n; ++k) {
-        memcpy(&(SinvASinv->array[idx]), &(fSinvASinv[k * n + k]),
-               sizeof(double) * (n - k));
-        idx += n - k;
-    }
-    DSDP_FREE(SinvA);
-    DSDP_FREE(fSinvASinv);
-        
-    return retcode;
+    return res;
 }
 
-extern DSDP_INT spsSinvRkSinvSolve( spsMat *S, rkMat *A, rkMat *SinvASinv, double *asinv ) {
+extern double spsSinvRkSinvSolve( spsMat *S, rkMat *A, rkMat *SinvASinv ) {
     
     DSDP_INT retcode = DSDP_RETCODE_OK;
     assert( S->dim == A->dim );
@@ -1229,36 +1009,26 @@ extern DSDP_INT spsSinvRkSinvSolve( spsMat *S, rkMat *A, rkMat *SinvASinv, doubl
     assert( A->isdata && !SinvASinv->isdata );
     
     double res = 0.0, tmp;
-    DSDP_INT rank = A->rank;
-    SinvASinv->rank = rank;
-    r1Mat *r1data = NULL;
+    DSDP_INT rank = A->rank; SinvASinv->rank = rank;
 
     for (DSDP_INT i = 0; i < rank; ++i) {
-        r1data = A->data[i];
-        retcode = spsSinvR1SinvSolve(S, r1data, SinvASinv->data[i], &tmp);
-        res += tmp;
+        res += spsSinvR1SinvSolve(S, A->data[i], SinvASinv->data[i]);
     }
     
-    *asinv = res;
-    
-    return retcode;
+    return res;
 }
 
-extern DSDP_INT spsSinvR1SinvSolve( spsMat *S, r1Mat *A, r1Mat *SinvASinv, double *asinv ) {
+extern double spsSinvR1SinvSolve( spsMat *S, r1Mat *A, r1Mat *SinvASinv ) {
     
     // Routine for setting up the Schur matrix
     DSDP_INT retcode = DSDP_RETCODE_OK;
-    DSDP_INT n = S->dim;
+    DSDP_INT n = S->dim, i;
     
-    double *xSinvASinv = SinvASinv->x, *xA = A->x;
+    double *xSinvASinv = SinvASinv->x, *xA = A->x, res = 0.0;
     
     assert( A->sign );
-    SinvASinv->sign = A->sign;
+    SinvASinv->sign = A->sign; SinvASinv->nnz = n;
     retcode = pardisoSolve(S, 1, xA, xSinvASinv);
-    SinvASinv->nnz = n;
-    
-    double res = 0.0;
-    DSDP_INT i;
     
     if (n > 64) {
         
@@ -1295,8 +1065,7 @@ extern DSDP_INT spsSinvR1SinvSolve( spsMat *S, r1Mat *A, r1Mat *SinvASinv, doubl
         }
     }
     
-    *asinv = res * A->sign;    
-    return retcode;
+    return (res * A->sign);
 }
 
 /* Eigen value routines */
@@ -1400,6 +1169,11 @@ extern DSDP_INT spsMatGetlogdet( spsMat *sMat, double *logdet ) {
     return retcode;
 }
 
+extern void spsMatInverse( spsMat *sMat, double *Sinv, double *aux ) {
+    pardisoSolveInplace(sMat, sMat->dim, Sinv, aux);
+    return;
+}
+
 extern DSDP_INT spsMatScatter( spsMat *sMat, vec *b, DSDP_INT k ) {
     
     // Let b = sMat(:, k)
@@ -1408,8 +1182,7 @@ extern DSDP_INT spsMatScatter( spsMat *sMat, vec *b, DSDP_INT k ) {
     
     assert( dim == b->dim );
     
-    DSDP_INT *Ap = sMat->p;
-    DSDP_INT *Ai = sMat->i;
+    DSDP_INT *Ap = sMat->p, *Ai = sMat->i;
     double   *Ax = sMat->x;
     
     memset(b->x, 0, sizeof(double) * dim);
@@ -1420,15 +1193,10 @@ extern DSDP_INT spsMatScatter( spsMat *sMat, vec *b, DSDP_INT k ) {
     }
     
     // Search for the rest
-    for (DSDP_INT j = 0; j < k; ++j) {
-        for (DSDP_INT i = Ap[j]; i < Ap[j + 1]; ++i) {
-            if (Ai[i] > k) {
-                break;
-            }
-            if (Ai[i] == k) {
-                b->x[j] = Ax[i];
-                break;
-            }
+    for (DSDP_INT i, j = 0; j < k; ++j) {
+        for (i = Ap[j]; i < Ap[j + 1]; ++i) {
+            if (Ai[i] > k) { break; }
+            if (Ai[i] == k) { b->x[j] = Ax[i]; break; }
         }
     }
     
@@ -1436,7 +1204,6 @@ extern DSDP_INT spsMatScatter( spsMat *sMat, vec *b, DSDP_INT k ) {
 }
 
 extern DSDP_INT spsMatStoreFactor( spsMat *sMat, rkMat *factor ) {
-    
     // Save factorized data
     DSDP_INT retcode = DSDP_RETCODE_OK;
     sMat->factor = factor;
@@ -1452,7 +1219,7 @@ extern DSDP_INT spsMatGetRank( spsMat *sMat, DSDP_INT *rank ) {
     if (sMat->factor) {
         *rank = sMat->factor->rank;
     } else {
-        *rank = sMat->dim;
+        *rank = DSDP_INFINITY;
     }
     
     return DSDP_RETCODE_OK;
@@ -1462,8 +1229,8 @@ extern DSDP_INT spsMatFillLower( spsMat *sMat, double *lowFullMat ) {
     
     DSDP_INT retcode = DSDP_RETCODE_OK;
     assert( sMat->dim > 0 );
-    DSDP_INT n = sMat->dim, ni = 0;
-    DSDP_INT *Ap = sMat->p, *Ai = sMat->i;
+    
+    DSDP_INT n = sMat->dim, ni = 0, *Ap = sMat->p, *Ai = sMat->i;
     double *Ax = sMat->x;
     
     for (DSDP_INT i = 0; i < n; ++i) {
@@ -1510,12 +1277,8 @@ extern DSDP_INT spsMatView( spsMat *sMat ) {
     assert( sMat->dim > 0 );
     
     cs mat;
-    mat.p = sMat->p;
-    mat.i = sMat->i;
-    mat.x = sMat->x;
-    mat.nz = -1;
-    mat.nzmax = sMat->nnz;
-    mat.m = sMat->dim;
+    mat.p = sMat->p; mat.i = sMat->i; mat.x = sMat->x;
+    mat.nz = -1; mat.nzmax = sMat->nnz; mat.m = sMat->dim;
     mat.n = sMat->dim;
     cs_print(&mat, FALSE);
     
@@ -1545,6 +1308,5 @@ extern void spsMatLinvView( spsMat *S ) {
         printf("\n");
     }
     
-    DSDP_FREE(eye);
-    DSDP_FREE(Linv);
+    DSDP_FREE(eye); DSDP_FREE(Linv);
 }

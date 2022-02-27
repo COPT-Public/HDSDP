@@ -7,11 +7,12 @@ static char etype[] = "DSDP Utility";
  different types of matrices
 */
 
+
 extern DSDP_INT getSinvASinv( HSDSolver *dsdpSolver, DSDP_INT blockid, DSDP_INT constrid,
                               void *SinvASinv ) {
     
     // Given S and A, the routine computes A, asinv and trace(S, Sinv A Sinv)
-    DSDP_INT retcode;
+    DSDP_INT retcode = DSDP_RETCODE_OK;
     spsMat *S = dsdpSolver->S[blockid];
     void *A = dsdpSolver->sdpData[blockid]->sdpData[constrid];
     double *asinv = NULL, *asinvrysinv = NULL, tracediag = 0.0;
@@ -24,7 +25,7 @@ extern DSDP_INT getSinvASinv( HSDSolver *dsdpSolver, DSDP_INT blockid, DSDP_INT 
         asinvrysinv = &dsdpSolver->csinvrysinv;
     }
     
-    retcode = spsSinvRkSinvSolve(S, A, SinvASinv, &tracediag);
+    tracediag = spsSinvRkSinvSolve(S, A, SinvASinv);
     *asinv += tracediag;
     
     if (dsdpSolver->eventMonitor[EVENT_IN_PHASE_A]) {

@@ -230,11 +230,11 @@ static DSDP_INT schurCGSetup( HSDSolver *dsdpSolver ) {
         tol = 1e-04;
         maxiter = 10;
     } else if (dsdpSolver->mu > 1e-05){
-        tol = 1e-05;
-        maxiter = 12;
-    } else {
         tol = 1e-06;
-        maxiter = 14;
+        maxiter = 16;
+    } else {
+        tol = 1e-07;
+        maxiter = 18;
     }
     
     // cgsolver->status = CG_STATUS_INDEFINITE;

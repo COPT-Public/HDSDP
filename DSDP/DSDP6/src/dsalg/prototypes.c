@@ -234,6 +234,7 @@ extern DSDP_INT getTraceASinvASinvSlow( HSDSolver *dsdpSolver, DSDP_INT blockid,
 }
 
 
+/*
 extern DSDP_INT getSinvASinvSlow( HSDSolver *dsdpSolver, DSDP_INT blockid, DSDP_INT constrid,
                               void *SinvASinv ) {
     
@@ -281,6 +282,8 @@ extern DSDP_INT getSinvASinvSlow( HSDSolver *dsdpSolver, DSDP_INT blockid, DSDP_
     }
     return retcode;
 }
+ 
+ */
 
 /*
 static DSDP_INT setupSDPSchurBlockA( HSDSolver *dsdpSolver, DSDP_INT blockid ) {

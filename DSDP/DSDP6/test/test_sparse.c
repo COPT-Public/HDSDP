@@ -252,7 +252,7 @@ DSDP_INT test_sparse(void) {
     // SinvSpSinv
     err = 0.0;
     double asinv = 0.0;
-    retcode = spsSinvSpSinvSolve(data, B, dataInvBdataInv, &asinv);
+    // retcode = spsSinvSpSinvSolve(data, B, dataInvBdataInv, &asinv);
     
     for (DSDP_INT i = 0; i < nsym(spsAdim); ++i) {
         diff = dataInvBdataInv->array[i] - AinvBAinv[i] * r * r;

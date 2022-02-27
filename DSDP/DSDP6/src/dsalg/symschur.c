@@ -21,11 +21,13 @@ static DSDP_INT getScore( DSDP_INT *ranks, DSDP_INT *nnzs, DSDP_INT *perm,
     }
   
     d1 = rsigma * (nsqr + 3 * npack) + 2 * KAPPA * sumnnz;
-    d2 = rsigma * (nsqr + 3 * KAPPA * sumnnz) ;
+    d2 = rsigma * (nsqr + 3 * KAPPA * sumnnz);
     d3 = n * KAPPA * nnzs[idx] + ncbe + KAPPA * sumnnz;
-    d4 = n * KAPPA * nnzs[idx] + KAPPA * (n + 1) * sumnnz;
-    d5 = KAPPA * (2 * KAPPA * nnzs[idx] + 1) * sumnnz;
     
+    // Turn off d4 and d5 since not implemented
+    d4 = n * KAPPA * nnzs[idx] + KAPPA * (n + 1) * sumnnz * DSDP_INFINITY;
+    d5 = KAPPA * (2 * KAPPA * nnzs[idx] + 1) * sumnnz * DSDP_INFINITY;
+        
     // printf("d1: %f   d2: %f \n", d1, d2);
     
     // Get better of d1 and d2
@@ -110,12 +112,6 @@ static DSDP_INT schurBlockAnalysis( sdpMat *Adata, DSDP_INT *permk, DSDP_INT *MX
         M1M2 = FALSE;
     }
     
-    /*
-     ****** For DEBUGGING purpose only ******
-    */
-    
-    M1M2 = TRUE;
-    
     // Determine which strategy to use
     if (M1M2) {
         for (i = 0; i < m + 1; ++i) {
@@ -167,7 +163,7 @@ static DSDP_INT schurM1rowSetup( DSDPSchur *M, DSDP_INT blockid, DSDP_INT row ) 
         if (!*M->phaseA) { return retcode; }
         val = M->csinv; computeC = TRUE;
     }
-    spsSinvRkSinvSolve(M->S[blockid], factor, rkaux, &res); *val += res;
+    res = spsSinvRkSinvSolve(M->S[blockid], factor, rkaux); *val += res;
     
     // Get B through rank-one update
     denseMatReset(B); rkMatdenseUpdate(B, rkaux);
@@ -246,7 +242,7 @@ static DSDP_INT schurM2rowSetup( DSDPSchur *M, DSDP_INT blockid, DSDP_INT row ) 
         if (!*M->phaseA) { return retcode; }
         val = M->csinv; computeC = TRUE;
     }
-    spsSinvRkSinvSolve(M->S[blockid], factor, rkaux, &res); *val += res;
+    res = spsSinvRkSinvSolve(M->S[blockid], factor, rkaux); *val += res;
     rank = rkMatGetRank(factor);
     
     /* Start M2 */
@@ -307,10 +303,85 @@ static DSDP_INT schurM2rowSetup( DSDPSchur *M, DSDP_INT blockid, DSDP_INT row ) 
 
 static DSDP_INT schurM3rowSetup( DSDPSchur *M, DSDP_INT blockid, DSDP_INT row ) {
     // Apply M3 technique to setup a row of the Schur complement matrix
+    
+    /*
+     M3 Technique is like M1 but it computes B_i = <S^-1 * A_i * S^-1> explicitly
+     by inverting S at the beginning of each iteration
+     
+     When each row is set up, not only M is computed, but also
+        
+     csinvrysinv, asinvrysinv, csinvcsinv, asinvcsinv, csinv, asinv
+     
+     when available
+    */
     DSDP_INT retcode = DSDP_RETCODE_OK;
+    DSDP_INT i, j, k, m = M->m, *perm = M->perms[blockid], computeC = FALSE;
+    dsMat *B = M->B[blockid]; spsMat *S; rkMat *rkaux;
+    double *val, res, Ry = *M->Ry, *aux = M->schurAux, *Sinv = M->Sinv[blockid]; k = perm[row];
     
+    if (k < m) {
+        val = &M->asinv->x[k];
+    } else {
+        if (!*M->phaseA) { return retcode; }
+        val = M->csinv; computeC = TRUE;
+    }
     
+    // Get B through direct matrix multiplication
+    denseMatReset(B);
+    // Compute B_i = <S^-1 * A_i * S^-1>
+    switch (M->Adata[blockid]->types[k]) {
+        case MAT_TYPE_ZERO: return retcode;
+        case MAT_TYPE_SPARSE:
+            res = spsSinvSpSinvSolve(Sinv, aux, M->Adata[blockid]->sdpData[k], B); break;
+        case MAT_TYPE_DENSE:
+            res = spsSinvDsSinvSolve(Sinv, aux, M->Adata[blockid]->sdpData[k], B); break;
+        case MAT_TYPE_RANKK:
+            S = M->S[blockid]; rkaux = M->rkaux[blockid];
+            res = spsSinvRkSinvSolve(S, M->Adata[blockid]->sdpData[k], rkaux);
+            rkMatdenseUpdate(B, rkaux); break;
+        default: error(etype, "Invalid matrix type. \n"); break;
+    }
     
+    *val += res;
+    
+    /* Start M3 */
+    if (computeC) {
+        assert( *M->phaseA );
+        val = M->csinvrysinv; denseDiagTrace(B, Ry, &res); *val += res;
+        for (i = row; i < m + 1; ++i) {
+            j = perm[i]; val = (j == m) ? M->csinvcsinv : &M->asinvcsinv->x[j];
+            switch (M->Adata[blockid]->types[j]) {
+                case MAT_TYPE_ZERO  : continue; break;
+                case MAT_TYPE_DENSE : denseDsTrace(B, M->Adata[blockid]->sdpData[j], &res); break;
+                case MAT_TYPE_SPARSE: denseSpsTrace(B, M->Adata[blockid]->sdpData[j], &res); break;
+                case MAT_TYPE_RANKK : rkMatdenseTrace(M->Adata[blockid]->sdpData[j], B, &res); break;
+                default             : error(etype, "Invalid matrix type. \n"); break;
+            }
+            *val += res;
+        }
+    } else {
+        if (*M->phaseA) { val = &M->asinvrysinv->x[k]; denseDiagTrace(B, Ry, &res); *val += res; }
+        double *array = M->M->array;
+        for (i = row; i < m + 1; ++i) {
+            j = perm[i];
+            if (j == m) {
+                if (!*M->phaseA) { continue; }
+                val = &M->asinvcsinv->x[k];
+            } else {
+                val = (j > k) ? (&packIdx(array, m, j, k)) : (&packIdx(array, m, k, j));
+            }
+            switch (M->Adata[blockid]->types[j]) {
+                case MAT_TYPE_ZERO  : continue; break;
+                case MAT_TYPE_DENSE : denseDsTrace(B, M->Adata[blockid]->sdpData[j], &res); break;
+                case MAT_TYPE_SPARSE: denseSpsTrace(B, M->Adata[blockid]->sdpData[j], &res); break;
+                case MAT_TYPE_RANKK : rkMatdenseTrace(M->Adata[blockid]->sdpData[j], B, &res); break;
+                default             : error(etype, "Invalid matrix type. \n"); break;
+            }
+            *val += res;
+        }
+    }
+    
+    /* End M3 */
     return retcode;
 }
 
@@ -325,10 +396,19 @@ static DSDP_INT schurM4rowSetup( DSDPSchur *M, DSDP_INT blockid, DSDP_INT row ) 
 
 static DSDP_INT schurM5rowSetup( DSDPSchur *M, DSDP_INT blockid, DSDP_INT row ) {
     // Apply M5 technique to setup a row of the Schur complement matrix
+    /*
+     M5 Technique directly computes elements of the Schur matrix without any intermediate variables
+    */
     DSDP_INT retcode = DSDP_RETCODE_OK;
+    DSDP_INT i, j, k, m = M->m, *perm = M->perms[blockid], computeC = FALSE;
+    double *Sinv = M->Sinv[blockid];
+    
+    /* Start M5 */
     
     
     
+    
+    /* End M5 */
     return retcode;
 }
 
@@ -357,6 +437,22 @@ static void schurMatCleanup( DSDPSchur *M ) {
         vec_reset(M->asinvcsinv); vec_reset(M->asinvrysinv);
         *M->csinvrysinv = 0.0; *M->csinv = 0.0; *M->csinvcsinv = 0.0;
     }
+    // Set up the inverse of matrices when necessary
+    for (DSDP_INT i = 0, j, n; i < M->nblock; ++i) {
+        if (M->useTwo[i]) {
+            continue;
+        } else {
+            n = M->Adata[i]->dimS; memset(M->Sinv[i], 0, sizeof(double) * n * n);
+            for (j = 0; j < n; ++j) { M->Sinv[i][j * n + j] = 1.0; }
+        }
+    }
+}
+
+static void schurMatGetSinv( DSDPSchur *M ) {
+    // Compute inverse of the dual matrix when M3, M4 or M5 techniques are used
+    for (DSDP_INT i = 0; i < M->nblock; ++i) {
+        if (!M->useTwo[i]) { spsMatInverse(M->S[i], M->Sinv[i], M->schurAux); }
+    }
 }
 
 extern DSDP_INT SchurMatInit( DSDPSchur *M ) {
@@ -382,10 +478,10 @@ extern DSDP_INT SchurMatAlloc( DSDPSchur *M ) {
     // Allocate memory for internal perms
     DSDP_INT retcode = DSDP_RETCODE_OK;
     
-    M->perms = (DSDP_INT **) calloc(M->nblock, sizeof(DSDP_INT *));
-    M->MX = (DSDP_INT **) calloc(M->nblock, sizeof(DSDP_INT *));
-    M->useTwo = (DSDP_INT *) calloc(M->nblock, sizeof(DSDP_INT));
-    M->Sinv = (double **) calloc(M->nblock, sizeof(double *));
+    M->perms  = (DSDP_INT **) calloc(M->nblock, sizeof(DSDP_INT *));
+    M->MX     = (DSDP_INT **) calloc(M->nblock, sizeof(DSDP_INT *));
+    M->useTwo = (DSDP_INT  *) calloc(M->nblock, sizeof(DSDP_INT));
+    M->Sinv   = (double   **) calloc(M->nblock, sizeof(double *));
     
     for (DSDP_INT i = 0; i < M->nblock; ++i) {
         M->perms[i] = (DSDP_INT *) calloc(M->m + 1, sizeof(DSDP_INT));
@@ -421,7 +517,7 @@ extern DSDP_INT SchurMatFree( DSDPSchur *M ) {
         DSDP_FREE(M->perms[i]); DSDP_FREE(M->MX[i]); DSDP_FREE(M->Sinv[i]);
     }
     
-    DSDP_FREE(M->perms); DSDP_FREE(M->MX); DSDP_FREE(M->Sinv);
+    DSDP_FREE(M->perms); DSDP_FREE(M->MX); DSDP_FREE(M->Sinv); DSDP_FREE(M->schurAux);
     M->Mready = FALSE; M->m = 0; M->nblock = 0; M->perms = NULL;
     M->MX= NULL; M->S = NULL; M->B = NULL; M->Adata = NULL;
     M->M = NULL; M->asinv = NULL; M->asinvrysinv = NULL;
@@ -436,17 +532,17 @@ extern DSDP_INT DSDPSchurReorder( DSDPSchur *M ) {
     // Invoke the re-ordering heuristic for Schur matrix setup
     DSDP_INT retcode = DSDP_RETCODE_OK;
     
+    DSDP_INT maxblock = 0;
     // Information of all the matrices must have been supplied
     for (DSDP_INT i = 0, dim; i < M->nblock; ++i) {
         retcode = schurBlockAnalysis(M->Adata[i], M->perms[i],
                                      M->MX[i], &M->useTwo[i]);
-        
         if (!M->useTwo[i]) {
-            dim = M->Adata[i]->dimS;
+            dim = M->Adata[i]->dimS; maxblock = MAX(dim, maxblock);
             M->Sinv[i] = (double *) calloc(dim * dim, sizeof(double));
         }
     }
-    
+    M->schurAux = (double *) calloc(maxblock * maxblock, sizeof(double));
     M->Mready = TRUE;
     return retcode;
 }
@@ -468,8 +564,8 @@ extern DSDP_INT DSDPSchurSetup( DSDPSchur *M ) {
     
     assert( M->Mready );
     
-    // Clean up current values
-    schurMatCleanup(M);
+    // Clean up current values and invert blocks
+    schurMatCleanup(M); schurMatGetSinv(M);
     
     for (DSDP_INT i = 0; i < M->nblock; ++i) {
         schurMatSetupBlock(M, i);

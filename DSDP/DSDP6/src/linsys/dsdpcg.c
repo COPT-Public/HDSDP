@@ -260,7 +260,7 @@ extern DSDP_INT dsdpCGSolve( CGSolver *cgSolver, vec *b, vec *x0 ) {
     // Get initial residual
     vec_norm(r, &alpha);
     
-    if (alpha < tol) {
+    if (alpha < 1e-04 * tol) {
         cgSolver->status = CG_STATUS_SOLVED;
         vec_copy(x, b);
         return retcode;
