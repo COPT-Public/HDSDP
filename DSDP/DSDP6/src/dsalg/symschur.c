@@ -11,7 +11,7 @@ static DSDP_INT getScore( DSDP_INT *ranks, DSDP_INT *nnzs, DSDP_INT *perm,
                         double *M1M2, double *M1M5 ) {
     // Compute the estimated number of multiplications for technique M1 to M5
     
-    DSDP_INT i, j, k = perm[idx], nsqr = n * n, ncbe = n * n * n;
+    DSDP_INT i, j, k = perm[idx], nsqr = n * n, ncbe = n * n * n, npack = nsym(n);
     double d1, d2, d3, d4, d5, sumnnz = 0.0, rsigma = ranks[k], best = SCHUR_M1;
     double m1m5 = 0.0, m1m2 = 0.0;
     // On exit, MX is set 10 * MX12 + M12345
@@ -20,8 +20,8 @@ static DSDP_INT getScore( DSDP_INT *ranks, DSDP_INT *nnzs, DSDP_INT *perm,
         sumnnz += nnzs[i];
     }
   
-    d1 = rsigma * 3 * nsqr + KAPPA * sumnnz;
-    d2 = rsigma * (2 * nsqr + KAPPA * sumnnz + m + 1 - idx) ;
+    d1 = rsigma * (nsqr + 3 * npack) + 2 * KAPPA * sumnnz;
+    d2 = rsigma * (nsqr + 3 * KAPPA * sumnnz) ;
     d3 = n * KAPPA * nnzs[idx] + ncbe + KAPPA * sumnnz;
     d4 = n * KAPPA * nnzs[idx] + KAPPA * (n + 1) * sumnnz;
     d5 = KAPPA * (2 * KAPPA * nnzs[idx] + 1) * sumnnz;
@@ -84,7 +84,7 @@ static DSDP_INT schurBlockAnalysis( sdpMat *Adata, DSDP_INT *permk, DSDP_INT *MX
     for (i = 0; i < nrkMat; ++i) {
         k = rkidx[i];
         nnzs[k] = ((rkMat *) (Adata->sdpData[k]))->data[0]->nnz;
-        nnzs[k] *= nnzs[k];
+        nnzs[k] = nsym(nnzs[k]);
         ranks[k] = 1;
     }
     
@@ -277,7 +277,6 @@ static DSDP_INT schurM2rowSetup( DSDPSchur *M, DSDP_INT blockid, DSDP_INT row ) 
         for (r = 0; r < rank; ++r) {
             r1aux = rkMatGetBase(rkaux, r); coeff = r1aux->sign;
             for (i = row; i < m + 1; ++i) {
-                if (M->Adata[blockid]->types[i] == MAT_TYPE_ZERO) { continue; }
                 j = perm[i]; if (M->Adata[blockid]->types[j] == MAT_TYPE_ZERO) { continue; }
                 if (j == m) {
                     if (!*M->phaseA) { continue; }
@@ -285,6 +284,7 @@ static DSDP_INT schurM2rowSetup( DSDPSchur *M, DSDP_INT blockid, DSDP_INT row ) 
                 } else {
                     val = (j > k) ? (&packIdx(array, m, j, k)) : (&packIdx(array, m, k, j));
                 }
+                
                 switch (M->Adata[blockid]->types[j]) {
                     case MAT_TYPE_DENSE : denseMatxTAx(M->Adata[blockid]->sdpData[j], r1aux->x, &res);
                         res *= coeff; break;
@@ -292,12 +292,10 @@ static DSDP_INT schurM2rowSetup( DSDPSchur *M, DSDP_INT blockid, DSDP_INT row ) 
                         res *= coeff; break;
                     case MAT_TYPE_RANKK :
                         r1Matr1Trace(((rkMat *) M->Adata[blockid]->sdpData[j])->data[0], r1aux, &res);
-                        res *= coeff; break;
+                        break;
                     default             : error(etype, "Invalid matrix type. \n"); break;
                 }
-                if (res == 0.0) {
-                    
-                }
+
                 *val += res;
             }
         }

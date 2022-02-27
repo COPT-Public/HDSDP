@@ -163,6 +163,7 @@ extern DSDP_INT dsdpCGSetPType( CGSolver *cgSolver, DSDP_INT pType ) {
 
 extern DSDP_INT dsdpCGprepareP( CGSolver *cgSolver ) {
     
+    /* TODO: Necessary to try diagonal scaling every iteration ?*/
     if (cgSolver->status == CG_STATUS_INDEFINITE) {
         denseMatResetFactor(cgSolver->M);
         denseMatFactorize(cgSolver->M);

@@ -91,7 +91,7 @@ static DSDP_INT initresi( HSDSolver *dsdpSolver ) {
     retcode = isConstant(dsdpSolver, &isCons);
     
     if (isCons) {
-        beta *= 10.0;
+        beta *= 3.0;
     }
     
     for (DSDP_INT i = 0; i < dsdpSolver->nBlock; ++i) {

@@ -404,13 +404,12 @@ extern double spsMatxTAx( spsMat *A, double *x ) {
      x is dense and A is sparse
     */
     
-    DSDP_INT *Ai = A->i, *nzHash = A->nzHash, k;
+    register DSDP_INT *Ai = A->i, *nzHash = A->nzHash, i, j, k;
     register double res = 0.0, tmp = 0.0, *Ax = A->x;
-    register DSDP_INT i, j;
     
     for (k = 0; k < A->nnz; ++k) {
         i = nzHash[k]; j = Ai[k];
-        tmp = *Ax * x[i] * x[j]; Ax += 1;
+        tmp = Ax[k] * x[i] * x[j];
         res += (i == j) ? (0.5 * tmp) : tmp;
     }
     

@@ -16,7 +16,7 @@
 #define SCHUR_M4 4
 #define SCHUR_M5 5
 
-#define KAPPA (1.5)  // Ratio between sparse and dense memory access efficiency
+#define KAPPA (3.5)  // Ratio between sparse and dense memory access efficiency
 
 typedef struct {
     
