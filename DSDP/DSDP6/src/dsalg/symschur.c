@@ -416,6 +416,19 @@ static DSDP_INT schurMatSetupBlock( DSDPSchur *M, DSDP_INT blockid ) {
     // Set up a block of the Schur matrix
     DSDP_INT retcode = DSDP_RETCODE_OK;
     
+#ifndef SuperDebug
+    DSDP_INT m = M->m;
+    double *MM1 = (double *)  calloc(nsym(m), sizeof(double));
+    double *MM2 = (double *)  calloc(nsym(m), sizeof(double));
+    double *MM3 = (double *)  calloc(nsym(m), sizeof(double));
+    double *Mref = M->M->array;
+    
+    for (DSDP_INT i = 0; i < M->m + 1; ++i) {
+        schurM1rowSetup(M, blockid, i);
+    }
+    
+    DSDP_FREE(MM1); DSDP_FREE(MM2); DSDP_FREE(MM3);
+#else
     for (DSDP_INT i = 0; i < M->m + 1; ++i) {
         switch (M->MX[blockid][i]) {
             case SCHUR_M1: schurM1rowSetup(M, blockid, i); break;
@@ -427,6 +440,7 @@ static DSDP_INT schurMatSetupBlock( DSDPSchur *M, DSDP_INT blockid ) {
         }
     }
     
+#endif
     return retcode;
 }
 
