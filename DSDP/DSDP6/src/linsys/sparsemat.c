@@ -555,7 +555,7 @@ extern DSDP_INT spsMatFnorm( spsMat *sMat, double *fnrm ) {
     DSDP_INT idx, i, n = sMat->dim;
     double nrm = 0.0, tmp;
     
-    spsMatGetRank(sMat, &i);
+    i = spsMatGetRank(sMat);
     
     if (i < 0.1 * n) {
         rkMatFnorm(sMat->factor, fnrm);
@@ -1214,15 +1214,8 @@ extern rkMat* spsMatGetFactor( spsMat *sMat ) {
     return sMat->factor;
 }
 
-extern DSDP_INT spsMatGetRank( spsMat *sMat, DSDP_INT *rank ) {
-    
-    if (sMat->factor) {
-        *rank = sMat->factor->rank;
-    } else {
-        *rank = DSDP_INFINITY;
-    }
-    
-    return DSDP_RETCODE_OK;
+extern DSDP_INT spsMatGetRank( spsMat *sMat ) {
+    return (sMat->factor) ? sMat->factor->rank : DSDP_INFINITY;
 }
 
 extern DSDP_INT spsMatFillLower( spsMat *sMat, double *lowFullMat ) {

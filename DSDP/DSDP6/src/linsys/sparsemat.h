@@ -82,7 +82,7 @@ extern DSDP_INT spsMatScatter      ( spsMat *sMat, vec *b, DSDP_INT k );
 extern void     spsMatInverse      ( spsMat *sMat, double *Sinv, double *aux );
 extern DSDP_INT spsMatStoreFactor  ( spsMat *sMat, rkMat *factor );
 extern rkMat*   spsMatGetFactor      ( spsMat *sMat );
-extern DSDP_INT spsMatGetRank      ( spsMat *sMat, DSDP_INT *rank );
+extern DSDP_INT spsMatGetRank      ( spsMat *sMat );
 extern DSDP_INT spsMatFillLower    ( spsMat *sMat, double *lowFullMat );
 extern DSDP_INT spsMatFill         ( spsMat *sMat, double *fulldMat );
 extern DSDP_INT spsMatReset        ( spsMat *sMat );

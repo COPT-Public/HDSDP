@@ -68,7 +68,7 @@ extern DSDP_INT r1denseSpsUpdate( spsMat *sAMat, double alpha, r1Mat *r1BMat ) {
     return retcode;
 }
 
-extern DSDP_INT r1Matr1Trace( r1Mat *x, r1Mat *y, double *trace ) {
+extern double r1Matr1Trace( r1Mat *x, r1Mat *y ) {
     
     // Compute the inner product of two rank one matrices
     /* trace(A1 * A2) = trace( d1 * a1 * a1' * d2 * a2 * a2' )
@@ -125,8 +125,7 @@ extern DSDP_INT r1Matr1Trace( r1Mat *x, r1Mat *y, double *trace ) {
         res = dot(&x->dim, x->x, &one, y->x, &one);
     }
     
-    *trace = res * res * x->sign * y->sign;
-    return DSDP_RETCODE_OK;
+    return (res * res * x->sign * y->sign);
 }
 
 extern DSDP_INT r1MatdenseTrace( r1Mat *x, dsMat *A, double *trace ) {

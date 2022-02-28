@@ -53,6 +53,7 @@ for i = 1:maxiter
     [M, u, asinv, ~, ~, ~, csinv, csinvcsinv, asinvrysinv, csinvrysinv] = ...
         dsdpgetSchur(A, S, C, Rd, initstrategy);
     
+    
     d2_12_3_4 = M \ [b, u, asinv, asinvrysinv];
     
     d2  = d2_12_3_4(:, 1);
@@ -114,7 +115,7 @@ for i = 1:maxiter
     S = - dsdpgetATy(A, y) + C * tau - Rd;
     
     % assert(pObj >= dObj / tau);
-    assert(min(eig(S)) > 0);
+    % assert(min(eig(S)) > 0);
     
     % Corrector 
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

@@ -26,13 +26,13 @@ problems = [ "control3.dat-s", "gpp124-2.dat-s", "hinf1.dat-s", "hinf6.dat-s",..
              "control11.dat-s", "gpp100.dat-s", "gpp500-3.dat-s", "hinf4.dat-s", ...
              "maxG32.dat-s", "mcp250-3.dat-s", "qap9.dat-s", "thetaG51.dat-s", ...
              "control2.dat-s", "gpp124-1.dat-s", "gpp500-4.dat-s", "hinf5.dat-s", ...
-             "maxG51.dat-s", "mcp250-4.dat-s", "qpG11.dat-s", "truss1.dat-s"];
+             "maxG51.dat-s", "mcp250-4.dat-s", "qpG11.dat-s", "truss1.dat-s", "buck3.dat-s"];
 ntest = 1; % length(problems);
 iscorrect = zeros(ntest, 1);
 
 for k = 1:ntest
     
-    [At,b,c,K] = readsdpa(fullfile('../benchmark/sdplib/', 'theta1.dat-s'));
+    [At,b,c,K] = readsdpa(fullfile('../benchmark/sdplib/', 'arch0.dat-s'));
     % [At,b,c,K] = readsdpa(fullfile('../benchmark/sdplib/', problems(k) + '.dat-s'));
     % [At,b,c,K] = readsdpa(fullfile('../benchmark/DIMACS/', 'prob_1_2_0.dat-s'));
     % load(fullfile("../benchmark", "bm1.mat"));
@@ -47,18 +47,38 @@ for k = 1:ntest
     end % End try
     
     % nsqr = 10000;
+    l = K.l;
+    s = length(K.s);
+    [m, ~] = size(A);
+    Amat = cell(m, 1);
     
-    A = A(:, 1:nsqr);
-    [m, n] = size(A);
-    p = min(m, m);
-    n = sqrt(n);
-    Amat = cell(p, 1);
-    
-    for i = 1:p
-        Amat{i} = reshape(A(i, :), n, n);
-        Amat{i} = (Amat{i} + Amat{i}') / 2;
+    for i = 1:m
+        counter = 1;
+        B = sparse(0, 0);
+        n = K.l;
+        B = blkdiag(B, diag(A(i, counter:counter + n - 1)));
+        counter = counter + n;
+        for q = 1:s
+            n = K.s(q);
+            B = blkdiag(B, reshape(A(i, counter:counter + n * n - 1), n, n));
+            counter = counter + n * n;
+        end % End for
+        Amat{i} = B;
     end % End for
     
+    counter = 1;
+    n = K.l;
+    B = sparse(0, 0);
+    B = blkdiag(B, diag(c(counter:counter + n - 1)));
+    counter = counter + n;
+    for q = 1:s
+        n = K.s(q);
+        B = blkdiag(B, reshape(c(counter:counter + n * n - 1), n, n));
+        counter = counter + n * n;
+    end % End for
+    
+    C = B;
+
     dsdpParam = dsdpgetParam();
     
     objacc = zeros(ntest, 1);
@@ -70,10 +90,10 @@ for k = 1:ntest
     %     for i = 1:p
     %         A2(i, :) = sqrt(diag(Amat{i}));
     %     end % End for
-    
-    C = reshape(c(1:nsqr), n, n);
+%     C = [C, sparse(n, n);
+%          sparse(n, n), C];
     % C = C / norm(C, 1);
-    b = b(1:p);
+    
     warning off;
     %     cvx_begin sdp
     %     cvx_solver mosek
@@ -90,7 +110,7 @@ for k = 1:ntest
     %     X >= 0 : S1;
     %     cvx_end
     
-    pinfeas = zeros(p, 1);
+    pinfeas = zeros(m, 1);
     
     % if cvx_status == "Solved"
     try
@@ -103,7 +123,7 @@ for k = 1:ntest
         %         objacc(k) = abs(b' * y - trace(C * X)) / trace(C * X);
         %         solacc(k) = norm(S1 - S2, "fro") / norm(S1, "fro");
         
-        for i = 1:p
+        for i = 1:m
             pinfeas(i) = trace(Amat{i} * X2) - b(i);
         end % End for
         

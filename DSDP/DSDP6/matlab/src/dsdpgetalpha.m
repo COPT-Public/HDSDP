@@ -26,8 +26,8 @@ B = (B + B') / 2;
 alphamax = - 1 / eigs(B, 1, "smallestreal");
 
 
-
-% [eigmax, delta, ~] = lanczos(R, -dS);
+% dsdplanczos(R, -dS);
+% [eigmax, delta] = dsdplanczos(R, -dS);
 % alphamax = 1 / (eigmax + delta);
 
 if isnan(alphamax)

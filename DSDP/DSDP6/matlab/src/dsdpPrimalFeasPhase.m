@@ -48,7 +48,9 @@ for i = 1:maxiter
     if isfirst
         Mhat = Mhat + eye(m, m) * min(1e-08, diagM * 1e-06);
     end % End if
-    
+        
+    % dy1 = dsdpConjGrad(Mhat, b, diagM, zeros(m, 1)) / tau;
+    % dy2 = dsdpConjGrad(Mhat, asinv, diagM, zeros(m, 1));
     dy1dy2 = Mhat \ [b, asinv];
     dy1 = dy1dy2(:, 1) / tau;
     dy2 = dy1dy2(:, 2);
@@ -57,7 +59,7 @@ for i = 1:maxiter
     backwardnewton = C - dsdpgetATy(A, y - dymuprimal);
     
     % Proximity
-    delta = sqrt(dymuprimal' * M * dymuprimal);
+    delta = sqrt(dymuprimal' * Mhat * dymuprimal);
     
     % Check feasibility of backward Newton step
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

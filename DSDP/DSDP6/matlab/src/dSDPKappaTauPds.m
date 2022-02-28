@@ -124,7 +124,11 @@ if ismember(reason, ["DSDP_OPTIMAL", "DSDP_SMALL_STEP","DSDP_MAXITER"])
         Smaker = C - dsdpgetATy(A, ymaker);
         R = chol(Smaker);
         D = R \ eye(n);
-        X = D * (mumaker * speye(n) + mumaker * D' * bnmaker * D) * D';
+        % X = Smaker \ eye(n) + Smaker \ (Smaker \ bnmaker)';
+        % X = X * mumaker;
+        X = R \ (R \ (speye(n) + R' \ (R' \ bnmaker)'))';
+        % X = D * (speye(n) + D' * bnmaker * D) * D';
+        X = X * mumaker;
     end % End if 
     
 end % End if

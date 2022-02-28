@@ -81,7 +81,7 @@ static DSDP_INT schurBlockAnalysis( sdpMat *Adata, DSDP_INT *permk, DSDP_INT *MX
     for (i = 0; i < nspsMat; ++i) {
         k = spsidx[i];
         nnzs[k] = ((spsMat *) Adata->sdpData[k])->nnz;
-        spsMatGetRank(Adata->sdpData[k], &ranks[k]);
+        ranks[k] = spsMatGetRank(Adata->sdpData[k]);
     }
     for (i = 0; i < nrkMat; ++i) {
         k = rkidx[i];
@@ -255,12 +255,12 @@ static DSDP_INT schurM2rowSetup( DSDPSchur *M, DSDP_INT blockid, DSDP_INT row ) 
                 j = perm[i]; if (M->Adata[blockid]->types[j] == MAT_TYPE_ZERO) { continue; }
                 val = (j == m) ? M->csinvcsinv : &M->asinvcsinv->x[j];
                 switch (M->Adata[blockid]->types[j]) {
-                    case MAT_TYPE_DENSE : denseMatxTAx(M->Adata[blockid]->sdpData[j], r1aux->x, &res);
+                    case MAT_TYPE_DENSE : res = denseMatxTAx(M->Adata[blockid]->sdpData[j], r1aux->x);
                         res *= coeff; break;
                     case MAT_TYPE_SPARSE: res = spsMatxTAx(M->Adata[blockid]->sdpData[j], r1aux->x);
                         res *= coeff; break;
                     case MAT_TYPE_RANKK :
-                        r1Matr1Trace(((rkMat *) M->Adata[blockid]->sdpData[j])->data[0], r1aux, &res);
+                        res = r1Matr1Trace(((rkMat *) M->Adata[blockid]->sdpData[j])->data[0], r1aux);
                         break;
                     default             : error(etype, "Invalid matrix type. \n"); break;
                 }
@@ -282,12 +282,12 @@ static DSDP_INT schurM2rowSetup( DSDPSchur *M, DSDP_INT blockid, DSDP_INT row ) 
                 }
                 
                 switch (M->Adata[blockid]->types[j]) {
-                    case MAT_TYPE_DENSE : denseMatxTAx(M->Adata[blockid]->sdpData[j], r1aux->x, &res);
+                    case MAT_TYPE_DENSE : res = denseMatxTAx(M->Adata[blockid]->sdpData[j], r1aux->x);
                         res *= coeff; break;
                     case MAT_TYPE_SPARSE: res = spsMatxTAx(M->Adata[blockid]->sdpData[j], r1aux->x);
                         res *= coeff; break;
                     case MAT_TYPE_RANKK :
-                        r1Matr1Trace(((rkMat *) M->Adata[blockid]->sdpData[j])->data[0], r1aux, &res);
+                        res = r1Matr1Trace(((rkMat *) M->Adata[blockid]->sdpData[j])->data[0], r1aux);
                         break;
                     default             : error(etype, "Invalid matrix type. \n"); break;
                 }

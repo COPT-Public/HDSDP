@@ -105,13 +105,12 @@ extern DSDP_INT rkMatrkTrace( rkMat *R1, rkMat *R2, double *trace ) {
     */
     
     DSDP_INT retcode = DSDP_RETCODE_OK;
-    double res = 0.0, tmp = 0.0;
+    double res = 0.0;
     DSDP_INT i, j;
     
     for (i = 0; i < R1->rank; ++i) {
         for (j = 0; j < R2->rank; ++j) {
-            retcode = r1Matr1Trace(R1->data[i], R2->data[j], &tmp);
-            res += tmp;
+            res += r1Matr1Trace(R1->data[i], R2->data[j]);
         }
     }
     

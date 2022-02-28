@@ -6,6 +6,9 @@
 // Error type
 static char etype[] = "Dense Operation Error";
 static DSDP_INT one = 1;
+static double dzero = 0.0;
+static double done = 1.0;
+static char uplolow = DSDP_MAT_LOW;
 
 /* Internal Lapack Wrapper */
 static DSDP_INT packFactorize( dsMat *S ) {
@@ -186,22 +189,13 @@ extern DSDP_INT denseMatAdddiag( dsMat *dAMat, double d ) {
     return retcode;
 }
 
-extern DSDP_INT denseMatxTAx( dsMat *dAMat, double *x, double *xTAx ) {
+extern double denseMatxTAx( dsMat *dAMat, double *x ) {
     // Compute quadratic form x' * A * x
-    DSDP_INT retcode = DSDP_RETCODE_OK;
-    
-    char uplo    = DSDP_MAT_LOW;
-    DSDP_INT dim = dAMat->dim;
-    double alpha = 1.0, beta  = 0.0;
-    
-    double *y = (double *) calloc(dim, sizeof(double));
-    packmatvec(&uplo, &dim, &alpha, dAMat->array, x,
-               &one, &beta, y, &one);
-    
-    *xTAx = dot(&dim, x, &one, y, &one);
-    
-    DSDP_FREE(y);
-    return retcode;
+    double *y = (double *) calloc(dAMat->dim, sizeof(double)), res = 0.0;
+    packmatvec(&uplolow, &dAMat->dim, &done, dAMat->array, x,
+               &one, &dzero, y, &one);
+    res = dot(&dAMat->dim, x, &one, y, &one); DSDP_FREE(y);
+    return res;
 }
 
 extern DSDP_INT denseMatRscale( dsMat *dXMat, double r ) {

@@ -8,12 +8,12 @@ pscaler = zeros(m, 1);
 nnormarray = zeros(m + 1, 1);
 nnormarray(m + 1) = norm(C, 'fro');
 for j = 1:m
-    nnormarray(j) = sqrt(norm(A{j}, 'fro'));
+    nnormarray(j) = norm(A{j}, 'fro');
 end % End for
 
 for i = 1:m
     pscaler(i) = sqrt(nnormarray(i) * abs(b(i)));
-    
+
     if pscaler(i) == 0
         pscaler(i) = 1;
     end % End if 
