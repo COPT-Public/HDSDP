@@ -112,6 +112,8 @@ static DSDP_INT schurBlockAnalysis( sdpMat *Adata, DSDP_INT *permk, DSDP_INT *MX
         M1M2 = FALSE;
     }
     
+    /* For debugging purpose only */
+    M1M2 = FALSE;
     // Determine which strategy to use
     if (M1M2) {
         for (i = 0; i < m + 1; ++i) {
@@ -129,6 +131,31 @@ static DSDP_INT schurBlockAnalysis( sdpMat *Adata, DSDP_INT *permk, DSDP_INT *MX
     DSDP_FREE(ranks); DSDP_FREE(nnzs);
     
     return retcode;
+}
+
+static void schurMatCleanup( DSDPSchur *M ) {
+    // Clean up the arrays related to the Schur matrix
+    denseMatReset(M->M); vec_reset(M->asinv);
+    if (*M->phaseA) {
+        vec_reset(M->asinvcsinv); vec_reset(M->asinvrysinv);
+        *M->csinvrysinv = 0.0; *M->csinv = 0.0; *M->csinvcsinv = 0.0;
+    }
+    // Set up the inverse of matrices when necessary
+    for (DSDP_INT i = 0, j, n; i < M->nblock; ++i) {
+        if (M->useTwo[i]) {
+            continue;
+        } else {
+            n = M->Adata[i]->dimS; memset(M->Sinv[i], 0, sizeof(double) * n * n);
+            for (j = 0; j < n; ++j) { M->Sinv[i][j * n + j] = 1.0; }
+        }
+    }
+}
+
+static void schurMatGetSinv( DSDPSchur *M ) {
+    // Compute inverse of the dual matrix when M3, M4 or M5 techniques are used
+    for (DSDP_INT i = 0; i < M->nblock; ++i) {
+        if (!M->useTwo[i]) { spsMatInverse(M->S[i], M->Sinv[i], M->schurAux); }
+    }
 }
 
 static DSDP_INT schurM1rowSetup( DSDPSchur *M, DSDP_INT blockid, DSDP_INT row ) {
@@ -255,7 +282,7 @@ static DSDP_INT schurM2rowSetup( DSDPSchur *M, DSDP_INT blockid, DSDP_INT row ) 
                 j = perm[i]; if (M->Adata[blockid]->types[j] == MAT_TYPE_ZERO) { continue; }
                 val = (j == m) ? M->csinvcsinv : &M->asinvcsinv->x[j];
                 switch (M->Adata[blockid]->types[j]) {
-                    case MAT_TYPE_DENSE : res = denseMatxTAx(M->Adata[blockid]->sdpData[j], r1aux->x);
+                    case MAT_TYPE_DENSE : res = denseMatxTAx(M->Adata[blockid]->sdpData[j], M->schurAux, r1aux->x);
                         res *= coeff; break;
                     case MAT_TYPE_SPARSE: res = spsMatxTAx(M->Adata[blockid]->sdpData[j], r1aux->x);
                         res *= coeff; break;
@@ -282,7 +309,7 @@ static DSDP_INT schurM2rowSetup( DSDPSchur *M, DSDP_INT blockid, DSDP_INT row ) 
                 }
                 
                 switch (M->Adata[blockid]->types[j]) {
-                    case MAT_TYPE_DENSE : res = denseMatxTAx(M->Adata[blockid]->sdpData[j], r1aux->x);
+                    case MAT_TYPE_DENSE : res = denseMatxTAx(M->Adata[blockid]->sdpData[j], M->schurAux, r1aux->x);
                         res *= coeff; break;
                     case MAT_TYPE_SPARSE: res = spsMatxTAx(M->Adata[blockid]->sdpData[j], r1aux->x);
                         res *= coeff; break;
@@ -416,19 +443,6 @@ static DSDP_INT schurMatSetupBlock( DSDPSchur *M, DSDP_INT blockid ) {
     // Set up a block of the Schur matrix
     DSDP_INT retcode = DSDP_RETCODE_OK;
     
-#ifndef SuperDebug
-    DSDP_INT m = M->m;
-    double *MM1 = (double *)  calloc(nsym(m), sizeof(double));
-    double *MM2 = (double *)  calloc(nsym(m), sizeof(double));
-    double *MM3 = (double *)  calloc(nsym(m), sizeof(double));
-    double *Mref = M->M->array;
-    
-    for (DSDP_INT i = 0; i < M->m + 1; ++i) {
-        schurM1rowSetup(M, blockid, i);
-    }
-    
-    DSDP_FREE(MM1); DSDP_FREE(MM2); DSDP_FREE(MM3);
-#else
     for (DSDP_INT i = 0; i < M->m + 1; ++i) {
         switch (M->MX[blockid][i]) {
             case SCHUR_M1: schurM1rowSetup(M, blockid, i); break;
@@ -439,34 +453,7 @@ static DSDP_INT schurMatSetupBlock( DSDPSchur *M, DSDP_INT blockid ) {
             default: error(etype, "Invalid technique type. \n"); break;
         }
     }
-    
-#endif
     return retcode;
-}
-
-static void schurMatCleanup( DSDPSchur *M ) {
-    // Clean up the arrays related to the Schur matrix
-    denseMatReset(M->M); vec_reset(M->asinv);
-    if (*M->phaseA) {
-        vec_reset(M->asinvcsinv); vec_reset(M->asinvrysinv);
-        *M->csinvrysinv = 0.0; *M->csinv = 0.0; *M->csinvcsinv = 0.0;
-    }
-    // Set up the inverse of matrices when necessary
-    for (DSDP_INT i = 0, j, n; i < M->nblock; ++i) {
-        if (M->useTwo[i]) {
-            continue;
-        } else {
-            n = M->Adata[i]->dimS; memset(M->Sinv[i], 0, sizeof(double) * n * n);
-            for (j = 0; j < n; ++j) { M->Sinv[i][j * n + j] = 1.0; }
-        }
-    }
-}
-
-static void schurMatGetSinv( DSDPSchur *M ) {
-    // Compute inverse of the dual matrix when M3, M4 or M5 techniques are used
-    for (DSDP_INT i = 0; i < M->nblock; ++i) {
-        if (!M->useTwo[i]) { spsMatInverse(M->S[i], M->Sinv[i], M->schurAux); }
-    }
 }
 
 extern DSDP_INT SchurMatInit( DSDPSchur *M ) {
@@ -578,12 +565,74 @@ extern DSDP_INT DSDPSchurSetup( DSDPSchur *M ) {
     
     assert( M->Mready );
     
+    
+#ifdef superDebug
+    DSDP_INT m = M->m, mpack = nsym(m);
+    
+    double *MM1 = (double *) calloc(mpack, sizeof(double));
+    double *MM2 = (double *) calloc(mpack, sizeof(double));
+    double *MM3 = (double *) calloc(mpack, sizeof(double));
+    double *Mref = M->M->array;
+    
+    schurMatCleanup(M); schurMatGetSinv(M);
+    for (DSDP_INT i = 0; i < M->nblock; ++i) {
+        for (DSDP_INT k = 0; k < M->m + 1; ++k) {
+            M->MX[i][k] = SCHUR_M1;
+        }
+    }
+    for (DSDP_INT i = 0; i < M->nblock; ++i) {
+        schurMatSetupBlock(M, i);
+    }
+    memcpy(MM1, Mref, sizeof(double) * mpack);
+    
+    schurMatCleanup(M); schurMatGetSinv(M);
+    for (DSDP_INT i = 0; i < M->nblock; ++i) {
+        for (DSDP_INT k = 0; k < M->m + 1; ++k) {
+            M->MX[i][k] = SCHUR_M2;
+        }
+    }
+    for (DSDP_INT i = 0; i < M->nblock; ++i) {
+        schurMatSetupBlock(M, i);
+    }
+    
+    memcpy(MM2, Mref, sizeof(double) * mpack);
+    schurMatCleanup(M); schurMatGetSinv(M);
+    for (DSDP_INT i = 0; i < M->nblock; ++i) {
+        for (DSDP_INT k = 0; k < M->m + 1; ++k) {
+            M->MX[i][k] = SCHUR_M3;
+        }
+    }
+    for (DSDP_INT i = 0; i < M->nblock; ++i) {
+        schurMatSetupBlock(M, i);
+    }
+    
+    memcpy(MM3, Mref, sizeof(double) * mpack);
+    
+    double diff12 = 0.0, diff13 = 0.0, diff23 = 0.0, tmp;
+    
+    for (DSDP_INT i = 0; i < mpack; ++i) {
+        tmp = MM1[i] - MM2[i];
+        diff12 += tmp * tmp;
+        tmp = MM1[i] - MM3[i];
+        diff13 += tmp * tmp;
+        tmp = MM2[i] - MM3[i];
+        diff23 += tmp * tmp;
+    }
+    
+    if (MAX(MAX(diff12, diff23), diff13) > 0.1) {
+        assert(FALSE);
+    }
+    printf("| Difference: 12 %e  13 %e  23 %e \n", diff12, diff13, diff23);
+    
+#else
     // Clean up current values and invert blocks
     schurMatCleanup(M); schurMatGetSinv(M);
     
     for (DSDP_INT i = 0; i < M->nblock; ++i) {
         schurMatSetupBlock(M, i);
     }
+    
+#endif
     
     return retcode;
 }

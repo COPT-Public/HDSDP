@@ -189,13 +189,11 @@ extern DSDP_INT denseMatAdddiag( dsMat *dAMat, double d ) {
     return retcode;
 }
 
-extern double denseMatxTAx( dsMat *dAMat, double *x ) {
+extern double denseMatxTAx( dsMat *dAMat, double *aux, double *x ) {
     // Compute quadratic form x' * A * x
-    double *y = (double *) calloc(dAMat->dim, sizeof(double)), res = 0.0;
     packmatvec(&uplolow, &dAMat->dim, &done, dAMat->array, x,
-               &one, &dzero, y, &one);
-    res = dot(&dAMat->dim, x, &one, y, &one); DSDP_FREE(y);
-    return res;
+               &one, &dzero, aux, &one);
+    return dot(&dAMat->dim, x, &one, aux, &one);
 }
 
 extern DSDP_INT denseMatRscale( dsMat *dXMat, double r ) {

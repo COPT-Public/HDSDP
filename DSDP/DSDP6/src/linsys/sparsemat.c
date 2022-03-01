@@ -877,7 +877,7 @@ extern DSDP_INT dsdpGetAlpha( spsMat *S, spsMat *dS, spsMat *spaux, double *alph
         // MKL extremal routine
         retcode = spsMatLspLSolve(S, dS, spaux); checkCode;
         retcode = spsMatMinEig(spaux, &mineig); checkCode;
-        if (mineig > 0) {
+        if (mineig >= 0) {
             *alpha = DSDP_INFINITY;
         } else {
             *alpha = - 1.0 / mineig;

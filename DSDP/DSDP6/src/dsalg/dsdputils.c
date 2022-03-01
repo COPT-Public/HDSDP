@@ -256,13 +256,15 @@ extern DSDP_INT dsdpCheckerInCone( HSDSolver *dsdpSolver, DSDP_INT *ispsd ) {
     // Determine whether the current checking auxiliary variable lies in the cone
     DSDP_INT retcode = DSDP_RETCODE_OK;
     DSDP_INT incone = FALSE;
-    double iterB;
-    
-    DSDPGetStats(&dsdpSolver->dsdpStats, STAT_PHASE_B_ITER, &iterB);
+    // double iterB;
+    // DSDPGetStats(&dsdpSolver->dsdpStats, STAT_PHASE_B_ITER, &iterB);
     for (DSDP_INT i = 0; i < dsdpSolver->nBlock; ++i) {
+        /*
+         The code is dangerous and may cause inaccurate results
         if (iterB >= 50) {
-            spsMatAdddiag(dsdpSolver->Scker[i], 1e-06, dsdpSolver->symS[i]);
+            spsMatAdddiag(dsdpSolver->Scker[i], 1e-08, dsdpSolver->symS[i]);
         }
+        */
         spsMatIspd(dsdpSolver->Scker[i], &incone);
         if (!incone) {
             break;
