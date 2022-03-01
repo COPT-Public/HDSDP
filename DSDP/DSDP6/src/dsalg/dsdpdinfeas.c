@@ -32,9 +32,7 @@ extern DSDP_INT DSDPDInfeasEliminator( HSDSolver *dsdpSolver ) {
     
     DSDP_INT retcode = DSDP_RETCODE_OK;
     DSDP_INT goOn = TRUE;
-    
     DSDPStats *stat = &dsdpSolver->dsdpStats;
-    
     dsdpSolver->pObjVal = DSDP_INFINITY;
     
     // Initialize
@@ -46,7 +44,7 @@ extern DSDP_INT DSDPDInfeasEliminator( HSDSolver *dsdpSolver ) {
     retcode = DSDPGetDblParam(dsdpSolver, DBL_PARAM_ASIGMA,     &sigma   );
     retcode = DSDPGetIntParam(dsdpSolver, INT_PARAM_AATTEMPT,   &attempt );
     retcode = DSDPGetIntParam(dsdpSolver, INT_PARAM_AMAXITER,   &agiter  );
-    agiter = MIN(agiter, 100);
+    agiter  = MIN(agiter, 100);
     
     double trymu    = 0.0;
     double time     = 0.0;
@@ -57,14 +55,11 @@ extern DSDP_INT DSDPDInfeasEliminator( HSDSolver *dsdpSolver ) {
     const double *newmu = NULL;
     
     if (attempt == DSDP_ATTEMPT_NO) {
-        ntry = 1;
-        newmu = nomu;
+        ntry = 1; newmu = nomu;
     } else if (attempt == DSDP_ATTEMPT_CONSV) {
-        ntry = 2;
-        newmu = consvmu;
+        ntry = 2; newmu = consvmu;
     } else {
-        ntry = 4;
-        newmu = aggmu;
+        ntry = 4; newmu = aggmu;
     }
         
     dsdpSolver->eventMonitor[EVENT_IN_PHASE_A] = TRUE;

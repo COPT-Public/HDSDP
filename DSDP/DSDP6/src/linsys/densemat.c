@@ -289,74 +289,6 @@ extern DSDP_INT denseArrSolveInp( dsMat *S, DSDP_INT nrhs, double *B ) {
     return retcode;
 }
 
-extern DSDP_INT denseSpsSolve( dsMat *dAMat, spsMat *sBMat, double *AinvB ) {
-    
-    // Solve a dense system A * X = B for sparse B
-    DSDP_INT retcode = DSDP_RETCODE_OK;
-    
-    assert( dAMat->dim == sBMat->dim );
-    DSDP_INT n = dAMat->dim;
-    
-    if (n > DSDP_MEMORY_THRESHOLD) {
-        /* Memory friendly strategy as in sparse case */
-        vec b;
-        vec *pb = &b;
-        vec_init(pb);
-        vec_alloc(pb, n);
-        
-        for (DSDP_INT k = 0; k < n; ++k) {
-            // Fill b by the k th column of sBMat
-            retcode = spsMatScatter(sBMat, pb, k);
-            retcode = denseVecSolve(dAMat, pb, &AinvB[k * n]);
-        }
-        
-        vec_free(pb);
-        
-    } else {
-        /* Violent solve: not recommended */
-        double *B = NULL;
-        B = (double *) calloc(n * n, sizeof(double));
-        retcode = spsMatFill(sBMat, B);
-        retcode = packSolve(dAMat, n, B, AinvB);
-    }
-    
-    return retcode;
-}
-
-extern DSDP_INT denseDsSolve( dsMat *dAMat, dsMat *dBMat, double *AinvB ) {
-    
-    // Solve a dense system A * X = B for dense A and B
-    DSDP_INT retcode = DSDP_RETCODE_OK;
-    
-    assert( dAMat->dim == dBMat->dim );
-    DSDP_INT n = dAMat->dim;
-    
-    if (n > DSDP_MEMORY_THRESHOLD) {
-        /* Memory friendly strategy as in sparse case */
-        vec b;
-        vec *pb = &b;
-        vec_init(pb);
-        vec_alloc(pb, n);
-        
-        for (DSDP_INT k = 0; k < n; ++k) {
-            // Fill b by the k th column of sBMat
-            retcode = denseMatScatter(dBMat, pb, k);
-            retcode = denseVecSolve(dAMat, pb, &AinvB[k * n]);
-        }
-        
-        vec_free(pb);
-        
-    } else {
-        /* Violent solve: not recommended */
-        double *B = NULL;
-        B = (double *) calloc(n * n, sizeof(double));
-        retcode = denseMatFill(dBMat, B);
-        retcode = packSolve(dAMat, n, B, AinvB);
-    }
-    
-    return retcode;
-}
-
 /* Schur matrix assembly */
 extern DSDP_INT denseSpsTrace( dsMat *dAMat, spsMat *sBMat, double *trace ) {
     
@@ -497,7 +429,6 @@ extern DSDP_INT denseDiagTrace( dsMat *dAMat, double diag, double *trace ) {
     }
     
     *trace = diag * mattrace;
-    
     return retcode;
 }
 
@@ -523,10 +454,7 @@ extern DSDP_INT denseMatScatter( dsMat *dMat, vec *b, DSDP_INT k ) {
 }
 
 extern DSDP_INT denseMatStoreFactor( dsMat *dMat, rkMat *factor ) {
-    
-    DSDP_INT retcode = DSDP_RETCODE_OK;
-    dMat->factor = factor;
-    return retcode;
+    dMat->factor = factor; return DSDP_RETCODE_OK;
 }
 
 extern rkMat* denseMatGetFactor( dsMat *dMat ) {
@@ -534,13 +462,7 @@ extern rkMat* denseMatGetFactor( dsMat *dMat ) {
 }
 
 extern DSDP_INT denseMatGetRank( dsMat *dMat, DSDP_INT *rank ) {
-    
-    if (dMat->factor) {
-        *rank = dMat->factor->rank;
-    } else {
-        *rank = DSDP_INFINITY;
-    }
-    
+    *rank = (dMat->factor) ? dMat->factor->rank : DSDP_INFINITY;
     return DSDP_RETCODE_OK;
 }
 
@@ -636,11 +558,7 @@ extern DSDP_INT denseMatReset( dsMat *dMat ) {
     
     // Reset M to be 0
     DSDP_INT retcode = DSDP_RETCODE_OK;
-    
-    DSDP_INT n = dMat->dim;
-    assert( n > 0 );
-    memset(dMat->array, 0, sizeof(double) * nsym(n));
-    
+    memset(dMat->array, 0, sizeof(double) * nsym(dMat->dim));
     return retcode;
 }
 
@@ -648,12 +566,10 @@ extern DSDP_INT denseMatResetFactor( dsMat *dMat ) {
     
     // Reset Cholesky factor
     DSDP_INT retcode = DSDP_RETCODE_OK;
-    DSDP_INT n = dMat->dim;
-    assert( n > 0 );
     
     if (dMat->isFactorized) {
         dMat->isFactorized = FALSE;
-        memset(dMat->lfactor, 0, sizeof(double) * nsym(n));
+        memset(dMat->lfactor, 0, sizeof(double) * dMat->dim);
     }
     
     return retcode;
@@ -689,15 +605,9 @@ extern DSDP_INT denseMatMinEig( dsMat *dMat, double *minEig ) {
     
     *minEig = d[0];
     
-    DSDP_FREE(X);
-    DSDP_FREE(d);
-    DSDP_FREE(eigvals);
-    DSDP_FREE(eigvecs);
-    DSDP_FREE(eigaux);
-    DSDP_FREE(eigintaux);
-    
-//    denseMatFnorm(dMat, &nrm);
-//    factorizeDenseData(dMat, -nrm, eigvals, eigvecs);
+    DSDP_FREE(X); DSDP_FREE(d); DSDP_FREE(eigvals); DSDP_FREE(eigvecs);
+    DSDP_FREE(eigaux); DSDP_FREE(eigintaux);
+
     return retcode;
 }
 
@@ -705,15 +615,15 @@ extern DSDP_INT denseMatView( dsMat *dMat ) {
     
     // Print the upper triangular part of the matrix
     DSDP_INT retcode = DSDP_RETCODE_OK;
-    DSDP_INT n = dMat->dim;
+    DSDP_INT n = dMat->dim, i, j;
     printf("Matrix view: \n");
     
-    for (DSDP_INT i = 0; i < n; ++i) {
+    for (i = 0; i < n; ++i) {
         printf("R"ID": " , i);
-        for (DSDP_INT j = 0; j < i; ++j) {
+        for (j = 0; j < i; ++j) {
             printf("%-10.3g ", 0.0);
         }
-        for (DSDP_INT j = i; j < n; ++j) {
+        for (j = i; j < n; ++j) {
             printf("%-10.3g ", packIdx(dMat->array, n, j, i));
         }
         printf("\n");

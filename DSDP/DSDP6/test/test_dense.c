@@ -391,9 +391,7 @@ DSDP_INT test_dense(void) {
     
     data->isFactorized = TRUE;
     
-    /* Dense matrix solve */
-    retcode = denseDsSolve(data, B, fullA); checkCodeFree;
-    
+    /* Dense matrix solve */    
     for (DSDP_INT i = 0; i < packAdim; ++i) {
         for (DSDP_INT j = 0; j < packAdim; ++j) {
             diff = fullA[i * packAdim + j] - Bsol[i + packAdim * j];

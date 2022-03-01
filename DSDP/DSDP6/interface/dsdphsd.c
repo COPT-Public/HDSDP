@@ -628,13 +628,7 @@ extern DSDP_INT DSDPSetDim( HSDSolver *dsdpSolver,
         error(etype, "Invalid dimension. \n");
     }
     
-    DSDP_INT nnz;
-    if (nNzs) {
-        nnz = *nNzs;
-    } else {
-        nnz = -1;
-    }
-    
+    DSDP_INT nnz = (nNzs) ? *nNzs : (-1);
     if (dsdpSolver->verbosity) {
         // printf("Dimension is successfully set. \n");
         dsdpshowdash();
@@ -645,10 +639,8 @@ extern DSDP_INT DSDPSetDim( HSDSolver *dsdpSolver,
                "| nNonzeros: "ID" |\n", nBlock, nConstrs, lpDim, sdpDim, nnz);
     }
     
-    dsdpSolver->nBlock = nBlock;
-    dsdpSolver->m      = nConstrs;
-    dsdpSolver->lpDim  = lpDim;
-    dsdpSolver->n      = sdpDim;
+    dsdpSolver->nBlock = nBlock; dsdpSolver->m = nConstrs;
+    dsdpSolver->lpDim = lpDim; dsdpSolver->n = sdpDim;
     
     retcode = DSDPIAlloc(dsdpSolver); checkCode;
     
@@ -688,13 +680,7 @@ extern DSDP_INT DSDPSetLPData( HSDSolver *dsdpSolver,
     retcode = lpMatSetData(dsdpSolver->lpData, Ap, Ai, Ax); checkCode;
     memcpy(dsdpSolver->lpObj->x, lpObj, sizeof(double) * nCol);
     
-    if (dsdpSolver->verbosity) {
-        printf("LP data is set. \n");
-    }
-    
-    dsdpSolver->isLPset = TRUE;
-    DSDPICheckData(dsdpSolver);
-    
+    dsdpSolver->isLPset = TRUE; DSDPICheckData(dsdpSolver);
     return retcode;
 }
 
@@ -723,10 +709,7 @@ extern DSDP_INT DSDPSetSDPConeData( HSDSolver *dsdpSolver,
     retcode = sdpMatSetDim(data, dsdpSolver->m,
                            coneSize, blockid); checkCode;
     retcode = sdpMatAlloc(data); checkCode;
-    
-    if (typehint) {
-        retcode = sdpMatSetHint(data, typehint); checkCode;
-    }
+    if (typehint) { retcode = sdpMatSetHint(data, typehint); checkCode; }
     
     retcode = sdpMatSetData(data, Asdpp, Asdpi, Asdpx); checkCode;
     dsdpSolver->isSDPset[blockid] = TRUE;
@@ -740,10 +723,8 @@ extern DSDP_INT DSDPSetObj( HSDSolver *dsdpSolver, double *dObj ) {
     DSDP_INT retcode = DSDP_RETCODE_OK;
     
     assert( dsdpSolver->insStatus == DSDP_STATUS_SET && !dsdpSolver->dObj );
-    
     dsdpSolver->dObj = (vec *) calloc(1, sizeof(vec));
-    vec_init(dsdpSolver->dObj);
-    vec_alloc(dsdpSolver->dObj, dsdpSolver->m);
+    vec_init(dsdpSolver->dObj); vec_alloc(dsdpSolver->dObj, dsdpSolver->m);
     
     if (dObj) {
         memcpy(dsdpSolver->dObj->x, dObj, sizeof(double) * dsdpSolver->m);
@@ -761,8 +742,6 @@ extern DSDP_INT DSDPOptimize( HSDSolver *dsdpSolver ) {
     DSDP_INT gotoB = FALSE;
     
     DSDPStats *stat = &dsdpSolver->dsdpStats;
-    
-    // DSDPPrintVersion();
     
     if (!dsdpSolver->dObj) {
         retcode = DSDPSetObj(dsdpSolver, NULL);

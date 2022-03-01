@@ -1,5 +1,6 @@
 #include <stdio.h>
 #include "rankonemat.h"
+#include "sparsemat.h"
 #include "dsdplapack.h"
 
 // Define constants involving Lapack and Blas
@@ -40,8 +41,6 @@ extern DSDP_INT r1denseSpsUpdate( spsMat *sAMat, double alpha, r1Mat *r1BMat ) {
     DSDP_INT retcode = DSDP_RETCODE_OK;
     DSDP_INT n = sAMat->dim;
     
-    assert( n == r1BMat->dim );
-    assert( !sAMat->isFactorized );
     assert( sAMat->nnz > 0 );
     
     if (fabs(alpha) < 1e-15) {
@@ -73,52 +72,21 @@ extern double r1Matr1Trace( r1Mat *x, r1Mat *y ) {
     // Compute the inner product of two rank one matrices
     /* trace(A1 * A2) = trace( d1 * a1 * a1' * d2 * a2 * a2' )
                       = d1 * d2 * (a1' * a2)^2
+      
+     y is assumed dense
        ******************************************
        *    Computationally critical routine    *
        ******************************************
      */
     
     double res = 0.0;
-    DSDP_INT xnnz = x->nnz, ynnz = y->nnz, n = x->dim;
-    
-    if (MIN(xnnz, ynnz) < 0.5 * n) {
+    DSDP_INT n = x->dim;
+    if (x->nnz < 0.5 * n) {
         // Otherwise do sparse computation
         double *xdata = x->x, *ydata = y->x;
-        DSDP_INT *dataidx = NULL, nnz, i, idx = 0;
-        
-        if (xnnz < ynnz) {
-            dataidx = x->nzIdx;
-            nnz = xnnz;
-        } else {
-            dataidx = y->nzIdx;
-            nnz = ynnz;
-        }
-        
-        for (i = 0; i < nnz - 7; ++i) {
-            idx = dataidx[i]; res += xdata[idx] * ydata[idx]; ++i;
-            idx = dataidx[i]; res += xdata[idx] * ydata[idx]; ++i;
-            idx = dataidx[i]; res += xdata[idx] * ydata[idx]; ++i;
-            idx = dataidx[i]; res += xdata[idx] * ydata[idx]; ++i;
-            idx = dataidx[i]; res += xdata[idx] * ydata[idx]; ++i;
-            idx = dataidx[i]; res += xdata[idx] * ydata[idx]; ++i;
-            idx = dataidx[i]; res += xdata[idx] * ydata[idx]; ++i;
-            idx = dataidx[i]; res += xdata[idx] * ydata[idx];
-        }
-        
-        if (i < nnz - 3) {
-            idx = dataidx[i]; res += xdata[idx] * ydata[idx]; ++i;
-            idx = dataidx[i]; res += xdata[idx] * ydata[idx]; ++i;
-            idx = dataidx[i]; res += xdata[idx] * ydata[idx]; ++i;
-            idx = dataidx[i]; res += xdata[idx] * ydata[idx]; ++i;
-        }
-        
-        if (i < nnz - 1) {
-            idx = dataidx[i]; res += xdata[idx] * ydata[idx]; ++i;
-            idx = dataidx[i]; res += xdata[idx] * ydata[idx]; ++i;
-        }
-        
-        if (i < nnz) {
-            idx = dataidx[i]; res += xdata[idx] * ydata[idx];
+        DSDP_INT *dataidx = x->nzIdx, i;
+        for (i = 0; i < x->nnz; ++i) {
+            res += xdata[*dataidx] * ydata[*dataidx]; ++dataidx;
         }
     } else {
         // Use dense dot product if rank-one matrix is dense
@@ -139,8 +107,6 @@ extern DSDP_INT r1MatdenseTrace( r1Mat *x, dsMat *A, double *trace ) {
      
      */
     DSDP_INT retcode = DSDP_RETCODE_OK;
-    assert( x->dim == A->dim );
-    
     DSDP_INT n = x->dim, nnz = x->nnz;
     
     // Two ways of implementation
@@ -191,7 +157,6 @@ extern DSDP_INT r1MatdenseTrace( r1Mat *x, dsMat *A, double *trace ) {
 extern DSDP_INT r1MatspsTrace( r1Mat *x, spsMat *A, double *trace ) {
     // Compute the inner product of a rank-1 matrix and sparse A
     DSDP_INT retcode = DSDP_RETCODE_OK;
-    assert( x->dim == A->dim );
     
     DSDP_INT n = x->dim, r1nnz = x->nnz, spsnnz = A->nnz, idx, idx2, i, j;
     DSDP_INT *Ap = A->p, *Ai = A->i;
@@ -262,6 +227,60 @@ extern DSDP_INT r1MatspsTrace( r1Mat *x, spsMat *A, double *trace ) {
     DSDP_FREE(Atimesx);
     
     return retcode;
+}
+
+extern double r1SinvspsPhaseA( spsMat *A, r1Mat *B, double *Sinv, double *Ry, double *asinv ) {
+    // For convenience A is sparse and B is rank-one. But <B * Sinv> is computed
+    double res = 0.0, res2 = 0.0, res3 = 0.0, tmp, bij, *Ax = A->x, *Bx = B->x;
+    DSDP_INT i, j, k, p, q, in, jn, n = A->dim;
+    DSDP_INT *Ai = A->i, *Aj = A->nzHash, *Bi = B->nzIdx;
+    
+    for (p = 0; p < B->nnz; ++p) {
+        for (q = 0; q < p; ++q) {
+            bij = Bx[Bi[p]] * Bx[Bi[q]]; in = Bi[p] * n; jn = Bi[q] * n;
+            tmp = 0.0; res3 += bij * Sinv[in + Bi[q]];
+            for (k = 0; k < A->nnz; ++k) {
+                if (Ai[k] == Aj[k]) {
+                    tmp += 0.5 * Ax[k] * Sinv[in + Ai[k]] * Sinv[jn + Aj[k]];
+                } else {
+                    tmp += Ax[k] * Sinv[in + Ai[k]] * Sinv[jn + Aj[k]];
+                }
+            }
+            res += bij * tmp;
+        }
+        
+        q = p; bij = Bx[Bi[p]] * Bx[Bi[q]];
+        in = Bi[p] * n; jn = Bi[q] * n; tmp = 0.0;
+        res3 += 0.5 * bij * Sinv[in + Bi[q]];
+        
+        for (k = 0; k < A->nnz; ++k) {
+            if (Ai[k] == Aj[k]) {
+                tmp += 0.5 * Ax[k] * Sinv[in + Ai[k]] * Sinv[jn + Aj[k]];
+            } else {
+                tmp += Ax[k] * Sinv[in + Ai[k]] * Sinv[jn + Aj[k]];
+            }
+        }
+        res += 0.5 * bij * tmp;
+    }
+    
+    // <Ry * S^-1 * A_j, S^-1>
+    for (p = 0; p < n; ++p) {
+        in = p * n;
+        for (i = 0; i < B->nnz; ++i) {
+            for (j = 0; j < i; ++j) {
+                res2 += Bx[Bi[i]] * Bx[Bi[j]] * Sinv[Bi[j] + in] * Sinv[Bi[i] + in];
+            }
+            j = Bi[i]; tmp = Bx[j] * Sinv[j + in]; res2 += 0.5 * tmp * tmp;
+        }
+    }
+    
+    res2 *= *Ry; *Ry = (2.0 * res2 * B->sign); *asinv = (2.0 * res3 * B->sign);
+    return (4.0 * res * B->sign);
+}
+
+extern double r1SinvspsPhaseB( r1Mat *A, spsMat *B, double *Sinv ) {
+    // May be better to write a new one since A is more sparse than B
+    return spsSinvr1SinvPhaseB(B, A, Sinv);
 }
 
 extern DSDP_INT r1MatdiagTrace( r1Mat *x, double diag, double *trace ) {
@@ -354,8 +373,6 @@ extern DSDP_INT r1MatNormalize( r1Mat *x ) {
 }
 
 extern DSDP_INT r1MatFnorm( r1Mat *x, double *fnrm ) {
-    
-    assert( x->dim );
 
     if (x->nnz < 0.6 * x->dim) {
         double res = 0.0, *xdata = x->x;
@@ -375,7 +392,6 @@ extern DSDP_INT r1MatFnorm( r1Mat *x, double *fnrm ) {
 
 extern DSDP_INT r1MatOneNorm( r1Mat *x, double *onenrm ) {
     
-    assert( x->dim );
     double res = 0.0, *xdata = x->x;
     DSDP_INT i, j, *nzIdx = x->nzIdx;
     
@@ -404,14 +420,11 @@ extern DSDP_INT r1MatOneNorm( r1Mat *x, double *onenrm ) {
 extern DSDP_INT r1MatRscale( r1Mat *x, double r ) {
     
     assert( (x->dim) && (r != 0.0) );
-    
     x->sign = x->sign / r;
     return DSDP_RETCODE_OK;
 }
 
 extern DSDP_INT r1MatView( r1Mat *x ) {
-    
-    assert( x->dim && x->sign );
     
     printf("Matrix View: \n");
     printf("Matrix dimension "ID" : \n", x->dim);

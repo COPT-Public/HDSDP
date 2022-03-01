@@ -253,7 +253,6 @@ static DSDP_INT setupPhaseAdvecs( HSDSolver *dsdpSolver ) {
      d2_12_3_4 = M \ [b, u, asinv, asinvrysinv];
     */
     DSDP_INT retcode = DSDP_RETCODE_OK;
-
     retcode = vec_copy(dsdpSolver->dObj,  dsdpSolver->d2);
     retcode = vec_copy(dsdpSolver->u,     dsdpSolver->d12);
     retcode = vec_copy(dsdpSolver->asinv, dsdpSolver->d3);

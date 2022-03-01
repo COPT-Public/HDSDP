@@ -430,6 +430,7 @@ static DSDP_INT schurM5rowSetup( DSDPSchur *M, DSDP_INT blockid, DSDP_INT row ) 
     DSDP_INT i, j, k, m = M->m, *perm = M->perms[blockid], computeC = FALSE;
     double *Sinv = M->Sinv[blockid];
     
+    
     /* Start M5 */
     
     
@@ -564,7 +565,6 @@ extern DSDP_INT DSDPSchurSetup( DSDPSchur *M ) {
     DSDP_INT retcode = DSDP_RETCODE_OK;
     
     assert( M->Mready );
-    
     
 #ifdef superDebug
     DSDP_INT m = M->m, mpack = nsym(m);

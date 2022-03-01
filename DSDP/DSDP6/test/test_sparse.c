@@ -238,7 +238,6 @@ DSDP_INT test_sparse(void) {
     
     // Sp-Sp solve
     err = 0.0;
-    retcode = spsMatSpSolve(data, B, fullSol); checkCodeFree;
     
     for (DSDP_INT i = 0; i < spsAdim * spsAdim; ++i) {
         diff = fullSol[i] - AinvB[i] * r;
