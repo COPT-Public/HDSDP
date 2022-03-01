@@ -421,6 +421,18 @@ static DSDP_INT schurM4rowSetup( DSDPSchur *M, DSDP_INT blockid, DSDP_INT row ) 
     return retcode;
 }
 
+static double schurM5MatAuxPhaseA( DSDP_INT type1, void *A1, DSDP_INT type2, void *A2 ) {
+    
+    
+    return 0.0;
+}
+
+static double schurM5MatAuxPhaseB( DSDP_INT type1, void *A1, DSDP_INT type2, void *A2, double *Ry, double *) {
+    
+    
+    return 0.0;
+}
+
 static DSDP_INT schurM5rowSetup( DSDPSchur *M, DSDP_INT blockid, DSDP_INT row ) {
     // Apply M5 technique to setup a row of the Schur complement matrix
     /*
@@ -429,12 +441,20 @@ static DSDP_INT schurM5rowSetup( DSDPSchur *M, DSDP_INT blockid, DSDP_INT row ) 
     DSDP_INT retcode = DSDP_RETCODE_OK;
     DSDP_INT i, j, k, m = M->m, *perm = M->perms[blockid], computeC = FALSE;
     double *Sinv = M->Sinv[blockid];
-    
+    double *val, res, coeff, Ry = *M->Ry; k = perm[row];
     
     /* Start M5 */
+    if (k < m) {
+        val = &M->asinv->x[k];
+    } else {
+        if (!*M->phaseA) { return retcode; }
+        val = M->csinv; computeC = TRUE;
+    }
     
+    for (i = row; i < m + 1; ++i) {
+        j = perm[i];
     
-    
+    }
     
     /* End M5 */
     return retcode;
