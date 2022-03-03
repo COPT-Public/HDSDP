@@ -35,7 +35,8 @@ extern DSDP_INT dsdpCheckPrimalInfeas( HSDSolver *dsdpSolver ) {
     
     if (dsdpSolver->pObjVal <= dsdpSolver->dObjVal) {
         dsdpSolver->eventMonitor[EVENT_INVALID_GAP] = TRUE;
-        dsdpSolver->pObjVal = dsdpSolver->dObjVal + 1e+10;
+        dsdpSolver->pObjVal = dsdpSolver->dObjVal + 1e+05;
+        DSDPStatUpdate(&dsdpSolver->dsdpStats, STAT_GAP_BROKEN, 1.0);
     } else {
         dsdpSolver->eventMonitor[EVENT_INVALID_GAP] = FALSE;
     }

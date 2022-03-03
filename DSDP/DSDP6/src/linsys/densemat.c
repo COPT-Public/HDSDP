@@ -462,7 +462,7 @@ extern rkMat* denseMatGetFactor( dsMat *dMat ) {
 }
 
 extern DSDP_INT denseMatGetRank( dsMat *dMat, DSDP_INT *rank ) {
-    *rank = (dMat->factor) ? dMat->factor->rank : DSDP_INFINITY;
+    *rank = (dMat->factor) ? dMat->factor->rank : (dMat->dim * 1000);
     return DSDP_RETCODE_OK;
 }
 

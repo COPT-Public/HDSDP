@@ -8,6 +8,7 @@
 extern "C" {
 #endif
 
+extern DSDP_INT factorizeSpecial    ( spsMat *A, double *eigvals, double *eigvecs, DSDP_INT *isSpecial );
 extern DSDP_INT factorizeSparseData( spsMat *A, double elow, double *eigvals, double *eigvecs );
 extern DSDP_INT factorizeDenseData ( dsMat *A, double elow, double *eigvals, double *eigvecs  );
 

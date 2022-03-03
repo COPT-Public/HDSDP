@@ -267,7 +267,7 @@ extern DSDP_INT dsdpCGSolve( CGSolver *cgSolver, vec *b, vec *x0 ) {
     }
     
     alpha = MIN(100, alpha);
-    tol = MAX(tol * alpha * 0.1, tol * 1e-02);
+    tol = MAX(tol * alpha * 0.1, tol * 1e-01);
     
     // d = P \ r;
     vec_copy(r, d);

@@ -11,8 +11,8 @@ static DSDP_INT getScore( DSDP_INT *ranks, DSDP_INT *nnzs, DSDP_INT *perm,
                         double *M1M2, double *M1M5 ) {
     // Compute the estimated number of multiplications for technique M1 to M5
     
-    DSDP_INT i, j, k = perm[idx], nsqr = n * n, ncbe = n * n * n, npack = nsym(n);
-    double d1, d2, d3, d4, d5, sumnnz = 0.0, rsigma = ranks[k], best = SCHUR_M1;
+    DSDP_INT i, j, k = perm[idx], npack = nsym(n);
+    double d1, d2, d3, d4, d5, nsqr = n * n, ncbe = n * nsqr, sumnnz = 0.0, rsigma = ranks[k], best = SCHUR_M1;
     double m1m5 = 0.0, m1m2 = 0.0;
     // On exit, MX is set 10 * MX12 + M12345
 
@@ -20,30 +20,31 @@ static DSDP_INT getScore( DSDP_INT *ranks, DSDP_INT *nnzs, DSDP_INT *perm,
         sumnnz += nnzs[i];
     }
   
-    d1 = rsigma * (nsqr + 3 * npack) + 2 * KAPPA * sumnnz;
-    d2 = rsigma * (nsqr + 3 * KAPPA * sumnnz);
-    d3 = n * KAPPA * nnzs[idx] + ncbe + KAPPA * sumnnz;
+    d1 = rsigma * (2 * nsqr) + KAPPA * sumnnz;
+    d2 = rsigma * (nsqr + 2 * KAPPA * sumnnz);
+    // d1 = rsigma * (nsqr + 3 * npack) + 2 * KAPPA * sumnnz;
+    // d2 = rsigma * (nsqr + 3 * KAPPA * sumnnz);
+    d3 = n * KAPPA * nnzs[idx] + ncbe + KAPPA * sumnnz + ncbe / m;
+    d5 = KAPPA * (2 * KAPPA * nnzs[idx] + 1) * sumnnz + ncbe / m;
     
-    // Turn off d4 and d5 since not implemented
-    d4 = n * KAPPA * nnzs[idx] + KAPPA * (n + 1) * sumnnz * DSDP_INFINITY;
-    d5 = KAPPA * (2 * KAPPA * nnzs[idx] + 1) * sumnnz * DSDP_INFINITY;
+    // Turn off d4 since not implemented
+    d4 = n * KAPPA * nnzs[idx] + KAPPA * (n + 1) * sumnnz + ncbe / m;
+    
         
     // printf("d1: %f   d2: %f \n", d1, d2);
     
     // Get better of d1 and d2
     j = 0;
     if (d1 < d2) {
-        best = SCHUR_M1;
-        m1m2 = d1; m1m5 = d1;
+        best = SCHUR_M1; m1m2 = d1; m1m5 = d1;
     } else {
-        best = SCHUR_M2;
-        m1m2 = d2; m1m5 = d2;
+        best = SCHUR_M2; m1m2 = d2; m1m5 = d2;
     }
     
     j += best * 10;
     
     if (d3 < m1m5) { best = SCHUR_M3; m1m5 = d3; }
-    if (d4 < m1m5) { best = SCHUR_M4; m1m5 = d4; }
+    // if (d4 < m1m5) { best = SCHUR_M4; m1m5 = d4; }
     if (d5 < m1m5) { best = SCHUR_M5; m1m5 = d5; }
     
     *M1M2 = m1m2; *M1M5 = m1m5; j += best; *MX = j;
@@ -106,14 +107,17 @@ static DSDP_INT schurBlockAnalysis( sdpMat *Adata, DSDP_INT *permk, DSDP_INT *MX
         ksiM1M5 += scoreM1M5[i];
     }
     
-    if (ksiM1M2 <= ksiM1M5 + n * n * n) {
+    double ncbe = n;
+    ncbe *= n; ncbe *= n;
+    if (ksiM1M2 <= ksiM1M5 + ncbe) {
         M1M2 = TRUE;
     } else {
         M1M2 = FALSE;
     }
     
-    /* For debugging purpose only */
+    /* For Debugging purpose only */
     M1M2 = FALSE;
+    
     // Determine which strategy to use
     if (M1M2) {
         for (i = 0; i < m + 1; ++i) {
@@ -417,20 +421,27 @@ static DSDP_INT schurM4rowSetup( DSDPSchur *M, DSDP_INT blockid, DSDP_INT row ) 
     DSDP_INT retcode = DSDP_RETCODE_OK;
     
     
-    
     return retcode;
 }
 
-static double schurM5MatAuxPhaseA( DSDP_INT type1, void *A1, DSDP_INT type2, void *A2 ) {
-    
-    
-    return 0.0;
-}
-
-static double schurM5MatAuxPhaseB( DSDP_INT type1, void *A1, DSDP_INT type2, void *A2, double *Ry, double *) {
-    
-    
-    return 0.0;
+static double schurM5MatAux( DSDP_INT type1, void *A1, DSDP_INT type2, void *A2, double *Sinv ) {
+    if (type1 == MAT_TYPE_SPARSE) {
+        switch (type2) {
+            // A1 is more sparse
+            case MAT_TYPE_SPARSE: return spsSinvspsSinv(A1, A2, Sinv);
+            case MAT_TYPE_RANKK : return spsSinvr1Sinv(A1, ((rkMat *) A2)->data[0], Sinv);
+            case MAT_TYPE_ZERO  : return 0.0;
+            default: assert( FALSE ); break;
+        }
+    } else if (type1 == MAT_TYPE_RANKK) {
+        switch (type2) {
+            case MAT_TYPE_SPARSE: return r1Sinvsps(A2, ((rkMat *) A1)->data[0], Sinv); break;
+            case MAT_TYPE_RANKK : return r1Sinvr1(((rkMat *) A1)->data[0], ((rkMat *) A2)->data[0], Sinv); break;
+            case MAT_TYPE_ZERO  : return 0.0;
+            default: assert( FALSE ); break;
+        }
+    }
+    assert( FALSE ); return 0.0;
 }
 
 static DSDP_INT schurM5rowSetup( DSDPSchur *M, DSDP_INT blockid, DSDP_INT row ) {
@@ -440,8 +451,10 @@ static DSDP_INT schurM5rowSetup( DSDPSchur *M, DSDP_INT blockid, DSDP_INT row ) 
     */
     DSDP_INT retcode = DSDP_RETCODE_OK;
     DSDP_INT i, j, k, m = M->m, *perm = M->perms[blockid], computeC = FALSE;
+    DSDP_INT *types = M->Adata[blockid]->types;
     double *Sinv = M->Sinv[blockid];
-    double *val, res, coeff, Ry = *M->Ry; k = perm[row];
+    double *val, res, tmp, Ry = *M->Ry; k = perm[row];
+    void **data = M->Adata[blockid]->sdpData;
     
     /* Start M5 */
     if (k < m) {
@@ -451,9 +464,41 @@ static DSDP_INT schurM5rowSetup( DSDPSchur *M, DSDP_INT blockid, DSDP_INT row ) 
         val = M->csinv; computeC = TRUE;
     }
     
-    for (i = row; i < m + 1; ++i) {
-        j = perm[i];
+    switch (types[k]) {
+        case MAT_TYPE_ZERO: return retcode;
+        case MAT_TYPE_SPARSE:
+            res = spsRySinv(data[k], Sinv, &tmp, Ry);
+            break;
+        case MAT_TYPE_RANKK:
+            res = r1RySinv(((rkMat *) data[k])->data[0], Sinv, &tmp, Ry);
+            break;
+        default:
+            error(etype, "Invalid matrix type. Dense matrix should not appear in M5. \n");
+            break;
+    }
     
+    *val += tmp;
+    
+    if (computeC) {
+        *M->csinvrysinv += res;
+        assert( *M->phaseA );
+        for (i = row; i < m + 1; ++i) {
+            j = perm[i]; val = (j == m) ? M->csinvcsinv : &M->asinvcsinv->x[j];
+            *val += schurM5MatAux(types[k], data[k], types[j], data[j], Sinv);
+        }
+    } else {
+        M->asinvrysinv->x[k] += res;
+        double *array = M->M->array;
+        for (i = row; i < m + 1; ++i) {
+            j = perm[i];
+            if (j == m) {
+                if (!*M->phaseA) { continue; }
+                val = &M->asinvcsinv->x[k];
+            } else {
+                val = (j > k) ? (&packIdx(array, m, j, k)) : (&packIdx(array, m, k, j));
+            }
+            *val += schurM5MatAux(types[k], data[k], types[j], data[j], Sinv);
+        }
     }
     
     /* End M5 */
@@ -566,6 +611,21 @@ extern DSDP_INT DSDPSchurReorder( DSDPSchur *M ) {
     }
     M->schurAux = (double *) calloc(maxblock * maxblock, sizeof(double));
     M->Mready = TRUE;
+    
+    DSDP_INT m1 = 0, m2 = 0, m3 = 0, m4 = 0, m5 = 0;
+    for (DSDP_INT i = 0, j; i < M->nblock; ++i) {
+        for (j = 0; j < M->m + 1; ++j) {
+            switch (M->MX[i][j]) {
+                case SCHUR_M1: m1 += 1; break;
+                case SCHUR_M2: m2 += 1; break;
+                case SCHUR_M3: m3 += 1; break;
+                case SCHUR_M4: m4 += 1; break;
+                case SCHUR_M5: m5 += 1; break;
+                default: assert( FALSE ); break;
+            }
+        }
+    }
+    printf("|    Schur Re-ordering: M1: %d  M2: %d  M3: %d  M4: %d  M5: %d \n", m1, m2, m3, m4, m5);
     return retcode;
 }
 
@@ -592,6 +652,7 @@ extern DSDP_INT DSDPSchurSetup( DSDPSchur *M ) {
     double *MM1 = (double *) calloc(mpack, sizeof(double));
     double *MM2 = (double *) calloc(mpack, sizeof(double));
     double *MM3 = (double *) calloc(mpack, sizeof(double));
+    double *MM5 = (double *) calloc(mpack, sizeof(double));
     double *Mref = M->M->array;
     
     schurMatCleanup(M); schurMatGetSinv(M);
@@ -628,7 +689,18 @@ extern DSDP_INT DSDPSchurSetup( DSDPSchur *M ) {
     
     memcpy(MM3, Mref, sizeof(double) * mpack);
     
-    double diff12 = 0.0, diff13 = 0.0, diff23 = 0.0, tmp;
+    schurMatCleanup(M); schurMatGetSinv(M);
+    for (DSDP_INT i = 0; i < M->nblock; ++i) {
+        for (DSDP_INT k = 0; k < M->m + 1; ++k) {
+            M->MX[i][k] = SCHUR_M5;
+        }
+    }
+    for (DSDP_INT i = 0; i < M->nblock; ++i) {
+        schurMatSetupBlock(M, i);
+    }
+    
+    memcpy(MM5, Mref, sizeof(double) * mpack);
+    double diff12 = 0.0, diff13 = 0.0, diff23 = 0.0, diff25 = 0.0, tmp;
     
     for (DSDP_INT i = 0; i < mpack; ++i) {
         tmp = MM1[i] - MM2[i];
@@ -637,16 +709,20 @@ extern DSDP_INT DSDPSchurSetup( DSDPSchur *M ) {
         diff13 += tmp * tmp;
         tmp = MM2[i] - MM3[i];
         diff23 += tmp * tmp;
+        tmp = MM2[i] - MM5[i];
+        diff25 += tmp * tmp;
     }
     
     if (MAX(MAX(diff12, diff23), diff13) > 0.1) {
         assert(FALSE);
     }
-    printf("| Difference: 12 %e  13 %e  23 %e \n", diff12, diff13, diff23);
+    printf("| Difference: 12 %e  13 %e  23 %e  25 %e \n", diff12, diff13, diff23, diff25);
+    DSDP_FREE(MM1); DSDP_FREE(MM2); DSDP_FREE(MM3); DSDP_FREE(MM5);
     
 #else
     // Clean up current values and invert blocks
-    schurMatCleanup(M); schurMatGetSinv(M);
+    schurMatCleanup(M);
+    schurMatGetSinv(M);
     
     for (DSDP_INT i = 0; i < M->nblock; ++i) {
         schurMatSetupBlock(M, i);

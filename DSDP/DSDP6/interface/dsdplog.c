@@ -326,11 +326,13 @@ extern DSDP_INT DSDPCheckPhaseAConvergence( HSDSolver *dsdpSolver, DSDP_INT *isO
     DSDPGetStats(stat, STAT_PHASE_A_ITER, &statval1);
     DSDPGetStats(stat, STAT_NUM_SMALL_ITER, &statval2);
     
-    if (statval1 > 0 && dsdpSolver->alpha < 1e-04 &&
-        !monitor[EVENT_PFEAS_FOUND]) {
+    if (statval1 > 0 && dsdpSolver->alpha < 1e-02) {
         monitor[EVENT_SMALL_STEP] = TRUE;
         statval2 += 1.0;
         DSDPStatUpdate(stat, STAT_NUM_SMALL_ITER, statval2);
+        if (statval2 >= 3) {
+            *isOK = TRUE;
+        }
     }
     
     // NAN in iteration
@@ -410,7 +412,7 @@ extern DSDP_INT DSDPCheckPhaseBConvergence( HSDSolver *dsdpSolver, DSDP_INT *isO
         if (statval1 == 0.0) {
             statval1 += 1.0;
             DSDPStatUpdate(stat, STAT_GAP_BROKEN, statval1);
-            dsdpSolver->pObjVal = dsdpSolver->dObjVal + 1e+08;
+            dsdpSolver->pObjVal = dsdpSolver->dObjVal + 1e+05;
             monitor[EVENT_INVALID_GAP] = TRUE;
         } else {
             dsdpSolver->solStatus = DSDP_INTERNAL_ERROR;

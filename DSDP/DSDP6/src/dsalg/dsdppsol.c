@@ -40,11 +40,6 @@ extern DSDP_INT computePrimalX( HSDSolver *dsdpSolver ) {
         spsMatFactorize(Smaker);
         spsMatGetX(Smaker, bnmaker, Xtmp);
         
-        double *Stmp = (double *) calloc(dim * dim, sizeof(double));
-        spsMatFill(dsdpSolver->S[blockid], Stmp);
-        
-        DSDP_FREE(Stmp);
-        
         // X = mu * D * (speye(n) + D' * bnmaker * D) * D';
         for (DSDP_INT i = 0, idx = 0; i < dim; ++i) {
             memcpy(&dsaux->array[idx], &Xtmp[i * dim + i],
@@ -86,9 +81,7 @@ extern DSDP_INT computeDIMACS( HSDSolver *dsdpSolver ) {
         trace = 0.0;
         for (DSDP_INT j = 0; j < nblock; ++j) {
             switch (dsdpSolver->sdpData[j]->types[i]) {
-                case MAT_TYPE_ZERO:
-                    tmp = 0.0;
-                    break;
+                case MAT_TYPE_ZERO: tmp = 0.0; break;
                 case MAT_TYPE_DENSE:
                     denseDsTrace(dsdpSolver->dsaux[j],
                                  dsdpSolver->sdpData[j]->sdpData[i],
@@ -129,8 +122,7 @@ extern DSDP_INT computeDIMACS( HSDSolver *dsdpSolver ) {
     pObj = 0.0; tmp = 0.0;
     for (DSDP_INT i = 0; i < nblock; ++i) {
         switch (dsdpSolver->sdpData[i]->types[m]) {
-            case MAT_TYPE_ZERO:
-                break;
+            case MAT_TYPE_ZERO: tmp = 0.0; break;
             case MAT_TYPE_DENSE:
                 denseDsTrace(dsdpSolver->dsaux[i],
                              dsdpSolver->sdpData[i]->sdpData[m],

@@ -759,7 +759,7 @@ extern DSDP_INT dsdpGetAlpha( spsMat *S, spsMat *dS, spsMat *spaux, double *alph
     
     // Lanczos iteration
     double lbd = 0.0, delta = 0.0;
-    // retcode = dsdpLanczos(S, dS, &lbd, &delta);
+//    retcode = dsdpLanczos(S, dS, &lbd, &delta);
     
     if (1 || lbd != lbd || delta != delta || (lbd + delta > 1e+10)) {
         // MKL extremal routine
@@ -898,44 +898,32 @@ extern double spsSinvR1SinvSolve( spsMat *S, r1Mat *A, r1Mat *SinvASinv ) {
     return (res * A->sign);
 }
 
-extern double spsSinvspsSinvPhaseA( spsMat *A, spsMat *B, double *Sinv, double *Ry, double *asinv ) {
-    // Set up <A_i * S^-1 * A_j, S^-1> by direct computation.
+extern double spsRySinv( spsMat *A, double *Sinv, double *asinv, double Ry ) {
+    // Set up <A * S^-1> and <S^-1 * A * S^-1, Ry> by direct computation.
     // This version is used in Phase A
-    double res = 0.0, res2 = 0.0, res3 = 0.0, tmp, aij, *Ax = A->x, *Bx = B->x;
-    DSDP_INT i, j, p, q, in, jn, n = A->dim;
-    DSDP_INT *Ai = A->i, *Aj = A->nzHash, *Bi = B->i, *Bj = B->nzHash;
+    double res = 0.0, res2 = 0.0, *Ax = A->x;
+    DSDP_INT i, p, q, in, n = A->dim, *Ai = A->i, *Aj = A->nzHash;
     
-    // <A_i * S^-1 * A_j, S^-1> and <A_i, S^-1>
+    // <A_i, S^-1>
     for (p = 0; p < A->nnz; ++p) {
-        aij = Ax[p]; i = Ai[p]; j = Aj[p];
-        in = i * n; jn = j * n; tmp = 0.0;
-        res3 += (i == j) ? (0.5 * aij * Sinv[in + j]) : (aij * Sinv[in + j]);
-        for (q = 0; q < B->nnz; ++q) {
-            if (Bi[q] == Bj[q]) {
-                tmp += 0.5 * Bx[q] * Sinv[in + Bi[q]] * Sinv[jn + Bj[q]];
-            } else {
-                tmp += Bx[q] * Sinv[in + Bi[q]] * Sinv[jn + Bj[q]];
-            }
-        }
-        res += (i == j) ? (0.5 * aij * tmp) : (aij * tmp);
+        i = Ai[p] * n + Aj[p];
+        res += (Ai[p] == Aj[p]) ? (0.5 * Ax[p] * Sinv[i]) : (Ax[p] * Sinv[i]);
     }
     // <Ry * S^-1 * A_j, S^-1>
     for (p = 0; p < n; ++p) {
         in = p * n;
         for (q = 0; q < A->nnz; ++q) {
             if (Ai[q] == Aj[q]) {
-                res2 += Ax[q] * Sinv[Ai[q] + in] * Sinv[Aj[q] + in];
-            } else {
                 res2 += 0.5 * Ax[q] * Sinv[Ai[q] + in] * Sinv[Aj[q] + in];
+            } else {
+                res2 += Ax[q] * Sinv[Ai[q] + in] * Sinv[Aj[q] + in];
             }
         }
     }
-    
-    res2 *= *Ry; *Ry = 2.0 * res2; *asinv = 2.0 * res3;
-    return 4.0 * res;
+    *asinv = 2.0 * res; return (2.0 * Ry * res2);
 }
 
-extern double spsSinvspsSinvPhaseB( spsMat *A, spsMat *B, double *Sinv ) {
+extern double spsSinvspsSinv( spsMat *A, spsMat *B, double *Sinv ) {
     // Set up <A_i * S^-1 * A_j, S^-1> by direct computation.
     // This simple version is used in Phase B
     double res = 0.0, tmp, aij, *Ax = A->x, *Bx = B->x;
@@ -947,62 +935,20 @@ extern double spsSinvspsSinvPhaseB( spsMat *A, spsMat *B, double *Sinv ) {
         in = i * n; jn = j * n; tmp = 0.0;
         for (q = 0; q < B->nnz; ++q) {
             if (Bi[q] == Bj[q]) {
-                tmp += 0.5 * Bx[q] * Sinv[in + Bi[q]] * Sinv[jn + Bj[q]];
+                tmp += Bx[q] * Sinv[in + Bi[q]] * Sinv[jn + Bj[q]];
             } else {
                 tmp += Bx[q] * Sinv[in + Bi[q]] * Sinv[jn + Bj[q]];
+                tmp += Bx[q] * Sinv[in + Bj[q]] * Sinv[jn + Bi[q]];
             }
         }
         res += (i == j) ? (0.5 * aij * tmp) : (aij * tmp);
     }
     
-    return 4.0 * res;
+    return 2.0 * res;
 }
 
-// Following two methods should NEVER be taken
-extern double spsSinvDsSinvPhaseA( spsMat *A, spsMat *B, double *Sinv, double *Ry, double *asinv ) {
-    assert( FALSE ); return 0.0;
-}
-
-extern double spsSinvDsSinvPhaseB( spsMat *A, dsMat *B, double *Sinv ) {
-    assert( FALSE ); return 0.0;
-}
-
-extern double spsSinvr1SinvPhaseA( spsMat *A, r1Mat *B, double *Sinv, double *Ry, double *asinv ) {
-    double res = 0.0, res2 = 0.0, res3 = 0.0, tmp, aij, *Ax = A->x, *Bx = B->x;
-    DSDP_INT i, j, k, p, q, in, jn, n = A->dim;
-    DSDP_INT *Ai = A->i, *Aj = A->nzHash, *Bi = B->nzIdx;
-    
-    for (p = 0; p < A->nnz; ++p) {
-        aij = Ax[p]; i = Ai[p]; j = Aj[p];
-        in = i * n; jn = j * n; tmp = 0.0;
-        res3 += (i == j) ? (0.5 * aij * Sinv[in + j]) : (aij * Sinv[in + j]);
-        for (q = 0; q < B->nnz; ++q) {
-            for (k = 0; k < q; ++k) {
-                tmp += Bx[Bi[q]] * Bx[Bi[k]] * Sinv[in + Bi[q]] * Sinv[jn + Bi[k]];
-            }
-            k = Bi[q]; tmp += 0.5 * Bx[k] * Bx[k] * Sinv[in + k] * Sinv[jn + k];
-        }
-        res += (i == j) ? (0.5 * aij * tmp) : (aij * tmp);
-    }
-    
-    // <Ry * S^-1 * A_j, S^-1> exactly the same as in sps-sps case
-    for (p = 0; p < n; ++p) {
-        in = p * n;
-        for (q = 0; q < A->nnz; ++q) {
-            if (Ai[q] == Aj[q]) {
-                res2 += Ax[q] * Sinv[Ai[q] + in] * Sinv[Aj[q] + in];
-            } else {
-                res2 += 0.5 * Ax[q] * Sinv[Ai[q] + in] * Sinv[Aj[q] + in];
-            }
-        }
-    }
-    
-    res2 *= *Ry; *Ry = 2.0 * res2; *asinv = 2.0 * res3;
-    return (4.0 * res * B->sign);
-}
-
-extern double spsSinvr1SinvPhaseB( spsMat *A, r1Mat *B, double *Sinv ) {
-    double res = 0.0, tmp, aij, *Ax = A->x, *Bx = B->x;
+extern double spsSinvr1Sinv( spsMat *A, r1Mat *B, double *Sinv ) {
+    double res = 0.0, tmp, aij, bij, *Ax = A->x, *Bx = B->x;
     DSDP_INT i, j, k, p, q, in, jn, n = A->dim;
     DSDP_INT *Ai = A->i, *Aj = A->nzHash, *Bi = B->nzIdx;
     
@@ -1011,13 +957,15 @@ extern double spsSinvr1SinvPhaseB( spsMat *A, r1Mat *B, double *Sinv ) {
         in = i * n; jn = j * n; tmp = 0.0;
         for (q = 0; q < B->nnz; ++q) {
             for (k = 0; k < q; ++k) {
-                tmp += Bx[Bi[q]] * Bx[Bi[k]] * Sinv[in + Bi[q]] * Sinv[jn + Bi[k]];
+                bij = Bx[Bi[q]] * Bx[Bi[k]];
+                tmp += bij * Sinv[in + Bi[q]] * Sinv[jn + Bi[k]];
+                tmp += bij * Sinv[jn + Bi[q]] * Sinv[in + Bi[k]];
             }
-            k = Bi[q]; tmp += 0.5 * Bx[k] * Bx[k] * Sinv[in + k] * Sinv[jn + k];
+            k = Bi[q]; tmp += Bx[k] * Bx[k] * Sinv[in + k] * Sinv[jn + k];
         }
         res += (i == j) ? (0.5 * aij * tmp) : (aij * tmp);
     }
-    return (4.0 * res * B->sign);
+    return (2.0 * res * B->sign);
 }
 
 /* Eigen value routines */
@@ -1136,7 +1084,7 @@ extern rkMat* spsMatGetFactor( spsMat *sMat ) {
 }
 
 extern DSDP_INT spsMatGetRank( spsMat *sMat ) {
-    return (sMat->factor) ? sMat->factor->rank : DSDP_INFINITY;
+    return (sMat->factor) ? sMat->factor->rank : (sMat->dim) * 1000;
 }
 
 extern DSDP_INT spsMatFillLower( spsMat *sMat, double *lowFullMat ) {

@@ -66,10 +66,9 @@ extern double spsSinvSpSinvSolve   ( const double *Sinv, double *aux, spsMat *A,
 extern double spsSinvDsSinvSolve   ( const double *Sinv, double *aux, dsMat  *A, dsMat *SinvASinv );
 extern double spsSinvRkSinvSolve   ( spsMat *S, rkMat *A, rkMat *SinvASinv );
 extern double spsSinvR1SinvSolve   ( spsMat *S, r1Mat *A, r1Mat *SinvASinv );
-extern double spsSinvspsSinvPhaseA ( spsMat *A, spsMat *B, double *Sinv, double *Ry, double *asinv );
-extern double spsSinvspsSinvPhaseB ( spsMat *A, spsMat *B, double *Sinv );
-extern double spsSinvr1SinvPhaseA  ( spsMat *A, r1Mat *B, double *Sinv, double *Ry, double *asinv );
-extern double spsSinvr1SinvPhaseB  ( spsMat *A, r1Mat *B, double *Sinv );
+extern double spsRySinv            ( spsMat *A, double *Sinv, double *asinv, double Ry );
+extern double spsSinvspsSinv       ( spsMat *A, spsMat *B, double *Sinv );
+extern double spsSinvr1Sinv        ( spsMat *A, r1Mat  *B, double *Sinv );
 
 /* Eigen value routines */
 extern DSDP_INT spsMatMaxEig       ( spsMat *sMat, double *maxEig );

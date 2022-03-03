@@ -229,58 +229,77 @@ extern DSDP_INT r1MatspsTrace( r1Mat *x, spsMat *A, double *trace ) {
     return retcode;
 }
 
-extern double r1SinvspsPhaseA( spsMat *A, r1Mat *B, double *Sinv, double *Ry, double *asinv ) {
-    // For convenience A is sparse and B is rank-one. But <B * Sinv> is computed
-    double res = 0.0, res2 = 0.0, res3 = 0.0, tmp, bij, *Ax = A->x, *Bx = B->x;
-    DSDP_INT i, j, k, p, q, in, jn, n = A->dim;
+extern double r1RySinv( r1Mat *B, double *Sinv, double *asinv, double Ry ) {
+    double res = 0.0, res2 = 0.0, tmp, *Bx = B->x;
+    DSDP_INT i, p, q, in, n = B->dim, *Bi = B->nzIdx;
+    
+    for (p = 0; p < B->nnz; ++p) {
+        for (q = 0; q < p; ++q) {
+            res += Bx[Bi[p]] * Bx[Bi[q]] * Sinv[Bi[p] * n + Bi[q]];
+        }
+        i = Bi[p]; res += 0.5 * Bx[i] * Bx[i] * Sinv[i * n + i];
+    }
+    
+    // <Ry * S^-1 * A_j, S^-1>
+    for (i = 0; i < n; ++i) {
+        in = i * n;
+        for (p = 0; p < B->nnz; ++p) {
+            for (q = 0; q < p; ++q) {
+                res2 += Bx[Bi[p]] * Bx[Bi[q]] * Sinv[Bi[q] + in] * Sinv[Bi[p] + in];
+            }
+            q = Bi[p]; tmp = Bx[q] * Sinv[q + in]; res2 += 0.5 * tmp * tmp;
+        }
+    }
+    
+    *asinv = (2.0 * res * B->sign); return (2.0 * res2 * B->sign * Ry);
+}
+
+extern double r1Sinvr1( r1Mat *A, r1Mat *B, double *Sinv ) {
+    // Compute <A, S^-1 * B * S^-1>
+    double res = 0.0, *Ax = A->x, *Bx = B->x;
+    DSDP_INT n = A->dim, i, j, *Ai = A->nzIdx, *Bi = B->nzIdx;
+    for (i = 0; i < A->nnz; ++i) {
+        for (j = 0; j < B->nnz; ++j) {
+            res += Ax[Ai[i]] * Bx[Bi[j]] * Sinv[Ai[i] * n + Bi[j]];
+        }
+    }
+    res = res * A->sign * B->sign;
+    return (res * res);
+}
+
+extern double r1Sinvsps( spsMat *A, r1Mat *B, double *Sinv ) {
+    // For convenience A is sparse and B is rank-one.
+    double res = 0.0, tmp, bij, *Ax = A->x, *Bx = B->x;
+    DSDP_INT k, p, q, in, jn, n = A->dim;
     DSDP_INT *Ai = A->i, *Aj = A->nzHash, *Bi = B->nzIdx;
     
     for (p = 0; p < B->nnz; ++p) {
         for (q = 0; q < p; ++q) {
-            bij = Bx[Bi[p]] * Bx[Bi[q]]; in = Bi[p] * n; jn = Bi[q] * n;
-            tmp = 0.0; res3 += bij * Sinv[in + Bi[q]];
+            bij = Bx[Bi[p]] * Bx[Bi[q]]; in = Bi[p] * n; jn = Bi[q] * n; tmp = 0.0;
             for (k = 0; k < A->nnz; ++k) {
                 if (Ai[k] == Aj[k]) {
-                    tmp += 0.5 * Ax[k] * Sinv[in + Ai[k]] * Sinv[jn + Aj[k]];
+                    tmp += Ax[k] * Sinv[in + Ai[k]] * Sinv[jn + Aj[k]];
                 } else {
                     tmp += Ax[k] * Sinv[in + Ai[k]] * Sinv[jn + Aj[k]];
+                    tmp += Ax[k] * Sinv[jn + Ai[k]] * Sinv[in + Aj[k]];
                 }
             }
             res += bij * tmp;
         }
-        
         q = p; bij = Bx[Bi[p]] * Bx[Bi[q]];
         in = Bi[p] * n; jn = Bi[q] * n; tmp = 0.0;
-        res3 += 0.5 * bij * Sinv[in + Bi[q]];
-        
         for (k = 0; k < A->nnz; ++k) {
             if (Ai[k] == Aj[k]) {
-                tmp += 0.5 * Ax[k] * Sinv[in + Ai[k]] * Sinv[jn + Aj[k]];
+                tmp += Ax[k] * Sinv[in + Ai[k]] * Sinv[jn + Aj[k]];
             } else {
                 tmp += Ax[k] * Sinv[in + Ai[k]] * Sinv[jn + Aj[k]];
+                tmp += Ax[k] * Sinv[jn + Ai[k]] * Sinv[in + Aj[k]];
             }
         }
         res += 0.5 * bij * tmp;
     }
     
-    // <Ry * S^-1 * A_j, S^-1>
-    for (p = 0; p < n; ++p) {
-        in = p * n;
-        for (i = 0; i < B->nnz; ++i) {
-            for (j = 0; j < i; ++j) {
-                res2 += Bx[Bi[i]] * Bx[Bi[j]] * Sinv[Bi[j] + in] * Sinv[Bi[i] + in];
-            }
-            j = Bi[i]; tmp = Bx[j] * Sinv[j + in]; res2 += 0.5 * tmp * tmp;
-        }
-    }
-    
-    res2 *= *Ry; *Ry = (2.0 * res2 * B->sign); *asinv = (2.0 * res3 * B->sign);
-    return (4.0 * res * B->sign);
-}
-
-extern double r1SinvspsPhaseB( r1Mat *A, spsMat *B, double *Sinv ) {
-    // May be better to write a new one since A is more sparse than B
-    return spsSinvr1SinvPhaseB(B, A, Sinv);
+    return (2.0 * res * B->sign);
 }
 
 extern DSDP_INT r1MatdiagTrace( r1Mat *x, double diag, double *trace ) {

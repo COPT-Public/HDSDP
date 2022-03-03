@@ -159,8 +159,8 @@ extern DSDP_INT setDblParam( hsdParam *param, DSDP_INT pName, double dblVal ) {
         return DSDP_RETCODE_FAILED;
     }
     
-    printf("| Before: \n");
-    printDblParam(param->dblParams, pName);
+    // printf("| Before: \n");
+    // printDblParam(param->dblParams, pName);
     retcode = checkDblParam(pName, dblVal);
     
     if (retcode == DSDP_RETCODE_OK) {
@@ -170,8 +170,8 @@ extern DSDP_INT setDblParam( hsdParam *param, DSDP_INT pName, double dblVal ) {
     }
     
     param->dblParams[pName] = dblVal;
-    printf("| After: \n");
-    printDblParam(param->dblParams, pName);
+    // printf("| After: \n");
+    // printDblParam(param->dblParams, pName);
     
     return retcode;
 }

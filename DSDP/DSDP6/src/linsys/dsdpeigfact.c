@@ -135,7 +135,7 @@ static DSDP_INT F2CIndex( spsMat *A ) {
     return DSDP_RETCODE_OK;
 }
 
-static DSDP_INT factorizeSpecial( spsMat *A, double *eigvals, double *eigvecs, DSDP_INT *isSpecial ) {
+extern DSDP_INT factorizeSpecial( spsMat *A, double *eigvals, double *eigvecs, DSDP_INT *isSpecial ) {
     // Check if the sparse matrix follows special pattern
     // Currently detect diagonal matrix and matrices with at most one entry per column
     DSDP_INT retcode = DSDP_RETCODE_OK;
@@ -143,6 +143,9 @@ static DSDP_INT factorizeSpecial( spsMat *A, double *eigvals, double *eigvecs, D
     assert( A->dim );
     DSDP_INT *Ap = A->p, *Ai = A->i, n = A->dim, nelem, idx;
     double *Ax = A->x;
+    
+    memset(eigvals, 0, sizeof(double) * n);
+    memset(eigvecs, 0, sizeof(double) * n * n);
     
     // Stop if nnz is large
     if (A->nnz > n) {
@@ -266,16 +269,8 @@ extern DSDP_INT factorizeSparseData( spsMat *A, double elow, double *eigvals, do
        Lower triangular in CSC => Upper triangular in CSR
     */
     DSDP_INT retcode = DSDP_RETCODE_OK;
-    DSDP_INT n = A->dim, special;
+    DSDP_INT n = A->dim;
     assert( n );
-    memset(eigvals, 0, sizeof(double) * n);
-    memset(eigvecs, 0, sizeof(double) * n * n);
-    retcode = factorizeSpecial(A, eigvals, eigvecs, &special);
-    
-    if (special) {
-        return retcode;
-    }
-    
     memset(eigvals, 0, sizeof(double) * n);
     memset(eigvecs, 0, sizeof(double) * n * n);
     

@@ -258,7 +258,7 @@ extern DSDP_INT selectMu( HSDSolver *dsdpSolver, double *newmu ) {
             memcpy(dsdpSolver->Scker[i]->x, dsdpSolver->S[i]->x,
                    sizeof(double) * dsdpSolver->S[i]->nnz);
             // This step sometimes fails due to inaccurate Lanczos
-            retcode = spsMataXpbY(MIN(0.92 * alphap, 1.0), dsdpSolver->dS[i],
+            retcode = spsMataXpbY(MIN(0.95 * alphap, 1.0), dsdpSolver->dS[i],
                                   1.0, dsdpSolver->Scker[i], dsdpSolver->symS[i]);
         }
 #ifdef ROUGH_MU
@@ -302,8 +302,11 @@ extern DSDP_INT dualPotentialReduction( HSDSolver *dsdpSolver ) {
     DSDP_INT retcode = DSDP_RETCODE_OK;
     retcode = checkIterProgress(dsdpSolver, ITER_COMPUTE_STEP);
     
+    double rho;
     // double rho = dsdpSolver->param->rho;
-    double rho = (dsdpSolver->pObjVal - dsdpSolver->dObjVal) / dsdpSolver->mu;
+    getDblParam(dsdpSolver->param, DBL_PARAM_RHO, &rho);
+    DSDPSetDblParam(dsdpSolver, DBL_PARAM_RHO,
+                    (dsdpSolver->pObjVal - dsdpSolver->dObjVal) / dsdpSolver->mu);
     double oldpotential = 0.0, maxstep = 0.0;
     
     vec *ytarget = dsdpSolver->d4, *y = dsdpSolver->y, *dy = dsdpSolver->dy;

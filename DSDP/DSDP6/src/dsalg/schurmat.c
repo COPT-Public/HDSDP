@@ -176,7 +176,10 @@ static DSDP_INT schurMatPerturb( HSDSolver *dsdpSolver ) {
         dsdpSolver->Mscaler = maxdiag;
         perturb += MIN(maxdiag * 1e-06, 1e-08);
         
-        if (dsdpSolver->eventMonitor[EVENT_IN_PHASE_B]) {
+        double invalid;
+        DSDPGetStats(&dsdpSolver->dsdpStats, STAT_GAP_BROKEN, &invalid);
+        
+        if (dsdpSolver->eventMonitor[EVENT_IN_PHASE_B] && !invalid) {
             for (i = 0; i < m; ++i) {
                 packIdx(dsdpSolver->Msdp->array, m, i, i) += perturb;
             }
@@ -219,29 +222,23 @@ static DSDP_INT schurCGSetup( HSDSolver *dsdpSolver ) {
     DSDP_INT retcode = DSDP_RETCODE_OK;
     
     double tol = 0.0;
-    DSDP_INT maxiter = 0;
     CGSolver *cgsolver = dsdpSolver->cgSolver;
     
     // Set parameters
-    if (dsdpSolver->mu > 1.0) {
-        tol = 1e-03;
-        maxiter = 6;
+    if (dsdpSolver->mu > 100) {
+        tol = 1e-02;
     } else if (dsdpSolver->mu > 1e-02) {
-        tol = 1e-04;
-        maxiter = 10;
+        tol = 1e-03;
     } else if (dsdpSolver->mu > 1e-05){
-        tol = 1e-06;
-        maxiter = 16;
+        tol = 1e-04;
     } else {
-        tol = 1e-07;
-        maxiter = 18;
+        tol = 1e-05;
     }
     
     // cgsolver->status = CG_STATUS_INDEFINITE;
     // dsdpCGSetPreReuse(cgsolver, 0);
     dsdpCGSetTol(cgsolver, tol);
-    dsdpCGSetMaxIter(cgsolver, maxiter);
-    
+    dsdpCGSetMaxIter(cgsolver, MAX(dsdpSolver->m / 50, 10));
     dsdpCGprepareP(cgsolver);
     
     return retcode;

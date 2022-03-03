@@ -99,6 +99,7 @@ extern DSDP_INT DSDPDInfeasEliminator( HSDSolver *dsdpSolver ) {
         retcode = setupFactorize(dsdpSolver); checkCode;
         // Set up Schur matrix and solve the system
         retcode = setupSchur(dsdpSolver);
+        
         // Get proximity and check primal feasibility
         for (DSDP_INT j = 0; j < ntry; ++j) {
             trymu = newmu[j] * muprimal;
