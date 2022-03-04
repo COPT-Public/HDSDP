@@ -569,7 +569,7 @@ extern DSDP_INT denseMatResetFactor( dsMat *dMat ) {
     
     if (dMat->isFactorized) {
         dMat->isFactorized = FALSE;
-        memset(dMat->lfactor, 0, sizeof(double) * dMat->dim);
+        memset(dMat->lfactor, 0, sizeof(double) * nsym(dMat->dim));
     }
     
     return retcode;

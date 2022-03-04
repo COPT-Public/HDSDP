@@ -86,7 +86,7 @@ typedef int DSDP_INT;
 #define MINOR_VERSION            1
 
 // Error log
-#define error(etype, x)          printf("[%s]: %s", (etype), (x)); \
+#define error(etype, x)          printf("[%s]: %s", (etype), (x)); assert( 0 ); \
                                  retcode = DSDP_RETCODE_FAILED; return retcode;
 #define error_clean(etype, x)    printf("[%s]: %s", (etype), (x)); \
                                  retcode = DSDP_RETCODE_FAILED; \

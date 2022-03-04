@@ -14,25 +14,22 @@ static DSDP_INT isDenseRank1Acc( dsMat *dataMat, DSDP_INT *isRank1 ) {
     // Slower but accurate
     DSDP_INT retcode = DSDP_RETCODE_OK;
     
-    double *A    = dataMat->array;
-    double *a    = NULL;
-    DSDP_INT n   = dataMat->dim;
-    DSDP_INT r1  = TRUE;
-    DSDP_INT col = 0;
-    DSDP_INT isNeg = FALSE;
+    double *A = dataMat->array, *a = NULL;
+    DSDP_INT n = dataMat->dim, i, j, r1  = TRUE, col = 0, isNeg = FALSE;
     
     // Get the first column that contains non-zero elements
-    for (DSDP_INT i = 0; i < n; ++i) {
-        col = i;
+    for (i = 0; i < n; ++i) {
         if (packIdx(A, n, i, i) != 0) {
             break;
         }
     }
     
-    if (col == n - 1) {
+    if (i == n - 1 && !packIdx(A, n, i, i)) {
         *isRank1 = FALSE;
         return retcode;
     }
+    
+    col = i;
     
     a = (double *) calloc(n, sizeof(double));
     
@@ -45,7 +42,7 @@ static DSDP_INT isDenseRank1Acc( dsMat *dataMat, DSDP_INT *isRank1 ) {
         adiag = sqrt(adiag);
     }
     
-    for (DSDP_INT i = col; i < n; ++i) {
+    for (i = col; i < n; ++i) {
         a[i] = packIdx(A, n, i, col) / adiag;
     }
     
@@ -56,9 +53,9 @@ static DSDP_INT isDenseRank1Acc( dsMat *dataMat, DSDP_INT *isRank1 ) {
     DSDP_INT idx  = 0;
     
     if (isNeg) {
-        for (DSDP_INT i = 0; i < n; ++i) {
+        for (i = 0; i < n; ++i) {
             start = &A[idx];
-            for (DSDP_INT j = 0; j < n - i; ++j) {
+            for (j = 0; j < n - i; ++j) {
                 diff = start[j] + a[i] * a[i + j];
                 err += diff * diff;
             }
@@ -69,9 +66,9 @@ static DSDP_INT isDenseRank1Acc( dsMat *dataMat, DSDP_INT *isRank1 ) {
             }
         }
     } else {
-        for (DSDP_INT i = 0; i < n; ++i) {
+        for (i = 0; i < n; ++i) {
             start = &A[idx];
-            for (DSDP_INT j = 0; j < n - i; ++j) {
+            for (j = 0; j < n - i; ++j) {
                 diff = start[j] - a[i] * a[i + j];
                 err += diff * diff;
             }
@@ -203,7 +200,7 @@ static DSDP_INT extractR1fromDs( dsMat *dataMat, double *a, DSDP_INT isNeg ) {
         }
     }
     
-    assert( col != n - 1 ); // or it is a zero matrix
+    assert( col != n - 1 || packIdx(A, n, col, col)); // or it is a zero matrix
     double adiag = packIdx(A, n, col, col);
     
     if (isNeg == -1) {
@@ -436,7 +433,7 @@ static DSDP_INT preRankkEvRdcBlock( sdpMat *dataMat, DSDPStats *stat ) {
             case MAT_TYPE_DENSE:
                 dsdata = (dsMat *) matdata[i];
                 retcode = denseMatOneNorm(dsdata, &onenrm);
-                if (n > 100) continue;
+                if (n > 100) break;
                 retcode = factorizeDenseData(dsdata, -(onenrm + 1e-03), eigvals, eigvecs);
                 isDense = TRUE;
                 // TODO: Add 1e-10 as a controllable parameter in the solver
@@ -447,7 +444,7 @@ static DSDP_INT preRankkEvRdcBlock( sdpMat *dataMat, DSDPStats *stat ) {
                 retcode = spsMatOneNorm(spsdata, &onenrm);
                 retcode = factorizeSpecial(spsdata, eigvals, eigvecs, &special);
                 if (!special) {
-                    if (spsdata->nnz > 2 * n || n > 100) continue;
+                    if (spsdata->nnz > 2 * n && n > 2000) break;
                     retcode = factorizeSparseData(spsdata, -onenrm, eigvals, eigvecs);
                 }
                 isSparse = TRUE;

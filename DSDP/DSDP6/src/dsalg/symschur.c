@@ -609,7 +609,8 @@ extern DSDP_INT DSDPSchurReorder( DSDPSchur *M ) {
             M->Sinv[i] = (double *) calloc(dim * dim, sizeof(double));
         }
     }
-    M->schurAux = (double *) calloc(maxblock * maxblock, sizeof(double));
+    
+    M->schurAux = (double *) calloc(MAX(M->m, maxblock * maxblock), sizeof(double));
     M->Mready = TRUE;
     
     DSDP_INT m1 = 0, m2 = 0, m3 = 0, m4 = 0, m5 = 0;
@@ -646,6 +647,7 @@ extern DSDP_INT DSDPSchurSetup( DSDPSchur *M ) {
     
     assert( M->Mready );
     
+#define superDebug
 #ifdef superDebug
     DSDP_INT m = M->m, mpack = nsym(m);
     

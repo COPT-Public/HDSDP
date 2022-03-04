@@ -154,7 +154,7 @@ static DSDP_INT DSDPPrepareSDPData( char     *filename,    // 'xxx.dat-s'
     // Compress data
     *sdpAp = (DSDP_INT **) calloc(nblock, sizeof(DSDP_INT *));
     *sdpAi = (DSDP_INT **) calloc(nblock, sizeof(DSDP_INT *));
-    *sdpAx = (double   **) calloc(nblock, sizeof(DSDP_INT *));
+    *sdpAx = (double   **) calloc(nblock, sizeof(double *));
     
     cs *tmp = NULL;
     

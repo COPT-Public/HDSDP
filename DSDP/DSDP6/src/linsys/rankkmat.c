@@ -237,12 +237,12 @@ extern DSDP_INT rkMatFree( rkMat *R ) {
                 DSDP_FREE(R->data[i]);
             }
         }
+        
+        R->dim    = 0;
+        R->rank   = 0;
+        R->isdata = FALSE;
     }
     
-    R->dim    = 0;
-    R->rank   = 0;
-    R->isdata = FALSE;
-        
     return DSDP_RETCODE_OK;
 }
 
