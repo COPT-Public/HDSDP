@@ -163,6 +163,7 @@ static DSDP_INT schurMatPerturb( HSDSolver *dsdpSolver ) {
     DSDP_INT m = dsdpSolver->m, i;
     double perturb = 0.0, maxdiag = 0.0;
     denseMatGetdiag(dsdpSolver->Msdp, dsdpSolver->Mdiag);
+    
     if (!dsdpSolver->eventMonitor[EVENT_INVALID_GAP]) {
 //        if (dsdpSolver->mu < 1e-06) {
 //            dsdpSolver->Msdp->isillCond = TRUE;
@@ -174,7 +175,15 @@ static DSDP_INT schurMatPerturb( HSDSolver *dsdpSolver ) {
             maxdiag = MAX(dsdpSolver->Mdiag->x[i], maxdiag);
         }
         dsdpSolver->Mscaler = maxdiag;
-        perturb += MIN(maxdiag * 1e-06, 1e-08);
+        
+        
+        if (dsdpSolver->m < 100) {
+            perturb += MIN(maxdiag * 1e-08, 1e-05);
+        } else if (dsdpSolver->m < 1000) {
+            perturb += MIN(maxdiag * 1e-08, 1e-06);
+        } else {
+            perturb += MIN(maxdiag * 1e-08, 1e-08);
+        }
         
         double invalid;
         DSDPGetStats(&dsdpSolver->dsdpStats, STAT_GAP_BROKEN, &invalid);

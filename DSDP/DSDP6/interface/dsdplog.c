@@ -429,7 +429,7 @@ extern DSDP_INT DSDPCheckPhaseBConvergence( HSDSolver *dsdpSolver, DSDP_INT *isO
         dsdpSolver->eventMonitor[EVENT_LARGE_DOBJ] = TRUE;
     }
     
-    if (gap < 1e-07) {
+    if (gap < 1e-06) {
         monitor[EVENT_MU_QUALIFIES] = TRUE;
         dsdpSolver->solStatus = DSDP_OPTIMAL;
         *isOK = TRUE;
@@ -446,7 +446,7 @@ extern DSDP_INT DSDPCheckPhaseBConvergence( HSDSolver *dsdpSolver, DSDP_INT *isO
     
     // Small step
     DSDPGetStats(stat, STAT_NUM_SMALL_ITER, &statval2);
-    if (statval1 > 0 && dsdpSolver->alpha < 1e-04 &&
+    if (statval1 > 0 && dsdpSolver->alpha < 1e-02 &&
         !monitor[EVENT_PFEAS_FOUND]) {
         monitor[EVENT_SMALL_STEP] = TRUE;
         DSDPStatUpdate(stat, STAT_NUM_SMALL_ITER, statval2);

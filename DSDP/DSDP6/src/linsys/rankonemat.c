@@ -263,8 +263,7 @@ extern double r1Sinvr1( r1Mat *A, r1Mat *B, double *Sinv ) {
             res += Ax[Ai[i]] * Bx[Bi[j]] * Sinv[Ai[i] * n + Bi[j]];
         }
     }
-    res = res * A->sign * B->sign;
-    return (res * res);
+    return (res * res * A->sign * B->sign);
 }
 
 extern double r1Sinvsps( spsMat *A, r1Mat *B, double *Sinv ) {
@@ -287,7 +286,7 @@ extern double r1Sinvsps( spsMat *A, r1Mat *B, double *Sinv ) {
             res += bij * tmp;
         }
         q = p; bij = Bx[Bi[p]] * Bx[Bi[q]];
-        in = Bi[p] * n; jn = Bi[q] * n; tmp = 0.0;
+        jn = in = Bi[p] * n; tmp = 0.0;
         for (k = 0; k < A->nnz; ++k) {
             if (Ai[k] == Aj[k]) {
                 tmp += Ax[k] * Sinv[in + Ai[k]] * Sinv[jn + Aj[k]];

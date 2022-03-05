@@ -185,7 +185,7 @@ extern DSDP_INT factorizeSpecial( spsMat *A, double *eigvals, double *eigvecs, D
             eigvec[idx] = 1.0;
             eigvals[i] = Ax[i];
         }
-    } else {
+    } else if (isElem1) {
         
         DSDP_INT counter = 0;
         for (DSDP_INT i = 0; i < n; ++i) {

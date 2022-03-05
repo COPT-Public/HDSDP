@@ -44,6 +44,7 @@ typedef struct {
     double   *csinvcsinv;
     double   *csinv;
     
+    double    scaler;  // Scaling factor for S
     double   *schurAux;
     DSDP_INT *useTwo;  // Only two strategies used ?
     

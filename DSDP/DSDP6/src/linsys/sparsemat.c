@@ -691,7 +691,7 @@ extern DSDP_INT spsMatLspLSolve( spsMat *S, spsMat *dS, spsMat *spaux ) {
         start = i * n;
         for (DSDP_INT j = i; j < n; ++j) {
             tmp = fulldS[start + j];
-            if (fabs(tmp) > 1e-12) {
+            if (fabs(tmp) > 1e-20) {
                 Ax[nnz] = tmp;
                 Ai[nnz] = j;
                 nnz += 1;
@@ -941,6 +941,7 @@ extern double spsSinvspsSinv( spsMat *A, spsMat *B, double *Sinv ) {
                 tmp += Bx[q] * Sinv[in + Bj[q]] * Sinv[jn + Bi[q]];
             }
         }
+        
         res += (i == j) ? (0.5 * aij * tmp) : (aij * tmp);
     }
     
@@ -1040,6 +1041,16 @@ extern double spsMatGetlogdet( spsMat *sMat, double *aux ) {
 
 extern void spsMatInverse( spsMat *sMat, double *Sinv, double *aux ) {
     pardisoSolveInplace(sMat, sMat->dim, Sinv, aux);
+    /* Numerical fix*/
+    if (FALSE) {
+        double tmp;
+        for (DSDP_INT i = 0, n = sMat->dim, j; i < n; ++i) {
+            for (j = 0; j < n; ++j) {
+                tmp = 0.5 * (Sinv[i * n + j] + Sinv[j * n + i]);
+                Sinv[j * n + i] = Sinv[i * n + j] = tmp;
+            }
+        }
+    }
     return;
 }
 

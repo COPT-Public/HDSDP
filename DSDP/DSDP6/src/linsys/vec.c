@@ -56,6 +56,7 @@ extern DSDP_INT vec_zaxpby( vec *z, double alpha, vec *x, double beta, vec *y ) 
 }
 
 extern DSDP_INT vec_scale( vec *x, double a ) {
+    if (a == 1.0) return DSDP_RETCODE_OK;
     dscal(&x->dim, &a, x->x, &one);
     return DSDP_RETCODE_OK;
 }
@@ -63,6 +64,8 @@ extern DSDP_INT vec_scale( vec *x, double a ) {
 extern DSDP_INT vec_rscale( vec *x, double r ) {
     // Compute x = x / r; No over or under flow.
     assert( x->dim && r != 0);
+    
+    if (r == 1.0) return DSDP_RETCODE_OK;
     
     DSDP_INT i;
     

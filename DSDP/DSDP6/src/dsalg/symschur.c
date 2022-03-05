@@ -157,8 +157,28 @@ static void schurMatCleanup( DSDPSchur *M ) {
 
 static void schurMatGetSinv( DSDPSchur *M ) {
     // Compute inverse of the dual matrix when M3, M4 or M5 techniques are used
+    double maxdiag = 0.0; M->scaler = 1.0;
+    DSDP_INT n, nsqr, one = 1;
+    
+    // Compute S^-1 and scale it to improve numerical stability
     for (DSDP_INT i = 0; i < M->nblock; ++i) {
-        if (!M->useTwo[i]) { spsMatInverse(M->S[i], M->Sinv[i], M->schurAux); }
+        if (!M->useTwo[i]) {
+            spsMatInverse(M->S[i], M->Sinv[i], M->schurAux);
+            n = M->S[i]->dim;
+            /* for (DSDP_INT j = 0; j < n; ++j) {
+                    maxdiag = MAX(M->Sinv[i][j * n + j], maxdiag);
+               } */
+        }
+    }
+    
+    if (maxdiag > 1e+03 && (FALSE)) {
+        M->scaler = sqrt(maxdiag);
+        for (DSDP_INT i = 0; i < M->nblock; ++i) {
+            if (!M->useTwo[i]) {
+                n = M->S[i]->dim; nsqr = n * n;
+                drscl(&nsqr, &M->scaler, M->Sinv[i], &one);
+            }
+        }
     }
 }
 
@@ -428,15 +448,16 @@ static double schurM5MatAux( DSDP_INT type1, void *A1, DSDP_INT type2, void *A2,
     if (type1 == MAT_TYPE_SPARSE) {
         switch (type2) {
             // A1 is more sparse
-            case MAT_TYPE_SPARSE: return spsSinvspsSinv(A1, A2, Sinv);
+            case MAT_TYPE_SPARSE:
+                return spsSinvspsSinv(A2, A1, Sinv);
             case MAT_TYPE_RANKK : return spsSinvr1Sinv(A1, ((rkMat *) A2)->data[0], Sinv);
             case MAT_TYPE_ZERO  : return 0.0;
             default: assert( FALSE ); break;
         }
     } else if (type1 == MAT_TYPE_RANKK) {
         switch (type2) {
-            case MAT_TYPE_SPARSE: return r1Sinvsps(A2, ((rkMat *) A1)->data[0], Sinv); break;
-            case MAT_TYPE_RANKK : return r1Sinvr1(((rkMat *) A1)->data[0], ((rkMat *) A2)->data[0], Sinv); break;
+            case MAT_TYPE_SPARSE: return r1Sinvsps(A2, ((rkMat *) A1)->data[0], Sinv);
+            case MAT_TYPE_RANKK : return r1Sinvr1(((rkMat *) A1)->data[0], ((rkMat *) A2)->data[0], Sinv);
             case MAT_TYPE_ZERO  : return 0.0;
             default: assert( FALSE ); break;
         }
@@ -531,6 +552,7 @@ extern DSDP_INT SchurMatInit( DSDPSchur *M ) {
     M->Adata = NULL; M->M = NULL; M->asinv = NULL; M->Ry = NULL;
     M->asinvrysinv = NULL; M->asinvcsinv = NULL; M->csinvrysinv = NULL;
     M->csinv = NULL; M->csinvcsinv = NULL; M->Sinv = NULL; M->rkaux = NULL;
+    M->scaler = 0.0;
     
     return retcode;
 }
@@ -549,6 +571,7 @@ extern DSDP_INT SchurMatAlloc( DSDPSchur *M ) {
     M->MX     = (DSDP_INT **) calloc(M->nblock, sizeof(DSDP_INT *));
     M->useTwo = (DSDP_INT  *) calloc(M->nblock, sizeof(DSDP_INT));
     M->Sinv   = (double   **) calloc(M->nblock, sizeof(double *));
+    M->scaler = 0.0;
     
     for (DSDP_INT i = 0; i < M->nblock; ++i) {
         M->perms[i] = (DSDP_INT *) calloc(M->m + 1, sizeof(DSDP_INT));
@@ -589,7 +612,7 @@ extern DSDP_INT SchurMatFree( DSDPSchur *M ) {
     M->MX= NULL; M->S = NULL; M->B = NULL; M->Adata = NULL;
     M->M = NULL; M->asinv = NULL; M->asinvrysinv = NULL;
     M->asinvcsinv = NULL; M->csinvrysinv = NULL; M->useTwo = FALSE;
-    M->csinv = NULL; M->csinvcsinv = NULL;
+    M->csinv = NULL; M->csinvcsinv = NULL; M->scaler = 0.0;
     
     return retcode;
 }
@@ -647,7 +670,7 @@ extern DSDP_INT DSDPSchurSetup( DSDPSchur *M ) {
     
     assert( M->Mready );
     
-#define superDebug
+//#define superDebug
 #ifdef superDebug
     DSDP_INT m = M->m, mpack = nsym(m);
     
@@ -702,7 +725,7 @@ extern DSDP_INT DSDPSchurSetup( DSDPSchur *M ) {
     }
     
     memcpy(MM5, Mref, sizeof(double) * mpack);
-    double diff12 = 0.0, diff13 = 0.0, diff23 = 0.0, diff25 = 0.0, tmp;
+    double diff12 = 0.0, diff13 = 0.0, diff23 = 0.0, diff25 = 0.0, diff35 = 0.0, tmp;
     
     for (DSDP_INT i = 0; i < mpack; ++i) {
         tmp = MM1[i] - MM2[i];
@@ -713,12 +736,19 @@ extern DSDP_INT DSDPSchurSetup( DSDPSchur *M ) {
         diff23 += tmp * tmp;
         tmp = MM2[i] - MM5[i];
         diff25 += tmp * tmp;
+        tmp = MM3[i] - MM5[i];
+        diff35 += tmp * tmp;
+        
+        if (fabs(tmp) * M->scaler * M->scaler > 1) {
+             assert( FALSE );
+        }
+        
     }
     
     if (MAX(MAX(diff12, diff23), diff13) > 0.1) {
-        assert(FALSE);
+        // assert(FALSE);
     }
-    printf("| Difference: 12 %e  13 %e  23 %e  25 %e \n", diff12, diff13, diff23, diff25);
+    printf("| Difference: 12 %e  13 %e  23 %e  25 %e  35 %e \n", diff12, diff13, diff23, diff25, diff35);
     DSDP_FREE(MM1); DSDP_FREE(MM2); DSDP_FREE(MM3); DSDP_FREE(MM5);
     
 #else
@@ -731,6 +761,10 @@ extern DSDP_INT DSDPSchurSetup( DSDPSchur *M ) {
     }
     
 #endif
+    
+    // Scale asinv and
+    vec_rscale(M->asinv, M->scaler);
+    *M->csinv /= M->scaler;
     
     return retcode;
 }
