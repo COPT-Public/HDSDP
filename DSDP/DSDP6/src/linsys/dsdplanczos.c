@@ -102,19 +102,6 @@ static DSDP_INT lanczosInitialize( vec *v, double *V ) {
     DSDP_INT retcode = DSDP_RETCODE_OK;
     srand(123);
     double nrm = 0.0;
-    
-    /*
-     for (DSDP_INT i = 0; i < v->dim; ++i) {
-         v->x[i] = rand();
-         srand(v->x[i]);
-         v->x[i] /= RAND_MAX;
-     }
-    */
-    
-    for (DSDP_INT i = 0; i < v->dim; ++i) {
-        v->x[i] = 1;
-    }
-    
     vec_norm(v, &nrm);
     vec_rscale(v, nrm);
     

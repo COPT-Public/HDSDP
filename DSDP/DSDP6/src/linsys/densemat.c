@@ -385,51 +385,49 @@ extern DSDP_INT denseDsTrace( dsMat *dAMat, dsMat *dBMat, double *trace ) {
     return retcode;
 }
 
-extern DSDP_INT denseDiagTrace( dsMat *dAMat, double diag, double *trace ) {
+extern double denseSinvSolve( const double *Sinv, dsMat *A, double *ASinv ) {
     
-    // Compute trace( A * diag * I ) = diag * trace( A ). Used for Ry
-    DSDP_INT retcode = DSDP_RETCODE_OK;
-    DSDP_INT n = dAMat->dim;
-    double *array = dAMat->array, mattrace = 0.0;
-    register DSDP_INT i, idx = 0;
+    // Routine for setting up the Schur matrix
+    /*
+        Compute A * inv(S) for packed A. Directed adapted from spsSinvSolve
+    */
+    DSDP_INT n = A->dim, i, j, k;
+    double *Ax = A->array, *ASinvi, coeff = 0.0, res = 0.0;
+    const double *Sinvj; memset(ASinv, 0, sizeof(double) * n * n);
     
-    if (n > 64) {
-        
-        for (i = 0; i < n - 7; ++i) {
-            mattrace += array[idx]; idx += n - i; ++i;
-            mattrace += array[idx]; idx += n - i; ++i;
-            mattrace += array[idx]; idx += n - i; ++i;
-            mattrace += array[idx]; idx += n - i; ++i;
-            mattrace += array[idx]; idx += n - i; ++i;
-            mattrace += array[idx]; idx += n - i; ++i;
-            mattrace += array[idx]; idx += n - i; ++i;
-            mattrace += array[idx]; idx += n - i;
+    for (k = 0, j = 0; k < n; ++k) {
+        for (i = 0; i < n - k - 1; ++i) {
+            coeff = Ax[i + j]; if (fabs(coeff) < 1e-15) { continue; }
+            Sinvj = Sinv + k * n; ASinvi = ASinv + i;
+            daxpy(&n, &coeff, Sinvj, &one, ASinvi, &n);
+            Sinvj = Sinv + i * n; ASinvi = ASinv + k;
+            daxpy(&n, &coeff, Sinvj, &one, ASinvi, &n);
         }
-        
-        if (i < n - 3) {
-            mattrace += array[idx]; idx += n - i; ++i;
-            mattrace += array[idx]; idx += n - i; ++i;
-            mattrace += array[idx]; idx += n - i; ++i;
-            mattrace += array[idx]; idx += n - i; ++i;
-        }
-        
-        if (i < n - 1) {
-            mattrace += array[idx]; idx += n - i; ++i;
-            mattrace += array[idx]; idx += n - i; ++i;
-        }
-        
-        if (i < n) {
-            mattrace += array[idx]; idx += n - i;
-        }
-        
-    } else {
-        for (i = 0; i < n; ++i) {
-            mattrace += packIdx(array, n, i, i);
-        }
+        ++i; coeff = Ax[i + j]; if (fabs(coeff) < 1e-15) { continue; }
+        Sinvj = Sinv + k * n; ASinvi = ASinv + i;
+        daxpy(&n, &coeff, Sinvj, &one, ASinvi, &n);
+        j += n - k;
     }
     
-    *trace = diag * mattrace;
-    return retcode;
+    for (i = 0; i < n; ++i) {
+        res += ASinv[i * n + i];
+    }
+    
+    return res;
+}
+
+extern double denseDiagTrace( dsMat *dAMat, double diag ) {
+    
+    // Compute trace( A * diag * I ) = diag * trace( A ). Used for Ry
+    DSDP_INT n = dAMat->dim, i, idx = 0;
+    double *array = dAMat->array, mattrace = 0.0;
+    
+    for (i = 0; i < n; ++i) {
+        mattrace += array[idx];
+        idx += n - i;
+    }
+    
+    return (diag * mattrace);
 }
 
 /* Utilities */
@@ -505,53 +503,15 @@ extern DSDP_INT denseMatFill( dsMat *dMat, double *fulldMat ) {
     return retcode;
 }
 
-extern DSDP_INT denseMatGetdiag( dsMat *dMat, vec *diag ) {
+extern void denseMatGetdiag( dsMat *dMat, vec *diag ) {
     
     // diag = diag(dMat)
-    DSDP_INT retcode = DSDP_RETCODE_OK;
-    assert( diag->dim == dMat->dim );
-    
-    DSDP_INT n    = dMat->dim;
+    DSDP_INT n = dMat->dim, i, idx = 0;
     double *x = diag->x, *array = dMat->array;
-    register DSDP_INT i, idx = 0;
-    
-    if (n >= 10000) {
-        
-        for (i = 0; i < n - 7; ++i) {
-            x[i] = array[idx]; idx += n - i; ++i;
-            x[i] = array[idx]; idx += n - i; ++i;
-            x[i] = array[idx]; idx += n - i; ++i;
-            x[i] = array[idx]; idx += n - i; ++i;
-            x[i] = array[idx]; idx += n - i; ++i;
-            x[i] = array[idx]; idx += n - i; ++i;
-            x[i] = array[idx]; idx += n - i; ++i;
-            x[i] = array[idx]; idx += n - i;
-        }
-        
-        if (i < n - 3) {
-            x[i] = array[idx]; idx += n - i; ++i;
-            x[i] = array[idx]; idx += n - i; ++i;
-            x[i] = array[idx]; idx += n - i; ++i;
-            x[i] = array[idx]; idx += n - i; ++i;
-        }
-        
-        if (i < n - 1) {
-            x[i] = array[idx]; idx += n - i; ++i;
-            x[i] = array[idx]; idx += n - i; ++i;
-        }
-        
-        if (i < n) {
-            x[i] = array[idx]; idx += n - i; ++i;
-        }
-        
-    } else {
-        for (i = 0; i < n; ++i) {
-            x[i] = array[idx];
-            idx += n - i;
-        }
+    for (i = 0; i < n; ++i) {
+        x[i] = array[idx];
+        idx += n - i;
     }
-    
-    return retcode;
 }
 
 extern DSDP_INT denseMatReset( dsMat *dMat ) {

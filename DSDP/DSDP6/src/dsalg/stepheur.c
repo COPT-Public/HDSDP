@@ -271,7 +271,7 @@ extern DSDP_INT selectMu( HSDSolver *dsdpSolver, double *newmu ) {
 #endif
         
         // dS = - alphap * dsdpgetATy(A, dy1) / muk;
-        getPhaseBdS(dsdpSolver, tmp / dsdpSolver->mu, dsdpSolver->d1->x, 0.0);
+        getPhaseBdS(dsdpSolver, alphap / dsdpSolver->mu, dsdpSolver->d1->x, 0.0);
         tmp = DSDP_INFINITY;
         for (DSDP_INT i = 0; i < dsdpSolver->nBlock; ++i) {
 #ifdef ROUGH_MU

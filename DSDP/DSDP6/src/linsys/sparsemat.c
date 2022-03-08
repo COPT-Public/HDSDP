@@ -691,6 +691,7 @@ extern DSDP_INT spsMatLspLSolve( spsMat *S, spsMat *dS, spsMat *spaux ) {
         start = i * n;
         for (DSDP_INT j = i; j < n; ++j) {
             tmp = fulldS[start + j];
+            assert(!isnan(tmp));
             if (fabs(tmp) > 1e-20) {
                 Ax[nnz] = tmp;
                 Ai[nnz] = j;
@@ -809,6 +810,7 @@ extern DSDP_INT dsdpGetAlphaLS( spsMat *S, spsMat *dS, spsMat *Scker,
     return retcode;
 }
 
+/* M3 Technique */
 extern double spsSinvSpSinvSolve( const double *Sinv, double *aux, spsMat *A, dsMat *SinvASinv ) {
     
     // Routine for setting up the Schur matrix
@@ -844,6 +846,7 @@ extern double spsSinvSpSinvSolve( const double *Sinv, double *aux, spsMat *A, ds
     return res;
 }
 
+// This routine is in the wrong place
 extern double spsSinvDsSinvSolve( const double *Sinv, double *aux, dsMat *A, dsMat *SinvASinv ) {
     
     // Routine for setting up the Schur matrix
@@ -898,6 +901,37 @@ extern double spsSinvR1SinvSolve( spsMat *S, r1Mat *A, r1Mat *SinvASinv ) {
     return (res * A->sign);
 }
 
+/* M4 Technique */
+extern double spsSinvSolve( const double *Sinv, spsMat *A, double *ASinv ) {
+    
+    // Routine for setting up the Schur matrix
+    /*
+        Compute A * inv(S) for packed A
+    */
+    DSDP_INT n = A->dim, *Ai = A->i, *nzHash = A->nzHash, i, j, k;
+    double *Ax = A->x, *ASinvi, coeff = 0.0, res = 0.0;
+    const double *Sinvj; memset(ASinv, 0, sizeof(double) * n * n);
+    
+    for (k = 0; k < A->nnz; ++k) {
+        i = Ai[k]; j = nzHash[k]; coeff = Ax[k];
+        // Add coeff * j-th column of Sinv to the i-th row of ASinv
+        Sinvj = Sinv + j * n; ASinvi = ASinv + i;
+        daxpy(&n, &coeff, Sinvj, &one, ASinvi, &n); // Potential stride optimization
+        if (i != j) {
+            Sinvj = Sinv + i * n; ASinvi = ASinv + j;
+            daxpy(&n, &coeff, Sinvj, &one, ASinvi, &n);
+        }
+    }
+    
+    // Compute <A * Sinv>
+    for (i = 0; i < n; ++i) {
+        res += ASinv[i * n + i];
+    }
+    
+    return res;
+}
+
+/* M5 Technique */
 extern double spsRySinv( spsMat *A, double *Sinv, double *asinv, double Ry ) {
     // Set up <A * S^-1> and <S^-1 * A * S^-1, Ry> by direct computation.
     // This version is used in Phase A

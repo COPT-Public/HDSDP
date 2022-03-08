@@ -222,7 +222,7 @@ static DSDP_INT schurM1rowSetup( DSDPSchur *M, DSDP_INT blockid, DSDP_INT row ) 
     /* Start M1 */
     if (computeC) {
         assert( *M->phaseA );
-        val = M->csinvrysinv; denseDiagTrace(B, Ry, &res); *val += res;
+        val = M->csinvrysinv; *val += denseDiagTrace(B, Ry);
         for (i = row; i < m + 1; ++i) {
             j = perm[i]; val = (j == m) ? M->csinvcsinv : &M->asinvcsinv->x[j];
             switch (M->Adata[blockid]->types[j]) {
@@ -235,7 +235,7 @@ static DSDP_INT schurM1rowSetup( DSDPSchur *M, DSDP_INT blockid, DSDP_INT row ) 
             *val += res;
         }
     } else {
-        if (*M->phaseA) { val = &M->asinvrysinv->x[k]; denseDiagTrace(B, Ry, &res); *val += res; }
+        if (*M->phaseA) { val = &M->asinvrysinv->x[k]; *val += denseDiagTrace(B, Ry); }
         double *array = M->M->array;
         for (i = row; i < m + 1; ++i) {
             j = perm[i];
@@ -398,7 +398,7 @@ static DSDP_INT schurM3rowSetup( DSDPSchur *M, DSDP_INT blockid, DSDP_INT row ) 
     /* Start M3 */
     if (computeC) {
         assert( *M->phaseA );
-        val = M->csinvrysinv; denseDiagTrace(B, Ry, &res); *val += res;
+        val = M->csinvrysinv; *val += denseDiagTrace(B, Ry);
         for (i = row; i < m + 1; ++i) {
             j = perm[i]; val = (j == m) ? M->csinvcsinv : &M->asinvcsinv->x[j];
             switch (M->Adata[blockid]->types[j]) {
@@ -411,7 +411,7 @@ static DSDP_INT schurM3rowSetup( DSDPSchur *M, DSDP_INT blockid, DSDP_INT row ) 
             *val += res;
         }
     } else {
-        if (*M->phaseA) { val = &M->asinvrysinv->x[k]; denseDiagTrace(B, Ry, &res); *val += res; }
+        if (*M->phaseA) { val = &M->asinvrysinv->x[k]; *val += denseDiagTrace(B, Ry); }
         double *array = M->M->array;
         for (i = row; i < m + 1; ++i) {
             j = perm[i];

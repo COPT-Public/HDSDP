@@ -301,6 +301,38 @@ extern double r1Sinvsps( spsMat *A, r1Mat *B, double *Sinv ) {
     return (2.0 * res * B->sign);
 }
 
+extern double r1MatSinv( const double *Sinv, r1Mat *x, double *ASinv, double *aux ) {
+    // Compute a * a' * S^-1
+    /*
+     Following the same pattern as in the sparse matrix case
+    
+    */
+    DSDP_INT n = x->dim, *Ai = x->nzIdx, i, j;
+    double *Ax = x->x, *ASinvi, coeff = 0.0, res = 0.0;
+    const double *Sinvj; memset(ASinv, 0, sizeof(double) * n * n);
+    
+    if (x->nnz < sqrt(n)) {
+        for (i = 0; i < x->nnz; ++i) {
+            for (j = 0; j < x->nnz; ++j) {
+                coeff = Ax[Ai[i]] * Ax[Ai[j]];
+                Sinvj = Sinv + Ai[j]; ASinvi = ASinv + Ai[i];
+                daxpy(&n, &coeff, Sinvj, &one, ASinvi, &n);
+            }
+        }
+    } else {
+        // S^-1 * a
+        for (i = 0; i < x->nnz; ++i) {
+            // TODO: Complete the routine here when the matrix is not so sparse
+        }
+    }
+    
+    for (i = 0; i < n; ++i) {
+        res += ASinv[i * n + i];
+    }
+    
+    return (x->sign * res);
+}
+
 extern DSDP_INT r1MatdiagTrace( r1Mat *x, double diag, double *trace ) {
     // Compute trace(a * a' * diag * I) = diag * norm(a)^2
     DSDP_INT retcode = DSDP_RETCODE_OK;

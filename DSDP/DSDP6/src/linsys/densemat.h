@@ -41,7 +41,7 @@ extern DSDP_INT denseDsSolve     ( dsMat *dAMat, dsMat  *dBMat, double *AinvB   
 /* Schur matrix assembly */
 extern DSDP_INT denseSpsTrace    ( dsMat *dAMat, spsMat *sBMat, double *trace               );
 extern DSDP_INT denseDsTrace     ( dsMat *dAMat, dsMat *dBMat,  double *trace               );
-extern DSDP_INT denseDiagTrace   ( dsMat *dAMat, double diag,   double *trace               );
+extern double   denseDiagTrace   ( dsMat *dAMat, double diag                                );
 
 /* Utilities */
 extern DSDP_INT denseMatScatter  ( dsMat *dMat, vec *b, DSDP_INT k                          );
@@ -50,7 +50,7 @@ extern rkMat*   denseMatGetFactor( dsMat *dMat                                  
 extern DSDP_INT denseMatGetRank  ( dsMat *dMat, DSDP_INT *rank                              );
 extern DSDP_INT denseMatFillLow  ( dsMat *dMat, double *fulldMat                            );
 extern DSDP_INT denseMatFill     ( dsMat *dMat, double *fulldMat                            );
-extern DSDP_INT denseMatGetdiag  ( dsMat *dMat, vec *diag                                   );
+extern void     denseMatGetdiag  ( dsMat *dMat, vec *diag                                   );
 extern DSDP_INT denseMatMinEig   ( dsMat *dMat, double *minEig                              );
 extern DSDP_INT denseMatView     ( dsMat *dMat                                              );
 extern DSDP_INT denseMatReset    ( dsMat *dMat                                              );
