@@ -32,7 +32,7 @@ iscorrect = zeros(ntest, 1);
 
 for k = 1:ntest
     
-    [At,b,c,K] = readsdpa(fullfile('../benchmark/sdplib/', 'arch0.dat-s'));
+    [At,b,c,K] = readsdpa(fullfile('../benchmark/sdplib/', 'qap10.dat-s'));
     % [At,b,c,K] = readsdpa(fullfile('../benchmark/sdplib/', problems(k) + '.dat-s'));
     % [At,b,c,K] = readsdpa(fullfile('../benchmark/DIMACS/', 'prob_1_2_0.dat-s'));
     % load(fullfile("../benchmark", "bm1.mat"));
@@ -78,8 +78,22 @@ for k = 1:ntest
     end % End for
     
     C = B;
+    
+    y = zeros(m, 1);
+    for i = 1:100
+        [emin, grad] = eigrad(Amat, C, y);
+        y = y + m * grad / i;
+        if mod(i, 10) == 0
+            fprintf("%d  %e \n", i, emin);
+        end % End if 
+        if emin > 0.0
+            break;
+        end % End if
+    end % End for
+    
 
     dsdpParam = dsdpgetParam();
+    dsdpParam{28} = y;
     
     objacc = zeros(ntest, 1);
     solacc = zeros(ntest, 1);

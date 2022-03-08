@@ -46,6 +46,10 @@ end % End if
 % Prepare initial solutions
 [Rd, S, y] = dsdpInitialize(A, C, tau, initstrategy, initbeta);
 
+if ~isempty(dsdpParam{28})
+    y = dsdpParam{28};
+end % End if
+
 nora = 0.0;
 % if initstrategy == "IdS"
 %     nrmRd = norm(Rd, 'fro');

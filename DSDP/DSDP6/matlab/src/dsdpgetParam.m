@@ -29,6 +29,9 @@ pInfeasIter      = 50;
 pInfeasAlpha     = 0.75;
 pInfeasSuspicion = 1e+08;
 
+% Initial dual solution
+dsdpParam{28} = [];
+
 % Max iteration
 dsdpParam{1} = maxiter;
 

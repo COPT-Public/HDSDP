@@ -37,6 +37,7 @@ elseif dsdpInitializeStrategy == "linesearch"
     
     while ~ dsdpIspsd(S)
         alpha = alpha * 2;
+        Ry = alpha * Ry;
         S = Ctau - Ry;
     end % End while
     
