@@ -1,4 +1,4 @@
-function [Ry, S, y] = dsdpInitialize(A, C, tau, dsdpInitializeStrategy, initbeta)
+function [Ry, S, y] = dsdpInitialize(A, C, tau, dsdpInitializeStrategy, initbeta, y0)
 % Initializer for DSDP6. Get Ry such that
 % S = C * tau - Ry >= 0
 % We note that y is always initialized by 0
@@ -11,6 +11,11 @@ end % End if
 m = length(A);
 
 y = zeros(m, 1);
+
+if ~isempty(y0)
+    y = y0;
+end % End if
+    
 eyemat = speye(n, n);
 
 if tau ~= 1
@@ -31,17 +36,26 @@ if dsdpInitializeStrategy == "eigs"
     
 elseif dsdpInitializeStrategy == "linesearch"
     
-    alpha = 1.0;
+    alpha = 0.1;
     Ry = - alpha * eyemat;
-    S = Ctau - Ry;
-    
-    while ~ dsdpIspsd(S)
-        alpha = alpha * 2;
-        Ry = alpha * Ry;
+        
+    if isempty(y0)
         S = Ctau - Ry;
-    end % End while
-    
-    S = S + initbeta * eyemat;
+        
+        while ~ dsdpIspsd(S)
+            alpha = alpha * 2;
+            Ry = alpha * Ry;
+            S = Ctau - Ry;
+        end % End while
+        S = S + initbeta * eyemat;
+    else
+       S = Ctau - dsdpgetATy(A, y0) - Ry;
+       while ~ dsdpIspsd(S)
+            alpha = alpha * 2;
+            S = Ctau - Ry;
+            Ry = alpha * Ry;
+        end % End while
+    end % End if
     
 elseif dsdpInitializeStrategy == "fro"
     

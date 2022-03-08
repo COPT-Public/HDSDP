@@ -20,6 +20,9 @@ corrdelta    = dsdpParam{22};
 pObj = inf;
 muprimal = mu;
 augment = false;
+nrmrtk = 0;
+step = 0;
+delta = inf;
 
 for i = 1:maxiter
     

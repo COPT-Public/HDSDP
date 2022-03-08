@@ -7,7 +7,7 @@ sigma            = 0.1;
 alpha            = 0.7;
 pObj             = 1e+05;
 rho              = 3.0;
-initmethod       = "fro"; % "eigs", "linesearch", "IdS"
+initmethod       = "linesearch"; % "eigs", "linesearch", "IdS"
 initbeta         = 1.0; % 1.0; % 10.0
 reuse            = 0;
 ncorr            = 0;
@@ -28,9 +28,10 @@ normalizer       = 1e+20;
 pInfeasIter      = 50;
 pInfeasAlpha     = 0.75;
 pInfeasSuspicion = 1e+08;
+dualapproxsolve  = false;
 
 % Initial dual solution
-dsdpParam{28} = [];
+dsdpParam{28} = dualapproxsolve;
 
 % Max iteration
 dsdpParam{1} = maxiter;

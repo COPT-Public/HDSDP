@@ -44,10 +44,20 @@ if presolve
 end % End if
 
 % Prepare initial solutions
-[Rd, S, y] = dsdpInitialize(A, C, tau, initstrategy, initbeta);
+y = [];
+m = length(A);
+[n, ~] = size(A);
 
-if ~isempty(dsdpParam{28})
-    y = dsdpParam{28};
+fub = inf;
+if m >= 20 * n && dsdpParam{28}
+    [y, fub] = dsdpgetApproxdual(A, C);
+end % End if
+
+if fub < -0.5
+    Rd = sparse(n, n);
+    S = C - dsdpgetATy(A, y);
+else
+    [Rd, S, y] = dsdpInitialize(A, C, tau, initstrategy, initbeta, y);
 end % End if
 
 nora = 0.0;
