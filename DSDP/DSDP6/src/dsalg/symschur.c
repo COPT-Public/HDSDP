@@ -447,7 +447,7 @@ static DSDP_INT schurM4rowSetup( DSDPSchur *M, DSDP_INT blockid, DSDP_INT row ) 
 static double schurM5MatAux( DSDP_INT type1, void *A1, DSDP_INT type2, void *A2, double *Sinv ) {
     if (type1 == MAT_TYPE_SPARSE) {
         switch (type2) {
-            // A1 is more sparse
+            // TODO: Consider changing the order of the two matrices by sparsity
             case MAT_TYPE_SPARSE:
                 return spsSinvspsSinv(A2, A1, Sinv);
             case MAT_TYPE_RANKK : return spsSinvr1Sinv(A1, ((rkMat *) A2)->data[0], Sinv);

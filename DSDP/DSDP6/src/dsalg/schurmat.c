@@ -239,15 +239,15 @@ static DSDP_INT schurCGSetup( HSDSolver *dsdpSolver ) {
     } else if (dsdpSolver->mu > 1e-02) {
         tol = 1e-03;
     } else if (dsdpSolver->mu > 1e-05){
-        tol = 1e-04;
+        tol = 5e-04;
     } else {
-        tol = 1e-05;
+        tol = 1e-04;
     }
     
     // cgsolver->status = CG_STATUS_INDEFINITE;
     // dsdpCGSetPreReuse(cgsolver, 0);
     dsdpCGSetTol(cgsolver, tol);
-    dsdpCGSetMaxIter(cgsolver, MAX(dsdpSolver->m / 50, 10));
+    dsdpCGSetMaxIter(cgsolver, MAX(dsdpSolver->m * 2 / 50, 10));
     dsdpCGprepareP(cgsolver);
     
     return retcode;

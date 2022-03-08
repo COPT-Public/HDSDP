@@ -216,6 +216,19 @@ DSDP_INT test_sparse(void) {
     retcode = spsMatSymbolic(data); checkCodeFree;
     retcode = spsMatFactorize(data); checkCodeFree;
     
+    for (DSDP_INT i = 0; i < spsAdim; ++i) {
+        fullSol[i * spsAdim + i] = 1.0;
+    }
+    
+    double *aux = (double *) calloc(spsAdim * spsAdim, sizeof(double));
+    spsMatInverse(data, fullSol, aux);
+    
+    DSDP_INT nzb[] = {0, 0, 1, 2, 2, 2, 4, 5, 7};
+    memcpy(B->nzHash, nzb, sizeof(DSDP_INT) * 9);
+    
+    assert (fabs(spsSinvspsSinv(B, data, fullSol) - spsSinvspsSinv(data, B, fullSol)) < 1e-10);
+    
+    
     DSDP_FREE(B->nzHash);
     // Lanczos iteration
     double lbd = 0.0;
