@@ -433,7 +433,9 @@ static DSDP_INT preRankkEvRdcBlock( sdpMat *dataMat, DSDPStats *stat ) {
             case MAT_TYPE_DENSE:
                 dsdata = (dsMat *) matdata[i];
                 retcode = denseMatOneNorm(dsdata, &onenrm);
+#ifndef superDebug
                 if (n > 20) break;
+#endif
                 retcode = factorizeDenseData(dsdata, -(onenrm + 1e-03), eigvals, eigvecs);
                 isDense = TRUE;
                 // TODO: Add 1e-10 as a controllable parameter in the solver
@@ -444,7 +446,9 @@ static DSDP_INT preRankkEvRdcBlock( sdpMat *dataMat, DSDPStats *stat ) {
                 retcode = spsMatOneNorm(spsdata, &onenrm);
                 retcode = factorizeSpecial(spsdata, eigvals, eigvecs, &special);
                 if (!special) {
+#ifndef superDebug
                     if (spsdata->nnz > 2 * n || n > 20) break;
+#endif
                     retcode = factorizeSparseData(spsdata, -onenrm, eigvals, eigvecs);
                 }
                 isSparse = TRUE;

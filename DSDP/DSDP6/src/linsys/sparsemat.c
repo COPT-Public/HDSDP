@@ -12,37 +12,27 @@
 static char *etype = "Sparse matrix";
 static DSDP_INT one = 1;
 static double dzero = 0.0;
-static double done = 1.0;
 static char uplolow = 'L';
 
 /* Internal Pardiso Wrapper */
 static DSDP_INT pardisoSymFactorize( spsMat *S ) {
     /* Factorize the spsMat matrix */
     DSDP_INT retcode = DSDP_RETCODE_OK;
-    
     // Extract the lower triangular part from CSparse structure
-    DSDP_INT *Sp = S->p;
-    DSDP_INT *Si = S->i;
+    DSDP_INT *Sp = S->p, *Si = S->i;
     double   *Sx = S->x;
-    
     // Get the pardiso parameter
-    DSDP_INT phase = PARDISO_SYM;
-    DSDP_INT error = 0;
-    DSDP_INT n     = S->dim;
-    
+    DSDP_INT phase = PARDISO_SYM, error = 0, n = S->dim;
     // Invoke pardiso to do symbolic analysis and Cholesky factorization
     pardiso(S->pdsWorker, &maxfct, &mnum, &mtype, &phase, &n,
             Sx, Sp, Si, &idummy, &idummy, PARDISO_PARAMS_CHOLESKY,
             &msglvl, NULL, NULL, &error);
-    
     assert( error == PARDISO_OK );
-    
     if (error) {
         printf("[Pardiso Error]: Matrix factorization failed."
                " Error code: "ID" \n", error);
         error(etype, "Pardiso failes to factorize. \n");
     }
-    
     // Complete the factorization
     S->isFactorized = TRUE;
     return retcode;
@@ -153,25 +143,6 @@ static DSDP_INT pardisoSolveInplace( spsMat *S, DSDP_INT nrhs, double *B, double
         printf("[Pardiso Error]: Matrix solution failed."
                " Error code: "ID" \n", error);
         error(etype, "Pardiso failes to solve system. \n");
-    }
-    
-    return retcode;
-}
-
-static DSDP_INT pardisoPartialSolve( spsMat *S, DSDP_INT *colNnz, double *xIn, double *xOut ) {
-    
-    /* Apply pardiso partial solve strategy */
-    DSDP_INT retcode = DSDP_RETCODE_OK;
-    assert( S->isFactorized == TRUE );
-    DSDP_INT phase = PARDISO_SOLVE, error = 0, n = S->dim;
-    // Invoke pardiso to perform solution
-    pardiso(S->pdsWorker, &maxfct, &mnum, &mtype, &phase, &n,
-            S->x, S->p, S->i, colNnz, &one, PARDISO_PARAMS_PARTIAL_SOLVE,
-            &msglvl, xIn, xOut, &error);
-    if (error) {
-        printf("[Pardiso Error]: Matrix partial solution failed."
-               " Error code: "ID" \n", error);
-        error(etype, "Pardiso failes to solve partial system. \n");
     }
     
     return retcode;
@@ -291,23 +262,15 @@ extern DSDP_INT spsMatAx( spsMat *A, vec *x, vec *Ax ) {
     
     if (nnz == nsym(n)) {
         dspmv(&uplolow, &n, &coeff, Axdata, xdata, &one, &dzero, Axres, &one);
-    } else if (nnz <= 1.0 * n * n && cidx) {
+    } else if (nnz <= 0.8 * n * n && cidx) {
         for (DSDP_INT i, j, k = 0; k < nnz; ++k) {
             i = Ai[k]; j = cidx[k]; Axres[i] -= Axdata[k] * xdata[j];
             if (i != j) { Axres[j] -= Axdata[k] * xdata[i]; }
         }
     } else {
         for (DSDP_INT i = 0; i < n ; ++i) {
-            coeff = xdata[i];
-            if (coeff == 0.0) { continue; }
+            coeff = xdata[i]; if (coeff == 0.0) { continue; }
             idx = Ap[i];
-            if (idx == Ap[i + 1]) {
-                if (idx == nnz) {
-                    break;
-                } else {
-                    continue;
-                }
-            }
             
             if (Ai[idx] == i) {
                 Axres[i] -= coeff * Axdata[idx];
@@ -329,21 +292,13 @@ extern DSDP_INT spsMatAx( spsMat *A, vec *x, vec *Ax ) {
 
 extern double spsMatxTAx( spsMat *A, double *x ) {
     // Compute quadratic form x' * A * x
-    /*
-     Computationally Critical Routine
-     x is dense and A is sparse
-    */
-    
     register DSDP_INT *Ai = A->i, *nzHash = A->nzHash, i, j, k;
     register double res = 0.0, tmp = 0.0, *Ax = A->x;
-    
     for (k = 0; k < A->nnz; ++k) {
-        i = nzHash[k]; j = Ai[k];
-        tmp = Ax[k] * x[i] * x[j];
+        i = nzHash[k]; j = Ai[k]; tmp = Ax[k] * x[i] * x[j];
         res += (i == j) ? (0.5 * tmp) : tmp;
     }
-    
-    return 2.0 * res;
+    return (2.0 * res);
 }
 
 extern DSDP_INT spsMataXpbY( double alpha, spsMat *sXMat, double beta,
@@ -470,7 +425,7 @@ extern DSDP_INT spsMatAddrk( spsMat *sXMat, double alpha, rkMat *rkYMat, DSDP_IN
     DSDP_INT retcode = DSDP_RETCODE_OK;
     if (alpha == 0.0) { return retcode; }
     for (DSDP_INT i = 0; i < rkYMat->rank; ++i) {
-        retcode = spsMatAddr1(sXMat, alpha, rkYMat->data[i], sumHash);
+        spsMatAddr1(sXMat, alpha, rkYMat->data[i], sumHash);
     }
     return retcode;
 }
@@ -501,9 +456,8 @@ extern DSDP_INT spsMatFnorm( spsMat *sMat, double *fnrm ) {
     DSDP_INT retcode = DSDP_RETCODE_OK;
     assert( sMat->dim > 0 );
     
-    DSDP_INT idx, i, n = sMat->dim;
-    double nrm = 0.0, tmp;
-    i = spsMatGetRank(sMat);
+    DSDP_INT i, n = sMat->dim;
+    double nrm = 0.0; i = spsMatGetRank(sMat);
     if (i < 0.1 * n) {
         rkMatFnorm(sMat->factor, fnrm); return retcode;
     }
@@ -522,17 +476,6 @@ extern DSDP_INT spsMatFnorm( spsMat *sMat, double *fnrm ) {
     } else if (sMat->nnz == nsym(n)) {
         char ntype = 'F', low = DSDP_MAT_LOW;
         *fnrm = dlansp(&ntype, &low, &n, sMat->x, NULL);
-    } else {
-        assert( FALSE );
-        nrm = norm(&sMat->nnz, sMat->x, &one); nrm = 2 * nrm * nrm;
-        for (i = 0; i < sMat->dim; ++i) {
-            idx = sMat->p[i];
-            if (idx == sMat->nnz) { break;}
-            if (idx < sMat->p[i + 1] && sMat->i[idx] == i) {
-                tmp = sMat->x[idx]; nrm -= tmp * tmp;
-            }
-        }
-        *fnrm = sqrt(nrm);
     }
     
     return retcode;
@@ -548,28 +491,19 @@ extern DSDP_INT spsMatOneNorm( spsMat *sMat, double *onenrm ) {
     if (sMat->nzHash) {
         for (i = 0; i < sMat->nnz; ++i) {
             j = sMat->i[i]; k = sMat->nzHash[i];
-            if (j == k) {
-                nrm += 0.5 * fabs(sMat->x[i]);
-            } else {
-                nrm += fabs(sMat->x[i]);
-            }
+            nrm += (j == k) ? 0.5 * fabs(sMat->x[i]) : fabs(sMat->x[i]);
         }
         nrm *= 2;
     } else {
         assert( sMat->nnz == nsym(sMat->dim) );
-        for (i = 0; i < sMat->nnz; ++i) {
-            nrm += fabs(sMat->x[i]);
-        }
-        
+        for (i = 0; i < sMat->nnz; ++i) { nrm += fabs(sMat->x[i]); }
         j = 0; k = sMat->dim;
         for (i = 0; i < k; ++i) {
             nrm -= 0.5 * fabs(sMat->x[j]); j += k - i;
         }
         nrm *= 2;
     }
-
-    *onenrm = nrm;
-    return retcode;
+    *onenrm = nrm; return retcode;
 }
 
 /* Factorization and linear system solver */

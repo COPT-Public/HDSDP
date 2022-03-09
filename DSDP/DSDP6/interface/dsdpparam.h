@@ -64,13 +64,13 @@ static double defaultDblParam[NUM_DBL_PARAM] = {
     
     0.9,   // DBL_PARAM_ASIGMA
     0.1,   // DBL_PARAM_BSIGMA
-    4.0,   // DBL_PARAM_RHO
+    5.0,   // DBL_PARAM_RHO
     1e+05, // DBL_PARAM_INIT_POBJ
     1.0,   // DBL_PARAM_INIT_BETA
     1e+06, // DBL_PARAM_INIT_MU
     1.0,   // DBL_PARAM_INIT_TAU
     1.0,   // DBL_PARAM_INIT_KAPPA
-    0.75,  // DBL_PARAM_AALPHA
+    0.6,  // DBL_PARAM_AALPHA
     1e+08, // DBL_PARAM_NRM_THRESH
     1e+08, // DBL_PARAM_INFEAS_THRESH
     1e-06, // DBL_PARAM_ABS_OPTTOL

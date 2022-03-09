@@ -17,7 +17,12 @@
 #define MAT_TYPE_RANKK   3
 #define MAT_TYPE_ZERO    4
 
-#define denseThresh      (0.7)
+#ifdef superDebug
+#define denseThresh      (1.0)
+#else
+#define denseThresh      (0.8)
+#endif
+
 #define rankThresh       (0.1)
 
 /*

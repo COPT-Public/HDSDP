@@ -120,8 +120,6 @@ extern DSDP_INT rkMatrkTrace( rkMat *R1, rkMat *R2, double *trace ) {
 
 extern DSDP_INT rkMatdenseUpdate( dsMat *dAMat, rkMat *rkBMat ) {
     // Compute rank-1 update A = A + \sum_i alpha_i * b_i * b_i'
-    // Used for schur M1 technique and final solution setup
-    // Computationally critical and not calling r1 routines
     DSDP_INT retcode = DSDP_RETCODE_OK;
     DSDP_INT dim = rkBMat->dim;
     r1Mat *r1data = NULL;
@@ -148,26 +146,14 @@ extern DSDP_INT rkMatdenseUpdate( dsMat *dAMat, rkMat *rkBMat ) {
 }
 
 extern DSDP_INT rkMatdenseTrace( rkMat *R, dsMat *A, double *trace ) {
-    
     // Compute the innter product between rank-k and dense matrices
-    /*
-     trace(R1 * D) = trace( \sum_i d_i * a_i * a_i' * D )
-                   = \sum_i trace( a_i * a_i' * D )
-                   = \sum_i d_i * (a_i' * D * a_i)
-     
-     Implemented by calling r1MatdenseTrace
-     
-   */
-    
     DSDP_INT retcode = DSDP_RETCODE_OK;
     assert( R->dim == A->dim );
     double res = 0.0, tmp;
     
     for (DSDP_INT i = 0; i < R->rank; ++i) {
-        retcode = r1MatdenseTrace(R->data[i], A, &tmp); checkCode;
-        res += tmp;
+        r1MatdenseTrace(R->data[i], A, &tmp); res += tmp;
     }
-    
     *trace = res;
     return retcode;
 }
@@ -177,16 +163,14 @@ extern DSDP_INT rkMatdiagTrace( rkMat *R, double diag, double *trace ) {
     DSDP_INT retcode = DSDP_RETCODE_OK;
     
     if (diag == 0.0) {
-        *trace = 0.0;
-        return retcode;
+        *trace = 0.0; return retcode;
     }
     
     double res = 0.0, tmp;
     DSDP_INT rank = R->rank;
     
     for (DSDP_INT i = 0; i < rank; ++i) {
-        retcode = r1MatdiagTrace(R->data[i], diag, &tmp); checkCode;
-        res += tmp;
+        r1MatdiagTrace(R->data[i], diag, &tmp); res += tmp;
     }
     
     *trace = res;
@@ -207,19 +191,14 @@ extern DSDP_INT rkMatFree( rkMat *R ) {
     if (R) {
         if (R->isdata) {
             for (DSDP_INT i = 0; i < R->rank; ++i) {
-                r1MatFree(R->data[i]);
-                DSDP_FREE(R->data[i]);
+                r1MatFree(R->data[i]); DSDP_FREE(R->data[i]);
             }
         } else {
             for (DSDP_INT i = 0; i < R->dim; ++i) {
-                r1MatFree(R->data[i]);
-                DSDP_FREE(R->data[i]);
+                r1MatFree(R->data[i]); DSDP_FREE(R->data[i]);
             }
         }
-        
-        R->dim    = 0;
-        R->rank   = 0;
-        R->isdata = FALSE;
+        R->dim = 0; R->rank = 0; R->isdata = FALSE;
     }
     
     return DSDP_RETCODE_OK;
@@ -238,8 +217,7 @@ extern DSDP_INT rkMatFnorm( rkMat *R, double *fnrm ) {
     DSDP_INT rank = R->rank;
     
     for (DSDP_INT i = 0; i < rank; ++i) {
-        r1MatFnorm(R->data[i], &tmp);
-        res += tmp * tmp;
+        r1MatFnorm(R->data[i], &tmp); res += tmp * tmp;
     }
     
     *fnrm = sqrt(res);

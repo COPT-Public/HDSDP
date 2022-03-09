@@ -10,39 +10,32 @@ static DSDP_INT isConstant( HSDSolver *dsdpSolver, DSDP_INT *isConstant ) {
     DSDP_INT retcode = DSDP_RETCODE_OK;
     *isConstant = FALSE;
     
-    DSDP_INT m = dsdpSolver->m;
-    DSDP_INT dim = 0;
-    r1Mat *C = NULL;
-    DSDP_INT isCons = TRUE;
-    DSDP_INT isRank1 = FALSE;
-    double num = 0.0;
+    DSDP_INT m = dsdpSolver->m, dim = 0;
+    DSDP_INT isCons = TRUE, isRank1 = FALSE;
+    r1Mat *C = NULL; double num = 0.0;
     
     for (DSDP_INT i = 0; i < dsdpSolver->nBlock; ++i) {
         isCons = TRUE;
         if (dsdpSolver->sdpData[i]->types[m] == MAT_TYPE_RANKK) {
             rkMatisRank1(dsdpSolver->sdpData[i]->sdpData[m], &isRank1);
-            
             if (isRank1) {
                 C = (r1Mat *) dsdpSolver->sdpData[i]->sdpData[m];
-                dim = C->dim;
-                num = C->x[0];
+                dim = C->dim; num = C->x[0];
+                
                 for (DSDP_INT j = 1; j < dim; ++j) {
                     if (fabs(num - C->x[j]) > 1e-03) {
-                        isCons = FALSE;
-                        break;
+                        isCons = FALSE; break;
                     }
                 }
             } else {
                 isCons = FALSE;
             }
-            
         } else {
             isCons = FALSE;
         }
         
         if (isCons) {
-            *isConstant = TRUE;
-            break;
+            *isConstant = TRUE; break;
         }
     }
     

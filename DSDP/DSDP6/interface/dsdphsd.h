@@ -15,6 +15,9 @@
     Ready to write up the interface for Single-block HSD
  
 */
+#ifdef superDebug
+#undef superDebug
+#endif
 
 #ifdef SHOWALL
 #undef SHOWALL

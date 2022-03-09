@@ -21,10 +21,8 @@ static DSDP_INT packFactorize( dsMat *S ) {
         error(etype, "Matrix is already factorized. \n");
     }
     
-    DSDP_INT n    = S->dim;
-    char uplo     = DSDP_MAT_LOW;
-    DSDP_INT info = 0;
-    
+    DSDP_INT n = S->dim, info = 0;
+    char uplo = DSDP_MAT_LOW;
     memcpy(S->lfactor, S->array, sizeof(double) * nsym(n));
     
     if (!S->isillCond) {
@@ -55,20 +53,16 @@ static DSDP_INT packSolve( dsMat *S, DSDP_INT nrhs, double *B, double *X ) {
         error(etype, "Matrix is not yet factorized. \n");
     }
     
-    char uplo     = DSDP_MAT_LOW;
-    DSDP_INT n    = S->dim;
-    DSDP_INT ldb  = S->dim;
-    DSDP_INT info = 0;
+    char uplo = DSDP_MAT_LOW;
+    DSDP_INT n = S->dim, ldb  = S->dim, info = 0;
     
     // Copy solution data
     memcpy(X, B, sizeof(double) * nrhs * n);
-    
     if (S->isillCond) {
         ldlsolve(&uplo, &n, &nrhs, S->lfactor, S->ipiv, X, &ldb, &info);
     } else {
         packsolve(&uplo, &n, &nrhs, S->lfactor, X, &ldb, &info);
     }
-    
     if (info < 0) {
         error(etype, "Packed linear system solution failed. \n");
     }
@@ -81,13 +75,9 @@ extern DSDP_INT denseMatInit( dsMat *dMat ) {
     
     // Initialize dense matrix
     DSDP_INT retcode = DSDP_RETCODE_OK;
-    dMat->dim     = 0;
-    dMat->array   = NULL;
-    dMat->lfactor = NULL;
-    dMat->ipiv    = NULL;
-    dMat->isFactorized = FALSE;
-    dMat->isillCond = FALSE;
-    
+    dMat->dim = 0; dMat->array = NULL;
+    dMat->lfactor = NULL; dMat->ipiv = NULL;
+    dMat->isFactorized = FALSE; dMat->isillCond = FALSE;
     return retcode;
 }
 
@@ -118,14 +108,11 @@ extern DSDP_INT denseMatFree( dsMat *dMat ) {
     DSDP_INT retcode = DSDP_RETCODE_OK;
     
     if (dMat) {
-        dMat->dim = 0;
-        dMat->isillCond = FALSE;
+        dMat->dim = 0; dMat->isillCond = FALSE;
         dMat->isFactorized = FALSE;
-        DSDP_FREE(dMat->array);
-        DSDP_FREE(dMat->lfactor);
+        DSDP_FREE(dMat->array); DSDP_FREE(dMat->lfactor);
         DSDP_FREE(dMat->ipiv);
     }
-    
     if (dMat->factor) {
         rkMatFree(dMat->factor);
     }
@@ -220,7 +207,7 @@ extern DSDP_INT denseMatFnorm( dsMat *dMat, double *fnrm ) {
     double *work = NULL; DSDP_INT rank;
     denseMatGetRank(dMat, &rank);
     
-    if (rank < dMat->dim * 0.3) {
+    if (rank < dMat->dim * 0.1) {
         rkMatFnorm(dMat->factor, fnrm);
     } else {
         *fnrm = fnorm(&nrm, &uplo, &dMat->dim, dMat->array, work);
@@ -291,15 +278,7 @@ extern DSDP_INT denseArrSolveInp( dsMat *S, DSDP_INT nrhs, double *B ) {
 
 /* Schur matrix assembly */
 extern DSDP_INT denseSpsTrace( dsMat *dAMat, spsMat *sBMat, double *trace ) {
-    
     // Compute trace (A * B) for dense A and sparse B.
-    /*
-     trace (A1 * A2) = \sum_{i, j} a_{i,j} * b_{i, j}
-     
-     ******************************************
-     *    Computationally critical routine    *
-     ******************************************
-     */
     DSDP_INT retcode = DSDP_RETCODE_OK;
     assert( dAMat->dim == sBMat->dim );
     
@@ -323,14 +302,9 @@ extern DSDP_INT denseSpsTrace( dsMat *dAMat, spsMat *sBMat, double *trace ) {
         for (i = 0; i < nnz; ++i) {
             j = sBMat->nzHash[i]; k = Bi[i];
             tmp = Bx[i] * packIdx(A, n, k, j);
-            if (k == j) {
-                *trace += 0.5 * tmp;
-            } else {
-                *trace += tmp;
-            }
+            *trace += (k == j) ? 0.5 * tmp : tmp;
         }
-        *trace *= 2;
-        return retcode;
+        *trace *= 2; return retcode;
     }
     
     for (i = 0; i < n; ++i) {
@@ -360,17 +334,7 @@ extern DSDP_INT denseSpsTrace( dsMat *dAMat, spsMat *sBMat, double *trace ) {
 
 extern DSDP_INT denseDsTrace( dsMat *dAMat, dsMat *dBMat, double *trace ) {
     // Compute trace (A * B) for dense A and dense B
-    
-    /*
-     ******************************************
-     *    Computationally critical routine    *
-     ******************************************
-    */
-    
     DSDP_INT retcode = DSDP_RETCODE_OK;
-    assert( dAMat->dim == dBMat->dim );
-    assert((!dAMat->isFactorized) && (!dBMat->isFactorized));
-    
     DSDP_INT n = dAMat->dim;
     double *A = dAMat->array, *B = dBMat->array, res = 0.0;
     
@@ -381,17 +345,11 @@ extern DSDP_INT denseDsTrace( dsMat *dAMat, dsMat *dBMat, double *trace ) {
         }
     }
     
-    *trace = 2.0 * res;
-    return retcode;
+    *trace = 2.0 * res; return retcode;
 }
 
 extern double SinvDsSinv( const double *Sinv, double *aux, dsMat *A, dsMat *SinvASinv ) {
-    
     // Routine for setting up the Schur matrix
-    /*
-        Compute inv(S) * A * inv(S) for packed A
-    */
-    
     DSDP_INT n = A->dim, i, j;
     double *Adata = A->array, *ASinv = aux, *ASinvi,
            *SinvASinvdata = SinvASinv->array, res = 0.0;
@@ -417,11 +375,7 @@ extern double SinvDsSinv( const double *Sinv, double *aux, dsMat *A, dsMat *Sinv
 }
 
 extern double denseSinvSolve( const double *Sinv, dsMat *A, double *ASinv, double *asinv, double Ry ) {
-    
     // Routine for setting up the Schur matrix
-    /*
-        Compute A * inv(S) for packed A. Directed adapted from spsSinvSolve
-    */
     DSDP_INT n = A->dim, i, j, k;
     double *Ax = A->array, *ASinvi, coeff = 0.0, res = 0.0, res2 = 0.0;
     const double *Sinvj; memset(ASinv, 0, sizeof(double) * n * n);
@@ -456,10 +410,7 @@ extern double denseSinvSolve( const double *Sinv, dsMat *A, double *ASinv, doubl
 }
 
 extern double denseSinvASinv( const double *Sinv, dsMat *A, const double *ASinv ) {
-    
-    /*
-        Compute A_j * S^-1 * (A_i S^-1)
-    */
+    // Compute A_j * S^-1 * (A_i S^-1)
     DSDP_INT n = A->dim, i, j, k;
     double *Ax = A->array, coeff = 0.0, res = 0.0;
     const double *Sinvi, *ASinvj;

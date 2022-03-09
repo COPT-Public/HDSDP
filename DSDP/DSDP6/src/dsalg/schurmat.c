@@ -174,8 +174,8 @@ static DSDP_INT schurMatPerturb( HSDSolver *dsdpSolver ) {
         for (DSDP_INT i = 0; i < m; ++i) {
             maxdiag = MAX(dsdpSolver->Mdiag->x[i], maxdiag);
         }
-        dsdpSolver->Mscaler = maxdiag;
         
+        dsdpSolver->Mscaler = maxdiag;
         
         if (dsdpSolver->m < 100) {
             perturb += MIN(maxdiag * 1e-08, 1e-05);
@@ -237,17 +237,17 @@ static DSDP_INT schurCGSetup( HSDSolver *dsdpSolver ) {
     if (dsdpSolver->mu > 100) {
         tol = 1e-02;
     } else if (dsdpSolver->mu > 1e-02) {
-        tol = 1e-03;
+        tol = 8e-03;
     } else if (dsdpSolver->mu > 1e-05){
-        tol = 5e-04;
+        tol = 5e-03;
     } else {
-        tol = 1e-04;
+        tol = 1e-03;
     }
     
     // cgsolver->status = CG_STATUS_INDEFINITE;
     // dsdpCGSetPreReuse(cgsolver, 0);
     dsdpCGSetTol(cgsolver, tol);
-    dsdpCGSetMaxIter(cgsolver, MAX(dsdpSolver->m * 2 / 50, 10));
+    dsdpCGSetMaxIter(cgsolver, MAX(dsdpSolver->m / 50, 20));
     dsdpCGprepareP(cgsolver);
     
     return retcode;
@@ -301,10 +301,10 @@ static DSDP_INT cgSolveCheck( CGSolver *cgSolver, vec *b ) {
         }
         
         cgSolver->nused = 1024;
-        if (cgSolver->nfailed >= 1) { dsdpCGSetPreReuse(cgSolver, MIN(cgSolver->reuse, 3));}
-        if (cgSolver->nfailed >= 2) { dsdpCGSetPreReuse(cgSolver, MIN(cgSolver->reuse, 2));}
-        if (cgSolver->nfailed >= 3) { dsdpCGSetPreReuse(cgSolver, MIN(cgSolver->reuse, 1));}
-        if (cgSolver->nfailed >= 4) { cgSolver->M->isillCond = TRUE;}
+        if (cgSolver->nfailed >= 5) { dsdpCGSetPreReuse(cgSolver, MIN(cgSolver->reuse, 5));}
+        if (cgSolver->nfailed >= 10) { dsdpCGSetPreReuse(cgSolver, MIN(cgSolver->reuse, 3));}
+        if (cgSolver->nfailed >= 15) { dsdpCGSetPreReuse(cgSolver, MIN(cgSolver->reuse, 1));}
+        if (cgSolver->nfailed >= 20) { cgSolver->M->isillCond = TRUE;}
         
         // Restart from the last unfinished solution
         dsdpCGprepareP(cgSolver);

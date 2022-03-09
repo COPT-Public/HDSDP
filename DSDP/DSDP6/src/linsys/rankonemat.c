@@ -8,20 +8,16 @@ static DSDP_INT one = 1;
 
 extern DSDP_INT r1MatInit( r1Mat *x ) {
     // Initialize rank one matrix
-    x->x     = NULL;
-    x->dim   = 0;
-    x->sign  = 0;
-    x->nnz   = 0;
-    x->nzIdx = NULL;
+    x->x = NULL; x->dim = 0; x->sign = 0;
+    x->nnz = 0; x->nzIdx = NULL;
     return DSDP_RETCODE_OK;
 }
 
 extern DSDP_INT r1MatAlloc( r1Mat *x, const DSDP_INT n ) {
     // Allocate memory for vec
     assert( x->dim == 0 );
-    x->dim = n;
+    x->dim = n; x->sign = 1.0;
     x->x = (double *) calloc(n, sizeof(double));
-    x->sign = 1.0;
     return DSDP_RETCODE_OK;
 }
 
@@ -29,19 +25,16 @@ extern DSDP_INT r1MatSetData( r1Mat *x, double eigval, double *array ) {
     // Set rank-one data
     assert(x->dim > 0);
     memcpy(x->x, array, sizeof(double) * x->dim);
-    x->sign = eigval;
-    r1MatCountNnz(x);
+    x->sign = eigval; r1MatCountNnz(x);
     return DSDP_RETCODE_OK;
 }
 
 extern DSDP_INT r1denseSpsUpdate( spsMat *sAMat, double alpha, r1Mat *r1BMat ) {
     // Compute A = A + alpha * B where B is a rank-one matrix.
-    // A is a sparse matrix that is known to be dense actually
-    // Also this routine DOES NOT update Ap and Ai
     DSDP_INT retcode = DSDP_RETCODE_OK;
     DSDP_INT n = sAMat->dim;
     
-    assert( sAMat->nnz > 0 );
+    assert( sAMat->nnz == nsym(n) );
     
     if (fabs(alpha) < 1e-15) {
         return retcode;
@@ -67,6 +60,7 @@ extern DSDP_INT r1denseSpsUpdate( spsMat *sAMat, double alpha, r1Mat *r1BMat ) {
     return retcode;
 }
 
+/* M2 Technique */
 extern double r1Matr1Trace( r1Mat *x, r1Mat *y ) {
     
     // Compute the inner product of two rank one matrices
@@ -98,14 +92,6 @@ extern double r1Matr1Trace( r1Mat *x, r1Mat *y ) {
 
 extern DSDP_INT r1MatdenseTrace( r1Mat *x, dsMat *A, double *trace ) {
     // Compute the inner product of a rank-1 matrix and dense A
-    /* trace (A1 * A2) = trace( d * a1 * a1' * A2 )
-                       = d * a1' * A2 * a1
-     
-     ******************************************
-     *    Computationally critical routine    *
-     ******************************************
-     
-     */
     DSDP_INT retcode = DSDP_RETCODE_OK;
     DSDP_INT n = x->dim, nnz = x->nnz;
     
@@ -156,10 +142,6 @@ extern DSDP_INT r1MatdenseTrace( r1Mat *x, dsMat *A, double *trace ) {
 
 extern double r1MatSinvSolve( const double *Sinv, r1Mat *x, double *ASinv, double *aux, double *asinv, double Ry ) {
     // Compute a * a' * S^-1
-    /*
-     Following the same pattern as in the sparse matrix case
-    
-    */
     DSDP_INT n = x->dim, *Ai = x->nzIdx, i, j;
     double *Ax = x->x, *ASinvi, coeff = 0.0, res = 0.0, res2 = 0.0;
     const double *Sinvj; memset(ASinv, 0, sizeof(double) * n * n);
@@ -167,8 +149,8 @@ extern double r1MatSinvSolve( const double *Sinv, r1Mat *x, double *ASinv, doubl
     if (x->nnz < sqrt(n)) {
         for (i = 0; i < x->nnz; ++i) {
             for (j = 0; j < x->nnz; ++j) {
-                coeff = Ax[Ai[i]] * Ax[Ai[j]];
-                Sinvj = Sinv + Ai[j]; ASinvi = ASinv + Ai[i];
+                coeff = x->sign * Ax[Ai[i]] * Ax[Ai[j]];
+                Sinvj = Sinv + Ai[j] * n; ASinvi = ASinv + Ai[i];
                 daxpy(&n, &coeff, Sinvj, &one, ASinvi, &n);
             }
         }
@@ -176,8 +158,9 @@ extern double r1MatSinvSolve( const double *Sinv, r1Mat *x, double *ASinv, doubl
         // S^-1 * a
         memset(aux, 0, sizeof(double) * n);
         for (i = 0; i < x->nnz; ++i) {
-            coeff = x->sign * Ax[Ai[i]]; Sinvj = Sinv + n * i;
+            coeff = x->sign * Ax[Ai[i]];
             if (coeff == 0.0) { continue; }
+            Sinvj = Sinv + n * Ai[i];
             daxpy(&n, &coeff, Sinvj, &one, aux, &one);
         }
         double done = 1.0; // a * (S^-1 * a)'
@@ -198,20 +181,15 @@ extern double r1MatSinvSolve( const double *Sinv, r1Mat *x, double *ASinv, doubl
 }
 
 extern double r1MatSinvASinv( const double *Sinv, r1Mat *x, const double *ASinv ) {
-    
-    /*
-        Compute a * a' * S^-1 * (A_i S^-1)
-    */
-    
+    // Compute a * a' * S^-1 * (A_i S^-1)
     DSDP_INT n = x->dim, *Ai = x->nzIdx, i, j;
-    double *Ax = x->x, coeff = 0.0, res = 0.0;
+    double *Ax = x->x, res = 0.0;
     const double *Sinvi, *ASinvj;
     
     for (i = 0; i < x->nnz; ++i) {
         for (j = 0; j < x->nnz; ++j) {
-            coeff = Ax[Ai[i]] * Ax[Ai[j]];
             Sinvi = Sinv + n * Ai[i]; ASinvj = ASinv + n * Ai[j];
-            res += coeff * ddot(&n, Sinvi, &one, ASinvj, &one);
+            res += x->sign * Ax[Ai[i]] * Ax[Ai[j]] * ddot(&n, Sinvi, &one, ASinvj, &one);
         }
     }
     
@@ -219,6 +197,7 @@ extern double r1MatSinvASinv( const double *Sinv, r1Mat *x, const double *ASinv 
 }
 
 extern double r1RySinv( r1Mat *B, double *Sinv, double *asinv, double Ry ) {
+    // Compute trace( a * a' * S^-1 ) and trace( S^-1 * a * a' * S^-1 * Ry )
     double res = 0.0, res2 = 0.0, tmp, *Bx = B->x;
     DSDP_INT i, p, q, in, n = B->dim, *Bi = B->nzIdx;
     
@@ -229,7 +208,6 @@ extern double r1RySinv( r1Mat *B, double *Sinv, double *asinv, double Ry ) {
         i = Bi[p]; res += 0.5 * Bx[i] * Bx[i] * Sinv[i * n + i];
     }
     
-    // <Ry * S^-1 * A_j, S^-1>
     for (i = 0; i < n; ++i) {
         in = i * n;
         for (p = 0; p < B->nnz; ++p) {
@@ -244,7 +222,7 @@ extern double r1RySinv( r1Mat *B, double *Sinv, double *asinv, double Ry ) {
 }
 
 extern double r1Sinvr1( r1Mat *A, r1Mat *B, double *Sinv ) {
-    // Compute <A, S^-1 * B * S^-1>
+    // Compute <a * a', S^-1 * b * b' * S^-1>
     double res = 0.0, *Ax = A->x, *Bx = B->x;
     DSDP_INT n = A->dim, i, j, *Ai = A->nzIdx, *Bi = B->nzIdx;
     for (i = 0; i < A->nnz; ++i) {
@@ -313,8 +291,6 @@ extern DSDP_INT r1MatdiagTrace( r1Mat *x, double diag, double *trace ) {
 
 extern DSDP_INT r1MatCountNnz( r1Mat *x ) {
     // Count the number of nonzero elements and setup nzIdx
-    assert ( (x->x) && (x->dim) );
-    
     DSDP_INT nnz = 0, n = x->dim, i;
     
     if (!x->nzIdx) {
@@ -359,11 +335,8 @@ extern DSDP_INT r1MatFree( r1Mat *x ) {
     
     if (x) {
         assert( x->dim );
-        x->sign = 0;
-        x->dim  = 0;
-        DSDP_FREE(x->x);
-        DSDP_FREE(x->nzIdx);
-        x->nnz = 0;
+        x->sign = 0; x->dim  = 0; x->nnz = 0;
+        DSDP_FREE(x->x); DSDP_FREE(x->nzIdx);
     }
     
     return DSDP_RETCODE_OK;
