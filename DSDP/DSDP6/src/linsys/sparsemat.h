@@ -62,10 +62,13 @@ extern DSDP_INT dsdpGetAlphaLS     ( spsMat *S, spsMat *dS, spsMat *Scker,
                                      double alphamax, double *alpha, DSDP_INT *sumHash );
 
 /* Schur matrix assembly */
-extern double spsSinvSpSinvSolve   ( const double *Sinv, double *aux, spsMat *A, dsMat *SinvASinv );
-extern double spsSinvDsSinvSolve   ( const double *Sinv, double *aux, dsMat  *A, dsMat *SinvASinv );
-extern double spsSinvRkSinvSolve   ( spsMat *S, rkMat *A, rkMat *SinvASinv );
-extern double spsSinvR1SinvSolve   ( spsMat *S, r1Mat *A, r1Mat *SinvASinv );
+extern double SinvSpSinv   ( const double *Sinv, double *aux, spsMat *A, dsMat *SinvASinv );
+extern double SinvRkSinv   ( spsMat *S, rkMat *A, rkMat *SinvASinv );
+extern double SinvR1Sinv   ( spsMat *S, r1Mat *A, r1Mat *SinvASinv );
+
+extern double spsSinvSolve ( const double *Sinv, spsMat *A, double *ASinv, double *asinv, double Ry );
+extern double spsSinvASinv ( const double *Sinv, spsMat *A, const double *ASinv );
+
 extern double spsRySinv            ( spsMat *A, double *Sinv, double *asinv, double Ry );
 extern double spsSinvspsSinv       ( spsMat *A, spsMat *B, double *Sinv );
 extern double spsSinvr1Sinv        ( spsMat *A, r1Mat  *B, double *Sinv );

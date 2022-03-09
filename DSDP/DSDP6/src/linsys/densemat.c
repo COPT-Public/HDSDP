@@ -385,32 +385,99 @@ extern DSDP_INT denseDsTrace( dsMat *dAMat, dsMat *dBMat, double *trace ) {
     return retcode;
 }
 
-extern double denseSinvSolve( const double *Sinv, dsMat *A, double *ASinv ) {
+extern double SinvDsSinv( const double *Sinv, double *aux, dsMat *A, dsMat *SinvASinv ) {
+    
+    // Routine for setting up the Schur matrix
+    /*
+        Compute inv(S) * A * inv(S) for packed A
+    */
+    
+    DSDP_INT n = A->dim, i, j;
+    double *Adata = A->array, *ASinv = aux, *ASinvi,
+           *SinvASinvdata = SinvASinv->array, res = 0.0;
+    const double *Sinvi;
+    
+    // Get A * S^-1 (A is dense and in packed form). Calling level-2 blas
+    memset(ASinv, 0, sizeof(double) * n * n);
+    for (i = 0; i < n; ++i) {
+        Sinvi = Sinv + n * i; ASinvi = ASinv + n * i;
+        dspmv(&uplolow, &n, &done, Adata, Sinvi, &one, &dzero, ASinvi, &one);
+    }
+    
+    // Set up inv(S) * A * inv(S) n^3
+    for (j = 0; j < n; ++j) {
+        ASinvi = ASinv + n * j; res += ASinvi[j];
+        for (i = 0; i <= j; ++i) {
+            Sinvi = Sinv + n * i;
+            packIdx(SinvASinvdata, n, j, i) = ddot(&n, ASinvi, &one, Sinvi, &one);
+        }
+    }
+    
+    return res;
+}
+
+extern double denseSinvSolve( const double *Sinv, dsMat *A, double *ASinv, double *asinv, double Ry ) {
     
     // Routine for setting up the Schur matrix
     /*
         Compute A * inv(S) for packed A. Directed adapted from spsSinvSolve
     */
     DSDP_INT n = A->dim, i, j, k;
-    double *Ax = A->array, *ASinvi, coeff = 0.0, res = 0.0;
+    double *Ax = A->array, *ASinvi, coeff = 0.0, res = 0.0, res2 = 0.0;
     const double *Sinvj; memset(ASinv, 0, sizeof(double) * n * n);
     
     for (k = 0, j = 0; k < n; ++k) {
-        for (i = 0; i < n - k - 1; ++i) {
+        coeff = Ax[j];
+        if (fabs(coeff) >= 1e-15) {
+            Sinvj = Sinv + k * n; ASinvi = ASinv + j;
+            daxpy(&n, &coeff, Sinvj, &one, ASinvi, &n);
+        }
+        for (i = 1; i < n - k; ++i) {
             coeff = Ax[i + j]; if (fabs(coeff) < 1e-15) { continue; }
             Sinvj = Sinv + k * n; ASinvi = ASinv + i;
             daxpy(&n, &coeff, Sinvj, &one, ASinvi, &n);
             Sinvj = Sinv + i * n; ASinvi = ASinv + k;
             daxpy(&n, &coeff, Sinvj, &one, ASinvi, &n);
         }
-        ++i; coeff = Ax[i + j]; if (fabs(coeff) < 1e-15) { continue; }
-        Sinvj = Sinv + k * n; ASinvi = ASinv + i;
-        daxpy(&n, &coeff, Sinvj, &one, ASinvi, &n);
         j += n - k;
     }
     
     for (i = 0; i < n; ++i) {
         res += ASinv[i * n + i];
+    }
+    
+    *asinv = res; if (Ry == 0.0) { return 0.0; }
+    for (k = 0; k < n; ++k) {
+        Sinvj = Sinv + n * k; ASinvi = ASinv + n * k;
+        res2 += ddot(&n, Sinvj, &one, ASinvi, &one);
+    }
+    
+    return (res2 * Ry);
+}
+
+extern double denseSinvASinv( const double *Sinv, dsMat *A, const double *ASinv ) {
+    
+    /*
+        Compute A_j * S^-1 * (A_i S^-1)
+    */
+    DSDP_INT n = A->dim, i, j, k;
+    double *Ax = A->array, coeff = 0.0, res = 0.0;
+    const double *Sinvi, *ASinvj;
+    
+    for (k = 0, j = 0; k < n; ++k) {
+        coeff = Ax[j];
+        if (fabs(coeff) >= 1e-15) {
+            Sinvi = Sinv + n * k; ASinvj = ASinv + n * j;
+            res += coeff * ddot(&n, Sinvi, &one, ASinvj, &one);
+        }
+        for (i = 1; i < n - k; ++i) {
+            coeff = Ax[i + j]; if (fabs(coeff) < 1e-15) { continue; }
+            Sinvi = Sinv + n * k; ASinvj = ASinv + n * i;
+            res += coeff * ddot(&n, Sinvi, &one, ASinvj, &one);
+            Sinvi = Sinv + n * i; ASinvj = ASinv + n * k;
+            res += coeff * ddot(&n, Sinvi, &one, ASinvj, &one);
+        }
+        j += n - k;
     }
     
     return res;

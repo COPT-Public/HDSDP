@@ -214,7 +214,7 @@ static DSDP_INT schurM1rowSetup( DSDPSchur *M, DSDP_INT blockid, DSDP_INT row ) 
         if (!*M->phaseA) { return retcode; }
         val = M->csinv; computeC = TRUE;
     }
-    res = spsSinvRkSinvSolve(M->S[blockid], factor, rkaux); *val += res;
+    res = SinvRkSinv(M->S[blockid], factor, rkaux); *val += res;
     
     // Get B through rank-one update
     denseMatReset(B); rkMatdenseUpdate(B, rkaux);
@@ -293,7 +293,7 @@ static DSDP_INT schurM2rowSetup( DSDPSchur *M, DSDP_INT blockid, DSDP_INT row ) 
         if (!*M->phaseA) { return retcode; }
         val = M->csinv; computeC = TRUE;
     }
-    res = spsSinvRkSinvSolve(M->S[blockid], factor, rkaux); *val += res;
+    res = SinvRkSinv(M->S[blockid], factor, rkaux); *val += res;
     rank = rkMatGetRank(factor);
     
     /* Start M2 */
@@ -383,12 +383,12 @@ static DSDP_INT schurM3rowSetup( DSDPSchur *M, DSDP_INT blockid, DSDP_INT row ) 
     switch (M->Adata[blockid]->types[k]) {
         case MAT_TYPE_ZERO: return retcode;
         case MAT_TYPE_SPARSE:
-            res = spsSinvSpSinvSolve(Sinv, aux, M->Adata[blockid]->sdpData[k], B); break;
+            res = SinvSpSinv(Sinv, aux, M->Adata[blockid]->sdpData[k], B); break;
         case MAT_TYPE_DENSE:
-            res = spsSinvDsSinvSolve(Sinv, aux, M->Adata[blockid]->sdpData[k], B); break;
+            res = SinvDsSinv(Sinv, aux, M->Adata[blockid]->sdpData[k], B); break;
         case MAT_TYPE_RANKK:
             S = M->S[blockid]; rkaux = M->rkaux[blockid];
-            res = spsSinvRkSinvSolve(S, M->Adata[blockid]->sdpData[k], rkaux);
+            res = SinvRkSinv(S, M->Adata[blockid]->sdpData[k], rkaux);
             rkMatdenseUpdate(B, rkaux); break;
         default: error(etype, "Invalid matrix type. \n"); break;
     }
@@ -397,8 +397,7 @@ static DSDP_INT schurM3rowSetup( DSDPSchur *M, DSDP_INT blockid, DSDP_INT row ) 
     
     /* Start M3 */
     if (computeC) {
-        assert( *M->phaseA );
-        val = M->csinvrysinv; *val += denseDiagTrace(B, Ry);
+        assert( *M->phaseA ); val = M->csinvrysinv; *val += denseDiagTrace(B, Ry);
         for (i = row; i < m + 1; ++i) {
             j = perm[i]; val = (j == m) ? M->csinvcsinv : &M->asinvcsinv->x[j];
             switch (M->Adata[blockid]->types[j]) {
@@ -440,7 +439,74 @@ static DSDP_INT schurM4rowSetup( DSDPSchur *M, DSDP_INT blockid, DSDP_INT row ) 
     // Apply M4 technique to setup a row of the Schur complement matrix
     DSDP_INT retcode = DSDP_RETCODE_OK;
     
+    DSDP_INT i, j, k, m = M->m, *perm = M->perms[blockid], computeC = FALSE;
+    double *val, res, tmp, Ry = *M->Ry, *ASinv = M->schurAux, *Sinv = M->Sinv[blockid]; k = perm[row];
+    double *aux = M->rkaux[blockid]->data[0]->x;
     
+    if (k < m) {
+        val = &M->asinv->x[k];
+    } else {
+        if (!*M->phaseA) { return retcode; }
+        val = M->csinv; computeC = TRUE;
+    }
+    
+    // Prepare ASinv for later computation. asinv and asinvrysinv will also be ready
+    switch (M->Adata[blockid]->types[k]) {
+        case MAT_TYPE_ZERO  : return retcode;
+        case MAT_TYPE_SPARSE:
+            res = spsSinvSolve(Sinv, M->Adata[blockid]->sdpData[k], ASinv, &tmp, Ry); break;
+        case MAT_TYPE_DENSE :
+            res = denseSinvSolve(Sinv, M->Adata[blockid]->sdpData[k], ASinv, &tmp, Ry); break;
+        case MAT_TYPE_RANKK :
+            res = r1MatSinvSolve(Sinv, M->Adata[blockid]->sdpData[k], ASinv, aux, &tmp, Ry); break;
+        default: error(etype, "Invalid matrix type. \n"); break;
+    }
+    
+    *val += tmp;
+    
+    /* Start M4 */
+    if (computeC) {
+        assert( *M->phaseA ); val = M->csinvrysinv; *val += res;
+        for (i = row; i < m + 1; ++i) {
+            j = perm[i]; val = (j == m) ? M->csinvcsinv : &M->asinvcsinv->x[j];
+            switch (M->Adata[blockid]->types[j]) {
+                case MAT_TYPE_ZERO  : continue; break;
+                case MAT_TYPE_SPARSE:
+                    res = spsSinvASinv(Sinv, M->Adata[blockid]->sdpData[j], ASinv); break;
+                case MAT_TYPE_DENSE :
+                    res = denseSinvASinv(Sinv, M->Adata[blockid]->sdpData[j], ASinv); break;
+                case MAT_TYPE_RANKK :
+                    res = r1MatSinvASinv(Sinv, ((rkMat *) M->Adata[blockid]->sdpData[j])->data[0], ASinv); break;
+                default: error(etype, "Invalid matrix type. \n"); break;
+            }
+            *val += res;
+        }
+    } else {
+        double *array = M->M->array;
+        for (i = row; i < m + 1; ++i) {
+            j = perm[i];
+            if (j == m) {
+                if (!*M->phaseA) { continue; }
+                val = &M->asinvcsinv->x[k];
+            } else {
+                val = (j > k) ? (&packIdx(array, m, j, k)) : (&packIdx(array, m, k, j));
+            }
+            
+            switch (M->Adata[blockid]->types[j]) {
+                case MAT_TYPE_ZERO: continue; break;
+                case MAT_TYPE_SPARSE:
+                    res = spsSinvASinv(Sinv, M->Adata[blockid]->sdpData[j], ASinv); break;
+                case MAT_TYPE_DENSE:
+                    res = denseSinvASinv(Sinv, M->Adata[blockid]->sdpData[j], ASinv); break;
+                case MAT_TYPE_RANKK:
+                    res = r1MatSinvASinv(Sinv, ((rkMat *) M->Adata[blockid]->sdpData[j])->data[0], ASinv); break;
+                default: error(etype, "Invalid matrix type. \n"); break;
+            }
+            *val += res;
+        }
+    }
+    
+    /* End M4 */
     return retcode;
 }
 
@@ -488,11 +554,9 @@ static DSDP_INT schurM5rowSetup( DSDPSchur *M, DSDP_INT blockid, DSDP_INT row ) 
     switch (types[k]) {
         case MAT_TYPE_ZERO: return retcode;
         case MAT_TYPE_SPARSE:
-            res = spsRySinv(data[k], Sinv, &tmp, Ry);
-            break;
+            res = spsRySinv(data[k], Sinv, &tmp, Ry); break;
         case MAT_TYPE_RANKK:
-            res = r1RySinv(((rkMat *) data[k])->data[0], Sinv, &tmp, Ry);
-            break;
+            res = r1RySinv(((rkMat *) data[k])->data[0], Sinv, &tmp, Ry); break;
         default:
             error(etype, "Invalid matrix type. Dense matrix should not appear in M5. \n");
             break;

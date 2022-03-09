@@ -264,7 +264,7 @@ DSDP_INT test_dense(void) {
     retcode = vec_alloc(vecrhs, packAdim); checkCodeFree;
     
     /* Get diagonal */
-    retcode = denseMatGetdiag(data, vecrhs); checkCodeFree;
+    denseMatGetdiag(data, vecrhs); checkCodeFree;
     
     /* Conjugate gradient */
     vec *cgsol = (vec *) calloc(1, sizeof(vec));

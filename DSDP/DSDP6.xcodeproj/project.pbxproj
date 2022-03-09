@@ -82,7 +82,6 @@
 		1997805027CF6426006B7E6A /* libmkl_sequential.1.dylib in Frameworks */ = {isa = PBXBuildFile; fileRef = 1997804227CF5CFB006B7E6A /* libmkl_sequential.1.dylib */; };
 		1997805327CF6426006B7E6A /* libmkl_intel_lp64.1.dylib in Frameworks */ = {isa = PBXBuildFile; fileRef = 1997805127CF6426006B7E6A /* libmkl_intel_lp64.1.dylib */; };
 		1997805427CF6426006B7E6A /* libmkl_core.1.dylib in Frameworks */ = {isa = PBXBuildFile; fileRef = 1997805227CF6426006B7E6A /* libmkl_core.1.dylib */; };
-		199FC13F27ACD9A00072897D /* prototypes.c in Sources */ = {isa = PBXBuildFile; fileRef = 199FC13E27ACD9A00072897D /* prototypes.c */; };
 		199FC14127AD061A0072897D /* dsdpeigfact.c in Sources */ = {isa = PBXBuildFile; fileRef = 199FC14027AD061A0072897D /* dsdpeigfact.c */; };
 		19ABC01227C09F6B00105887 /* dsdpparam.c in Sources */ = {isa = PBXBuildFile; fileRef = 19ABC01127C09F6B00105887 /* dsdpparam.c */; };
 		19BACAF3274EBC1900E987FD /* test_sparse.c in Sources */ = {isa = PBXBuildFile; fileRef = 19BACAF2274EBC1900E987FD /* test_sparse.c */; };
@@ -239,7 +238,6 @@
 		1997804727CF5D68006B7E6A /* libiomp5.dylib */ = {isa = PBXFileReference; lastKnownFileType = "compiled.mach-o.dylib"; name = libiomp5.dylib; path = ../../../../../usr/local/lib/libiomp5.dylib; sourceTree = "<group>"; };
 		1997805127CF6426006B7E6A /* libmkl_intel_lp64.1.dylib */ = {isa = PBXFileReference; lastKnownFileType = "compiled.mach-o.dylib"; name = libmkl_intel_lp64.1.dylib; path = ../../../../../usr/local/lib/libmkl_intel_lp64.1.dylib; sourceTree = "<group>"; };
 		1997805227CF6426006B7E6A /* libmkl_core.1.dylib */ = {isa = PBXFileReference; lastKnownFileType = "compiled.mach-o.dylib"; name = libmkl_core.1.dylib; path = ../../../../../usr/local/lib/libmkl_core.1.dylib; sourceTree = "<group>"; };
-		199FC13E27ACD9A00072897D /* prototypes.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = prototypes.c; sourceTree = "<group>"; };
 		199FC14027AD061A0072897D /* dsdpeigfact.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = dsdpeigfact.c; sourceTree = "<group>"; };
 		199FC14227AD82680072897D /* dsdpeigfact.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = dsdpeigfact.h; sourceTree = "<group>"; };
 		19ABC01127C09F6B00105887 /* dsdpparam.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = dsdpparam.c; sourceTree = "<group>"; };
@@ -364,7 +362,6 @@
 				19118D942737B72800D51D03 /* schurmat.c */,
 				1985AC3C279B9DB400B7B8EB /* dsdppfeas.c */,
 				1950371527B625C400C723FC /* dsdppsol.c */,
-				199FC13E27ACD9A00072897D /* prototypes.c */,
 				197A770427C7889A00D3A50B /* symschur.h */,
 				197A770527C7889A00D3A50B /* symschur.c */,
 			);
@@ -708,7 +705,6 @@
 				19118DE92737B72800D51D03 /* stepheur.c in Sources */,
 				19118E1C2737B72800D51D03 /* cs_pinv.c in Sources */,
 				19118E072737B72800D51D03 /* cs_cholsol.c in Sources */,
-				199FC13F27ACD9A00072897D /* prototypes.c in Sources */,
 				19118E1D2737B72800D51D03 /* cs_scc.c in Sources */,
 				1929CF162795B40400981C20 /* test_feast.c in Sources */,
 			);

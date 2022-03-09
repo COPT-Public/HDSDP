@@ -201,6 +201,16 @@ extern void axpy( const DSDP_INT *n,
                   double         *y,
                   const DSDP_INT *incy );
 
+extern void dger( const DSDP_INT *m,
+                  const DSDP_INT *n,
+                  const double   *alpha,
+                  const double   *x,
+                  const DSDP_INT *incx,
+                  const double   *y,
+                  const DSDP_INT *incy,
+                  double         *a,
+                  const DSDP_INT *lda );
+
 /*
  DAXPY constant times a vector plus a vector.
  uses unrolled loops for increments equal to one.

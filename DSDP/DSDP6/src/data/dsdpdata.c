@@ -407,8 +407,7 @@ extern DSDP_INT sdpMatFree( sdpMat *sdpData ) {
     sdpData->nrkMat    = 0;
     sdpData->nzeroMat  = 0;
     
-    DSDP_FREE(sdpData->spsMatIdx);
-    DSDP_FREE(sdpData->denseMatIdx);
+    DSDP_FREE(sdpData->spsMatIdx); DSDP_FREE(sdpData->denseMatIdx);
     DSDP_FREE(sdpData->rkMatIdx);
     
     void *data = NULL;

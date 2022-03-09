@@ -172,27 +172,6 @@ extern DSDP_INT rkMatdenseTrace( rkMat *R, dsMat *A, double *trace ) {
     return retcode;
 }
 
-extern DSDP_INT rkMatspsTrace( rkMat *R, spsMat *A, double *trace ) {
-    
-    // Compute the inner product between rank-1 and sparse matrix
-    /*
-     Implemented by calling r1MatspsTrace
-    */
-    
-    DSDP_INT retcode = DSDP_RETCODE_OK;
-    assert( R->dim == A->dim );
-    double res = 0.0, tmp;
-    DSDP_INT rank = R->rank;
-    
-    for (DSDP_INT i = 0; i < rank; ++i) {
-        retcode = r1MatspsTrace(R->data[i], A, &tmp); checkCode;
-        res += tmp;
-    }
-    
-    *trace = res;
-    return retcode;
-}
-
 extern DSDP_INT rkMatdiagTrace( rkMat *R, double diag, double *trace ) {
     // Compute trace( \sum_i d_i * a_i * a_i' diag ) = \sum_i diag * d_i * norm(a_i)^2
     DSDP_INT retcode = DSDP_RETCODE_OK;

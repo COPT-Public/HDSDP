@@ -154,79 +154,68 @@ extern DSDP_INT r1MatdenseTrace( r1Mat *x, dsMat *A, double *trace ) {
     return retcode;
 }
 
-extern DSDP_INT r1MatspsTrace( r1Mat *x, spsMat *A, double *trace ) {
-    // Compute the inner product of a rank-1 matrix and sparse A
-    DSDP_INT retcode = DSDP_RETCODE_OK;
+extern double r1MatSinvSolve( const double *Sinv, r1Mat *x, double *ASinv, double *aux, double *asinv, double Ry ) {
+    // Compute a * a' * S^-1
+    /*
+     Following the same pattern as in the sparse matrix case
     
-    DSDP_INT n = x->dim, r1nnz = x->nnz, spsnnz = A->nnz, idx, idx2, i, j;
-    DSDP_INT *Ap = A->p, *Ai = A->i;
-    double *Atimesx = (double *) calloc(n, sizeof(double));
-    double *Ax = A->x, *datax = x->x, res = 0.0, coeff = 0.0;
+    */
+    DSDP_INT n = x->dim, *Ai = x->nzIdx, i, j;
+    double *Ax = x->x, *ASinvi, coeff = 0.0, res = 0.0, res2 = 0.0;
+    const double *Sinvj; memset(ASinv, 0, sizeof(double) * n * n);
     
-    if (r1nnz <= 0.7 * n) {
-        for (i = 0; i < r1nnz; ++i) {
-            idx = x->nzIdx[i];
-            coeff = datax[idx];
-            
-            if (coeff == 0.0 ||
-                Ap[idx] == Ap[idx + 1]) {
-                
-                if (Ap[idx] == spsnnz) {
-                    break;
-                } else {
-                    continue;
-                }
-            }
-            
-            idx2 = Ai[Ap[idx]];
-            if (idx2 == idx) {
-                Atimesx[idx] += 0.5 * coeff * Ax[Ap[idx]];
-            } else {
-                Atimesx[idx2] += coeff * Ax[Ap[idx]];
-            }
-            for (j = Ap[idx] + 1; j < Ap[idx + 1]; ++j) {
-                Atimesx[Ai[j]] += coeff * Ax[j];
+    if (x->nnz < sqrt(n)) {
+        for (i = 0; i < x->nnz; ++i) {
+            for (j = 0; j < x->nnz; ++j) {
+                coeff = Ax[Ai[i]] * Ax[Ai[j]];
+                Sinvj = Sinv + Ai[j]; ASinvi = ASinv + Ai[i];
+                daxpy(&n, &coeff, Sinvj, &one, ASinvi, &n);
             }
         }
     } else {
-        
-        for (idx = 0; idx < n; ++idx) {
-            coeff = datax[idx];
-            
-            if (coeff == 0.0 ||
-                Ap[idx] == Ap[idx + 1]) {
-                if (Ap[idx] == spsnnz) {
-                    break;
-                } else {
-                    continue;
-                }
-            }
-            
-            idx2 = Ai[Ap[idx]];
-            if (idx2 == idx) {
-                Atimesx[idx] += 0.5 * coeff * Ax[Ap[idx]];
-            } else {
-                Atimesx[idx2] += coeff * Ax[Ap[idx]];
-            }
-            for (j = Ap[idx] + 1; j < Ap[idx + 1]; ++j) {
-                Atimesx[Ai[j]] += coeff * Ax[j];
-            }
+        // S^-1 * a
+        memset(aux, 0, sizeof(double) * n);
+        for (i = 0; i < x->nnz; ++i) {
+            coeff = x->sign * Ax[Ai[i]]; Sinvj = Sinv + n * i;
+            if (coeff == 0.0) { continue; }
+            daxpy(&n, &coeff, Sinvj, &one, aux, &one);
+        }
+        double done = 1.0; // a * (S^-1 * a)'
+        dger(&n, &n, &done, Ax, &one, aux, &one, ASinv, &n);
+    }
+    
+    for (i = 0; i < n; ++i) {
+        res += ASinv[i * n + i];
+    }
+    
+    *asinv = res; if (Ry == 0.0) { return 0.0; }
+    for (i = 0; i < n; ++i) {
+        Sinvj = Sinv + n * i; ASinvi = ASinv + n * i;
+        res2 += ddot(&n, Sinvj, &one, ASinvi, &one);
+    }
+    
+    return (res2 * Ry);
+}
+
+extern double r1MatSinvASinv( const double *Sinv, r1Mat *x, const double *ASinv ) {
+    
+    /*
+        Compute a * a' * S^-1 * (A_i S^-1)
+    */
+    
+    DSDP_INT n = x->dim, *Ai = x->nzIdx, i, j;
+    double *Ax = x->x, coeff = 0.0, res = 0.0;
+    const double *Sinvi, *ASinvj;
+    
+    for (i = 0; i < x->nnz; ++i) {
+        for (j = 0; j < x->nnz; ++j) {
+            coeff = Ax[Ai[i]] * Ax[Ai[j]];
+            Sinvi = Sinv + n * Ai[i]; ASinvj = ASinv + n * Ai[j];
+            res += coeff * ddot(&n, Sinvi, &one, ASinvj, &one);
         }
     }
     
-    if (r1nnz <= 0.7 * n) {
-        for (i = 0; i < r1nnz; ++i) {
-            idx = x->nzIdx[i];
-            res += Atimesx[idx] * datax[idx];
-        }
-    } else {
-        res = dot(&n, Atimesx, &one, datax, &one);
-    }
-    
-    *trace = 2 * res * x->sign;
-    DSDP_FREE(Atimesx);
-    
-    return retcode;
+    return res;
 }
 
 extern double r1RySinv( r1Mat *B, double *Sinv, double *asinv, double Ry ) {
@@ -299,38 +288,6 @@ extern double r1Sinvsps( spsMat *A, r1Mat *B, double *Sinv ) {
     }
     
     return (2.0 * res * B->sign);
-}
-
-extern double r1MatSinv( const double *Sinv, r1Mat *x, double *ASinv, double *aux ) {
-    // Compute a * a' * S^-1
-    /*
-     Following the same pattern as in the sparse matrix case
-    
-    */
-    DSDP_INT n = x->dim, *Ai = x->nzIdx, i, j;
-    double *Ax = x->x, *ASinvi, coeff = 0.0, res = 0.0;
-    const double *Sinvj; memset(ASinv, 0, sizeof(double) * n * n);
-    
-    if (x->nnz < sqrt(n)) {
-        for (i = 0; i < x->nnz; ++i) {
-            for (j = 0; j < x->nnz; ++j) {
-                coeff = Ax[Ai[i]] * Ax[Ai[j]];
-                Sinvj = Sinv + Ai[j]; ASinvi = ASinv + Ai[i];
-                daxpy(&n, &coeff, Sinvj, &one, ASinvi, &n);
-            }
-        }
-    } else {
-        // S^-1 * a
-        for (i = 0; i < x->nnz; ++i) {
-            // TODO: Complete the routine here when the matrix is not so sparse
-        }
-    }
-    
-    for (i = 0; i < n; ++i) {
-        res += ASinv[i * n + i];
-    }
-    
-    return (x->sign * res);
 }
 
 extern DSDP_INT r1MatdiagTrace( r1Mat *x, double diag, double *trace ) {
