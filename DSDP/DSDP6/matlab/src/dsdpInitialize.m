@@ -36,7 +36,7 @@ if dsdpInitializeStrategy == "eigs"
     
 elseif dsdpInitializeStrategy == "linesearch"
     
-    alpha = 0.1;
+    alpha = 1.0;
     Ry = - alpha * eyemat;
         
     if isempty(y0)
@@ -47,7 +47,7 @@ elseif dsdpInitializeStrategy == "linesearch"
             Ry = alpha * Ry;
             S = Ctau - Ry;
         end % End while
-        S = S + initbeta * eyemat;
+        S = S + 0.0 * eyemat;
     else
        S = Ctau - dsdpgetATy(A, y0) - Ry;
        while ~ dsdpIspsd(S)

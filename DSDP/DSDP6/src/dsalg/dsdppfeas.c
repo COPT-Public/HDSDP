@@ -33,7 +33,11 @@ extern DSDP_INT DSDPPFeasPhase( HSDSolver *dsdpSolver ) {
     DSDP_INT stop = FALSE;
     double start = my_clock();
     double newmu = 0.0, muub = 0.0, mulb = 0.0, time = 0.0;
+    double rhon;
+
     DSDPStats *stat = &dsdpSolver->dsdpStats;
+    
+    getDblParam(dsdpSolver->param, DBL_PARAM_RHO, &rhon);
     
     DSDP_INT i;
     for (i = 0; ; ++i) {
@@ -66,13 +70,13 @@ extern DSDP_INT DSDPPFeasPhase( HSDSolver *dsdpSolver ) {
         retcode = setupFactorize(dsdpSolver); checkCode;
         // Set up Schur matrix and solve the system
         retcode = setupSchur(dsdpSolver); checkCode;
+        
         // Get proximity and check primal feasibility
         retcode = dsdpgetPhaseBProxMeasure(dsdpSolver, &muub, &mulb); checkCode;
         // Select new mu
         retcode = selectMu(dsdpSolver, &newmu); checkCode;
         
-        newmu = MIN(newmu, muub);
-        newmu = MAX(newmu, mulb);
+        newmu = MAX(newmu, dsdpSolver->mu / rhon);
         dsdpSolver->mu = newmu;
         // dsdpSolver->mu = MIN(newmu, dsdpSolver->mu);
         

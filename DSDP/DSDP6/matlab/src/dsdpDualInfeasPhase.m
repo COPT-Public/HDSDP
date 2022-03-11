@@ -122,6 +122,7 @@ for i = 1:maxiter
     
     % Corrector 
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+    [y, S] = dinfeaspotrdc(A, b * tau, C * tau, y, S, Rd, M, d2 * tau, mu);
     if delta > corrdelta && step > 1e-04 && mu > 1e-02
         [y, S, kappa, tau] = dsdpCorrector(A, b, C, y, S, kappa, tau, mu, M, corralpha, ncorrp1, stepstrategy);
     end % End if 

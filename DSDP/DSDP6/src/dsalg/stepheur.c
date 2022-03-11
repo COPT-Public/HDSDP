@@ -219,68 +219,41 @@ extern DSDP_INT selectMu( HSDSolver *dsdpSolver, double *newmu ) {
     
     if (dsdpSolver->eventMonitor[EVENT_PFEAS_FOUND]) {
         retcode = getPhaseBdS(dsdpSolver, -1.0 / dsdpSolver->mu, dsdpSolver->d1->x, 0.0);
-        
         for (DSDP_INT i = 0; i < dsdpSolver->nBlock; ++i) {
-            retcode = dsdpGetAlpha(dsdpSolver->Scker[i], dsdpSolver->dS[i],
-                                   dsdpSolver->spaux[i], &tmp);
-            checkCode;
+            dsdpGetAlpha(dsdpSolver->Scker[i], dsdpSolver->dS[i], dsdpSolver->spaux[i], &tmp);
             alpha = MIN(alpha, tmp);
         }
-        
-        if (alpha == DSDP_INFINITY) {
-            alpha = 1.0;
-        }
-        *newmu = dsdpSolver->mu / (1 + 0.95 * alpha);
-        
+        alpha = MIN(0.97 * alpha, 10.0);
+        *newmu = dsdpSolver->mu / (1 + alpha);
     } else {
-        
         // dS = dsdpgetATy(A, dy);
         retcode = getPhaseBdS(dsdpSolver, -1.0, dsdpSolver->b1->x, 0.0);
-        
         // alphap = dsdpgetalpha(S, dS, 0.95 / 1.0);
         for (DSDP_INT i = 0; i < dsdpSolver->nBlock; ++i) {
-            
-#ifdef ROUGH_MU
-            retcode = dsdpGetAlphaLS(dsdpSolver->S[i], dsdpSolver->dS[i],
-                                     dsdpSolver->Scker[i], 0.1, &tmp, dsdpSolver->symS[i]);
-#else
-            retcode = dsdpGetAlpha(dsdpSolver->S[i], dsdpSolver->dS[i],
-                                   dsdpSolver->spaux[i], &tmp);
-#endif
-            checkCode;
+            dsdpGetAlpha(dsdpSolver->S[i], dsdpSolver->dS[i], dsdpSolver->spaux[i], &tmp);
             alpha = MIN(alpha, tmp);
         }
         
         alphap = alpha;
-        
         // Shat = S + 0.95 * alphap * dS;
         for (DSDP_INT i = 0; i < dsdpSolver->nBlock; ++i) {
             memcpy(dsdpSolver->Scker[i]->x, dsdpSolver->S[i]->x,
                    sizeof(double) * dsdpSolver->S[i]->nnz);
             // This step sometimes fails due to inaccurate Lanczos
-            retcode = spsMataXpbY(MIN(0.95 * alphap, 1.0), dsdpSolver->dS[i],
-                                  1.0, dsdpSolver->Scker[i], dsdpSolver->symS[i]);
+            spsMataXpbY(MIN(0.95 * alphap, 1.0), dsdpSolver->dS[i],
+                        1.0, dsdpSolver->Scker[i], dsdpSolver->symS[i]);
         }
-#ifdef ROUGH_MU
-        
-#else
+
         for (DSDP_INT i = 0; i < dsdpSolver->nBlock; ++i) {
-            retcode = spsMatFactorize(dsdpSolver->Scker[i]);
-            checkCode;
+            spsMatFactorize(dsdpSolver->Scker[i]);
         }
-#endif
         
         // dS = - alphap * dsdpgetATy(A, dy1) / muk;
         getPhaseBdS(dsdpSolver, alphap / dsdpSolver->mu, dsdpSolver->d1->x, 0.0);
         tmp = DSDP_INFINITY;
         for (DSDP_INT i = 0; i < dsdpSolver->nBlock; ++i) {
-#ifdef ROUGH_MU
-            retcode = dsdpGetAlphaLS(dsdpSolver->Scker[i], dsdpSolver->dS[i],
-                                     NULL, 0.1, &tmp, dsdpSolver->symS[i]);
-#else
             dsdpGetAlpha(dsdpSolver->Scker[i], dsdpSolver->dS[i],
-                                   dsdpSolver->spaux[i], &alpha);
-#endif
+                         dsdpSolver->spaux[i], &alpha);
             tmp = MIN(tmp, alpha);
         }
         
@@ -290,6 +263,9 @@ extern DSDP_INT selectMu( HSDSolver *dsdpSolver, double *newmu ) {
         
         *newmu = (alphap * dsdpSolver->mu) / (1 + tmp) + \
                  (1 - alphap) * (dsdpSolver->pObjVal - dsdpSolver->dObjVal) / dsdpSolver->n;
+        
+        // tmp = MIN(1, 0.97 * tmp); tmp = dsdpSolver->mu / (1.0 + alphap); alphap *= 0.6;
+        // *newmu = alphap * tmp + (1.0 - alphap) * dsdpSolver->mu;
     }
     
     return retcode;

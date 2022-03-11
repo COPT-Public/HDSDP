@@ -429,7 +429,10 @@ extern DSDP_INT DSDPCheckPhaseBConvergence( HSDSolver *dsdpSolver, DSDP_INT *isO
         dsdpSolver->eventMonitor[EVENT_LARGE_DOBJ] = TRUE;
     }
     
-    if (gap < 1e-04) {
+    double thresh;
+    DSDPGetDblParam(dsdpSolver, DBL_PARAM_ABS_OPTTOL, &thresh);
+    
+    if (gap < thresh) {
         monitor[EVENT_MU_QUALIFIES] = TRUE;
         dsdpSolver->solStatus = DSDP_OPTIMAL;
         *isOK = TRUE;

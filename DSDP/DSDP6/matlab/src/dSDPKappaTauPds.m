@@ -45,15 +45,15 @@ end % End if
 
 % Prepare initial solutions
 y = [];
-m = length(A);
-[n, ~] = size(A);
+% m = length(A);
+% [n, ~] = size(A);
+% 
+% fub = inf;
+% if m >= 20 * n && dsdpParam{28}
+%     [y, fub] = dsdpgetApproxdual(A, C);
+% end % End if
 
-fub = inf;
-if m >= 20 * n && dsdpParam{28}
-    [y, fub] = dsdpgetApproxdual(A, C);
-end % End if
-
-if fub < -0.5
+if 0 % fub < -0.5
     Rd = sparse(n, n);
     S = C - dsdpgetATy(A, y);
 else

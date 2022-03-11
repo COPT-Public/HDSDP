@@ -127,6 +127,7 @@ extern DSDP_INT dsdpInitializeA( HSDSolver *dsdpSolver ) {
     retcode = initmu(dsdpSolver); checkCode;
     retcode = initresi(dsdpSolver); checkCode;
     
+    // dsdpSolver->mu *= - dsdpSolver->Ry * sqrt(dsdpSolver->n);
     dsdpSolver->Pnrm = DSDP_INFINITY;
     printf("| DSDP is initialized with Ry = %3.3e * I %52s|\n", dsdpSolver->Ry, "");
     

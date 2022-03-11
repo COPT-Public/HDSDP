@@ -283,14 +283,14 @@
          BreakpointExtensionID = "Xcode.Breakpoint.FileBreakpoint">
          <BreakpointContent
             uuid = "60FFB31D-83DF-4130-B015-F85910B20511"
-            shouldBeEnabled = "Yes"
+            shouldBeEnabled = "No"
             ignoreCount = "0"
             continueAfterRunningActions = "No"
             filePath = "DSDP6/src/dsalg/dsdppfeas.c"
             startingColumnNumber = "9223372036854775807"
             endingColumnNumber = "9223372036854775807"
-            startingLineNumber = "68"
-            endingLineNumber = "68"
+            startingLineNumber = "72"
+            endingLineNumber = "72"
             landmarkName = "DSDPPFeasPhase(dsdpSolver)"
             landmarkType = "9">
          </BreakpointContent>
@@ -417,8 +417,8 @@
             filePath = "DSDP6/src/dsalg/dsdppfeas.c"
             startingColumnNumber = "9223372036854775807"
             endingColumnNumber = "9223372036854775807"
-            startingLineNumber = "72"
-            endingLineNumber = "72"
+            startingLineNumber = "77"
+            endingLineNumber = "77"
             landmarkName = "DSDPPFeasPhase(dsdpSolver)"
             landmarkType = "9">
          </BreakpointContent>
@@ -634,16 +634,32 @@
       <BreakpointProxy
          BreakpointExtensionID = "Xcode.Breakpoint.FileBreakpoint">
          <BreakpointContent
-            uuid = "1D0AC100-5D7F-409B-B036-E74A78213E18"
-            shouldBeEnabled = "Yes"
+            uuid = "D0903039-E26D-4447-8918-49BB62BC81A7"
+            shouldBeEnabled = "No"
             ignoreCount = "0"
             continueAfterRunningActions = "No"
             filePath = "DSDP6/src/dsalg/stepheur.c"
             startingColumnNumber = "9223372036854775807"
             endingColumnNumber = "9223372036854775807"
-            startingLineNumber = "281"
-            endingLineNumber = "281"
+            startingLineNumber = "239"
+            endingLineNumber = "239"
             landmarkName = "selectMu(dsdpSolver, newmu)"
+            landmarkType = "9">
+         </BreakpointContent>
+      </BreakpointProxy>
+      <BreakpointProxy
+         BreakpointExtensionID = "Xcode.Breakpoint.FileBreakpoint">
+         <BreakpointContent
+            uuid = "8839330C-0588-4264-B04D-A16F0C0E8794"
+            shouldBeEnabled = "No"
+            ignoreCount = "0"
+            continueAfterRunningActions = "No"
+            filePath = "DSDP6/src/dsalg/dsdpproxmeasure.c"
+            startingColumnNumber = "9223372036854775807"
+            endingColumnNumber = "9223372036854775807"
+            startingLineNumber = "71"
+            endingLineNumber = "71"
+            landmarkName = "dsdpgetPhaseBProxMeasure(dsdpSolver, muub, mulb)"
             landmarkType = "9">
          </BreakpointContent>
       </BreakpointProxy>

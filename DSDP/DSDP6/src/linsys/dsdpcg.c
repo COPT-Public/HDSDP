@@ -251,20 +251,22 @@ extern DSDP_INT dsdpCGSolve( CGSolver *cgSolver, vec *b, vec *x0 ) {
         // r = b - M * x;
         vec_copy(b, r);
         denseMataAxpby(M, -1.0, x, 1.0, r);
+        
+        // Get initial residual
+        vec_norm(r, &alpha);
+        
+        if (alpha < 1e-06 * tol) {
+            cgSolver->status = CG_STATUS_SOLVED;
+            vec_copy(x, b);
+            return retcode;
+        }
     } else {
         vec_reset(x);
         // r = b;
         vec_copy(b, r);
     }
     
-    // Get initial residual
     vec_norm(r, &alpha);
-    
-    if (alpha < 1e-04 * tol) {
-        cgSolver->status = CG_STATUS_SOLVED;
-        vec_copy(x, b);
-        return retcode;
-    }
     
     alpha = MIN(100, alpha);
     tol = MAX(tol * alpha * 0.1, tol * 1e-01);

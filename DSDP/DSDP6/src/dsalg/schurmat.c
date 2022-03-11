@@ -169,7 +169,7 @@ static DSDP_INT schurMatPerturb( HSDSolver *dsdpSolver ) {
 //            dsdpSolver->Msdp->isillCond = TRUE;
 //        }
         if (dsdpSolver->mu < 1e-05) {
-            perturb += 1e-08;
+             perturb += 1e-08;
         }
         for (DSDP_INT i = 0; i < m; ++i) {
             maxdiag = MAX(dsdpSolver->Mdiag->x[i], maxdiag);
