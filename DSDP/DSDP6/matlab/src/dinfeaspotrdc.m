@@ -1,9 +1,7 @@
-function [y, S] = dinfeaspotrdc(A, b, C, y, S, Ry, M, dy1, mu)
+function [y, S] = dinfeaspotrdc(A, b, C, y, S, Ry, M, dy1, mu, ncorr)
 % Potential reduction with presence of dual infeasibility
 
 m = length(y);
-ncorr = 4;
-
 dy2 = zeros(m, 1);
 
 for iter = 1:ncorr
@@ -21,7 +19,11 @@ for iter = 1:ncorr
     dycorr = dy1 / mu - dy2;
     dScorr = - dsdpgetATy(A, dycorr);
     alpha = dsdpgetalpha(S, dScorr);
-    alpha = min(0.95 * alpha, 1.0);
+    if alpha < 0
+        alpha = 1;
+    else
+        alpha = min(0.95 * alpha, 1.0); 
+    end
     
     % oldpot = dsdpgetMeritValue(b, y, mu, L);
     oldpot = dsdpgetMeritValue(0, 0, mu, L);

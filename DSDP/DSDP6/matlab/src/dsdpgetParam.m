@@ -2,7 +2,7 @@ function [dsdpParam] = dsdpgetParam()
 % Get parameters for DSDP
 
 maxiter          = 100;
-tol              = 1e-08;
+tol              = 1e-06;
 sigma            = 0.1;
 alpha            = 0.7;
 pObj             = 1e+05;
@@ -10,14 +10,14 @@ rho              = 4.0;
 initmethod       = "linesearch"; % "eigs", "linesearch", "IdS"
 initbeta         = 1.0; % 1.0; % 10.0
 reuse            = 0;
-ncorr            = 0;
-ncorrdual        = 8;
+ncorr            = 12;
+ncorrdual        = 0;
 corrdelta        = 10;
 corralpha        = 0.6;
 mu               = 1e+06;
 tau              = 1;
 kappa            = 1;
-dualInfeasalpha  = 0.5;
+dualInfeasalpha  = 0.8;
 stepsizestrategy = "eigs"; % linesearch
 maxpfeasiter     = 100;
 dualcorrstep     = "eigs"; % "linesearch"; % eigs

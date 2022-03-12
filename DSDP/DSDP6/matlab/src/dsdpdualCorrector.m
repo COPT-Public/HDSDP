@@ -11,6 +11,8 @@ m = length(y);
 dy2 = zeros(m, 1);
 bTdy1 = b' * dy1;
 
+muold = mu;
+
 for k = 1:ncorr
     [L, ~, pmt] = lchol(S);
     pinv = dsdpInvPerm(pmt);
@@ -24,9 +26,9 @@ for k = 1:ncorr
     bTdy2 = b' * dy2;
     
     if bTdy1 > 0 && bTdy2 > 0
-        mu = min(mu, (bTdy1 / bTdy2));
+        mu = min(mu, (bTdy1 / bTdy2) / mu * muold);
+        mu = mu * n / (n + sqrt(n));
     end % End if
-    mu = mu * n / (n + sqrt(n));
     
     oldmerit = dsdpgetMeritValue(b, y, mu, L);
     
@@ -59,7 +61,7 @@ for k = 1:ncorr
         anum = 2 * (newmerit - oldmerit + bTdycorr * alpha) / (alpha^2);
         bnum = bTdycorr;
         
-        if newmerit <= oldmerit - 0.1 * alpha * bTdycorr
+        if newmerit <= oldmerit - max(0.1 * alpha * bTdycorr, 0.01 * alpha)
             y = ynew;
             S = Snew;
             break;

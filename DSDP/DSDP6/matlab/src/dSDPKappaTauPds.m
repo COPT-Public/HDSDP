@@ -82,6 +82,7 @@ showdash(ndash);
 fprintf("Phase 1 finished. \n");
 showdash(ndash);
 
+
 if ismember(reason, dinfeas)
     S = S / kappa;
     y = y / kappa;

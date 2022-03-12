@@ -16,7 +16,8 @@ corralpha    = dsdpParam{16};
 candmu       = dsdpParam{19};
 ndash        = dsdpParam{20};
 corrdelta    = dsdpParam{22};
-
+m = length(y);
+eyem = eye(m) * 1e-08;
 pObj = inf;
 muprimal = mu;
 augment = false;
@@ -56,6 +57,7 @@ for i = 1:maxiter
     [M, u, asinv, ~, ~, ~, csinv, csinvcsinv, asinvrysinv, csinvrysinv] = ...
         dsdpgetSchur(A, S, C, Rd, initstrategy);
     
+    % M = M + eyem;
     
     d2_12_3_4 = M \ [b, u, asinv, asinvrysinv];
     
@@ -99,6 +101,10 @@ for i = 1:maxiter
     
     step = dsdpgetStepsize(S, dS, kappa, dkappa, tau, dtau, stepstrategy, alphaphase1);
     
+    if step < 0.1
+        step = step;
+    end % End if  
+    
     if step < 1e-05
         reason = "DSDP_SMALL_STEP";
         break;
@@ -122,10 +128,8 @@ for i = 1:maxiter
     
     % Corrector 
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-    [y, S] = dinfeaspotrdc(A, b * tau, C * tau, y, S, Rd, M, d2 * tau, mu);
-    if delta > corrdelta && step > 1e-04 && mu > 1e-02
-        [y, S, kappa, tau] = dsdpCorrector(A, b, C, y, S, kappa, tau, mu, M, corralpha, ncorrp1, stepstrategy);
-    end % End if 
+    [y, S] = dinfeaspotrdc(A, b * tau, C * tau, y, S, Rd, M, d2 * tau, mu, 0);
+    % [y, S, kappa, tau] = dsdpCorrector(A, b, C, y, S, Rd, kappa, tau, mu, M, d2);
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
     
     % Logging

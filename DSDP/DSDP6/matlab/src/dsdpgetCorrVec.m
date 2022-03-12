@@ -1,12 +1,11 @@
-function [csinv, csinvcsinv, u, asinv] = dsdpgetCorrVec(A, C, S)
+function [csinv, csinvcsinv, u, asinv] = dsdpgetCorrVec(A, C, L, pmt)
 % Compute u, d1, d3 and csinv for corrector step
 m = length(A);
 
 u = zeros(m, 1);
 asinv = zeros(m, 1);
-[R, ~, pmt] = chol(S, 'vector');
+
 pinv = dsdpInvPerm(pmt);
-L = R';
 
 CSinv = cholSolve(L, pmt, pinv, C)';
 csinv = trace(CSinv);

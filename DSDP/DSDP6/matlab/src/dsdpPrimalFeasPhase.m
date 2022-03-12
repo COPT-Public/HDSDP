@@ -99,7 +99,7 @@ for i = 1:maxiter
     assert(dsdpIspsd(S));
     
     if step < 1e-05 && ~ismufeas
-        if sum(smallstep) == 3
+        if sum(smallstep) == 1
             reason = "DSDP_SMALL_STEP";
             break;
         else
@@ -117,11 +117,7 @@ for i = 1:maxiter
             ncorr = 0;
         end % End if
         
-        if step < 1 && muprimal < 1e-05
-            ncorr = 0;
-        end % End if
-        
-        if step < 1e-13
+        if step < 0.1 && muprimal < 1e-05
             ncorr = 0;
         end % End if
         
