@@ -18,6 +18,7 @@ extern DSDP_INT vec_axpby ( double alpha, vec *x, double beta, vec *y );
 extern DSDP_INT vec_zaxpby( vec *z, double alpha, vec *x, double beta, vec *y );
 extern DSDP_INT vec_scale ( vec *x, double a );
 extern DSDP_INT vec_rscale( vec *x, double r );
+extern void     vec_vdiv  ( vec *x, vec *y );
 extern DSDP_INT vec_set   ( vec *x, double val);
 extern DSDP_INT vec_inv   ( vec *xinv, vec *x );
 extern DSDP_INT vec_invsqr( vec *xinvsq, vec *x );

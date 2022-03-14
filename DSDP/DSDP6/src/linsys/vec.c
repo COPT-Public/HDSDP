@@ -100,6 +100,14 @@ extern DSDP_INT vec_rscale( vec *x, double r ) {
     return DSDP_RETCODE_OK;
 }
 
+extern void vec_vdiv( vec *x, vec *y ) {
+    // x = x ./ y
+    for (DSDP_INT i = 0; i < x->dim; ++i) {
+        assert( y->x[i] ); x->x[i] /= y->x[i];
+    }
+    return;
+}
+
 extern DSDP_INT vec_set( vec *x, double val) {
     // Set x = val
     for (int i = 0; i < x->dim; ++i) {

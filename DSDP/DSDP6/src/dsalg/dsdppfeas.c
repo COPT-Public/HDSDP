@@ -76,6 +76,7 @@ extern DSDP_INT DSDPPFeasPhase( HSDSolver *dsdpSolver ) {
         // Select new mu
         retcode = selectMu(dsdpSolver, &newmu); checkCode;
         
+        newmu = MIN(newmu, muub);
         newmu = MAX(newmu, dsdpSolver->mu / rhon);
         dsdpSolver->mu = newmu;
         // dsdpSolver->mu = MIN(newmu, dsdpSolver->mu);

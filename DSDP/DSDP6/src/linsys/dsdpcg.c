@@ -5,11 +5,7 @@
 
 static void diagPrecond( vec *P, vec *x ) {
     // Diagonal preconditioning
-    assert( P->dim == x->dim );
-    for (DSDP_INT i = 0; i < x->dim; ++i) {
-        x->x[i] /= P->x[i];
-    }
-    return;
+    vec_vdiv(x, P); return;
 }
 
 static void cholPrecond( dsMat *P, vec *x ) {
@@ -267,6 +263,11 @@ extern DSDP_INT dsdpCGSolve( CGSolver *cgSolver, vec *b, vec *x0 ) {
     }
     
     vec_norm(r, &alpha);
+    
+    if (alpha == 0.0) {
+        cgSolver->status = CG_STATUS_SOLVED;
+        return retcode;
+    }
     
     alpha = MIN(100, alpha);
     tol = MAX(tol * alpha * 0.1, tol * 1e-01);

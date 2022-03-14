@@ -876,11 +876,12 @@ extern DSDP_INT DSDPSchurSetup( DSDPSchur *M ) {
         d423 += tmp * tmp;
     }
     
+    printf("------------------------------------------------------------------------\n");
     printf("| <A * S^-1>: 12 %e  35 %e  34 %e  45 %e  23 %e \n", asinv12, asinv35, asinv34, asinv45, asinv23);
     printf("| d4        : 12 %e  35 %e  34 %e  45 %e  23 %e \n", d412, d435, d434, d445, d423);
-    
-//    printf("| Difference: 12 %e  13 %e  23 %e  25 %e   \n", diff12, diff13, diff23, diff25);
-//    printf("| Difference: 35 %e  34 %e  45 %e  24 %e   \n", diff35, diff34, diff45, diff24);
+    printf("| Difference: 12 %e  13 %e  23 %e  25 %e   \n", diff12, diff13, diff23, diff25);
+    printf("| Difference: 35 %e  34 %e  45 %e  24 %e   \n", diff35, diff34, diff45, diff24);
+    printf("------------------------------------------------------------------------\n");
     
     DSDP_FREE(MM1); DSDP_FREE(MM2); DSDP_FREE(MM3); DSDP_FREE(MM4); DSDP_FREE(MM5);
     

@@ -78,7 +78,7 @@ extern DSDP_INT dsdpgetPhaseBProxMeasure( HSDSolver *dsdpSolver, double *muub, d
         *muub = gap / dsdpSolver->n;
         
         if (gap < 0.1 * (fabs(dsdpSolver->pObjVal) + fabs(dsdpSolver->dObjVal) + 1) &&
-            gap >= 5e-06 * (fabs(dsdpSolver->pObjVal) + fabs(dsdpSolver->dObjVal) + 1)) {
+            gap >= 1e-06 * (fabs(dsdpSolver->pObjVal) + fabs(dsdpSolver->dObjVal) + 1)) {
             dsdpSolver->mumaker = dsdpSolver->mu;
             vec_copy(dsdpSolver->y, dsdpSolver->ymaker);
             vec_copy(dsdpSolver->b1, dsdpSolver->dymaker);

@@ -559,9 +559,7 @@ extern DSDP_INT spsMatLspLSolve( spsMat *S, spsMat *dS, spsMat *spaux ) {
         start = i * n;
         for (j = i; j < n; ++j) {
             tmp = fulldS[start + j];
-            if (fabs(tmp) > 1e-20) {
-                Ax[nnz] = tmp; Ai[nnz] = j; ++nnz;
-            }
+            Ax[nnz] = tmp; Ai[nnz] = j; ++nnz;
         }
         Ap[i + 1] = nnz;
     }
@@ -646,7 +644,7 @@ extern DSDP_INT dsdpGetAlphaLS( spsMat *S, spsMat *dS, spsMat *Scker,
     }
     
     for (DSDP_INT i = 0; ; ++i) {
-        if (step <= 1e-04) { *alpha = 0.0; break; }
+        if (step <= 1e-05) { *alpha = 0.0; break; }
         memcpy(src, S->x, sizeof(double) * S->nnz);
         spsMataXpbY(step, dS, 1.0, buffer, sumHash); spsMatIspd(buffer, &ispsd);
         if (ispsd) { *alpha = step; break; }

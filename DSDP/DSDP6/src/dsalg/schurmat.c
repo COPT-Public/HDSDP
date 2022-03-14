@@ -92,30 +92,7 @@ static DSDP_INT setupLPSchur( HSDSolver *dsdpSolver ) {
     
     register DSDP_INT i;
     
-    for (i = 0; i < n - 7; ++i) {
-        sdata[i] = sdata[i] * cdata[i]; ++i;
-        sdata[i] = sdata[i] * cdata[i]; ++i;
-        sdata[i] = sdata[i] * cdata[i]; ++i;
-        sdata[i] = sdata[i] * cdata[i]; ++i;
-        sdata[i] = sdata[i] * cdata[i]; ++i;
-        sdata[i] = sdata[i] * cdata[i]; ++i;
-        sdata[i] = sdata[i] * cdata[i]; ++i;
-        sdata[i] = sdata[i] * cdata[i];
-    }
-    
-    if (i < n - 3) {
-        sdata[i] = sdata[i] * cdata[i]; ++i;
-        sdata[i] = sdata[i] * cdata[i]; ++i;
-        sdata[i] = sdata[i] * cdata[i]; ++i;
-        sdata[i] = sdata[i] * cdata[i]; ++i;
-    }
-    
-    if (i < n - 1) {
-        sdata[i] = sdata[i] * cdata[i]; ++i;
-        sdata[i] = sdata[i] * cdata[i]; ++i;
-    }
-    
-    if (i < n) {
+    for (i = 0; i < n; ++i) {
         sdata[i] = sdata[i] * cdata[i];
     }
     
@@ -127,22 +104,8 @@ static DSDP_INT setupLPSchur( HSDSolver *dsdpSolver ) {
     // Update d3
     retcode = vec_invsqr(sinv, s);
     
-    if (n > 64) {
-        i = 0;
-        for (DSDP_INT i = 0; i < n - n % 4; i+=4) {
-            sdata[i    ] = sdata[i    ] * rydata[i    ];
-            sdata[i + 1] = sdata[i + 1] * rydata[i + 1];
-            sdata[i + 2] = sdata[i + 2] * rydata[i + 2];
-            sdata[i + 3] = sdata[i + 3] * rydata[i + 3];
-        }
-        
-        for (DSDP_INT i = n - n % 4; i < n; ++i) {
-            sdata[i] = sdata[i] * rydata[i];
-        }
-    } else {
-        for (i = 0; i < n; ++i) {
-            sdata[i] = sdata[i] * rydata[i];
-        }
+    for (i = 0; i < n; ++i) {
+        sdata[i] = sdata[i] * rydata[i];
     }
     
     cs_gaxpy(A, sdata, d3->x);
@@ -165,12 +128,11 @@ static DSDP_INT schurMatPerturb( HSDSolver *dsdpSolver ) {
     denseMatGetdiag(dsdpSolver->Msdp, dsdpSolver->Mdiag);
     
     if (!dsdpSolver->eventMonitor[EVENT_INVALID_GAP]) {
-//        if (dsdpSolver->mu < 1e-06) {
-//            dsdpSolver->Msdp->isillCond = TRUE;
-//        }
+        
         if (dsdpSolver->mu < 1e-05) {
              perturb += 1e-08;
         }
+        
         for (DSDP_INT i = 0; i < m; ++i) {
             maxdiag = MAX(dsdpSolver->Mdiag->x[i], maxdiag);
         }
@@ -194,12 +156,16 @@ static DSDP_INT schurMatPerturb( HSDSolver *dsdpSolver ) {
             }
         }
     }
+    
     return retcode;
 }
 
 static DSDP_INT schurMatscale( HSDSolver *dsdpSolver ) {
     
     // Scale Schur matrix if necessary
+    
+    dsdpSolver->Mscaler = 1.0;
+    return DSDP_RETCODE_OK;
     dsMat *M = dsdpSolver->Msdp;
     double scaler = sqrt(dsdpSolver->Mscaler);
     
