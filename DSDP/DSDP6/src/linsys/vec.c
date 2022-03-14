@@ -2,7 +2,6 @@
 #include "dsdplapack.h"
 #include "vec.h"
 
-
 #define CHECKVEC(x, y) assert( ((x)->dim == (y)->dim) && ((x) && (y)) )
 
 // Define constants involving Lapack and Blas
@@ -106,6 +105,46 @@ extern void vec_vdiv( vec *x, vec *y ) {
         assert( y->x[i] ); x->x[i] /= y->x[i];
     }
     return;
+}
+
+extern void vec_lslack( vec *x, vec *sl, double lb ) {
+    // x = x - lb
+    for (DSDP_INT i = 0; i < x->dim; ++i) {
+        sl->x[i] = x->x[i] - lb;
+    }
+}
+
+extern void vec_uslack( vec *x, vec *su, double ub ) {
+    // x = ub - x
+    for (DSDP_INT i = 0; i < x->dim; ++i) {
+        su->x[i] = ub - x->x[i];
+    }
+}
+
+extern double vec_step( vec *s, vec *ds, double beta ) {
+    // Compute the largest alpha such that s + alpha * beta * ds >= 0
+    double alpha = DSDP_INFINITY;
+    
+    if (beta == 0.0) {
+        return DSDP_INFINITY;
+    }
+    
+    if (beta > 0.0) {
+        for (DSDP_INT i = 0; i < s->dim; ++i) {
+            alpha = MIN(ds->x[i] / s->x[i], alpha);
+        }
+        alpha = -1.0 / (alpha * beta);
+    } else {
+        for (DSDP_INT i = 0; i < s->dim; ++i) {
+            alpha = MAX(ds->x[i] / s->x[i], alpha);
+        }
+        alpha = 1.0 / (alpha * beta);
+    }
+
+    if (alpha < 0.0) {
+        alpha = DSDP_INFINITY;
+    }
+    return 0.0;
 }
 
 extern DSDP_INT vec_set( vec *x, double val) {

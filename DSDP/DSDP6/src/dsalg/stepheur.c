@@ -103,7 +103,6 @@ static DSDP_INT getSDPSStep( HSDSolver *dsdpSolver, double *SStep ) {
     }
     
     *SStep = step;
-    
     return retcode;
 }
 
@@ -223,8 +222,13 @@ extern DSDP_INT selectMu( HSDSolver *dsdpSolver, double *newmu ) {
             dsdpGetAlpha(dsdpSolver->Scker[i], dsdpSolver->dS[i], dsdpSolver->spaux[i], &tmp);
             alpha = MIN(alpha, tmp);
         }
+        
+        // Compute step of bound cone
+        alpha = MIN(vec_step(dsdpSolver->su, dsdpSolver->d1, 1.0 / dsdpSolver->mu), alpha);
+        alpha = MIN(vec_step(dsdpSolver->sl, dsdpSolver->d1, - 1.0 / dsdpSolver->mu), alpha);
         alpha = MIN(0.97 * alpha, 10.0);
         *newmu = dsdpSolver->mu / (1 + alpha);
+        
     } else {
         // dS = dsdpgetATy(A, dy);
         retcode = getPhaseBdS(dsdpSolver, -1.0, dsdpSolver->b1->x, 0.0);
@@ -233,6 +237,9 @@ extern DSDP_INT selectMu( HSDSolver *dsdpSolver, double *newmu ) {
             dsdpGetAlpha(dsdpSolver->S[i], dsdpSolver->dS[i], dsdpSolver->spaux[i], &tmp);
             alpha = MIN(alpha, tmp);
         }
+        
+        alpha = MIN(vec_step(dsdpSolver->su, dsdpSolver->b1, 1.0), alpha);
+        alpha = MIN(vec_step(dsdpSolver->sl, dsdpSolver->b1, 1.0), alpha);
         
         alphap = alpha;
         // Shat = S + 0.95 * alphap * dS;
@@ -243,6 +250,9 @@ extern DSDP_INT selectMu( HSDSolver *dsdpSolver, double *newmu ) {
             spsMataXpbY(MIN(0.95 * alphap, 1.0), dsdpSolver->dS[i],
                         1.0, dsdpSolver->Scker[i], dsdpSolver->symS[i]);
         }
+        
+        vec_axpy(- MIN(0.95 * alphap, 1.0), dsdpSolver->dy, dsdpSolver->sl);
+        vec_axpy(  MIN(0.95 * alphap, 1.0), dsdpSolver->dy, dsdpSolver->su);
 
         for (DSDP_INT i = 0; i < dsdpSolver->nBlock; ++i) {
             spsMatFactorize(dsdpSolver->Scker[i]);
@@ -250,12 +260,16 @@ extern DSDP_INT selectMu( HSDSolver *dsdpSolver, double *newmu ) {
         
         // dS = - alphap * dsdpgetATy(A, dy1) / muk;
         getPhaseBdS(dsdpSolver, alphap / dsdpSolver->mu, dsdpSolver->d1->x, 0.0);
+        
         tmp = DSDP_INFINITY;
         for (DSDP_INT i = 0; i < dsdpSolver->nBlock; ++i) {
             dsdpGetAlpha(dsdpSolver->Scker[i], dsdpSolver->dS[i],
                          dsdpSolver->spaux[i], &alpha);
             tmp = MIN(tmp, alpha);
         }
+        
+        tmp = MIN(vec_step(dsdpSolver->sl, dsdpSolver->d1,  1.0 / dsdpSolver->mu), tmp);
+        tmp = MIN(vec_step(dsdpSolver->su, dsdpSolver->d1, -1.0 / dsdpSolver->mu), tmp);
         
         if (tmp == DSDP_INFINITY) {
             tmp = 1.0;

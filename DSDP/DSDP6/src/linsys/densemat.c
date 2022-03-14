@@ -176,6 +176,17 @@ extern DSDP_INT denseMatAdddiag( dsMat *dAMat, double d ) {
     return retcode;
 }
 
+extern DSDP_INT denseMatAdddiagVec( dsMat *dAMat, vec *d ) {
+    // A = A * d * diag(d)
+    DSDP_INT retcode = DSDP_RETCODE_OK;
+    double *array = dAMat->array;
+    for (DSDP_INT i = 0, idx = 0, n = dAMat->dim; i < n; ++i) {
+        array[idx] += d->x[i];
+        idx += n - i;
+    }
+    return retcode;
+}
+
 extern double denseMatxTAx( dsMat *dAMat, double *aux, double *x ) {
     // Compute quadratic form x' * A * x
     packmatvec(&uplolow, &dAMat->dim, &done, dAMat->array, x,

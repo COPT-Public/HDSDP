@@ -24,6 +24,16 @@ static DSDP_INT setupBoundYSchur( HSDSolver *dsdpSolver ) {
     // Set up the Schur matrix for the bound
     DSDP_INT retcode = DSDP_RETCODE_OK;
     
+    double *M = dsdpSolver->Msdp->array, *asinv = dsdpSolver->asinv->x, s = 0.0;
+    double *sl = dsdpSolver->sl->x, *su = dsdpSolver->su->x;
+    DSDP_INT m = dsdpSolver->m;
+    
+    for (DSDP_INT i = 0, idx = 0; i < m; ++i) {
+        s = su[i]; M[idx] += 1.0 / (s * s); asinv[i] += 1.0 / s;
+        s = sl[i]; M[idx] += 1.0 / (s * s); asinv[i] -= 1.0 / s;
+        idx += m - i;
+    }
+    
     return retcode;
 }
 
@@ -294,13 +304,14 @@ static DSDP_INT cgSolveCheck( CGSolver *cgSolver, vec *b ) {
 }
 
 extern DSDP_INT setupFactorize( HSDSolver *dsdpSolver ) {
-    // Factorize all the dual solutions
+    // Factorize the dual solution and compute slack
     DSDP_INT retcode = DSDP_RETCODE_OK;
     retcode = checkIterProgress(dsdpSolver, ITER_DUAL_FACTORIZE);
     assert( !dsdpSolver->iterProgress[ITER_DUAL_FACTORIZE] );
     if (dsdpSolver->iterProgress[ITER_DUAL_FACTORIZE]) {
         error(etype, "Dual variables have been factorized. \n");
     }
+    
     DSDP_INT nblock = dsdpSolver->nBlock;
     double iterA = 0.0;
     
@@ -319,6 +330,12 @@ extern DSDP_INT setupFactorize( HSDSolver *dsdpSolver ) {
             checkCode;
         }
     }
+    
+    // Get dual slack
+    double boundy = 0.0; DSDPGetDblParam(dsdpSolver, DBL_PARAM_PRLX_PENTALTY, &boundy);
+    vec_lslack(dsdpSolver->y, dsdpSolver->sl, -boundy);
+    vec_uslack(dsdpSolver->y, dsdpSolver->su, boundy);
+    
     dsdpSolver->iterProgress[ITER_DUAL_FACTORIZE] = TRUE;
     return retcode;
 }
@@ -364,6 +381,13 @@ extern DSDP_INT setupSchur( HSDSolver *dsdpSolver ) {
     DSDP_INT retcode = DSDP_RETCODE_OK;
     
     retcode = setupSDPSchur(dsdpSolver);
+    
+    if (dsdpSolver->eventMonitor[EVENT_IN_PHASE_A]) {
+        // TODO: Add primal relaxation to this phase ?
+    } else {
+        retcode = setupBoundYSchur(dsdpSolver);
+    }
+    
     checkCode;
     dsdpSolver->iterProgress[ITER_SCHUR] = TRUE;
     // retcode = setupLPSchur(dsdpSolver);

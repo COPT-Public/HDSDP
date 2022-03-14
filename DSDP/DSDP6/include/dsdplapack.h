@@ -582,6 +582,14 @@ void mattrans( const char    ordering,
 }
 #endif
 
+/* Macros for min/max. */
+#ifndef MIN
+#define MIN(a, b) (((a)<(b))?(a):(b))
+#endif /* MIN */
+#ifndef MAX
+#define MAX(a, b) (((a)>(b))?(a):(b))
+#endif  /* MAX */
+
 /* Define macros related to parameter */
 #define DSDP_MAT_UP ('U')
 #define DSDP_MAT_LOW ('L')

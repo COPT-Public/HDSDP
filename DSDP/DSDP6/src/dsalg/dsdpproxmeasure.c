@@ -77,6 +77,17 @@ extern DSDP_INT dsdpgetPhaseBProxMeasure( HSDSolver *dsdpSolver, double *muub, d
         dsdpSolver->pObjVal = dsdpSolver->dObjVal + gap;
         *muub = gap / dsdpSolver->n;
         
+        // Get primal infeasibility
+        double pinfeas = 0.0, tmp = 0.0, s;
+        vec *sl = dsdpSolver->sl, *su = dsdpSolver->su, *dy = dsdpSolver->b1;
+        for (DSDP_INT i = 0; i < dsdpSolver->m; ++i) {
+            tmp = dy->x[i];
+            s = sl->x[i]; pinfeas = MAX(pinfeas, fabs(1.0 / s + tmp / (s * s)));
+            s = su->x[i]; pinfeas = MAX(pinfeas, fabs(1.0 / s + tmp / (s * s)));
+        }
+        dsdpSolver->pinfeas = pinfeas * dsdpSolver->mu;
+        
+        // Save primal objective
         if (gap < 0.1 * (fabs(dsdpSolver->pObjVal) + fabs(dsdpSolver->dObjVal) + 1) &&
             gap >= 1e-06 * (fabs(dsdpSolver->pObjVal) + fabs(dsdpSolver->dObjVal) + 1)) {
             dsdpSolver->mumaker = dsdpSolver->mu;

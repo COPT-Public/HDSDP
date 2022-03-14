@@ -22,6 +22,16 @@ extern DSDP_INT dsdpCheckBackwardNewton( HSDSolver *dsdpSolver, DSDP_INT *ispfea
     vec_zaxpby(dsdpSolver->b2, 1.0, dsdpSolver->y,
                -1.0, dsdpSolver->b1);
     
+    // Check bound cone
+    double *bwnewton = dsdpSolver->b2->x, bound;
+    DSDPGetDblParam(dsdpSolver, DBL_PARAM_PRLX_PENTALTY, &bound);
+    
+    for (DSDP_INT i = 0; i < dsdpSolver->m; ++i) {
+        if (bound < fabs(bwnewton[i])) {
+            *ispfeas = FALSE; return retcode;
+        }
+    }
+    
     retcode = getPhaseBCheckerS(dsdpSolver, dsdpSolver->b2->x);
     retcode = dsdpCheckerInCone(dsdpSolver, ispfeas);
     
