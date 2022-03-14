@@ -93,6 +93,8 @@ typedef struct {
     double   dtau;        // Tau step
     double   dkappa;      // Kappa step
     
+    double   pinfeas;     // Primal infeasibility
+    
     // Solver parameter
     hsdParam *param;      // Solver parameters
     

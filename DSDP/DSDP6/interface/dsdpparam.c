@@ -60,6 +60,9 @@ static void printDblParam( const double *dblParams, DSDP_INT pName ) {
         case DBL_PARAM_REL_FEASTOL:
             printf("Double Parameter relative feasibility tolerance (0.0, inf): ");
             break;
+        case DBL_PARAM_PRLX_PENTALTY:
+            printf("Double Parameter primal relaxation penalty (0.0, inf): ");
+            break;
         default:
             printf("Invalid Parameter Code %d \n", pName);
             return;
@@ -93,8 +96,7 @@ static void printIntParam( const DSDP_INT *intParams, DSDP_INT pName ) {
             } else {
                 printf("Invalid initialization method \n");
             }
-            return;
-            break;
+            return; break;
         case INT_PARAM_AATTEMPT:
             if (intParams[pName] == AATEMPT_AGGRESSIVE) {
                 printf("Integer Parameter A attempt mode: Aggressive \n");
@@ -105,8 +107,7 @@ static void printIntParam( const DSDP_INT *intParams, DSDP_INT pName ) {
             } else {
                 printf("Invalid A attempt parameter \n");
             }
-            return;
-            break;
+            return; break;
         case INT_PARAM_CG_REUSE:
             printf("Integer Parameter CG pre-conditioner reuse [0, 5]: ");
             break;
@@ -118,18 +119,19 @@ static void printIntParam( const DSDP_INT *intParams, DSDP_INT pName ) {
             } else {
                 printf("Invalid presolve mode \n");
             }
-            return;
-            break;
+            return; break;
         case INT_PARAM_AMAXITER:
             printf("Integer Parameter A maximum iteration: ");
             break;
         case INT_PARAM_BMAXITER:
             printf("Integer Parameter B maximum iteration: ");
             break;
+        case INT_PARAM_PRELAX:
+            printf("Integer Parameter Primal Relaxation: ");
+            break;
         default:
             printf("Invalid Parameter Code %d \n", pName);
-            return;
-            break;
+            return; break;
     }
     
     printf("%d \n", intParams[pName]);
@@ -250,6 +252,15 @@ extern void DSDPParamPrint( hsdParam *param ) {
     dsdpshowdash();
     printDblParam(param->dblParams, DBL_PARAM_RHO);
     printIntParam(param->intParams, INT_PARAM_PRESOLVE);
+    
+    DSDP_INT prelax;
+    getIntParam(param, INT_PARAM_PRELAX, &prelax);
+    printIntParam(param->intParams, INT_PARAM_PRELAX);
+    
+    if (prelax) {
+        printDblParam(param->dblParams, DBL_PARAM_PRLX_PENTALTY);
+    }
+    
     printIntParam(param->intParams, INT_PARAM_AATTEMPT);
     
     return;

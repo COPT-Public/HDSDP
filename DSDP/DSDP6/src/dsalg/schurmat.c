@@ -4,7 +4,6 @@
 #define M1Threshold 0.7
 static char etype[] = "Schur matrix setup";
 
-/* TODO: Rewrite Schur matrix setup */
 static DSDP_INT setupSDPSchur( HSDSolver *dsdpSolver ) {
     // Set up the schur matrix for SDP
     // After calling this routine, Msdp, asinv, u for SDP and csinv will be filled
@@ -18,6 +17,13 @@ static DSDP_INT setupSDPSchur( HSDSolver *dsdpSolver ) {
     
     retcode = DSDPSchurSetup(dsdpSolver->M);
     dsdpSolver->iterProgress[ITER_SCHUR] = TRUE;
+    return retcode;
+}
+
+static DSDP_INT setupBoundYSchur( HSDSolver *dsdpSolver ) {
+    // Set up the Schur matrix for the bound
+    DSDP_INT retcode = DSDP_RETCODE_OK;
+    
     return retcode;
 }
 

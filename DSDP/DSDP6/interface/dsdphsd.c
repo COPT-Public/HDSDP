@@ -754,12 +754,6 @@ extern DSDP_INT DSDPOptimize( HSDSolver *dsdpSolver ) {
     DSDPDataStatPrint(stat);
     DSDPParamPrint(dsdpSolver->param);
     
-    /*
-     // Print parameters
-        dsdpshowdash();
-        printParams(dsdpSolver->param);
-    */
-    
     assert( dsdpSolver->insStatus == DSDP_STATUS_PRESOLVED );
     retcode = DSDPDInfeasEliminator(dsdpSolver); checkCode;
     printPhaseABConvert(dsdpSolver, &gotoB);
