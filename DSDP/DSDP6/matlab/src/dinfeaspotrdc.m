@@ -45,7 +45,7 @@ for iter = 1:ncorr
         anum = 2 * (pot - oldpot + btdy * alpha) / (alpha^2);
         bnum = btdy;
         
-        if pot - oldpot > - 0.1 * alpha * btdy
+        if pot - oldpot > - abs(0.1 * alpha * btdy)
             if bnum / anum < alpha && bnum / anum > 0
                 alpha = bnum / anum;
             else

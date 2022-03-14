@@ -23,4 +23,4 @@ else
     newmu = (alphap * muk) / (1 + alphamu) + (1 - alphap) * gap;
 end % End if 
 
-% End function
+end % End function

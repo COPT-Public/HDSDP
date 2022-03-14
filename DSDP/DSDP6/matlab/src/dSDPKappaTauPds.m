@@ -117,9 +117,9 @@ showdash(ndash);
 
 % Phase 2
 if ispdfeas
-    [y, S, pObj, muprimal, xmaker, reason] = dsdpPrimalFeasPhase(A, b, C, y, S, muHSD, pObj, dObj, tau, kappa, ispdfeas, dsdpParam);
+    [y, S, pObj, muprimal, xmaker, reason] = dsdpPrimalFeasPhaseLP(A, b, C, y, S, muHSD, pObj, dObj, tau, kappa, ispdfeas, dsdpParam);
 else
-    [y, S, pObj, muprimal, xmaker, reason] = dsdpPrimalFeasPhase(A, b, C, yheur, Sheur, muHSD, pObj, dObj, tau, kappa, ispdfeas, dsdpParam);
+    [y, S, pObj, muprimal, xmaker, reason] = dsdpPrimalFeasPhaseLP(A, b, C, yheur, Sheur, muHSD, pObj, dObj, tau, kappa, ispdfeas, dsdpParam);
 end % End if
 
 X = sparse(n, n);
@@ -136,12 +136,15 @@ if ismember(reason, ["DSDP_OPTIMAL", "DSDP_SMALL_STEP","DSDP_MAXITER"])
         dymaker = xmaker{2};
         mumaker = xmaker{3};
         bnmaker = dsdpgetATy(A, dymaker);
-        Smaker = C - dsdpgetATy(A, ymaker);
-        R = chol(Smaker);
-        D = R \ eye(n);
-        % X = Smaker \ eye(n) + Smaker \ (Smaker \ bnmaker)';
+        Smaker = C - dsdpgetATy(A, ymaker);        
+        Sinv = cholmod2(Smaker, eye(n));
+        % LD = ldlchol(Smaker);
+        % [L, D] = ldlsplit(LD);
+        % R = (L * sqrt(D))';
+        % D = R \ eye(n);
+        X = Sinv * (Smaker + bnmaker) * Sinv;
         % X = X * mumaker;
-        X = R \ (R \ (speye(n) + R' \ (R' \ bnmaker)'))';
+        % X = R \ (R \ (speye(n) + R' \ (R' \ bnmaker)'))';
         % X = D * (speye(n) + D' * bnmaker * D) * D';
         X = X * mumaker;
     end % End if 

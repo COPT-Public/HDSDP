@@ -14,11 +14,9 @@
 
 4. biggs 问题的 Dual infeasibility 非常难以消除，后续需要特殊处理
 
-5. lzc 问题可以在 450s 解决，但目前为 inaccurate，可以考虑在完成 Primal relaxation 后增加精度
+7. lzc 问题可以在 450s 解决，但目前为 inaccurate，可以考虑在完成 Primal relaxation 后增加精度
 
-6. Phase A upperbound 的公式可能有误（导致 Primal 下降超过 Dual），需要检查修正
-
-7. Phase A 的 proximity norm 可能出现 nan，可能是 Schur 矩阵计算有误（M5 Technique 的数值问题）
+7. Phase A 的 proximity norm 可能出现 nan，可能数值问题
 
 
 
@@ -30,3 +28,10 @@
 
 1. Debug Schur 系统
 2. Bound Cone 的构建方法
+   - 加入 pinfeas 初始化
+   - 加入 Schur 矩阵设置（包括 RHS）
+   - 加入 Prox-measure 计算
+   - 加入步长计算
+   - 加入 Potential 函数计算
+
+HSD 内加入 Bound cone 还需要额外考虑

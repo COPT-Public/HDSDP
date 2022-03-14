@@ -1,8 +1,9 @@
-function [y, S, pObj, muprimal, xmaker, reason] = dsdpPrimalFeasPhase(A, b, C, y, S, muHSD, pObj, dObj, tau, kappa, ispdfeas, dsdpParam)
+function [y, S, pObj, muprimal, xmaker, reason] = dsdpPrimalFeasPhaseLP(A, b, C, y, S, muHSD, pObj, dObj, tau, kappa, ispdfeas, dsdpParam)
 % Implementing primal feasibility certificate for DSDP
 % y and S are input such that ATy + S - C * tau = 0
 % As if using original DSDP to solve
 % maximize tau * b' * y s.t. ATy + S - C * tau = 0
+% Assume that we now have bound constraint l <= y <= u
 [n, ~] = size(S);
 m = length(y);
 rhouser      = dsdpParam{6};
@@ -11,7 +12,6 @@ maxpfeasiter = dsdpParam{17};
 ncorr        = dsdpParam{27};
 tol          = dsdpParam{2};
 ndash        = dsdpParam{20};
-muprimal     = min((pObj - dObj) / rhouser, muHSD);
 tau          = 1;
 normalizer   = dsdpParam{23};
 pinfeasbound = dsdpParam{26};
@@ -27,6 +27,13 @@ smallstep = zeros(3, 1);
 
 reason = "DSDP_MAXITER";
 
+u = 1e+07;
+l = -u;
+sl = y - l;
+su = u - y;
+
+muprimal = min((pObj - dObj) / rhouser, muHSD);
+
 for i = 1:maxiter
     
     if i >= maxpfeasiter + 1 && reason == "DSDP_MAXITER"
@@ -37,12 +44,20 @@ for i = 1:maxiter
     ismufeas = false;
     muHSD = min(muHSD, muprimal);
     
+    % Schur of SDP
     [M, ~, asinv, ~, ~, ~, ~, ~, ~, ~] = dsdpgetSchur(A, S);
+    
+    % Schur of LP
+    slinv2 = sl.^-2;
+    suinv2 = su.^-2;
+    asinv = asinv - sl.^-1 + su.^-1;
+    M = M + diag(slinv2) + diag(suinv2);
+    
     diagM = max(diag(M)); 
     Mhat = M;
     
     if muprimal < 1e-05
-        % Mhat = M + eye(m, m) * 1e-08;
+        Mhat = M + eye(m, m) * 1e-08;
     end % End if
     
     if isfirst
@@ -52,18 +67,20 @@ for i = 1:maxiter
     % dy1 = dsdpConjGrad(Mhat, b, diagM, zeros(m, 1)) / tau;
     % dy2 = dsdpConjGrad(Mhat, asinv, diagM, zeros(m, 1));
     dy1dy2 = Mhat \ [b, asinv];
-    dy1 = dy1dy2(:, 1) / tau;
+    dy1 = dy1dy2(:, 1);
     dy2 = dy1dy2(:, 2);
     
     dymuprimal = dy1 / muprimal - dy2;
     backwardnewton = C - dsdpgetATy(A, y - dymuprimal);
+    backwardnewtonub = u - (y - dymuprimal);
+    backwardnewtonlb = -l + (y - dymuprimal);
     
     % Proximity
     delta = sqrt(dymuprimal' * Mhat * dymuprimal);
     
     % Check feasibility of backward Newton step
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-    if dsdpIspsd(backwardnewton)
+    if dsdpIspsd(backwardnewton) && min(backwardnewtonlb) >= 0 && min(backwardnewtonub) >= 0
         ismufeas = true;
         reason = "DSDP_PRIMAL_DUAL_FEASIBLE";
         muub = muprimal * (dymuprimal' * asinv + n);
@@ -74,6 +91,11 @@ for i = 1:maxiter
         xmaker{1} = y;
         xmaker{2} = dymuprimal;
         xmaker{3} = muprimal;
+        % Get primal infeasibility
+        pinfeasl = muprimal * norm(sl.^-1 + slinv2 .* dymuprimal, 'inf'); 
+        pinfeasu = muprimal * norm(sl.^-1 - suinv2 .* dymuprimal, 'inf'); 
+        pinfeas = max(pinfeasl, pinfeasu);
+        fprintf("pinfeas: %10.3e \n", pinfeas);
     else
         muub = (pObj - dObj) / n;
         mulb = muub / rhouser;
@@ -82,7 +104,7 @@ for i = 1:maxiter
     
     % Select new mu
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-    newmu = dsdpselectMu(A, S, muprimal, dymuprimal, dy1, backwardnewton, ismufeas, (pObj - dObj) / n);
+    newmu = dsdpselectMuRlx(A, sl, su, S, muprimal, dymuprimal, dy1, backwardnewton, backwardnewtonlb, backwardnewtonub, ismufeas, (pObj - dObj) / n);
     muprimal = min(newmu, muub);
     muprimal = max(muprimal, mulb);
     
@@ -94,7 +116,10 @@ for i = 1:maxiter
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
     dymuprimal = dy1 / muprimal - dy2;
     dS = - dsdpgetATy(A, dymuprimal);
-    [y, S, step] = dsdptakedualStep(A, b, C, pObj, y, dymuprimal, S, dS, (pObj - dObj) / muprimal);
+    dsu = dymuprimal;
+    dsl = - dymuprimal;
+    
+    [y, S, sl, su, step] = dsdptakedualStepRlx(A, b, C, l, u, pObj, y, dymuprimal, S, dS, sl, dsl, su, dsu, (pObj - dObj) / muprimal);
     % [y, S, step] = dsdptakedualStep(A, b, C, pObj, y, dymuprimal, S, dS, rhouser * (n + sqrt(n)));
     assert(dsdpIspsd(S));
     
@@ -157,16 +182,6 @@ for i = 1:maxiter
             reason = "DSDP_OPTIMAL";
         end % End if
         break;
-    end % End if
-    
-    nrm = norm(y, 'inf');
-    if norm(y, 'inf') > normalizer
-        nrm = sqrt(nrm);
-        y = y / nrm;
-        S = S / nrm;
-        C = C / nrm;
-        tau = tau / nrm;
-        fprintf("Norm y is large \n");
     end % End if
     
     if dObj > pinfeasbound
