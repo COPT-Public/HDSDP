@@ -61,32 +61,38 @@ extern DSDP_INT dsdpgetPhaseBProxMeasure( HSDSolver *dsdpSolver, double *muub, d
     DSDP_INT retcode = DSDP_RETCODE_OK;
     DSDP_INT ispfeas = FALSE;
     
-    double gap = 0.0, rho;
-    retcode = DSDPGetDblParam(dsdpSolver, DBL_PARAM_RHO, &rho);
+    double gap = 0.0, rho, bound;
+    
+    DSDPGetDblParam(dsdpSolver, DBL_PARAM_PRLX_PENTALTY, &bound);
+    DSDPGetDblParam(dsdpSolver, DBL_PARAM_RHON, &rho);
     
     vec_zaxpby(dsdpSolver->b1, 1 / dsdpSolver->mu, dsdpSolver->d1, -1.0, dsdpSolver->d2);
     
     dsdpSolver->Pnrm = denseMatxTAx(dsdpSolver->Msdp, dsdpSolver->M->schurAux, dsdpSolver->b1->x);
-    dsdpSolver->Pnrm = MAX(dsdpSolver->Pnrm * sqrt(dsdpSolver->Mscaler), 1e-08);
+    dsdpSolver->Pnrm = sqrt(MAX(dsdpSolver->Pnrm, 0.0));
     retcode = dsdpCheckBackwardNewton(dsdpSolver, &ispfeas);
     
     if (ispfeas) {
         dsdpSolver->eventMonitor[EVENT_PFEAS_FOUND] = TRUE;
         vec_dot(dsdpSolver->b1, dsdpSolver->asinv, &gap);
-        gap = (gap + dsdpSolver->n) * dsdpSolver->mu;
+        gap = (gap + dsdpSolver->n + dsdpSolver->m * 2) * dsdpSolver->mu;
         dsdpSolver->pObjVal = dsdpSolver->dObjVal + gap;
-        *muub = gap / dsdpSolver->n;
+        *muub = gap / (dsdpSolver->n + dsdpSolver->m * 2);
         
-        // Get primal infeasibility
         double pinfeas = 0.0, tmp = 0.0, s;
         vec *sl = dsdpSolver->sl, *su = dsdpSolver->su, *dy = dsdpSolver->b1;
+        
+        // Get primal infeasibility
         for (DSDP_INT i = 0; i < dsdpSolver->m; ++i) {
             tmp = dy->x[i];
             s = sl->x[i]; pinfeas = MAX(pinfeas, fabs(1.0 / s + tmp / (s * s)));
-            s = su->x[i]; pinfeas = MAX(pinfeas, fabs(1.0 / s + tmp / (s * s)));
+            s = su->x[i]; pinfeas = MAX(pinfeas, fabs(1.0 / s - tmp / (s * s)));
         }
+        
         dsdpSolver->pinfeas = pinfeas * dsdpSolver->mu;
         
+        // Compute the dnewtonub and dnewtonlb
+        vec_lslack(dsdpSolver->b2, sl, -bound); vec_uslack(dsdpSolver->b2, su, bound);
         // Save primal objective
         if (gap < 0.1 * (fabs(dsdpSolver->pObjVal) + fabs(dsdpSolver->dObjVal) + 1) &&
             gap >= 1e-06 * (fabs(dsdpSolver->pObjVal) + fabs(dsdpSolver->dObjVal) + 1)) {
@@ -96,7 +102,7 @@ extern DSDP_INT dsdpgetPhaseBProxMeasure( HSDSolver *dsdpSolver, double *muub, d
         }
         
     } else {
-        *muub = (dsdpSolver->pObjVal - dsdpSolver->dObjVal) / dsdpSolver->n;
+        *muub = (dsdpSolver->pObjVal - dsdpSolver->dObjVal) / (dsdpSolver->n + 2 *  dsdpSolver->m);
     }
     
     *mulb = (*muub) / rho;

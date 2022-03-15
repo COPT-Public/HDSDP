@@ -958,6 +958,20 @@ extern DSDP_INT spsMatFillLower( spsMat *sMat, double *lowFullMat ) {
     return retcode;
 }
 
+extern DSDP_INT spsMatFillLower2( spsMat *sMat, dsMat *lowMat ) {
+    
+    DSDP_INT retcode = DSDP_RETCODE_OK;
+    DSDP_INT n = sMat->dim, ni = 0, *Ap = sMat->p, *Ai = sMat->i;
+    double *Ax = sMat->x;
+    for (DSDP_INT i = 0; i < n; ++i) {
+        ni = n * i;
+        for (DSDP_INT j = Ap[i]; j < Ap[i + 1]; ++j) {
+            packIdx(lowMat->array, n, Ai[j], i) = Ax[j];
+        }
+    }
+    return retcode;
+}
+
 extern DSDP_INT spsMatFill( spsMat *sMat, double *fulldMat ) {
     
     // Fill sparse matrix to full (there is no structure for symmetric full dense matrix)

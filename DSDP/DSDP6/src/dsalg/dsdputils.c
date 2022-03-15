@@ -405,7 +405,7 @@ extern DSDP_INT getSDPPrimalObjPhaseB( HSDSolver *dsdpSolver ) {
     double *x1 = asinv->x;
     double *d2 = dsdpSolver->d2->x;
         
-    pObjVal = (double) dsdpSolver->n + dot(&m, x1, &incx, d2, &incx);
+    pObjVal = (double) (dsdpSolver->n + dsdpSolver->m * 2) + dot(&m, x1, &incx, d2, &incx);
     dsdpSolver->pObjVal = pObjVal * mu + dsdpSolver->dObjVal;
     
     return retcode;

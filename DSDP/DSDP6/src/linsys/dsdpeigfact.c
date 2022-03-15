@@ -144,11 +144,8 @@ extern DSDP_INT factorizeSpecial( spsMat *A, double *eigvals, double *eigvecs, D
     DSDP_INT *Ap = A->p, *Ai = A->i, n = A->dim, nelem, idx;
     double *Ax = A->x;
     
-    memset(eigvals, 0, sizeof(double) * n);
-    memset(eigvecs, 0, sizeof(double) * n * n);
-    
     // Stop if nnz is large
-    if (A->nnz > n) {
+    if (A->nnz > 100) {
         *isSpecial = FALSE;
         return retcode;
     }
@@ -168,7 +165,7 @@ extern DSDP_INT factorizeSpecial( spsMat *A, double *eigvals, double *eigvecs, D
             }
         }
     }
-
+    
     if (isDiag || isElem1) {
         *isSpecial = TRUE;
     } else {
@@ -180,50 +177,28 @@ extern DSDP_INT factorizeSpecial( spsMat *A, double *eigvals, double *eigvecs, D
     
     if (isDiag) {
         for (DSDP_INT i = 0; i < A->nnz; ++i) {
-            eigvec = &eigvecs[i * n];
-            idx = Ai[i];
-            eigvec[idx] = 1.0;
-            eigvals[i] = Ax[i];
+            eigvec = &eigvecs[i * n]; idx = Ai[i];
+            eigvec[idx] = 1.0; eigvals[i] = Ax[i];
         }
     } else if (isElem1) {
-        
-        DSDP_INT counter = 0;
-        for (DSDP_INT i = 0; i < n; ++i) {
-            if (Ap[i] == A->nnz) {
-                break;
-            }
-            for (DSDP_INT j = Ap[i]; j < Ap[i + 1]; ++j) {
-                if (counter >= n) {
-                    *isSpecial = FALSE;
-                    return retcode;
-                }
-                eigvec = &eigvecs[counter * n];
-                idx = Ai[j];
+        for (DSDP_INT k = 0, i, j, counter = 0; k < A->nnz; ++k) {
+            i = Ai[k]; j = A->nzHash[k];
+            eigvec = &eigvecs[counter * n];
+            
+            if (i == j) {
+                eigvec = eigvecs + counter * n;
+                eigvals[counter] = Ax[k]; counter += 1;
+            } else {
+                eigvec[j] = eigvec[i] = tmp;
+                eigvals[counter] = Ax[k]; counter += 1;
                 
-                if (idx == i) {
-                    eigvec[idx] = 1.0;
-                    eigvals[counter] = Ax[j];
-                    counter += 1;
-                } else {
-                    
-                    eigvec[idx] = tmp;
-                    eigvec[i] = tmp;
-                    
-                    eigvals[counter] = Ax[j];
-                    counter += 1;
-                    
-                    if (counter >= n) {
-                        *isSpecial = FALSE;
-                        return retcode;
-                    }
-                    
-                    eigvec = &eigvecs[counter * n];
-                    eigvec[idx] = tmp;
-                    eigvec[i] = - tmp;
-                    
-                    eigvals[counter] = - Ax[j];
-                    counter += 1;
+                if (counter >= n) {
+                    *isSpecial = FALSE; return retcode;
                 }
+                
+                eigvec += n;
+                eigvec[i] =  tmp; eigvec[j] = -tmp;
+                eigvals[counter] = - Ax[k]; counter += 1;
             }
         }
     }

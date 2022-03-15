@@ -37,7 +37,7 @@ extern DSDP_INT DSDPPFeasPhase( HSDSolver *dsdpSolver ) {
 
     DSDPStats *stat = &dsdpSolver->dsdpStats;
     
-    getDblParam(dsdpSolver->param, DBL_PARAM_RHO, &rhon);
+    getDblParam(dsdpSolver->param, DBL_PARAM_RHON, &rhon);
     
     DSDP_INT i;
     for (i = 0; ; ++i) {
@@ -77,12 +77,13 @@ extern DSDP_INT DSDPPFeasPhase( HSDSolver *dsdpSolver ) {
         retcode = selectMu(dsdpSolver, &newmu); checkCode;
         
         newmu = MIN(newmu, muub);
-        newmu = MAX(newmu, dsdpSolver->mu / rhon);
+        newmu = MAX(newmu, mulb);
+        
         dsdpSolver->mu = newmu;
         // dsdpSolver->mu = MIN(newmu, dsdpSolver->mu);
         
         if (dsdpSolver->Pnrm < 0.1 &&
-            dsdpSolver->solStatus == DSDP_PD_FEASIBLE) {
+            dsdpSolver->eventMonitor[EVENT_PFEAS_FOUND]) {
             dsdpSolver->mu *= 0.1;
         }
         

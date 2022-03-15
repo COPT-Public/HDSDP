@@ -65,7 +65,7 @@ static DSDP_INT initmu( HSDSolver *dsdpSolver ) {
 }
 
 static DSDP_INT initresi( HSDSolver *dsdpSolver ) {
-    // Initialize Ry TODO: and ry
+    // Initialize Ry
     
     /*
      if norm(Ctau, 'fro') == 0
@@ -77,9 +77,8 @@ static DSDP_INT initresi( HSDSolver *dsdpSolver ) {
     
     DSDP_INT retcode = DSDP_RETCODE_OK;
     
-    double beta;
-    retcode = DSDPGetDblParam(dsdpSolver, DBL_PARAM_INIT_BETA, &beta);
-    double Cnrm = 0.0, nrm  = 0.0, tau = dsdpSolver->tau;
+    double beta, Cnrm = 0.0, nrm  = 0.0, tau = dsdpSolver->tau;
+    DSDPGetDblParam(dsdpSolver, DBL_PARAM_INIT_BETA, &beta);
     DSDP_INT m  = dsdpSolver->m, isCons = FALSE;
     retcode = isConstant(dsdpSolver, &isCons);
     
@@ -108,6 +107,10 @@ static DSDP_INT initresi( HSDSolver *dsdpSolver ) {
                                 dsdpSolver->symS[i]);
         checkCode;
     }
+    
+    // Primal infeasibility
+    DSDPGetStats(&dsdpSolver->dsdpStats, STAT_ONE_NORM_B, &nrm);
+    dsdpSolver->pinfeas = nrm + 1.0;
     
     // Iteration Monitor
     dsdpSolver->iterProgress[ITER_INITIALIZE] = TRUE;

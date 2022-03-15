@@ -20,7 +20,7 @@ extern DSDP_INT vec_scale ( vec *x, double a );
 extern DSDP_INT vec_rscale( vec *x, double r );
 extern void     vec_vdiv  ( vec *x, vec *y );
 extern void     vec_lslack( vec *x, vec *sl, double lb );
-extern void     vec_uslack( vec *x, vec *sl, double ub );
+extern void     vec_uslack( vec *x, vec *su, double ub );
 extern double   vec_step  ( vec *s, vec *ds, double beta );
 extern DSDP_INT vec_set   ( vec *x, double val);
 extern DSDP_INT vec_inv   ( vec *xinv, vec *x );

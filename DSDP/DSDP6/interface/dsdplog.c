@@ -95,7 +95,7 @@ extern void dsdpprintPhaseBheader( void ) {
     /*      | niter |     pObj     |     dObj     |  mu  |  alpha  |  pNrm  |  dPot  |  E  |*/
     /*      --------------------------------------------------------------------------------*/
     printf("| %4s | %17s | %17s | %10s | %8s | %8s | %8s | %3s |\n",
-            "Iter", "pObj", "dObj", "mu", "alpha", "pNrm", "dPot", "E");
+            "Iter", "pObj", "dObj", "pInf", "mu", "alpha", "pNrm", "E");
     dsdpshowdash();
 }
 
@@ -254,10 +254,9 @@ extern DSDP_INT DSDPPhaseBLogging( HSDSolver *dsdpSolver ) {
     
 print_log:
     DSDPGetStats(&dsdpSolver->dsdpStats, STAT_PHASE_B_ITER, &statval);
-    printf("| %4d | %17.10e | %17.10e | %10.3e | %8.2e | %8.2e | %8.1e | %3s |\n",
+    printf("| %4d | %17.10e | %17.10e | %10.3e | %8.2e | %8.2e | %8.2e | %3s |\n",
             (DSDP_INT) statval + 1, dsdpSolver->pObjVal, dsdpSolver->dObjVal,
-            dsdpSolver->mu, dsdpSolver->alpha, dsdpSolver->Pnrm, dsdpSolver->dPotential,
-            event);
+            dsdpSolver->pinfeas, dsdpSolver->mu, dsdpSolver->alpha, dsdpSolver->Pnrm, event);
     
     dsdpSolver->iterProgress[ITER_LOGGING] = TRUE;
     return retcode;

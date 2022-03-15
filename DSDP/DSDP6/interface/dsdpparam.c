@@ -166,7 +166,7 @@ extern DSDP_INT setDblParam( hsdParam *param, DSDP_INT pName, double dblVal ) {
     retcode = checkDblParam(pName, dblVal);
     
     if (retcode == DSDP_RETCODE_OK) {
-        param->intParams[pName] = dblVal;
+        param->dblParams[pName] = dblVal;
     } else {
         printf("| Invalid parameter range. Parameter unchanged. \n");
     }

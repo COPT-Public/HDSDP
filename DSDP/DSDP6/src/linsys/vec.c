@@ -135,16 +135,17 @@ extern double vec_step( vec *s, vec *ds, double beta ) {
         }
         alpha = -1.0 / (alpha * beta);
     } else {
+        alpha = - DSDP_INFINITY;
         for (DSDP_INT i = 0; i < s->dim; ++i) {
             alpha = MAX(ds->x[i] / s->x[i], alpha);
         }
-        alpha = 1.0 / (alpha * beta);
+        alpha = -1.0 / (alpha * beta);
     }
 
-    if (alpha < 0.0) {
+    if (alpha <= 0.0) {
         alpha = DSDP_INFINITY;
     }
-    return 0.0;
+    return alpha;
 }
 
 extern DSDP_INT vec_set( vec *x, double val) {

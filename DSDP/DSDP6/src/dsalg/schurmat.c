@@ -146,7 +146,7 @@ static DSDP_INT schurMatPerturb( HSDSolver *dsdpSolver ) {
     if (!dsdpSolver->eventMonitor[EVENT_INVALID_GAP]) {
         
         if (dsdpSolver->mu < 1e-05) {
-             perturb += 1e-08;
+             perturb += 1e-13;
         }
         
         for (DSDP_INT i = 0; i < m; ++i) {
@@ -156,11 +156,11 @@ static DSDP_INT schurMatPerturb( HSDSolver *dsdpSolver ) {
         dsdpSolver->Mscaler = maxdiag;
         
         if (dsdpSolver->m < 100) {
-            perturb += MIN(maxdiag * 1e-08, 1e-05);
+            perturb += MIN(maxdiag * 1e-08, 1e-12);
         } else if (dsdpSolver->m < 1000) {
-            perturb += MIN(maxdiag * 1e-08, 1e-06);
+            perturb += MIN(maxdiag * 1e-08, 1e-11);
         } else {
-            perturb += MIN(maxdiag * 1e-08, 1e-08);
+            perturb += MIN(maxdiag * 1e-08, 1e-09);
         }
         
         double invalid;
@@ -212,24 +212,36 @@ static DSDP_INT schurCGSetup( HSDSolver *dsdpSolver ) {
     // Set CG tolerance and maxiteration based on simple heuristic
     DSDP_INT retcode = DSDP_RETCODE_OK;
     
-    double tol = 0.0;
+    double tol = 0.0; DSDP_INT cgiter = 20;
     CGSolver *cgsolver = dsdpSolver->cgSolver;
     
     // Set parameters
-    if (dsdpSolver->mu > 100) {
+    if (dsdpSolver->mu > 1.0) {
         tol = 1e-02;
     } else if (dsdpSolver->mu > 1e-02) {
-        tol = 8e-03;
-    } else if (dsdpSolver->mu > 1e-05){
-        tol = 5e-03;
-    } else {
         tol = 1e-03;
+    } else if (dsdpSolver->mu > 1e-05){
+        tol = 1e-04;
+    } else if (dsdpSolver->mu > 1e-07) {
+        tol = 1e-05;
+    } else {
+        tol = 1e-06;
     }
     
-    // cgsolver->status = CG_STATUS_INDEFINITE;
+//    cgsolver->status = CG_STATUS_INDEFINITE;
     // dsdpCGSetPreReuse(cgsolver, 0);
     dsdpCGSetTol(cgsolver, tol);
-    dsdpCGSetMaxIter(cgsolver, MAX(dsdpSolver->m / 50, 20));
+    
+    if (dsdpSolver->m > 20000) {
+        cgiter = 500;
+    } else if (dsdpSolver->m > 10000) {
+        cgiter = 300;
+    } else if (dsdpSolver->m > 5000) {
+        cgiter = 150;
+    } else {
+        dsdpCGSetMaxIter(cgsolver, MAX(dsdpSolver->m / 50, 20));
+    }
+    
     dsdpCGprepareP(cgsolver);
     
     return retcode;
@@ -332,9 +344,9 @@ extern DSDP_INT setupFactorize( HSDSolver *dsdpSolver ) {
     }
     
     // Get dual slack
-    double boundy = 0.0; DSDPGetDblParam(dsdpSolver, DBL_PARAM_PRLX_PENTALTY, &boundy);
-    vec_lslack(dsdpSolver->y, dsdpSolver->sl, -boundy);
-    vec_uslack(dsdpSolver->y, dsdpSolver->su, boundy);
+    double bound = 0.0; DSDPGetDblParam(dsdpSolver, DBL_PARAM_PRLX_PENTALTY, &bound);
+    vec_lslack(dsdpSolver->y, dsdpSolver->sl, -bound);
+    vec_uslack(dsdpSolver->y, dsdpSolver->su, bound);
     
     dsdpSolver->iterProgress[ITER_DUAL_FACTORIZE] = TRUE;
     return retcode;

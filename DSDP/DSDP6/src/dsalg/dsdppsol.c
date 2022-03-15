@@ -108,13 +108,6 @@ extern DSDP_INT computeDIMACS( HSDSolver *dsdpSolver ) {
         }
         pInf += tmp * tmp;
     }
-        
-    /*  DIMACS Error 2    */
-    minEigS = DSDP_INFINITY;
-    for (DSDP_INT i = 0; i < dsdpSolver->nBlock; ++i) {
-        spsMatMinEig(dsdpSolver->S[i], &tmp);
-        minEigS = MIN(minEigS, tmp);
-    }
     
     /*  DIMACS Error 3    */
     dInf = 0.0;
@@ -144,6 +137,7 @@ extern DSDP_INT computeDIMACS( HSDSolver *dsdpSolver ) {
         pObj += tmp;
     }
     
+    
     /* DIMACS Error 4     */
     minEigX = DSDP_INFINITY;
     for (DSDP_INT i = 0; i < dsdpSolver->nBlock; ++i) {
@@ -159,6 +153,17 @@ extern DSDP_INT computeDIMACS( HSDSolver *dsdpSolver ) {
     for (DSDP_INT i = 0; i < nblock; ++i) {
         denseSpsTrace(dsdpSolver->dsaux[i], dsdpSolver->S[i], &tmp);
         compslack += tmp;
+    }
+    
+    /*  DIMACS Error 2    */
+    minEigS = DSDP_INFINITY;
+    for (DSDP_INT i = 0; i < dsdpSolver->nBlock; ++i) {
+        denseMatReset(dsdpSolver->dsaux[i]);
+        spsMatFillLower2(dsdpSolver->S[i], dsdpSolver->dsaux[i]);
+        denseMatMinEig(dsdpSolver->dsaux[i], &tmp);
+        
+        // spsMatMinEig(dsdpSolver->S[i], &tmp);
+        minEigS = MIN(minEigS, tmp);
     }
     
     // Collect errors

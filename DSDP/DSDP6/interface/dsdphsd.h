@@ -110,7 +110,7 @@ typedef int DSDP_INT;
 #define DSDP_ATTEMPT_AGG        108
 
 #define VERSION_MAJOR           0
-#define VERSION_MINOR           1
+#define VERSION_MINOR           2
 #define VERSION_TECHNICAL       0
 
 #endif /* dsdphsd_h */

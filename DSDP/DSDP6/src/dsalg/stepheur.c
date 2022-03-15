@@ -106,30 +106,50 @@ static DSDP_INT getSDPSStep( HSDSolver *dsdpSolver, double *SStep ) {
     return retcode;
 }
 
+static double getBoundyStep( HSDSolver *dsdpSolver ) {
+    // Compute the maimum stepsize to take for the bound cones
+    vec *y = dsdpSolver->y, *dy = dsdpSolver->dy;
+    double bound, yi, dyi, step = DSDP_INFINITY;
+    DSDPGetDblParam(dsdpSolver, DBL_PARAM_PRLX_PENTALTY, &bound);
+    for (DSDP_INT i = 0; i < y->dim; ++i) {
+        yi = y->x[i]; dyi = dy->x[i];
+        if (dyi == 0.0) continue;
+        step = (dyi > 0.0) ? MIN(step, (bound - yi) / dyi) : MIN(step, (- bound - yi) / dyi);
+    }
+    return step;
+}
+
 static DSDP_INT getCurrentyPotential( HSDSolver *dsdpSolver, vec *y,
                                       double rho, double *potential, DSDP_INT *inCone ) {
     // Compute the current potential
-    // phi(y) = rho * log(pObj - dObj) - log det S
+    // phi(y) = rho * log(pObj - dObj) - log det S - \sum log sl_i - \sum log su_i
     DSDP_INT retcode = DSDP_RETCODE_OK;
     
     double pval = 0.0, dObjVal = 0.0, *aux = dsdpSolver->M->schurAux;
-    DSDP_INT i;
+    DSDP_INT i; double sl, su, bound;
+    DSDPGetDblParam(dsdpSolver, DBL_PARAM_PRLX_PENTALTY, &bound);
     
     if (inCone) {
-        retcode = getPhaseBS(dsdpSolver, y->x);
+        // Not sure whether y is in the cone
         DSDP_INT psd = FALSE;
-        dsdpInCone(dsdpSolver, &psd);
+        // Check and get potential of the bound cone
+        for (i = 0; i < dsdpSolver->m; ++i) {
+            su = bound - y->x[i]; sl = y->x[i] + bound;
+            if (sl <= 0 || su <= 0) {
+                *inCone = FALSE; return retcode;
+            }
+            pval -= (log(su) + log(sl));
+        }
+        
+        retcode = getPhaseBS(dsdpSolver, y->x); dsdpInCone(dsdpSolver, &psd);
         
         if (psd) {
-            *inCone = TRUE;
-            vec_dot(dsdpSolver->dObj, y, &dObjVal);
-            pval = rho * log(dsdpSolver->pObjVal - dObjVal);
+            *inCone = TRUE; vec_dot(dsdpSolver->dObj, y, &dObjVal);
+            pval += rho * log(dsdpSolver->pObjVal - dObjVal);
             for (i = 0; i < dsdpSolver->nBlock; ++i) {
-                dObjVal += spsMatGetlogdet(dsdpSolver->S[i], aux);
-                pval -= dObjVal;
+                pval -= spsMatGetlogdet(dsdpSolver->S[i], aux);
             }
-            dsdpSolver->dPotential = pval;
-            *potential = pval;
+            dsdpSolver->dPotential = pval; *potential = pval;
         } else {
             *inCone = FALSE;
         }
@@ -137,23 +157,36 @@ static DSDP_INT getCurrentyPotential( HSDSolver *dsdpSolver, vec *y,
     }
     
     if (y) {
+        // Get potential of a new y that is in the cone
         retcode = getPhaseBS(dsdpSolver, y->x);
         vec_dot(dsdpSolver->dObj, y, &dObjVal);
         pval = rho * log(dsdpSolver->pObjVal - dObjVal);
         
+        // Bound cone
+        for (i = 0; i < dsdpSolver->m; ++i) {
+            su = bound - y->x[i]; sl = y->x[i] + bound;
+            pval -= (log(su) + log(sl));
+        }
+        
         for (i = 0; i < dsdpSolver->nBlock; ++i) {
             spsMatFactorize(dsdpSolver->S[i]);
-            dObjVal += spsMatGetlogdet(dsdpSolver->S[i], aux);
-            pval -= dObjVal;
+            pval -= spsMatGetlogdet(dsdpSolver->S[i], aux);
         }
         
     } else {
-        dObjVal = dsdpSolver->dObjVal;
-        pval = rho * log(dsdpSolver->pObjVal - dObjVal);
-        for (i = 0; i < dsdpSolver->nBlock; ++i) {
-            dObjVal += spsMatGetlogdet(dsdpSolver->S[i], aux);
-            pval -= dObjVal;
+        
+        vec *yold = dsdpSolver->y;
+        // Get potential of new rho (old y)
+        pval = rho * log(dsdpSolver->pObjVal - dsdpSolver->dObjVal);
+        for (i = 0; i < dsdpSolver->m; ++i) {
+            su = bound - yold->x[i]; sl = yold->x[i] + bound;
+            pval -= (log(su) + log(sl));
         }
+        
+        for (i = 0; i < dsdpSolver->nBlock; ++i) {
+            pval -= spsMatGetlogdet(dsdpSolver->S[i], aux);
+        }
+        
         dsdpSolver->dPotential = pval;
     }
     
@@ -208,13 +241,17 @@ extern DSDP_INT takeStep( HSDSolver *dsdpSolver ) {
 
 extern DSDP_INT selectMu( HSDSolver *dsdpSolver, double *newmu ) {
     // Choose the next barrier parameter
-    // The backward newton step is stored in b2 and Scker, dy1 is in d1; dy is in b1
+    /*
+     The backward newton step is stored in b2 and Scker, dy1 is in d1; dy is in b1
+     
+     At this stage, if a new primal feasible solution if found, then sl and su are filled by
+     backward newton steps. Otherwise sl and su are untouched
+     
+     */
     
     DSDP_INT retcode = DSDP_RETCODE_OK;
     
-    double alpha = DSDP_INFINITY;
-    double alphap = 0.0;
-    double tmp = 1.0;
+    double alpha = DSDP_INFINITY, alphap = 0.0, tmp = 1.0;
     
     if (dsdpSolver->eventMonitor[EVENT_PFEAS_FOUND]) {
         retcode = getPhaseBdS(dsdpSolver, -1.0 / dsdpSolver->mu, dsdpSolver->d1->x, 0.0);
@@ -226,8 +263,7 @@ extern DSDP_INT selectMu( HSDSolver *dsdpSolver, double *newmu ) {
         // Compute step of bound cone
         alpha = MIN(vec_step(dsdpSolver->su, dsdpSolver->d1, 1.0 / dsdpSolver->mu), alpha);
         alpha = MIN(vec_step(dsdpSolver->sl, dsdpSolver->d1, - 1.0 / dsdpSolver->mu), alpha);
-        alpha = MIN(0.97 * alpha, 10.0);
-        *newmu = dsdpSolver->mu / (1 + alpha);
+        *newmu = dsdpSolver->mu / (1 + alpha * 0.95);
         
     } else {
         // dS = dsdpgetATy(A, dy);
@@ -238,8 +274,9 @@ extern DSDP_INT selectMu( HSDSolver *dsdpSolver, double *newmu ) {
             alpha = MIN(alpha, tmp);
         }
         
-        alpha = MIN(vec_step(dsdpSolver->su, dsdpSolver->b1, 1.0), alpha);
-        alpha = MIN(vec_step(dsdpSolver->sl, dsdpSolver->b1, 1.0), alpha);
+        // sl and su are still untouched
+        alpha = MIN(vec_step(dsdpSolver->su, dsdpSolver->b1,  1.0), alpha);
+        alpha = MIN(vec_step(dsdpSolver->sl, dsdpSolver->b1, -1.0), alpha);
         
         alphap = alpha;
         // Shat = S + 0.95 * alphap * dS;
@@ -251,8 +288,9 @@ extern DSDP_INT selectMu( HSDSolver *dsdpSolver, double *newmu ) {
                         1.0, dsdpSolver->Scker[i], dsdpSolver->symS[i]);
         }
         
-        vec_axpy(- MIN(0.95 * alphap, 1.0), dsdpSolver->dy, dsdpSolver->sl);
-        vec_axpy(  MIN(0.95 * alphap, 1.0), dsdpSolver->dy, dsdpSolver->su);
+        // Overwrite sl and su by slhat and suhat
+        vec_axpy(- MIN(0.95 * alphap, 1.0), dsdpSolver->b1, dsdpSolver->sl);
+        vec_axpy(  MIN(0.95 * alphap, 1.0), dsdpSolver->b1, dsdpSolver->su);
 
         for (DSDP_INT i = 0; i < dsdpSolver->nBlock; ++i) {
             spsMatFactorize(dsdpSolver->Scker[i]);
@@ -268,15 +306,15 @@ extern DSDP_INT selectMu( HSDSolver *dsdpSolver, double *newmu ) {
             tmp = MIN(tmp, alpha);
         }
         
-        tmp = MIN(vec_step(dsdpSolver->sl, dsdpSolver->d1,  1.0 / dsdpSolver->mu), tmp);
-        tmp = MIN(vec_step(dsdpSolver->su, dsdpSolver->d1, -1.0 / dsdpSolver->mu), tmp);
+        tmp = MIN(vec_step(dsdpSolver->sl, dsdpSolver->d1,  alphap / dsdpSolver->mu), tmp);
+        tmp = MIN(vec_step(dsdpSolver->su, dsdpSolver->d1, -alphap / dsdpSolver->mu), tmp);
         
         if (tmp == DSDP_INFINITY) {
             tmp = 1.0;
         }
         
         *newmu = (alphap * dsdpSolver->mu) / (1 + tmp) + \
-                 (1 - alphap) * (dsdpSolver->pObjVal - dsdpSolver->dObjVal) / dsdpSolver->n;
+                  + (1 - alphap) * (dsdpSolver->pObjVal - dsdpSolver->dObjVal) / (dsdpSolver->n + dsdpSolver->m * 2);
         
         // tmp = MIN(1, 0.97 * tmp); tmp = dsdpSolver->mu / (1.0 + alphap); alphap *= 0.6;
         // *newmu = alphap * tmp + (1.0 - alphap) * dsdpSolver->mu;
@@ -292,23 +330,18 @@ extern DSDP_INT dualPotentialReduction( HSDSolver *dsdpSolver ) {
     DSDP_INT retcode = DSDP_RETCODE_OK;
     retcode = checkIterProgress(dsdpSolver, ITER_COMPUTE_STEP);
     
-    double rho;
-    // double rho = dsdpSolver->param->rho;
-    getDblParam(dsdpSolver->param, DBL_PARAM_RHO, &rho);
+    double rho, oldpotential = 0.0, maxstep = 0.0;
     DSDPSetDblParam(dsdpSolver, DBL_PARAM_RHO,
                     (dsdpSolver->pObjVal - dsdpSolver->dObjVal) / dsdpSolver->mu);
-    double oldpotential = 0.0, maxstep = 0.0;
+    getDblParam(dsdpSolver->param, DBL_PARAM_RHO, &rho);
     
     vec *ytarget = dsdpSolver->d4, *y = dsdpSolver->y, *dy = dsdpSolver->dy;
-    
-    retcode = getCurrentyPotential(dsdpSolver, NULL, rho, &oldpotential, NULL);
-    checkCode;
-    
-    getSDPSStep(dsdpSolver, &maxstep); checkCode;
+    getCurrentyPotential(dsdpSolver, NULL, rho, &oldpotential, NULL);
+    getSDPSStep(dsdpSolver, &maxstep);
+    maxstep = MIN(maxstep, getBoundyStep(dsdpSolver));
     maxstep = MIN(maxstep * 0.95, 1.0);
     
-    double alpha = maxstep, newpotential = 0.0, bestpotential = oldpotential;
-    double bestalpha = alpha;
+    double alpha = maxstep, newpotential = 0.0, bestpotential = oldpotential, bestalpha = alpha;
     DSDP_INT inCone = FALSE;
     
     // Start line search
@@ -318,31 +351,29 @@ extern DSDP_INT dualPotentialReduction( HSDSolver *dsdpSolver ) {
         if (i == 0) {
             getCurrentyPotential(dsdpSolver, ytarget, rho, &newpotential, &inCone);
             if (!inCone) {
-                alpha *= 0.6;
+                alpha *= 0.8;
                 continue;
             }
         } else {
             getCurrentyPotential(dsdpSolver, ytarget, rho, &newpotential, NULL);
         }
         
-        if (alpha < 1e-03 || newpotential <= oldpotential - 0.05) {
+        if (alpha <= 1e-02 || newpotential <= oldpotential - 0.05) {
             break;
         } else {
             if (newpotential < bestpotential) {
-                bestalpha = alpha;
-                bestpotential = newpotential;
+                bestalpha = alpha; bestpotential = newpotential;
             }
         }
         alpha *= 0.8;
     }
     
-    if (alpha <= 1e-03) {
+    if (alpha <= 1e-02) {
         alpha = bestalpha;
     }
     
     // Take step
-    vec_axpy(alpha, dy, y);
-    getPhaseBS(dsdpSolver, y->x);
+    vec_axpy(alpha, dy, y); getPhaseBS(dsdpSolver, y->x);
     dsdpSolver->alpha = alpha;
     dsdpSolver->dPotential = bestpotential;
     

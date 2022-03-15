@@ -260,9 +260,9 @@ static DSDP_INT DSDPIAllocIter( HSDSolver *dsdpSolver ) {
     
     // sl, su
     vecIter = (vec *) calloc(1, sizeof(vec)); dsdpSolver->sl = vecIter;
-    retcode = vec_init(vecIter); retcode = vec_alloc(vecIter, dsdpSolver->lpDim); checkCode;
+    retcode = vec_init(vecIter); retcode = vec_alloc(vecIter, dsdpSolver->m); checkCode;
     vecIter = (vec *) calloc(1, sizeof(vec)); dsdpSolver->su = vecIter;
-    retcode = vec_init(vecIter); retcode = vec_alloc(vecIter, dsdpSolver->lpDim); checkCode;
+    retcode = vec_init(vecIter); retcode = vec_alloc(vecIter, dsdpSolver->m); checkCode;
     
     // Allocate Scker and spaux
     dsdpSolver->Scker = (spsMat **) calloc(nblock, sizeof(spsMat *));
@@ -526,7 +526,7 @@ static DSDP_INT DSDPIPresolve( HSDSolver *dsdpSolver ) {
     DSDPStatUpdate(stat, STAT_EIG_TIME, t);
     
     center = clock();
-    retcode = preSDPPrimal(dsdpSolver); checkCode;
+    // retcode = preSDPPrimal(dsdpSolver); checkCode;
     // retcode = preSDPDual(dsdpSolver); checkCode;
     t = (double) (clock() - center) / CLOCKS_PER_SEC;
     printf("| - Scaling completes in %g seconds \n", t);
