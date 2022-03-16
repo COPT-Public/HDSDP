@@ -18,6 +18,8 @@ pinfeasbound = dsdpParam{26};
 dObj = b' * y;
 isfirst      = true;
 
+pinfeas = inf;
+
 if ispdfeas
     maxpfeasiter = dsdpParam{1};
 end % End if
@@ -57,11 +59,11 @@ for i = 1:maxiter
     Mhat = M;
     
     if muprimal < 1e-05
-        Mhat = M + eye(m, m) * 1e-08;
+        Mhat = M + eye(m, m) * 1e-13;
     end % End if
     
     if isfirst
-        Mhat = Mhat + eye(m, m) * min(1e-08, diagM * 1e-06);
+        Mhat = Mhat + eye(m, m) * min(1e-12, diagM * 1e-08);
     end % End if
         
     % dy1 = dsdpConjGrad(Mhat, b, diagM, zeros(m, 1)) / tau;
@@ -83,9 +85,9 @@ for i = 1:maxiter
     if dsdpIspsd(backwardnewton) && min(backwardnewtonlb) >= 0 && min(backwardnewtonub) >= 0
         ismufeas = true;
         reason = "DSDP_PRIMAL_DUAL_FEASIBLE";
-        muub = muprimal * (dymuprimal' * asinv + n);
+        muub = muprimal * (dymuprimal' * asinv + (n + 2 * m));
         pObj = dObj + muub;
-        muub = muub / n;
+        muub = muub / (n + 2 * m);
         mulb = muub / rhouser;
         newub = "*";
         xmaker{1} = y;
@@ -93,22 +95,22 @@ for i = 1:maxiter
         xmaker{3} = muprimal;
         % Get primal infeasibility
         pinfeasl = muprimal * norm(sl.^-1 + slinv2 .* dymuprimal, 'inf'); 
-        pinfeasu = muprimal * norm(sl.^-1 - suinv2 .* dymuprimal, 'inf'); 
+        pinfeasu = muprimal * norm(su.^-1 - suinv2 .* dymuprimal, 'inf'); 
         pinfeas = max(pinfeasl, pinfeasu);
-        fprintf("pinfeas: %10.3e \n", pinfeas);
+        % fprintf("pinfeas: %10.3e \n", pinfeas);
     else
-        muub = (pObj - dObj) / n;
+        muub = (pObj - dObj) / (n + 2 * m);
         mulb = muub / rhouser;
         newub = "";
     end % End if
     
     % Select new mu
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-    newmu = dsdpselectMuRlx(A, sl, su, S, muprimal, dymuprimal, dy1, backwardnewton, backwardnewtonlb, backwardnewtonub, ismufeas, (pObj - dObj) / n);
+    newmu = dsdpselectMuRlx(A, sl, su, S, muprimal, dymuprimal, dy1, backwardnewton, backwardnewtonlb, backwardnewtonub, ismufeas, (pObj - dObj) / (n + 2 * m));
     muprimal = min(newmu, muub);
     muprimal = max(muprimal, mulb);
     
-    if delta < 0.1
+    if delta < 0.1 && ismufeas
         muprimal = muprimal * 0.1;
     end % End if
     
@@ -116,8 +118,8 @@ for i = 1:maxiter
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
     dymuprimal = dy1 / muprimal - dy2;
     dS = - dsdpgetATy(A, dymuprimal);
-    dsu = dymuprimal;
-    dsl = - dymuprimal;
+    dsu = - dymuprimal;
+    dsl = dymuprimal;
     
     [y, S, sl, su, step] = dsdptakedualStepRlx(A, b, C, l, u, pObj, y, dymuprimal, S, dS, sl, dsl, su, dsu, (pObj - dObj) / muprimal);
     % [y, S, step] = dsdptakedualStep(A, b, C, pObj, y, dymuprimal, S, dS, rhouser * (n + sqrt(n)));
@@ -159,7 +161,7 @@ for i = 1:maxiter
     nrmtk = abs(tau * kappa - muHSD);
     dObj = b' * y / tau;
     fprintf("%3d  %10.2e  %10.2e  %8.2e  %8.2e  %8.2e  %8.2e  %8.2e  %-8s\n",...
-        i, pObj, dObj, nrmtk, muprimal, muHSD, step, delta, newub);
+        i, pObj, dObj, nrmtk, muprimal, pinfeas, step, delta, newub);
     
     if pObj < dObj && isfirst
         pObj = 1e+10 + dObj;

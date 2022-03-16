@@ -13,7 +13,9 @@ end % End for
 
 for i = 1:m
     pscaler(i) = sqrt(nnormarray(i) * abs(b(i)));
-
+    
+    pscaler(i) = 1;
+    
     if pscaler(i) == 0
         pscaler(i) = 1;
     end % End if 

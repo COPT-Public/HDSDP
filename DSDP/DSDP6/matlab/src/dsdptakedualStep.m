@@ -23,7 +23,7 @@ while alpha > 1e-08
    % Snew = S + alpha * dS;
    L = dsdpIspsd(Snew);
    if ~ L
-       alpha = alpha / 3;
+       alpha = alpha * 0.8;
        continue;
    end % End if 
    
@@ -41,7 +41,7 @@ while alpha > 1e-08
        end % End if 
    end % End if 
    
-   alpha = alpha * 0.3;
+   alpha = alpha * 0.8;
    
 end % End while
 

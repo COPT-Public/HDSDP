@@ -23,7 +23,7 @@ delta = sqrt(delta);
 
 if verifypfeas
     if dsdpIspsd(- Ry + C * (tau - dtaudelta) - dsdpgetATy(A, y - dydelta))
-        kappadelta = mu * tau^-2 * (tau - dtaudelta);
+        kappadelta = mu * (1 / tau - dtaudelta / (tau^2));
         pObj = dObj - kappadelta;
     else
         pObj = inf;

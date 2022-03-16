@@ -53,8 +53,8 @@ else
     suhat = su + 0.95 * alphap * dus;
     % assert(dsdpIspsd(Shat));
     dS = - alphap * dsdpgetATy(A, dy1) / muk;
-    dls = - alphap * dy1 / muk;
-    dus = alphap * dy1 / muk;
+    dls = alphap * dy1 / muk;
+    dus = - alphap * dy1 / muk;
     alphamu = dsdpgetalpha(Shat, dS);
     alphamu1 = -1 / min(dls ./ slhat);
     alphamu2 = -1 / min(dus ./ suhat);

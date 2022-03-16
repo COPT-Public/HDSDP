@@ -66,7 +66,7 @@ for i = 1:maxiter
     if dsdpIspsd(backwardnewton)
         ismufeas = true;
         reason = "DSDP_PRIMAL_DUAL_FEASIBLE";
-        muub = muprimal * (dymuprimal' * asinv + n);
+        muub = muprimal * (dymuprimal' * asinv + n + 2 * m);
         pObj = dObj + muub;
         muub = muub / n;
         mulb = muub / rhouser;
@@ -75,14 +75,14 @@ for i = 1:maxiter
         xmaker{2} = dymuprimal;
         xmaker{3} = muprimal;
     else
-        muub = (pObj - dObj) / n;
+        muub = (pObj - dObj) / (n + 2 * m);
         mulb = muub / rhouser;
         newub = "";
     end % End if
     
     % Select new mu
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-    newmu = dsdpselectMu(A, S, muprimal, dymuprimal, dy1, backwardnewton, ismufeas, (pObj - dObj) / n);
+    newmu = dsdpselectMu(A, S, muprimal, dymuprimal, dy1, backwardnewton, ismufeas, (pObj - dObj) / (n + 2 * m));
     muprimal = min(newmu, muub);
     muprimal = max(muprimal, mulb);
     

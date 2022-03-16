@@ -150,7 +150,7 @@ for i = 1:maxiter
     
 end % End for
 
-[y, S] = dinfeaspotrdc(A, b, C * tau, y, S, sparse(n, n), M, d2 * tau, mu, 12);
+% [y, S] = dinfeaspotrdc(A, b, C * tau, y, S, sparse(n, n), M, d2 * tau, mu, 12);
 
 iter = i;
 
