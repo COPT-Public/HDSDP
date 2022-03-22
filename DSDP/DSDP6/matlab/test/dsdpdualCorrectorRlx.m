@@ -1,4 +1,4 @@
-function [y, S, mu] = dsdpdualCorrector(A, b, C, y, S, M, dy1, mu, ncorr, delta, rho)
+function [y, S, mu] = dsdpdualCorrectorRlx(A, b, C, y, S, M, dy1, mu, ncorr, delta, rho)
 % Implement the dual corrector for DSDP
 
 if ncorr == 0
@@ -8,6 +8,7 @@ end % End if
 m = length(y);
 
 [n, ~] = size(S);
+n = n + 2 * m;
 dy2 = zeros(m, 1);
 bTdy1 = b' * dy1;
 
@@ -22,15 +23,21 @@ for k = 1:ncorr
         dy2(i) = trace(ASinv);
     end % End for
     
+    sl = y + 1e+07;
+    su = 1e+07 - y;
+    
+    dy2 = dy2 - sl.^-2 + su.^-2;
+    
     dy2 = M \ dy2;
     bTdy2 = b' * dy2;
     
     if bTdy1 > 0 && bTdy2 > 0
-        mu = min(mu, (bTdy1 / bTdy2) * muold);
-        mu = mu * n / (n + sqrt(n));
+        mu = min(mu, (bTdy1 / bTdy2));
     end % End if
     
-    oldmerit = dsdpgetMeritValue(b, y, mu, L);
+    mu = mu * n / (n + sqrt(n));
+    
+    oldmerit = dsdpgetMeritValueRlx(b, y, mu, L);
     
     dycorr = dy1 / mu - dy2;
     bTdycorr = b' * dycorr;
@@ -56,7 +63,7 @@ for k = 1:ncorr
             continue;
         end % End try
         
-        newmerit = dsdpgetMeritValue(b, ynew, mu, L);
+        newmerit = dsdpgetMeritValueRlx(b, ynew, mu, L);
         
         anum = 2 * (newmerit - oldmerit + bTdycorr * alpha) / (alpha^2);
         bnum = bTdycorr;

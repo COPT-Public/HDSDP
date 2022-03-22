@@ -153,7 +153,9 @@ for i = 1:maxiter
         end % End if
     end % End if
     
-    [y, S, muprimal] = dsdpdualCorrector(A, b, C, y, S, M, dy1, muprimal, ncorr, delta, rhouser);
+    [y, S, muprimal] = dsdpdualCorrectorRlx(A, b, C, y, S, M, dy1, muprimal, ncorr, delta, rhouser);
+    sl = y - l;
+    su = u - y;
     
     ncorr = dsdpParam{27};
     
