@@ -1,6 +1,8 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <math.h>
+#include <string.h>
+#include "sparsemat.h"
 #include "dsdphsd.h"
 #include "dsdppardiso.h"
 
@@ -8,143 +10,127 @@
 #define IFORMAT ID
 #define MKL_INT DSDP_INT
 
-extern DSDP_INT test_pardiso(void) {
+void set_eye(double *x) {
+    memset(x, 0, sizeof(double) * 16);
+    for (int i = 0; i < 4; ++i) {
+        x[i * 4 + i] = 1.0;
+    }
+}
 
-    /* Matrix data. */
-    MKL_INT n = 8;
-    MKL_INT ia[9] = { 1, 5, 8, 10, 12, 15, 17, 18, 19};
-    MKL_INT ja[18] =
-    { 1,    3,       6, 7,
-         2, 3,    5,
-            3,             8,
-               4,       7,
-                  5, 6, 7,
-                     6,    8,
-                        7,
-                           8
-    };
-    double a[18] =
-    { 7.0,      1.0,           2.0, 7.0,
-          -4.0, 8.0,      2.0,
-                1.0,                     5.0,
-                     7.0,           9.0,
-                          5.0, 1.0, 5.0,
-                              -1.0,      5.0,
-                                   11.0,
-                                         5.0
-    };
-    MKL_INT mtype = -2;       /* Real symmetric matrix */
-    /* RHS and solution vectors. */
-    double b[8], x[8];
-    MKL_INT nrhs = 1;     /* Number of right hand sides. */
-    /* Internal solver memory pointer pt, */
-    /* 32-bit: int pt[64]; 64-bit: long int pt[64] */
-    /* or void *pt[64] should be OK on both architectures */
-    void *pt[64];
-    /* Pardiso control parameters. */
-    MKL_INT iparm[64];
-    MKL_INT maxfct, mnum, phase, error, msglvl;
-    /* Auxiliary variables. */
-    MKL_INT i;
-    double ddum;          /* Double dummy */
-    MKL_INT idum;         /* Integer dummy. */
-/* -------------------------------------------------------------------- */
-/* .. Setup Pardiso control parameters. */
-/* -------------------------------------------------------------------- */
-    for ( i = 0; i < 64; i++ )
-    {
-        iparm[i] = 0;
-    }
-    iparm[0] = 1;         /* No solver default */
-    iparm[1] = 2;         /* Fill-in reordering from METIS */
-    iparm[3] = 0;         /* No iterative-direct algorithm */
-    iparm[4] = 0;         /* No user fill-in reducing permutation */
-    iparm[5] = 0;         /* Write solution into x */
-    iparm[6] = 0;         /* Not in use */
-    iparm[7] = 2;         /* Max numbers of iterative refinement steps */
-    iparm[8] = 0;         /* Not in use */
-    iparm[9] = 13;        /* Perturb the pivot elements with 1E-13 */
-    iparm[10] = 1;        /* Use nonsymmetric permutation and scaling MPS */
-    iparm[11] = 0;        /* Not in use */
-    iparm[12] = 0;        /* Maximum weighted matching algorithm is switched-off (default for symmetric). Try iparm[12] = 1 in case of inappropriate accuracy */
-    iparm[13] = 0;        /* Output: Number of perturbed pivots */
-    iparm[14] = 0;        /* Not in use */
-    iparm[15] = 0;        /* Not in use */
-    iparm[16] = 0;        /* Not in use */
-    iparm[17] = -1;       /* Output: Number of nonzeros in the factor LU */
-    iparm[18] = -1;       /* Output: Mflops for LU factorization */
-    iparm[19] = 0;        /* Output: Numbers of CG Iterations */
-    maxfct = 1;           /* Maximum number of numerical factorizations. */
-    mnum = 1;         /* Which factorization to use. */
-    msglvl = 1;           /* Print statistical information in file */
-    error = 0;            /* Initialize error flag */
-/* -------------------------------------------------------------------- */
-/* .. Initialize the internal solver memory pointer. This is only */
-/* necessary for the FIRST call of the PARDISO solver. */
-/* -------------------------------------------------------------------- */
-    for ( i = 0; i < 64; i++ )
-    {
-        pt[i] = 0;
-    }
-/* -------------------------------------------------------------------- */
-/* .. Reordering and Symbolic Factorization. This step also allocates */
-/* all memory that is necessary for the factorization. */
-/* -------------------------------------------------------------------- */
-    phase = 11;
-    pardiso (pt, &maxfct, &mnum, &mtype, &phase,
-             &n, a, ia, ja, &idum, &nrhs, iparm, &msglvl, &ddum, &ddum, &error);
-    if ( error != 0 )
-    {
-        printf ("\nERROR during symbolic factorization: " IFORMAT, error);
-        exit (1);
-    }
-    printf ("\nReordering completed ... ");
-    printf ("\nNumber of nonzeros in factors = " IFORMAT, iparm[17]);
-    printf ("\nNumber of factorization MFLOPS = " IFORMAT, iparm[18]);
-/* -------------------------------------------------------------------- */
-/* .. Numerical factorization. */
-/* -------------------------------------------------------------------- */
-    phase = 22;
-    pardiso (pt, &maxfct, &mnum, &mtype, &phase,
-             &n, a, ia, ja, &idum, &nrhs, iparm, &msglvl, &ddum, &ddum, &error);
-    if ( error != 0 )
-    {
-        printf ("\nERROR during numerical factorization: " IFORMAT, error);
-        exit (2);
-    }
-    printf ("\nFactorization completed ... ");
-/* -------------------------------------------------------------------- */
-/* .. Back substitution and iterative refinement. */
-/* -------------------------------------------------------------------- */
-    phase = 33;
-    iparm[7] = 2;         /* Max numbers of iterative refinement steps. */
-    /* Set right hand side to one. */
-    for ( i = 0; i < n; i++ )
-    {
-        b[i] = 1;
-    }
-    pardiso (pt, &maxfct, &mnum, &mtype, &phase,
-             &n, a, ia, ja, &idum, &nrhs, iparm, &msglvl, b, x, &error);
-    if ( error != 0 )
-    {
-        printf ("\nERROR during solution: " IFORMAT, error);
-        exit (3);
-    }
-    printf ("\nSolve completed ... ");
-    printf ("\nThe solution of the system is: ");
-    for ( i = 0; i < n; i++ )
-    {
-        printf ("\n x [" IFORMAT "] = % f", i, x[i]);
-    }
-    printf ("\n");
-/* -------------------------------------------------------------------- */
-/* .. Termination and release of memory. */
-/* -------------------------------------------------------------------- */
-    phase = -1;           /* Release internal memory. */
-    pardiso (pt, &maxfct, &mnum, &mtype, &phase,
-             &n, &ddum, ia, ja, &idum, &nrhs,
-             iparm, &msglvl, &ddum, &ddum, &error);
-    return 0;
 
+
+int test_pardiso(void) {
     
+    int          n = 4;
+    
+    /*
+     A =
+
+        0.331829000000000                   0                   0  -0.000157649000000
+                        0   0.033182900000000                   0  -0.022505800000000
+                        0                   0   0.331829000000000   0.022470700000000
+       -0.000157649000000  -0.022505800000000   0.022470700000000   0.580879000000000
+    */
+    int      Ap[5] = {0, 4, 7, 9, 10};
+    int      Ai[10] = {0, 1, 2, 3, 1, 2, 3, 2, 3, 3};
+    double   Ax[10] = {0.331829, 0.0, 0.0, -0.000157649, 0.03318289,
+                      0.0, -0.022505758, 0.331829, 0.0224707, 0.580879};
+    double  eye[16] = {1.0, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0,
+                       0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 0.0, 1.0};
+    double  aux[16] = {1.0, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0,
+                       0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 0.0, 1.0};
+    double Linv[16] = {0.0};
+    int    perm[4] = {0, 1, 2, 3};
+    
+    int maxfct  = 1; // Maximum number of factors
+    int mnum    = 1; // The matrix used for the solution phase
+    int mtype   = 2; // Real and symmetric positive definite
+    int msglvl  = 0; // Print information
+    int idummy  = 0; // Dummy variable for taking up space
+    int phs12   = 12;
+    int phs331  = 331;
+    int phs33   = 33;
+    int phsfree = -1;
+    int error   = 0;
+    
+    void *pdsWorker[64];
+    memset(pdsWorker, 0, sizeof(void *) * 64);
+    
+    int params[64] = {
+        
+        1, /* Non-default value */ 3, /* P Nested dissection */ 0, /* Reserved          */
+        0, /* No CG             */ 2, /* No user permutation */ 0, /* No overwriting    */
+        0, /* Refinement report */ 0, /* Auto ItRef step     */ 0, /* Reserved          */
+        8, /* Perturb           */ 0, /* Disable scaling     */ 0, /* No transpose      */
+        0, /* Disable matching  */ 0, /* Report on pivots    */ 0, /* Output            */
+        0, /* Output            */ 0, /* Output              */-1, /* No report         */
+        0, /* No report         */ 0, /* Output              */ 0, /* Pivoting          */
+        0, /* nPosEigVals       */ 0, /* nNegEigVals         */ 0, /* Classic factorize */
+        0,                         0,                           1, /* Matrix checker    */
+        0,                         0,                           0,
+        0,                         0,                           0,
+        0,                         1, /* 0-based solve       */ 0,
+        0,                         0,                           0,
+        0,                         0,                           0,
+        0,                         0,                           0,
+        0,                         0,                           0,
+        0,                         0,                           0,
+        0,                         0,                           0,
+        0,                         0, /* No diagonal         */ 0,
+        0,                         0,                           0,
+        0,                         0,                           0,
+        0
+    };
+    
+    pardiso(pdsWorker, &maxfct, &mnum, &mtype, &phs12, &n,
+            Ax, Ap, Ai, perm, &idummy, params, &msglvl,
+            eye, aux, &error);
+    
+    pardiso(pdsWorker, &maxfct, &mnum, &mtype, &phs331, &n,
+            Ax, Ap, Ai, &idummy, &n, params, &msglvl,
+            eye, Linv, &error);
+    
+    
+    
+    for (int i = 0; i < n; ++i) {
+        // printf("Row %d: ", i);
+        for (int j = 0; j < n; ++j) {
+            printf("%20.20e, ", Linv[i + n * j]);
+        }
+        printf("\n");
+    }
+    
+    double tmp; printf("\n \n Linv^T * L^-T: \n");
+    for (int i = 0, j, k; i < 4; ++i) {\
+        // printf("Row %d: ", i);
+        for (j = 0; j < 4; ++j) {
+            tmp = 0.0;
+            for (k = 0; k < 4; ++k) {
+                tmp += Linv[i * 4 + k] * Linv[j * n + k];
+            }
+            printf("%20.20e, ", tmp);
+        }
+        printf("\n");
+    }
+    
+    set_eye(eye);
+    pardiso(pdsWorker, &maxfct, &mnum, &mtype, &phs33, &n,
+            Ax, Ap, Ai, &idummy, &n, params, &msglvl,
+            eye, Linv, &error);
+    
+    printf("\n \n Sinv: \n");
+    for (int i = 0; i < n; ++i) {
+        // printf("Row %d: ", i);
+        for (int j = 0; j < n; ++j) {
+            printf("%20.20e, ", Linv[i + n * j]);
+        }
+        printf("\n");
+    }
+    
+    
+    pardiso(pdsWorker, &maxfct, &mnum, &mtype, &phsfree, &n,
+            NULL, NULL, NULL, &idummy, &idummy, params, &msglvl,
+            NULL, NULL, &error);
+    
+    return error;
 }

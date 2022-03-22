@@ -27,6 +27,7 @@ DSDP_INT test_dense(void);
 DSDP_INT test_pardiso(void);
 DSDP_INT test_presolve(void);
 DSDP_INT test_feast(void);
+DSDP_INT test_lanczos(void);
 
 #ifdef __cplusplus
 }

@@ -15,6 +15,7 @@ static DSDP_INT setupSDPSchur( HSDSolver *dsdpSolver ) {
         return retcode;
     }
     
+    dsdpSolver->schurmu = dsdpSolver->mu;
     retcode = DSDPSchurSetup(dsdpSolver->M);
     dsdpSolver->iterProgress[ITER_SCHUR] = TRUE;
     return retcode;
@@ -217,31 +218,33 @@ static DSDP_INT schurCGSetup( HSDSolver *dsdpSolver ) {
     
     // Set parameters
     if (dsdpSolver->mu > 1.0) {
-        tol = 1e-02;
-    } else if (dsdpSolver->mu > 1e-02) {
-        tol = 1e-03;
-    } else if (dsdpSolver->mu > 1e-05){
         tol = 1e-04;
-    } else if (dsdpSolver->mu > 1e-07) {
+    } else if (dsdpSolver->mu > 1e-02) {
         tol = 1e-05;
-    } else {
+    } else if (dsdpSolver->mu > 1e-05){
         tol = 1e-06;
+    } else if (dsdpSolver->mu > 1e-07) {
+        tol = 1e-07;
+    } else {
+        tol = 1e-08;
     }
     
-//    cgsolver->status = CG_STATUS_INDEFINITE;
+    
+    cgsolver->status = CG_STATUS_INDEFINITE;
     // dsdpCGSetPreReuse(cgsolver, 0);
-    dsdpCGSetTol(cgsolver, tol);
     
     if (dsdpSolver->m > 20000) {
-        cgiter = 500;
+        cgiter = 500; tol *= 10.0;
     } else if (dsdpSolver->m > 10000) {
-        cgiter = 300;
+        cgiter = 400; tol *= 1.2;
     } else if (dsdpSolver->m > 5000) {
-        cgiter = 150;
+        cgiter = 250; tol *= 1.1;
     } else {
-        dsdpCGSetMaxIter(cgsolver, MAX(dsdpSolver->m / 50, 20));
+        cgiter = MAX(dsdpSolver->m / 50, 30);
     }
     
+    dsdpCGSetTol(cgsolver, tol);
+    dsdpCGSetMaxIter(cgsolver, cgiter);
     dsdpCGprepareP(cgsolver);
     
     return retcode;
@@ -298,7 +301,7 @@ static DSDP_INT cgSolveCheck( CGSolver *cgSolver, vec *b ) {
         if (cgSolver->nfailed >= 5) { dsdpCGSetPreReuse(cgSolver, MIN(cgSolver->reuse, 5));}
         if (cgSolver->nfailed >= 10) { dsdpCGSetPreReuse(cgSolver, MIN(cgSolver->reuse, 3));}
         if (cgSolver->nfailed >= 15) { dsdpCGSetPreReuse(cgSolver, MIN(cgSolver->reuse, 1));}
-        if (cgSolver->nfailed >= 20) { cgSolver->M->isillCond = TRUE;}
+        if (cgSolver->nfailed >= 50) { cgSolver->M->isillCond = TRUE;}
         
         // Restart from the last unfinished solution
         dsdpCGprepareP(cgSolver);

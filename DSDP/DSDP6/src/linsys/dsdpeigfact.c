@@ -139,66 +139,47 @@ extern DSDP_INT factorizeSpecial( spsMat *A, double *eigvals, double *eigvecs, D
     // Check if the sparse matrix follows special pattern
     // Currently detect diagonal matrix and matrices with at most one entry per column
     DSDP_INT retcode = DSDP_RETCODE_OK;
-    DSDP_INT isDiag = TRUE, isElem1 = TRUE;
-    assert( A->dim );
-    DSDP_INT *Ap = A->p, *Ai = A->i, n = A->dim, nelem, idx;
+    DSDP_INT isDiag = TRUE, isElem1 = TRUE, nnz = A->nnz, n = A->dim;
+    
+    if (nnz > n) {
+        *isSpecial = FALSE; return retcode;
+    }
+    
+    memset(eigvals, 0, sizeof(double) * n);
+    DSDP_INT *Ai = A->i, *Aj = A->nzHash, idx, i, j, k;
     double *Ax = A->x;
     
-    // Stop if nnz is large
-    if (A->nnz > 100) {
-        *isSpecial = FALSE;
-        return retcode;
-    }
-    
-    for (DSDP_INT i = 0; i < n; ++i) {
-        nelem = Ap[i + 1] - Ap[i];
-        if (nelem > 1) {
-            isDiag = FALSE;
-            isElem1 = FALSE;
-            break;
-        } else if (nelem == 1 && isDiag) {
-            if (Ai[Ap[i]] != i) {
-                isDiag = FALSE;
-            }
-            if (A->nnz == Ap[i]) {
-                break;
-            }
+    for (k = 0; k < nnz; ++k) {
+        i = Ai[k]; j = Aj[k];
+        if (eigvals[i] || eigvals[j]) {
+            *isSpecial = FALSE; return retcode;
         }
+        if (i != j) {isDiag = FALSE;}
+        eigvals[i] = eigvals[j] = 1;
     }
     
-    if (isDiag || isElem1) {
-        *isSpecial = TRUE;
-    } else {
-        *isSpecial = FALSE;
-        return retcode;
-    }
-    
+    *isSpecial = TRUE;
     double *eigvec = NULL, tmp = sqrt(2.0) / 2;
+    memset(eigvals, 0, sizeof(double) * n);
+    memset(eigvecs, 0, sizeof(double) * n * n);
     
     if (isDiag) {
-        for (DSDP_INT i = 0; i < A->nnz; ++i) {
-            eigvec = &eigvecs[i * n]; idx = Ai[i];
-            eigvec[idx] = 1.0; eigvals[i] = Ax[i];
+        for (k = 0; k < A->nnz; ++k) {
+            eigvec = &eigvecs[k * n];
+            eigvec[Ai[k]] = 1.0; eigvals[k] = Ax[k];
         }
     } else if (isElem1) {
-        for (DSDP_INT k = 0, i, j, counter = 0; k < A->nnz; ++k) {
-            i = Ai[k]; j = A->nzHash[k];
-            eigvec = &eigvecs[counter * n];
-            
+        for (k = idx = 0; k < A->nnz; ++k) {
+            i = Ai[k]; j = Aj[k];
+            eigvec = eigvecs + idx * n;
             if (i == j) {
-                eigvec = eigvecs + counter * n;
-                eigvals[counter] = Ax[k]; counter += 1;
+                eigvals[idx] = Ax[k]; idx += 1;
             } else {
                 eigvec[j] = eigvec[i] = tmp;
-                eigvals[counter] = Ax[k]; counter += 1;
-                
-                if (counter >= n) {
-                    *isSpecial = FALSE; return retcode;
-                }
-                
+                eigvals[idx] = Ax[k]; idx += 1;
                 eigvec += n;
-                eigvec[i] =  tmp; eigvec[j] = -tmp;
-                eigvals[counter] = - Ax[k]; counter += 1;
+                eigvec[i] = tmp; eigvec[j] = -tmp;
+                eigvals[idx] = - Ax[k]; idx += 1;
             }
         }
     }

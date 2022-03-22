@@ -8,6 +8,7 @@
 #include "dsdpproxmeasure.h"
 #include "dsdplog.h"
 #include "dsdppfeascheck.h"
+#include "dsdpcorrector.h"
 
 static char etype[] = "DSDP Primal Feasibility Certificate";
 
@@ -78,9 +79,7 @@ extern DSDP_INT DSDPPFeasPhase( HSDSolver *dsdpSolver ) {
         
         newmu = MIN(newmu, muub);
         newmu = MAX(newmu, mulb);
-        
         dsdpSolver->mu = newmu;
-        // dsdpSolver->mu = MIN(newmu, dsdpSolver->mu);
         
         if (dsdpSolver->Pnrm < 0.1 &&
             dsdpSolver->eventMonitor[EVENT_PFEAS_FOUND]) {
@@ -95,11 +94,10 @@ extern DSDP_INT DSDPPFeasPhase( HSDSolver *dsdpSolver ) {
         // Potential reduction
         retcode = dualPotentialReduction(dsdpSolver); checkCode;
         // Corrector step
-        dsdpSolver->iterProgress[ITER_CORRECTOR] = TRUE;
+         retcode = dualCorrectorStep(dsdpSolver); checkCode;
+        // dsdpSolver->iterProgress[ITER_CORRECTOR] = TRUE;
         dsdpSolver->iterProgress[ITER_DECREASE_MU] = TRUE;
-        
         checkIterProgress(dsdpSolver, ITER_NEXT_ITERATION);
-
         time = my_clock() - start;
     }
     

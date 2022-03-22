@@ -44,6 +44,7 @@ extern DSDP_INT denseSpsTrace    ( dsMat *dAMat, spsMat *sBMat, double *trace   
 extern DSDP_INT denseDsTrace     ( dsMat *dAMat, dsMat *dBMat,  double *trace               );
 extern double   denseSinvASinv   ( const double *Sinv, dsMat *A, const double *ASinv        );
 extern double   denseDiagTrace   ( dsMat *dAMat, double diag                                );
+extern double   denseFullTrace   ( dsMat *dMat, double *S                                   );
 extern double   SinvDsSinv       ( const double *Sinv, double *aux, dsMat  *A, dsMat *SinvASinv );
 extern double   denseSinvSolve   ( const double *Sinv, dsMat *A, double *ASinv, double *asinv, double Ry );
 

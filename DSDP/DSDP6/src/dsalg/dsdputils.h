@@ -12,6 +12,7 @@ extern "C" {
 #endif
 
 /* Schur matrix set up */
+extern void     invertDualVars     ( HSDSolver *dsdpSolver );
 extern DSDP_INT getSinvASinv       ( HSDSolver *dsdpSolver, DSDP_INT blockid, DSDP_INT constrid,
                                      void *SinvASinv );
 extern DSDP_INT getTraceASinvASinv ( HSDSolver *dsdpSolver, DSDP_INT blockid, DSDP_INT constrid,

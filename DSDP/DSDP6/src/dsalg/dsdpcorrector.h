@@ -1,13 +1,23 @@
-//
-//  dsdpCorrector.h
-//  DSDP6
-//
-//  Created by 高文智 on 2022/3/16.
-//
+#ifndef dsdpcorrector_h
+#define dsdpcorrector_h
 
-#ifndef dsdpCorrector_h
-#define dsdpCorrector_h
+/* Implement Dual corrector step in DSDP */
+#include "dsdphsd.h"
+#include "dsdpdata.h"
+#include "structs.h"
+#include "dsdpsolver.h"
+#include "hsd.h"
 
-#include <stdio.h>
+#ifdef __cplusplus
+extern "C" {
+#endif
+
+extern DSDP_INT dualCorrectorStep( HSDSolver *dsdpSolver );
+
+#ifdef __cplusplus
+}
+#endif
+
+
 
 #endif /* dsdpCorrector_h */

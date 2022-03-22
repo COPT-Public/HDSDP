@@ -204,8 +204,7 @@ extern DSDP_INT denseMatRscale( dsMat *dXMat, double r ) {
     
     if (dXMat->factor) {
         rkMatRscale(dXMat->factor, r);
-    }
-    
+    }   
     return retcode;
 }
 
@@ -294,7 +293,7 @@ extern DSDP_INT denseSpsTrace( dsMat *dAMat, spsMat *sBMat, double *trace ) {
     assert( dAMat->dim == sBMat->dim );
     
     DSDP_INT n = dAMat->dim;
-    double *A = dAMat->array, *Bx = sBMat->x, t = 0.0, tmp = 0.0;
+    double *A = dAMat->array, *Bx = sBMat->x, tmp = 0.0;
     DSDP_INT i, j, k, nnz = sBMat->nnz, *Bp = sBMat->p, *Bi = sBMat->i;
     *trace = 0.0;
     
@@ -318,29 +317,7 @@ extern DSDP_INT denseSpsTrace( dsMat *dAMat, spsMat *sBMat, double *trace ) {
         *trace *= 2; return retcode;
     }
     
-    for (i = 0; i < n; ++i) {
-        k = Bp[i];
-        // The sparse column is empty
-        if (k == Bp[i + 1]) {
-            if (k == nnz) {
-                break;
-            } else {
-                continue;
-            }
-        }
-        if (Bi[k] == i) {
-            tmp = 0.5 * Bx[k] * packIdx(A, n, Bi[k], i);
-        } else {
-            tmp = Bx[k] * packIdx(A, n, Bi[k], i);
-        }
-        for (k = Bp[i] + 1; k < Bp[i + 1]; ++k) {
-            tmp += Bx[k] * packIdx(A, n, Bi[k], i);
-        }
-        t += tmp;
-    }
-    
-    *trace = 2.0 * t;
-    return retcode;
+    assert( FALSE ); return retcode;
 }
 
 extern DSDP_INT denseDsTrace( dsMat *dAMat, dsMat *dBMat, double *trace ) {
@@ -450,13 +427,19 @@ extern double denseDiagTrace( dsMat *dAMat, double diag ) {
     // Compute trace( A * diag * I ) = diag * trace( A ). Used for Ry
     DSDP_INT n = dAMat->dim, i, idx = 0;
     double *array = dAMat->array, mattrace = 0.0;
-    
-    for (i = 0; i < n; ++i) {
-        mattrace += array[idx];
-        idx += n - i;
-    }
-    
+    for (i = 0; i < n; ++i) { mattrace += array[idx]; idx += n - i; }
     return (diag * mattrace);
+}
+
+extern double denseFullTrace( dsMat *dMat, double *S ) {
+    // Compute the inner product between a dense and a full dense matrix
+    register double res = 0.0, *array = dMat->array, *s = S;
+    register DSDP_INT i; DSDP_INT n = dMat->dim, k;
+    for (i = 0; i < n; ++i) {
+        k = n - i; res += ddot(&k, array, &one, s, &one);
+        array += n - i; s += n + 1; res -= 0.5 * array[0] * S[0];
+    }
+    return (2.0 * res);
 }
 
 /* Utilities */
@@ -538,8 +521,7 @@ extern void denseMatGetdiag( dsMat *dMat, vec *diag ) {
     DSDP_INT n = dMat->dim, i, idx = 0;
     double *x = diag->x, *array = dMat->array;
     for (i = 0; i < n; ++i) {
-        x[i] = array[idx];
-        idx += n - i;
+        x[i] = array[idx]; idx += n - i;
     }
 }
 

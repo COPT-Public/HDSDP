@@ -95,6 +95,8 @@ static DSDP_INT DSDPIInit( HSDSolver *dsdpSolver ) {
     // Step matrix
     dsdpSolver->dS     = NULL;
     dsdpSolver->Scker  = NULL;
+    
+    dsdpSolver->lczSolver = NULL;
     dsdpSolver->spaux  = NULL;
     dsdpSolver->dsaux  = NULL;
     dsdpSolver->rkaux  = NULL;
@@ -143,6 +145,7 @@ static DSDP_INT DSDPIAlloc( HSDSolver *dsdpSolver ) {
     DSDP_INT nblock = dsdpSolver->nBlock;
     
     dsdpSolver->sdpData   = (sdpMat  **) calloc(nblock, sizeof(sdpMat *));
+    dsdpSolver->lczSolver = (DSDPLanczos **) calloc(nblock, sizeof(DSDPLanczos *));
     dsdpSolver->lpData    = (lpMat    *) calloc(1,      sizeof(lpMat   ));
     dsdpSolver->lpObj     = (vec      *) calloc(1,      sizeof(vec     ));
     dsdpSolver->M         = (DSDPSchur*) calloc(1,      sizeof(DSDPSchur));
@@ -153,7 +156,9 @@ static DSDP_INT DSDPIAlloc( HSDSolver *dsdpSolver ) {
     
     for (DSDP_INT i = 0; i < nblock; ++i) {
         dsdpSolver->sdpData[i] = (sdpMat *) calloc(1, sizeof(sdpMat));
-        retcode = sdpMatInit(dsdpSolver->sdpData[i]); checkCode;
+        sdpMatInit(dsdpSolver->sdpData[i]);
+        dsdpSolver->lczSolver[i] = (DSDPLanczos *) calloc(1, sizeof(DSDPLanczos));
+        dsdpLanczosInit(dsdpSolver->lczSolver[i]);
     }
     
     return retcode;
@@ -204,8 +209,7 @@ static DSDP_INT DSDPIAllocIter( HSDSolver *dsdpSolver ) {
     dsdpSolver->x = vecIter;
     retcode = vec_init(vecIter); checkCode;
     retcode = vec_alloc(vecIter, dsdpSolver->lpDim); checkCode;
-    
-     */
+    */
     
     // Allocate asinv
     dsdpSolver->asinv = (vec *) calloc(1, sizeof(vec));
@@ -272,11 +276,11 @@ static DSDP_INT DSDPIAllocIter( HSDSolver *dsdpSolver ) {
     
     for (DSDP_INT i = 0; i < nblock; ++i) {
         dim = dsdpSolver->sdpData[i]->dimS;
+        retcode = dsdpLanczosAlloc(dsdpSolver->lczSolver[i], dim); checkCode;
         dsdpSolver->spaux[i] = (spsMat *) calloc(1, sizeof(spsMat));
         dsdpSolver->Scker[i] = (spsMat *) calloc(1, sizeof(spsMat));
         dsdpSolver->dsaux[i] = (dsMat  *) calloc(1, sizeof(dsMat));
         dsdpSolver->rkaux[i] = (rkMat  *) calloc(1, sizeof(rkMat));
-        
         retcode = spsMatInit(dsdpSolver->spaux[i]); checkCode;
         retcode = spsMatAlloc(dsdpSolver->spaux[i], dim); checkCode;
         retcode = denseMatInit(dsdpSolver->dsaux[i]); checkCode;
@@ -370,46 +374,30 @@ static DSDP_INT DSDPIFreeAlgIter( HSDSolver *dsdpSolver ) {
         DSDP_FREE(dsdpSolver->symS[i]);
     }
     DSDP_FREE(dsdpSolver->symS);
-
-    // s
-    retcode = vec_free(dsdpSolver->s); checkCode;
+    
+    retcode = vec_free(dsdpSolver->s);
     DSDP_FREE(dsdpSolver->s);
-    
-    // x
-    retcode = vec_free(dsdpSolver->x); checkCode;
+    retcode = vec_free(dsdpSolver->x);
     DSDP_FREE(dsdpSolver->x);
-    
-    // asinv
-    retcode = vec_free(dsdpSolver->asinv); checkCode;
+    retcode = vec_free(dsdpSolver->asinv);
     DSDP_FREE(dsdpSolver->asinv);
-    
-    // Msdp
     retcode = denseMatFree(dsdpSolver->Msdp);
     DSDP_FREE(dsdpSolver->Msdp);
-    
-    // CGSolver
     retcode = dsdpCGFree(dsdpSolver->cgSolver);
     DSDP_FREE(dsdpSolver->cgSolver);
-
-    // Mdiag
     retcode = vec_free(dsdpSolver->Mdiag);
     DSDP_FREE(dsdpSolver->Mdiag);
+    retcode = vec_free(dsdpSolver->u );
+    retcode = vec_free(dsdpSolver->d1);
+    retcode = vec_free(dsdpSolver->d12);
+    retcode = vec_free(dsdpSolver->d2);
+    retcode = vec_free(dsdpSolver->d3);
+    retcode = vec_free(dsdpSolver->d4);
+    retcode = vec_free(dsdpSolver->y);
     
-    // u, d1, d2, d3, d4, yp
-    retcode = vec_free(dsdpSolver->u ); checkCode;
-    retcode = vec_free(dsdpSolver->d1); checkCode;
-    retcode = vec_free(dsdpSolver->d12); checkCode;
-    retcode = vec_free(dsdpSolver->d2); checkCode;
-    retcode = vec_free(dsdpSolver->d3); checkCode;
-    retcode = vec_free(dsdpSolver->d4); checkCode;
-    retcode = vec_free(dsdpSolver->y); checkCode;
-    
-    DSDP_FREE(dsdpSolver->u );
-    DSDP_FREE(dsdpSolver->d1);
-    DSDP_FREE(dsdpSolver->d12);
-    DSDP_FREE(dsdpSolver->d2);
-    DSDP_FREE(dsdpSolver->d3);
-    DSDP_FREE(dsdpSolver->d4);
+    DSDP_FREE(dsdpSolver->u ); DSDP_FREE(dsdpSolver->d1);
+    DSDP_FREE(dsdpSolver->d12); DSDP_FREE(dsdpSolver->d2);
+    DSDP_FREE(dsdpSolver->d3); DSDP_FREE(dsdpSolver->d4);
     DSDP_FREE(dsdpSolver->y);
 
     // dS
@@ -493,6 +481,7 @@ static DSDP_INT DSDPIFreeCleanUp( HSDSolver *dsdpSolver ) {
     dsdpSolver->dPotential = 0.0;  dsdpSolver->tau = 0.0;     dsdpSolver->kappa = 0.0;
     dsdpSolver->alpha = 0.0;       dsdpSolver->dtau = 0.0;    dsdpSolver->dkappa = 0.0;
     dsdpSolver->mumaker = 0.0;     dsdpSolver->insStatus = 0; dsdpSolver->solStatus = 0;
+    dsdpSolver->schurmu = 0.0;
     
     return retcode;
 }
@@ -526,8 +515,8 @@ static DSDP_INT DSDPIPresolve( HSDSolver *dsdpSolver ) {
     DSDPStatUpdate(stat, STAT_EIG_TIME, t);
     
     center = clock();
-    // retcode = preSDPPrimal(dsdpSolver); checkCode;
-    // retcode = preSDPDual(dsdpSolver); checkCode;
+//    retcode = preSDPPrimal(dsdpSolver); checkCode;
+//    retcode = preSDPDual(dsdpSolver); checkCode;
     t = (double) (clock() - center) / CLOCKS_PER_SEC;
     printf("| - Scaling completes in %g seconds \n", t);
     DSDPStatUpdate(stat, STAT_SCAL_TIME, t);

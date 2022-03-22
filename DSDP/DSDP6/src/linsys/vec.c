@@ -2,7 +2,7 @@
 #include "dsdplapack.h"
 #include "vec.h"
 
-#define CHECKVEC(x, y) assert( ((x)->dim == (y)->dim) && ((x) && (y)) )
+#define CHECKVEC(x, y)
 
 // Define constants involving Lapack and Blas
 static DSDP_INT one = 1;

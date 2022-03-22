@@ -10,6 +10,8 @@
 
 static char etype[] = "Step size computation";
 
+void spsMatExport( spsMat *A );
+
 static DSDP_INT getKappaTauStep( HSDSolver *dsdpSolver, double *kappatauStep ) {
     // Compute the maximum step size to take at kappa and tau
     DSDP_INT retcode = DSDP_RETCODE_OK;
@@ -82,7 +84,7 @@ static DSDP_INT getBlockSDPSStep( HSDSolver *dsdpSolver, DSDP_INT k, double *SkS
     // S + a * dS = L (I + a L^-1 dS L^-T) L^T
     DSDP_INT retcode = DSDP_RETCODE_OK;
     assert( k < dsdpSolver->nBlock );
-    retcode = dsdpGetAlpha(dsdpSolver->S[k], dsdpSolver->dS[k],
+    retcode = dsdpGetAlpha(dsdpSolver->lczSolver[k], dsdpSolver->S[k], dsdpSolver->dS[k],
                            dsdpSolver->spaux[k], SkStep);
     checkCode;
     
@@ -251,12 +253,13 @@ extern DSDP_INT selectMu( HSDSolver *dsdpSolver, double *newmu ) {
     
     DSDP_INT retcode = DSDP_RETCODE_OK;
     
-    double alpha = DSDP_INFINITY, alphap = 0.0, tmp = 1.0;
+    double alpha = DSDP_INFINITY, alphap = 0.0, tmp = 1000;
     
     if (dsdpSolver->eventMonitor[EVENT_PFEAS_FOUND]) {
         retcode = getPhaseBdS(dsdpSolver, -1.0 / dsdpSolver->mu, dsdpSolver->d1->x, 0.0);
         for (DSDP_INT i = 0; i < dsdpSolver->nBlock; ++i) {
-            dsdpGetAlpha(dsdpSolver->Scker[i], dsdpSolver->dS[i], dsdpSolver->spaux[i], &tmp);
+            dsdpGetAlpha(dsdpSolver->lczSolver[i], dsdpSolver->Scker[i],
+                         dsdpSolver->dS[i], dsdpSolver->spaux[i], &tmp);
             alpha = MIN(alpha, tmp);
         }
         
@@ -270,7 +273,8 @@ extern DSDP_INT selectMu( HSDSolver *dsdpSolver, double *newmu ) {
         retcode = getPhaseBdS(dsdpSolver, -1.0, dsdpSolver->b1->x, 0.0);
         // alphap = dsdpgetalpha(S, dS, 0.95 / 1.0);
         for (DSDP_INT i = 0; i < dsdpSolver->nBlock; ++i) {
-            dsdpGetAlpha(dsdpSolver->S[i], dsdpSolver->dS[i], dsdpSolver->spaux[i], &tmp);
+            dsdpGetAlpha(dsdpSolver->lczSolver[i], dsdpSolver->S[i],
+                         dsdpSolver->dS[i], dsdpSolver->spaux[i], &tmp);
             alpha = MIN(alpha, tmp);
         }
         
@@ -301,7 +305,7 @@ extern DSDP_INT selectMu( HSDSolver *dsdpSolver, double *newmu ) {
         
         tmp = DSDP_INFINITY;
         for (DSDP_INT i = 0; i < dsdpSolver->nBlock; ++i) {
-            dsdpGetAlpha(dsdpSolver->Scker[i], dsdpSolver->dS[i],
+            dsdpGetAlpha(dsdpSolver->lczSolver[i], dsdpSolver->Scker[i], dsdpSolver->dS[i],
                          dsdpSolver->spaux[i], &alpha);
             tmp = MIN(tmp, alpha);
         }
@@ -309,12 +313,10 @@ extern DSDP_INT selectMu( HSDSolver *dsdpSolver, double *newmu ) {
         tmp = MIN(vec_step(dsdpSolver->sl, dsdpSolver->d1,  alphap / dsdpSolver->mu), tmp);
         tmp = MIN(vec_step(dsdpSolver->su, dsdpSolver->d1, -alphap / dsdpSolver->mu), tmp);
         
-        if (tmp == DSDP_INFINITY) {
-            tmp = 1.0;
-        }
+        tmp = MIN(tmp, 1000.0);
         
         *newmu = (alphap * dsdpSolver->mu) / (1 + tmp) + \
-                  + (1 - alphap) * (dsdpSolver->pObjVal - dsdpSolver->dObjVal) / (dsdpSolver->n + dsdpSolver->m * 2);
+                  + (1 - alphap) * (dsdpSolver->pObjVal - dsdpSolver->dObjVal) / (dsdpSolver->n);
         
         // tmp = MIN(1, 0.97 * tmp); tmp = dsdpSolver->mu / (1.0 + alphap); alphap *= 0.6;
         // *newmu = alphap * tmp + (1.0 - alphap) * dsdpSolver->mu;
@@ -351,7 +353,10 @@ extern DSDP_INT dualPotentialReduction( HSDSolver *dsdpSolver ) {
         if (i == 0) {
             getCurrentyPotential(dsdpSolver, ytarget, rho, &newpotential, &inCone);
             if (!inCone) {
-                alpha *= 0.8;
+                alpha *= 0.8; bestalpha *= 0.8; --i;
+                if (alpha <= 1e-03) {
+                    break;
+                }
                 continue;
             }
         } else {

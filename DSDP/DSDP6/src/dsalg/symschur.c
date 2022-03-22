@@ -11,7 +11,7 @@ static DSDP_INT getScore( DSDP_INT *ranks, DSDP_INT *nnzs, DSDP_INT *perm,
                         double *M1M2, double *M1M5 ) {
     // Compute the estimated number of multiplications for technique M1 to M5
     
-    DSDP_INT i, j, k = perm[idx], npack = nsym(n);
+    DSDP_INT i, j, k = perm[idx]; //, npack = nsym(n);
     double d1, d2, d3, d4, d5, nsqr = n * n, ncbe = n * nsqr, sumnnz = 0.0, rsigma = ranks[k], best = SCHUR_M1;
     double m1m5 = 0.0, m1m2 = 0.0;
     // On exit, MX is set 10 * MX12 + M12345
@@ -112,7 +112,7 @@ static DSDP_INT schurBlockAnalysis( sdpMat *Adata, DSDP_INT *permk, DSDP_INT *MX
         M1M2 = FALSE;
     }
     
-    /* For Debugging purpose only */
+    // Sinv must be allocated for the corrector step
     M1M2 = FALSE;
     
     // Determine which strategy to use
@@ -134,6 +134,14 @@ static DSDP_INT schurBlockAnalysis( sdpMat *Adata, DSDP_INT *permk, DSDP_INT *MX
     return retcode;
 }
 
+static void schurMatSinvCleanup( DSDPSchur *M ) {
+    // Set up the inverse of matrices when necessary
+    for (DSDP_INT i = 0, j, n; i < M->nblock; ++i) {
+        n = M->Adata[i]->dimS; memset(M->Sinv[i], 0, sizeof(double) * n * n);
+        for (j = 0; j < n; ++j) { M->Sinv[i][j * n + j] = 1.0; }
+    }
+}
+
 static void schurMatCleanup( DSDPSchur *M ) {
     // Clean up the arrays related to the Schur matrix
     denseMatReset(M->M); vec_reset(M->asinv);
@@ -141,41 +149,14 @@ static void schurMatCleanup( DSDPSchur *M ) {
         vec_reset(M->asinvcsinv); vec_reset(M->asinvrysinv);
         *M->csinvrysinv = 0.0; *M->csinv = 0.0; *M->csinvcsinv = 0.0;
     }
-    // Set up the inverse of matrices when necessary
-    for (DSDP_INT i = 0, j, n; i < M->nblock; ++i) {
-        if (M->useTwo[i]) {
-            continue;
-        } else {
-            n = M->Adata[i]->dimS; memset(M->Sinv[i], 0, sizeof(double) * n * n);
-            for (j = 0; j < n; ++j) { M->Sinv[i][j * n + j] = 1.0; }
-        }
-    }
+    schurMatSinvCleanup(M);
 }
 
 static void schurMatGetSinv( DSDPSchur *M ) {
     // Compute inverse of the dual matrix when M3, M4 or M5 techniques are used
-    double maxdiag = 0.0; M->scaler = 1.0;
-    DSDP_INT n, nsqr, one = 1;
-    
-    // Compute S^-1 and scale it to improve numerical stability
+    M->scaler = 1.0;
     for (DSDP_INT i = 0; i < M->nblock; ++i) {
-        if (!M->useTwo[i]) {
-            spsMatInverse(M->S[i], M->Sinv[i], M->schurAux);
-            n = M->S[i]->dim;
-            /* for (DSDP_INT j = 0; j < n; ++j) {
-                    maxdiag = MAX(M->Sinv[i][j * n + j], maxdiag);
-               } */
-        }
-    }
-    
-    if (maxdiag > 1e+03 && (FALSE)) {
-        M->scaler = sqrt(maxdiag);
-        for (DSDP_INT i = 0; i < M->nblock; ++i) {
-            if (!M->useTwo[i]) {
-                n = M->S[i]->dim; nsqr = n * n;
-                drscl(&nsqr, &M->scaler, M->Sinv[i], &one);
-            }
-        }
+        spsMatInverse(M->S[i], M->Sinv[i], M->schurAux);
     }
 }
 
@@ -830,58 +811,37 @@ extern DSDP_INT DSDPSchurSetup( DSDPSchur *M ) {
     double d435 = 0.0, d445 = 0.0, d434 = 0.0, d412 = 0.0, d423 = 0.0;
     
     for (DSDP_INT i = 0; i < mpack; ++i) {
-        tmp = MM1[i] - MM2[i];
-        diff12 += tmp * tmp;
-        tmp = MM1[i] - MM3[i];
-        diff13 += tmp * tmp;
-        tmp = MM2[i] - MM3[i];
-        diff23 += tmp * tmp;
-        tmp = MM2[i] - MM5[i];
-        diff25 += tmp * tmp;
-        tmp = MM3[i] - MM5[i];
-        diff35 += tmp * tmp;
-        tmp = MM3[i] - MM4[i];
-        diff34 += tmp * tmp;
-        tmp = MM4[i] - MM5[i];
-        diff45 += tmp * tmp;
-        tmp = MM2[i] - MM4[i];
-        diff24 += tmp * tmp;
-        
+        tmp = MM1[i] - MM2[i]; diff12 += tmp * tmp;
+        tmp = MM1[i] - MM3[i]; diff13 += tmp * tmp;
+        tmp = MM2[i] - MM3[i]; diff23 += tmp * tmp;
+        tmp = MM2[i] - MM5[i]; diff25 += tmp * tmp;
+        tmp = MM3[i] - MM5[i]; diff35 += tmp * tmp;
+        tmp = MM3[i] - MM4[i]; diff34 += tmp * tmp;
+        tmp = MM4[i] - MM5[i]; diff45 += tmp * tmp;
+        tmp = MM2[i] - MM4[i]; diff24 += tmp * tmp;
     }
     
     for (DSDP_INT i = 0; i < m; ++i) {
-        tmp = asinvMM1[i] - asinvMM2[i];
-        asinv12 += tmp * tmp;
-        tmp = d4MM1[i] - d4MM2[i];
-        d412 += tmp * tmp;
-        
-        tmp = asinvMM3[i] - asinvMM5[i];
-        asinv35 += tmp * tmp;
-        tmp = d4MM3[i] - d4MM5[i];
-        d435 += tmp * tmp;
-        
-        tmp = asinvMM3[i] - asinvMM4[i];
-        asinv34 += tmp * tmp;
-        tmp = d4MM3[i] - d4MM2[i];
-        d434 += tmp * tmp;
-        
-        tmp = asinvMM4[i] - asinvMM5[i];
-        asinv45 += tmp * tmp;
-        tmp = d4MM4[i] - d4MM5[i];
-        d445 += tmp * tmp;
-        
-        tmp = asinvMM2[i] - asinvMM3[i];
-        asinv23 += tmp * tmp;
-        tmp = d4MM2[i] - d4MM3[i];
-        d423 += tmp * tmp;
+        tmp = asinvMM1[i] - asinvMM2[i]; asinv12 += tmp * tmp;
+        tmp = d4MM1[i] - d4MM2[i]; d412 += tmp * tmp;
+        tmp = asinvMM3[i] - asinvMM5[i]; asinv35 += tmp * tmp;
+        tmp = d4MM3[i] - d4MM5[i]; d435 += tmp * tmp;
+        tmp = asinvMM3[i] - asinvMM4[i]; asinv34 += tmp * tmp;
+        tmp = d4MM3[i] - d4MM2[i]; d434 += tmp * tmp;
+        tmp = asinvMM4[i] - asinvMM5[i]; asinv45 += tmp * tmp;
+        tmp = d4MM4[i] - d4MM5[i]; d445 += tmp * tmp;
+        tmp = asinvMM2[i] - asinvMM3[i]; asinv23 += tmp * tmp;
+        tmp = d4MM2[i] - d4MM3[i]; d423 += tmp * tmp;
     }
     
-    printf("------------------------------------------------------------------------\n");
+    printf("--------------------------------------------"
+           "---------------------------------------------------------\n");
     printf("| <A * S^-1>: 12 %e  35 %e  34 %e  45 %e  23 %e \n", asinv12, asinv35, asinv34, asinv45, asinv23);
     printf("| d4        : 12 %e  35 %e  34 %e  45 %e  23 %e \n", d412, d435, d434, d445, d423);
     printf("| Difference: 12 %e  13 %e  23 %e  25 %e   \n", diff12, diff13, diff23, diff25);
     printf("| Difference: 35 %e  34 %e  45 %e  24 %e   \n", diff35, diff34, diff45, diff24);
-    printf("------------------------------------------------------------------------\n");
+    printf("--------------------------------------------"
+           "---------------------------------------------------------\n");
     
     DSDP_FREE(MM1); DSDP_FREE(MM2); DSDP_FREE(MM3); DSDP_FREE(MM4); DSDP_FREE(MM5);
     
@@ -901,4 +861,33 @@ extern DSDP_INT DSDPSchurSetup( DSDPSchur *M ) {
     *M->csinv /= M->scaler;
     
     return retcode;
+}
+
+extern DSDP_INT asinvSetup( DSDPSchur *M ) {
+    // Set up asinv for the corrector step
+    vec *asinv = M->asinv; vec_reset(asinv);
+    schurMatSinvCleanup(M); schurMatGetSinv(M);
+    DSDP_INT m = M->m; double res = 0.0, *Sinv;
+    void *data;
+    
+    for (DSDP_INT blockid = 0, i = 0; blockid < M->nblock; ++blockid) {
+        Sinv = M->Sinv[blockid];
+        for (i = 0; i < m; ++i) {
+            data = (void *) M->Adata[blockid]->sdpData[i];
+            switch (M->Adata[blockid]->types[i]) {
+                case MAT_TYPE_ZERO  : continue; break;
+                case MAT_TYPE_SPARSE: res = spsFullTrace(data, Sinv); break;
+                case MAT_TYPE_DENSE : res = denseFullTrace(data, Sinv); break;
+                case MAT_TYPE_RANKK : res = r1MatFullTrace(((rkMat *) data)->data[0], Sinv, M->schurAux); break;
+                default             : assert( FALSE ); break;
+            }
+            asinv->x[i] += res;
+        }
+    }
+
+    
+    // Add the slack to it 
+    
+    
+    return DSDP_RETCODE_OK;
 }

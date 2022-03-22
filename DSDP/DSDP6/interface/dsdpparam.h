@@ -73,7 +73,7 @@ static double defaultDblParam[NUM_DBL_PARAM] = {
     1, // DBL_PARAM_INIT_BETA
     1e+10, // DBL_PARAM_INIT_MU
     1.0,   // DBL_PARAM_INIT_TAU
-    1, // DBL_PARAM_INIT_KAPPA
+    1.0, // DBL_PARAM_INIT_KAPPA
     0.75,  // DBL_PARAM_AALPHA
     1e+08, // DBL_PARAM_NRM_THRESH
     1e+08, // DBL_PARAM_INFEAS_THRESH

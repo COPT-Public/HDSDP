@@ -7,6 +7,7 @@
 #include "dsdpparam.h"
 #include "dsdpstats.h"
 #include "symschur.h"
+#include "dsdplanczos.h"
 
 #define IterStep 20
 #define nEvent   20
@@ -36,6 +37,7 @@ typedef struct {
     // Iterator
     double  pObjVal;      // Primal objective
     double  dObjVal;      // Dual objective
+    double  schurmu;      // Barrier when setting up the Schur matrix
     double  mu;           // Duality gap
     
     spsMat   **S;         // SDP dual iteration matrix
@@ -84,6 +86,7 @@ typedef struct {
     spsMat   **dS;        // SDP step matrix
     
     /* TODO: Remove spaux by applying Lanczos iterations */
+    DSDPLanczos **lczSolver; // Lanczos solver
     spsMat   **spaux;     // Used for maximum step computation
     dsMat    **dsaux;     // Used for Schur matrix setup
     rkMat    **rkaux;     // Use for Schur matrix setup

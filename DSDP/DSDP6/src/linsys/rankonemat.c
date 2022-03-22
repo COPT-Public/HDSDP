@@ -5,6 +5,9 @@
 
 // Define constants involving Lapack and Blas
 static DSDP_INT one = 1;
+static double done = 1.0;
+static double dzero = 0.0;
+static char uplolow = 'L';
 
 extern DSDP_INT r1MatInit( r1Mat *x ) {
     // Initialize rank one matrix
@@ -62,19 +65,8 @@ extern DSDP_INT r1denseSpsUpdate( spsMat *sAMat, double alpha, r1Mat *r1BMat ) {
 
 /* M2 Technique */
 extern double r1Matr1Trace( r1Mat *x, r1Mat *y ) {
-    
     // Compute the inner product of two rank one matrices
-    /* trace(A1 * A2) = trace( d1 * a1 * a1' * d2 * a2 * a2' )
-                      = d1 * d2 * (a1' * a2)^2
-      
-     y is assumed dense
-       ******************************************
-       *    Computationally critical routine    *
-       ******************************************
-     */
-    
-    double res = 0.0;
-    DSDP_INT n = x->dim;
+    double res = 0.0; DSDP_INT n = x->dim;
     if (x->nnz < 0.5 * n) {
         // Otherwise do sparse computation
         double *xdata = x->x, *ydata = y->x;
@@ -271,22 +263,29 @@ extern double r1Sinvsps( spsMat *A, r1Mat *B, double *Sinv ) {
 extern DSDP_INT r1MatdiagTrace( r1Mat *x, double diag, double *trace ) {
     // Compute trace(a * a' * diag * I) = diag * norm(a)^2
     DSDP_INT retcode = DSDP_RETCODE_OK;
-            
-    if (diag == 0.0) {
-        *trace = 0.0;
-        return retcode;
-    }
-
-    double res = 0.0;
-    retcode = r1MatFnorm(x, &res);
-
-    if (x->sign >= 0) {
-        *trace = diag * res;
-    } else {
-        *trace = - diag * res;
-    }
-    
+    if (diag == 0.0) { *trace = 0.0; return retcode; }
+    double res = 0.0; retcode = r1MatFnorm(x, &res);
+    *trace = (x->sign >= 0) ? diag * res : - diag * res;
     return retcode;
+}
+
+extern double r1MatFullTrace( r1Mat *x, double *S, double *aux ) {
+    register double res = 0.0, *xdata = x->x;
+    if (x->nnz < 0.6 * x->dim) {
+        DSDP_INT i, j, n = x->dim, *xi = x->nzIdx;
+        for (i = 0; i < x->nnz; ++i) {
+            for (j = 0; j < i; ++j) {
+                res += xdata[xi[i]] * xdata[xi[j]] * S[n * xi[i] + xi[j]];
+            }
+            res += 0.5 * xdata[xi[j]] * xdata[xi[j]] * S[n * xi[j] + xi[j]];
+        }
+        res = 2.0 * res;
+    } else {
+        dsymv(&uplolow, &x->dim, &done, S, &x->dim,
+              xdata, &one, &dzero, aux, &one);
+        res = ddot(&x->dim, aux, &one, xdata, &one);
+    }
+    return res;
 }
 
 extern DSDP_INT r1MatCountNnz( r1Mat *x ) {
@@ -332,23 +331,18 @@ extern DSDP_INT r1MatCountNnz( r1Mat *x ) {
 
 extern DSDP_INT r1MatFree( r1Mat *x ) {
     // Free the allocated memory in vec structure
-    
     if (x) {
-        assert( x->dim );
         x->sign = 0; x->dim  = 0; x->nnz = 0;
         DSDP_FREE(x->x); DSDP_FREE(x->nzIdx);
     }
-    
     return DSDP_RETCODE_OK;
 }
 
 extern DSDP_INT r1MatNormalize( r1Mat *x ) {
     
-    assert( x->dim );
     double nrm = dnrm2(&x->dim, x->x, &one);
     drscl(&x->dim, &nrm, x->x, &one);
     x->sign = x->sign * nrm * nrm;
-    
     return DSDP_RETCODE_OK;
 }
 
@@ -358,8 +352,7 @@ extern DSDP_INT r1MatFnorm( r1Mat *x, double *fnrm ) {
         double res = 0.0, *xdata = x->x;
         DSDP_INT idx, i, *nzidx = x->nzIdx;
         for (i = 0; i < x->nnz; ++i) {
-            idx = nzidx[i];
-            res += xdata[idx] * xdata[idx];
+            idx = nzidx[i]; res += xdata[idx] * xdata[idx];
         }
         *fnrm = res * fabs(x->sign);
     } else {

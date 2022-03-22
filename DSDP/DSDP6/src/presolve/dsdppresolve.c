@@ -447,7 +447,7 @@ static DSDP_INT preRankkEvRdcBlock( sdpMat *dataMat, DSDPStats *stat ) {
                 retcode = factorizeSpecial(spsdata, eigvals, eigvecs, &special);
                 if (!special) {
 #ifndef superDebug
-                    if (spsdata->nnz > 2 * n || n > 20) break;
+                if (spsdata->nnz > 2 * n || n > 20) break;
 #endif
                     retcode = factorizeSparseData(spsdata, -onenrm, eigvals, eigvecs);
                 }

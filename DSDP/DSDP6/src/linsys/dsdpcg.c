@@ -157,38 +157,6 @@ extern DSDP_INT dsdpCGSetPType( CGSolver *cgSolver, DSDP_INT pType ) {
     return DSDP_RETCODE_OK;
 }
 
-extern DSDP_INT dsdpCGprepareP( CGSolver *cgSolver ) {
-    
-    /* TODO: Necessary to try diagonal scaling every iteration ?*/
-    if (cgSolver->status == CG_STATUS_INDEFINITE) {
-        denseMatResetFactor(cgSolver->M);
-        denseMatFactorize(cgSolver->M);
-        return DSDP_RETCODE_OK;
-    }
-    
-    if (cgSolver->reuse == 0) {
-        cgSolver->status = CG_STATUS_INDEFINITE;
-    }
-    
-    // Prepare pre-conditioner in CG Solver
-    if (cgSolver->pType == CG_PRECOND_DIAG) {
-        return DSDP_RETCODE_OK;
-    } else {
-        // Reconstruct Cholesky pre-conditioner
-        if (cgSolver->nused >= cgSolver->reuse) {
-            denseMatResetFactor(cgSolver->M);
-            denseMatFactorize(cgSolver->M);
-            cgSolver->nused = 0;
-        } else {
-            cgSolver->nused += 1;
-        }
-        if (cgSolver->M->isillCond) {
-            cgSolver->status = CG_STATUS_INDEFINITE;
-        }
-    }
-    return DSDP_RETCODE_OK;
-}
-
 extern DSDP_INT dsdpCGGetStatus( CGSolver *cgSolver, DSDP_INT *status ) {
     *status = cgSolver->status;
     return DSDP_RETCODE_OK;
@@ -208,6 +176,41 @@ extern DSDP_INT dsdpCGSetPreReuse( CGSolver *cgSolver, DSDP_INT reuse ) {
 
 extern DSDP_INT dsdpCGResetPreReuse( CGSolver *cgSolver ) {
     cgSolver->nused = 0;
+    return DSDP_RETCODE_OK;
+}
+
+extern DSDP_INT dsdpCGprepareP( CGSolver *cgSolver ) {
+    
+    /* TODO: Necessary to try diagonal scaling every iteration ?*/
+    if (cgSolver->status == CG_STATUS_INDEFINITE) {
+        denseMatResetFactor(cgSolver->M);
+        denseMatFactorize(cgSolver->M);
+        return DSDP_RETCODE_OK;
+    }
+    
+    if (cgSolver->reuse == 0) {
+        cgSolver->status = CG_STATUS_INDEFINITE;
+    }
+    
+    // Prepare pre-conditioner in CG Solver
+    if (cgSolver->pType == CG_PRECOND_DIAG) {
+        return DSDP_RETCODE_OK;
+    } else if (cgSolver->pType == CG_PRECOND_CHOL && cgSolver->nused > cgSolver->reuse){
+        denseMatResetFactor(cgSolver->M);
+        denseMatFactorize(cgSolver->M);
+        dsdpCGResetPreReuse(cgSolver);
+    } else {
+        if (cgSolver->M->isillCond) {
+            cgSolver->status = CG_STATUS_INDEFINITE;
+            return DSDP_RETCODE_OK;
+        }
+        if (cgSolver->nused >= cgSolver->reuse) {
+            dsdpCGSetPType(cgSolver, CG_PRECOND_DIAG);
+        } else {
+            cgSolver->nused += 1;
+        }
+        
+    }
     return DSDP_RETCODE_OK;
 }
 

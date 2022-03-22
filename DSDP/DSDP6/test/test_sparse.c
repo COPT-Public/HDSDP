@@ -234,7 +234,7 @@ DSDP_INT test_sparse(void) {
     double lbd = 0.0;
     double delta = 0.0;
     spsMatScale(B, -1.0);
-    dsdpLanczos(data, B, &lbd, &delta);
+    
     
     // Vector solve
     memcpy(rhs->x, b, sizeof(double) * spsAdim);

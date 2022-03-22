@@ -36,22 +36,13 @@ static DSDP_INT getdTau( HSDSolver *dsdpSolver ) {
     
     DSDP_INT retcode = DSDP_RETCODE_OK;
     
-    vec *b1 = dsdpSolver->b1;
-    vec *b2 = dsdpSolver->b2;
-    vec *d1 = dsdpSolver->d1;
-    
-    double mu = dsdpSolver->mu;
-    double tau = dsdpSolver->tau;
-    double kappa = dsdpSolver->kappa;
-    double taudenom = 0.0;
-    double csinv = dsdpSolver->csinv;
-    double csinvcsinv = dsdpSolver->csinvcsinv;
-    double csinvrysinv = dsdpSolver->csinvrysinv;
+    vec *b1 = dsdpSolver->b1, *b2 = dsdpSolver->b2, *d1 = dsdpSolver->d1;
+    double mu = dsdpSolver->mu, tau = dsdpSolver->tau;
+    double kappa = dsdpSolver->kappa, taudenom = 0.0, csinv = dsdpSolver->csinv;
+    double csinvcsinv = dsdpSolver->csinvcsinv, csinvrysinv = dsdpSolver->csinvrysinv;
     
     vec_dot(b1, d1, &taudenom);
-    
     taudenom += mu * csinvcsinv + kappa / tau;
-    
     if (fabs(taudenom) < 1e-15) {
         dsdpSolver->dtau = 0.0;
     } else {

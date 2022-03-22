@@ -32,6 +32,7 @@ extern double   r1RySinv         ( r1Mat *B, double *Sinv, double *asinv, double
 extern double   r1Sinvsps        ( spsMat *A, r1Mat *B, double *Sinv );
 
 extern DSDP_INT r1MatdiagTrace   ( r1Mat *x, double diag, double *trace );
+extern double   r1MatFullTrace   ( r1Mat *x, double *S, double *aux );
 extern DSDP_INT r1MatCountNnz    ( r1Mat *x                   );
 extern DSDP_INT r1MatFree        ( r1Mat *x                   );
 extern DSDP_INT r1MatNormalize   ( r1Mat *x                   );

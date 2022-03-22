@@ -20,7 +20,7 @@
 #ifdef superDebug
 #define denseThresh      (1.0)
 #else
-#define denseThresh      (0.8)
+#define denseThresh      (0.6)
 #endif
 
 #define rankThresh       (0.1)

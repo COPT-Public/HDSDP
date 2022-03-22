@@ -118,6 +118,21 @@ static DSDP_INT initresi( HSDSolver *dsdpSolver ) {
     return retcode;
 }
 
+static void adjpObj( HSDSolver *dsdpSolver ) {
+    // Adjust primal objecive
+    double pObj = dsdpSolver->pObjVal;
+    if (pObj > 1e+10) {
+        pObj *= 2.5;
+    } else if (pObj < -1e+05) {
+        pObj += 1e+03;
+    } else if (pObj < 0) {
+        pObj *= 0.5;
+    }
+    
+    pObj = MAX(1e+08, pObj);
+    dsdpSolver->pObjVal = pObj;
+}
+
 extern DSDP_INT dsdpInitializeA( HSDSolver *dsdpSolver ) {
     
     // Initialize iteration for DSDP solver
@@ -145,7 +160,7 @@ extern DSDP_INT dsdpInitializeB( HSDSolver *dsdpSolver ) {
     assert( dsdpSolver->eventMonitor[EVENT_IN_PHASE_B] );
     
     DSDP_INT BmaxIter; double rho, initpObj;
-    retcode = DSDPGetDblParam(dsdpSolver, DBL_PARAM_RHO, &rho);
+    retcode = DSDPGetDblParam(dsdpSolver, DBL_PARAM_RHON, &rho);
     retcode = DSDPGetDblParam(dsdpSolver, DBL_PARAM_INIT_POBJ, &initpObj);
     retcode = DSDPGetIntParam(dsdpSolver, INT_PARAM_BMAXITER, &BmaxIter);
 
@@ -166,6 +181,7 @@ extern DSDP_INT dsdpInitializeB( HSDSolver *dsdpSolver ) {
             
         case DSDP_PD_FEASIBLE:
             // mu = min((pObj - dObj) / rho, muPrimal)
+            adjpObj(dsdpSolver);
             dsdpSolver->mu = MIN((dsdpSolver->pObjVal - dsdpSolver->dObjVal) / rho, dsdpSolver->mu);
             printf("| DSDP Phase B starts. Restarting dual-scaling %51s |\n", "");
             break;

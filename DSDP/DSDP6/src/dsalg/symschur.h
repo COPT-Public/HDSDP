@@ -51,6 +51,10 @@ typedef struct {
 } DSDPSchur;
 
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 extern DSDP_INT SchurMatInit    ( DSDPSchur *M );
 extern DSDP_INT SchurMatSetDim  ( DSDPSchur *M, DSDP_INT m, DSDP_INT nblock );
 extern DSDP_INT SchurMatAlloc   ( DSDPSchur *M );
@@ -61,5 +65,10 @@ extern DSDP_INT SchurMatRegister( DSDPSchur *M, spsMat **S, dsMat **B, sdpMat **
 extern DSDP_INT SchurMatFree    ( DSDPSchur *M );
 extern DSDP_INT DSDPSchurReorder( DSDPSchur *M );
 extern DSDP_INT DSDPSchurSetup  ( DSDPSchur *M );
+extern DSDP_INT asinvSetup      ( DSDPSchur *M );
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif /* symschur_h */

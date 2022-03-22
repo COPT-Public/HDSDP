@@ -2,7 +2,6 @@
 #include "densemat.h"
 #include "dsdpfeast.h"
 #include "dsdpdata.h"
-#include "dsdplanczos.h"
 
 // Enable hash sum check
 #ifdef VERIFY_HASH
@@ -268,7 +267,7 @@ extern DSDP_INT spsMatAx( spsMat *A, vec *x, vec *Ax ) {
             if (i != j) { Axres[j] -= Axdata[k] * xdata[i]; }
         }
     } else {
-        for (DSDP_INT i = 0; i < n ; ++i) {
+        for (DSDP_INT i = 0, j; i < n ; ++i) {
             coeff = xdata[i]; if (coeff == 0.0) { continue; }
             idx = Ap[i];
             
@@ -279,7 +278,7 @@ extern DSDP_INT spsMatAx( spsMat *A, vec *x, vec *Ax ) {
                 Axres[i] -= xdata[Ai[idx]] * Axdata[idx];
             }
             
-            for (DSDP_INT j = Ap[i] + 1; j < Ap[i + 1]; ++j) {
+            for (j = Ap[i] + 1; j < Ap[i + 1]; ++j) {
                 idx = Ai[j];
                 Axres[idx] -= coeff * Axdata[j];
                 Axres[i] -= xdata[idx] * Axdata[j];
@@ -441,7 +440,7 @@ extern DSDP_INT spsMatRscale( spsMat *sXMat, double r ) {
     
     DSDP_INT retcode = DSDP_RETCODE_OK;
     assert( sXMat->dim );
-    if (fabs(r) < 1e-15) {
+    if (fabs(r) < 1e-25) {
         error(etype, "Dividing a matrix by 0. \n");
     }
     if (sXMat->factor) { rkMatRscale(sXMat->factor, r); }
@@ -559,7 +558,9 @@ extern DSDP_INT spsMatLspLSolve( spsMat *S, spsMat *dS, spsMat *spaux ) {
         start = i * n;
         for (j = i; j < n; ++j) {
             tmp = fulldS[start + j];
-            Ax[nnz] = tmp; Ai[nnz] = j; ++nnz;
+            if (tmp) {
+                Ax[nnz] = tmp; Ai[nnz] = j; ++nnz;
+            }
         }
         Ap[i + 1] = nnz;
     }
@@ -601,7 +602,7 @@ extern DSDP_INT spsMatGetX( spsMat *S, spsMat *dS, double *LinvSLTinv ) {
 }
 
 /* DSDP routine for computing the stepsize in the SDP cone */
-extern DSDP_INT dsdpGetAlpha( spsMat *S, spsMat *dS, spsMat *spaux, double *alpha ) {
+extern DSDP_INT dsdpGetAlpha( DSDPLanczos *lczSolver, spsMat *S, spsMat *dS, spsMat *spaux, double *alpha ) {
     // Get the maximum alpha such that S + alpha * dS is PSD
     DSDP_INT retcode = DSDP_RETCODE_OK;
     DSDP_INT n = S->dim;
@@ -613,9 +614,9 @@ extern DSDP_INT dsdpGetAlpha( spsMat *S, spsMat *dS, spsMat *spaux, double *alph
         return retcode;
     }
     // Lanczos iteration
-//    retcode = dsdpLanczos(S, dS, &lbd, &delta);
+    retcode = dsdpLanczosStep(lczSolver, S, dS, &lbd, &delta);
     
-    if (1 || lbd != lbd || delta != delta || (lbd + delta > 1e+10)) {
+    if (0 || lbd != lbd || delta != delta || (lbd + delta > 1e+04)) {
         // MKL extremal routine
         retcode = spsMatLspLSolve(S, dS, spaux); checkCode;
         retcode = spsMatMinEig(spaux, &mineig); checkCode;
@@ -636,7 +637,7 @@ extern DSDP_INT dsdpGetAlphaLS( spsMat *S, spsMat *dS, spsMat *Scker,
     spsMat *buffer = NULL;
     
     if (Scker) {
-        src = S->x; buffer = Scker;
+        src = Scker->x; buffer = Scker;
     } else {
         assert( FALSE );
         src = (double *) calloc(S->nnz, sizeof(double));
@@ -644,7 +645,9 @@ extern DSDP_INT dsdpGetAlphaLS( spsMat *S, spsMat *dS, spsMat *Scker,
     }
     
     for (DSDP_INT i = 0; ; ++i) {
-        if (step <= 1e-05) { *alpha = 0.0; break; }
+        if (step <= 1e-05) {
+            *alpha = 0.0; break;
+        }
         memcpy(src, S->x, sizeof(double) * S->nnz);
         spsMataXpbY(step, dS, 1.0, buffer, sumHash); spsMatIspd(buffer, &ispsd);
         if (ispsd) { *alpha = step; break; }
@@ -844,6 +847,17 @@ extern double spsSinvr1Sinv( spsMat *A, r1Mat *B, double *Sinv ) {
     return (2.0 * res * B->sign);
 }
 
+extern double spsFullTrace( spsMat *A, double *S ) {
+    
+    register double res = 0.0, *Ax = A->x;
+    DSDP_INT i, j, k, *Ai= A->i, *Aj = A->nzHash, n = A->dim;
+    for (k = 0; k < A->nnz; ++k) {
+        i = Ai[k]; j = Aj[k];
+        res += (i == j) ? 0.5 * Ax[k] * S[i * n + j] : Ax[k] * S[i * n + j];
+    }
+    return 2.0 * res;
+}
+
 /* Eigen value routines */
 extern DSDP_INT spsMatMaxEig( spsMat *sMat, double *maxEig ) {
     // Eigen value utility: compute the maximum eigenvalue of a matrix
@@ -994,6 +1008,7 @@ extern DSDP_INT spsMatReset( spsMat *sMat ) {
     return retcode;
 }
 
+// Debugging
 extern DSDP_INT spsMatView( spsMat *sMat ) {
     
     // View a sparse matrix by calling CXSparse cs_print
@@ -1013,12 +1028,44 @@ extern void spsMatLinvView( spsMat *S ) {
     double *Linv = (double *) calloc(n * n, sizeof(double));
     for (i = 0; i < n; ++i) { eye[n * i + i] = 1.0; }
     pardisoForwardSolve(S, n, eye, Linv, FALSE);
-    printf("Matrix view: \n");
+    printf("L^-1 Matrix view: \n");
     for (i = 0; i < n; ++i) {
         for (j = 0; j < n; ++j) {
-            printf("%20.12e, ", Linv[i * n + j]);
+            printf("%50.50e, ", Linv[n * j + i]);
         }
         printf("\n");
     }
     DSDP_FREE(eye); DSDP_FREE(Linv);
+}
+
+extern void spsMatInvView( spsMat *S ) {
+    // Lanczos debugging routine. Print P^-1 L^-1 to the screen
+    assert( S->isFactorized );
+    DSDP_INT n = S->dim, i, j;
+    
+    double *eye = (double *) calloc(n * n, sizeof(double));
+    double *Sinv = (double *) calloc(n * n, sizeof(double));
+    for (i = 0; i < n; ++i) { eye[n * i + i] = 1.0; }
+    pardisoSolve(S, n, eye, Sinv);
+    printf("Inverse Matrix view: \n");
+    for (i = 0; i < n; ++i) {
+        for (j = 0; j < n; ++j) {
+            printf("%20.20e, ", Sinv[i * n + j]);
+        }
+        printf("\n");
+    }
+    DSDP_FREE(eye); DSDP_FREE(Sinv);
+}
+
+extern void spsMatExport( spsMat *A ) {
+    DSDP_INT *Ai = A->i, *Aj = A->nzHash, nnz = A->nnz;
+    double *Ax = A->x;
+    printf("i: \n");
+    for (DSDP_INT i = 0; i < nnz; ++i) { printf("%d, ", Ai[i]); }
+    printf("\nj: \n");
+    for (DSDP_INT i = 0; i < nnz; ++i) { printf("%d, ", Aj[i]); }
+    printf("\nx: \n");
+    for (DSDP_INT i = 0; i < nnz; ++i) { printf("%20.20e, ", Ax[i]); }
+    printf("\n");
+    return;
 }

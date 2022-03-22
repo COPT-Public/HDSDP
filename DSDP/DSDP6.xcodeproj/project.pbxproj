@@ -64,9 +64,11 @@
 		19118E222737B72800D51D03 /* cs_util.c in Sources */ = {isa = PBXBuildFile; fileRef = 19118DE02737B72800D51D03 /* cs_util.c */; };
 		19118E232737B72800D51D03 /* main.c in Sources */ = {isa = PBXBuildFile; fileRef = 19118DE22737B72800D51D03 /* main.c */; };
 		19118E242737B72800D51D03 /* dsdphsd.c in Sources */ = {isa = PBXBuildFile; fileRef = 19118DE42737B72800D51D03 /* dsdphsd.c */; };
+		1924445D27E9E07300C99F42 /* dsdpcorrector.c in Sources */ = {isa = PBXBuildFile; fileRef = 1924445C27E9E07200C99F42 /* dsdpcorrector.c */; };
 		1929CF162795B40400981C20 /* test_feast.c in Sources */ = {isa = PBXBuildFile; fileRef = 1929CF152795B40400981C20 /* test_feast.c */; };
 		192B24B22768D1A900F5C7C0 /* test_data.c in Sources */ = {isa = PBXBuildFile; fileRef = 192B24B12768D1A900F5C7C0 /* test_data.c */; };
 		1934771327B7E1A00048A772 /* dsdpreadsdpa.c in Sources */ = {isa = PBXBuildFile; fileRef = 1934771227B7E1A00048A772 /* dsdpreadsdpa.c */; };
+		1946B0AD27E8BF2A00C3A3BC /* test_lanczos.c in Sources */ = {isa = PBXBuildFile; fileRef = 1946B0AC27E8BF2A00C3A3BC /* test_lanczos.c */; };
 		1947DC1D2799B64B004065D8 /* test_dsdp.c in Sources */ = {isa = PBXBuildFile; fileRef = 1947DC1C2799B64B004065D8 /* test_dsdp.c */; };
 		1950371627B625C400C723FC /* dsdppsol.c in Sources */ = {isa = PBXBuildFile; fileRef = 1950371527B625C400C723FC /* dsdppsol.c */; };
 		195EE4C727B92AD400065A4B /* dsdpsort.c in Sources */ = {isa = PBXBuildFile; fileRef = 195EE4C627B92AD400065A4B /* dsdpsort.c */; };
@@ -204,10 +206,13 @@
 		19118DE22737B72800D51D03 /* main.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = main.c; sourceTree = "<group>"; };
 		19118DE42737B72800D51D03 /* dsdphsd.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = dsdphsd.c; sourceTree = "<group>"; };
 		19118DE52737B72800D51D03 /* dsdphsd.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = dsdphsd.h; sourceTree = "<group>"; };
+		1924445B27E9E07200C99F42 /* dsdpcorrector.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = dsdpcorrector.h; sourceTree = "<group>"; };
+		1924445C27E9E07200C99F42 /* dsdpcorrector.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = dsdpcorrector.c; sourceTree = "<group>"; };
 		1929CF152795B40400981C20 /* test_feast.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = test_feast.c; sourceTree = "<group>"; };
 		192B24B12768D1A900F5C7C0 /* test_data.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = test_data.c; sourceTree = "<group>"; };
 		1934771127B7E1A00048A772 /* dsdpreadsdpa.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = dsdpreadsdpa.h; sourceTree = "<group>"; };
 		1934771227B7E1A00048A772 /* dsdpreadsdpa.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = dsdpreadsdpa.c; sourceTree = "<group>"; };
+		1946B0AC27E8BF2A00C3A3BC /* test_lanczos.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = test_lanczos.c; sourceTree = "<group>"; };
 		1947DC1C2799B64B004065D8 /* test_dsdp.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = test_dsdp.c; sourceTree = "<group>"; };
 		1947DC1E2799B66B004065D8 /* data.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = data.h; sourceTree = "<group>"; };
 		1950371427B625C400C723FC /* dsdppsol.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = dsdppsol.h; sourceTree = "<group>"; };
@@ -338,6 +343,8 @@
 		19118D912737B72800D51D03 /* dsalg */ = {
 			isa = PBXGroup;
 			children = (
+				1924445C27E9E07200C99F42 /* dsdpcorrector.c */,
+				1924445B27E9E07200C99F42 /* dsdpcorrector.h */,
 				19C3BC03279527BA00F0331B /* dsdppfeascheck.h */,
 				19118D992737B72800D51D03 /* schurmat.h */,
 				19118D922737B72800D51D03 /* residualsetup.h */,
@@ -495,6 +502,7 @@
 				192B24B12768D1A900F5C7C0 /* test_data.c */,
 				1929CF152795B40400981C20 /* test_feast.c */,
 				1947DC1C2799B64B004065D8 /* test_dsdp.c */,
+				1946B0AC27E8BF2A00C3A3BC /* test_lanczos.c */,
 			);
 			path = test;
 			sourceTree = "<group>";
@@ -620,6 +628,7 @@
 				19118E002737B72800D51D03 /* cs_dupl.c in Sources */,
 				19BACAFA2753C0D600E987FD /* test_presolve.c in Sources */,
 				19118DEC2737B72800D51D03 /* densemat.c in Sources */,
+				1924445D27E9E07300C99F42 /* dsdpcorrector.c in Sources */,
 				19118DEB2737B72800D51D03 /* vec.c in Sources */,
 				19118E152737B72800D51D03 /* cs_sqr.c in Sources */,
 				19118E172737B72800D51D03 /* cs_cumsum.c in Sources */,
@@ -664,6 +673,7 @@
 				19808F3F273807770014086F /* dsdpdata.c in Sources */,
 				19118E062737B72800D51D03 /* cs_utsolve.c in Sources */,
 				1901C7F227B15FB30046EFB2 /* dsdpcg.c in Sources */,
+				1946B0AD27E8BF2A00C3A3BC /* test_lanczos.c in Sources */,
 				19118E052737B72800D51D03 /* cs_updown.c in Sources */,
 				1947DC1D2799B64B004065D8 /* test_dsdp.c in Sources */,
 				19118E182737B72800D51D03 /* cs_dropzeros.c in Sources */,
@@ -811,7 +821,7 @@
 				ENABLE_STRICT_OBJC_MSGSEND = YES;
 				GCC_C_LANGUAGE_STANDARD = gnu11;
 				GCC_NO_COMMON_BLOCKS = YES;
-				GCC_OPTIMIZATION_LEVEL = fast;
+				GCC_OPTIMIZATION_LEVEL = 0;
 				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
 				GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;
 				GCC_WARN_UNDECLARED_SELECTOR = YES;
@@ -831,7 +841,7 @@
 			buildSettings = {
 				CODE_SIGN_STYLE = Automatic;
 				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
-				GCC_OPTIMIZATION_LEVEL = fast;
+				GCC_OPTIMIZATION_LEVEL = 0;
 				"HEADER_SEARCH_PATHS[arch=*]" = "./DSDP6/**";
 				LIBRARY_SEARCH_PATHS = (
 					"$(inherited)",
@@ -847,7 +857,7 @@
 			buildSettings = {
 				CODE_SIGN_STYLE = Automatic;
 				DEBUG_INFORMATION_FORMAT = dwarf;
-				GCC_OPTIMIZATION_LEVEL = fast;
+				GCC_OPTIMIZATION_LEVEL = 0;
 				HEADER_SEARCH_PATHS = "./DSDP6/**";
 				LIBRARY_SEARCH_PATHS = (
 					"$(inherited)",
