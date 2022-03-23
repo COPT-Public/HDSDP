@@ -515,7 +515,7 @@ static DSDP_INT DSDPIPresolve( HSDSolver *dsdpSolver ) {
     DSDPStatUpdate(stat, STAT_EIG_TIME, t);
     
     center = clock();
-//    retcode = preSDPPrimal(dsdpSolver); checkCode;
+    retcode = preSDPPrimal(dsdpSolver); checkCode;
 //    retcode = preSDPDual(dsdpSolver); checkCode;
     t = (double) (clock() - center) / CLOCKS_PER_SEC;
     printf("| - Scaling completes in %g seconds \n", t);

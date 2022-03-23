@@ -285,7 +285,7 @@ extern double r1MatFullTrace( r1Mat *x, double *S, double *aux ) {
               xdata, &one, &dzero, aux, &one);
         res = ddot(&x->dim, aux, &one, xdata, &one);
     }
-    return res;
+    return res * x->sign;
 }
 
 extern DSDP_INT r1MatCountNnz( r1Mat *x ) {

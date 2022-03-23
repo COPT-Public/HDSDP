@@ -144,6 +144,14 @@ static DSDP_INT schurMatPerturb( HSDSolver *dsdpSolver ) {
     double perturb = 0.0, maxdiag = 0.0;
     denseMatGetdiag(dsdpSolver->Msdp, dsdpSolver->Mdiag);
     
+    double iterB = 0;
+    DSDPGetStats(&dsdpSolver->dsdpStats, STAT_PHASE_B_ITER, &iterB);
+    
+    if ((DSDP_INT) iterB % 21 == 20 && dsdpSolver->pObjVal == 1e+10) {
+        perturb += 1e-04;
+        dsdpSolver->pObjVal = 1e+15;
+    }
+    
     if (!dsdpSolver->eventMonitor[EVENT_INVALID_GAP]) {
         
         if (dsdpSolver->mu < 1e-05) {
@@ -157,11 +165,15 @@ static DSDP_INT schurMatPerturb( HSDSolver *dsdpSolver ) {
         dsdpSolver->Mscaler = maxdiag;
         
         if (dsdpSolver->m < 100) {
-            perturb += MIN(maxdiag * 1e-08, 1e-12);
-        } else if (dsdpSolver->m < 1000) {
-            perturb += MIN(maxdiag * 1e-08, 1e-11);
-        } else {
             perturb += MIN(maxdiag * 1e-08, 1e-09);
+        } else if (dsdpSolver->m < 1000) {
+            perturb += MIN(maxdiag * 1e-08, 1e-08);
+        } else {
+            perturb += MIN(maxdiag * 1e-08, 1e-07);
+        }
+        
+        if (m > 12 * dsdpSolver->n) {
+            perturb += 1e-06;
         }
         
         double invalid;
@@ -230,7 +242,7 @@ static DSDP_INT schurCGSetup( HSDSolver *dsdpSolver ) {
     }
     
     
-    cgsolver->status = CG_STATUS_INDEFINITE;
+//    cgsolver->status = CG_STATUS_INDEFINITE;
     // dsdpCGSetPreReuse(cgsolver, 0);
     
     if (dsdpSolver->m > 20000) {

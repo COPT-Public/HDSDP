@@ -65,135 +65,71 @@
 | torusg3-15    | 1e+10    | 1.0    | 1.0     | 1e+10 | 5.0    | 0.75       | 10       | 70s                      |  26(70s)   | 1. 需要 scaling 求解                                         |
 | hand          |          |        |         |       |        |            |          |                          |            |                                                              |
 | foot          |          |        |         |       |        |            |          |                          |            |                                                              |
+| ros_500       |          |        |         |       |        |            |          |                          |            |                                                              |
+| sensor_500    |          |        |         |       |        |            |          |                          |            |                                                              |
+| sensor_1000   |          |        |         |       |        |            |          |                          |            |                                                              |
+| ros_2000      |          |        |         |       |        |            |          |                          |            |                                                              |
+| swissroll     |          |        |         |       |        |            |          |                          |            |                                                              |
+| cnhil10       |          |        |         |       |        |            |          |                          |            |                                                              |
+| cnhil8        |          |        |         |       |        |            |          |                          |            |                                                              |
+| cphil10       |          |        |         |       |        |            |          |                          |            |                                                              |
+| cphil12       |          |        |         |       |        |            |          |                          |            |                                                              |
+| r1_2000       |          |        |         |       |        |            |          |                          |            |                                                              |
+|               |          |        |         |       |        |            |          |                          |            |                                                              |
 
 
 
 
 
 - Alh_1.r20  
-
 - BH2.r14    
-
 - Bex2_1_5   
-
 - Bst_jcbpaf2
-
-- CH2_1.r14  
-
-  
+- CH2_1.r14 
 
 - H30_.r16   
-
 - NH2-.r14   
-
 - NH3.r16    
-
 - NH4.r18   
-
 - biggs      
-
-- broyden25  
-
-  
+- broyden25 
 
 - cancer     
-
 - checker    
-
 - chs_5000   
-
-- cnhil10    
-
-- cnhil8     
-
-- cphil10    
-
-- cphil12    
-
 - dia_patch  
-
 - e*quad*2   
-
 - e*stable*2 
-
 - ice_2.0     
-
 - mater-4    
-
 - mater-5    
-
 - mater-6    
-
 - neosfbr25  
-
 - neosfbr30e8
-
 - neu1       
-
 - neu1g      
-
 - neu2       
-
 - neu2c      
-
 - neu2g      
-
 - neu3       
-
 - neu3g      
-
 - nonc_500   
-
 - p_auss2    
-
 - prob_1_2_0 
-
 - prob_1_2_1 
-
 - prob_2_4_0 
-
 - prob_2_4_1 
-
 - rabmo      
-
-- reimer5    
-
-- r1_2000    
-
-- ros_500    
-
-- ros_2000        
-
-- sensor_1000
-
-- sensor_500 
-
+- reimer5     
 - shmup3     
-
 - shmup4     
-
 - shmup5     
-
-- spar060    
-
-- swissroll  
-
+- spar060      
 - taha1a     
-
 - taha1b     
-
 - taha1c     
-
-- 
-
 - t_texture  
-
-- 
-
 - vibra3     
-
 - vibra4     
-
 - vibra5     
-
 - yalsdp     
