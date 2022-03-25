@@ -25,8 +25,6 @@ assert(alpha > 0);
 L = lchol(S);
 oldpotential = dsdpgetPotentialValue(rho, pObj, b, y, L);
 oldpotential = oldpotential - sum(log(sl)) - sum(log(su));
-bestpotential = inf;
-
 alphabest = 0.0;
 
 while alpha > 1e-08
@@ -52,11 +50,6 @@ while alpha > 1e-08
        sl = slnew;
        su = sunew;
        break;
-   else
-       if newpotential < bestpotential
-           alphabest = alpha;
-           bestpotential = newpotential;
-       end % End if 
    end % End if 
    
    alpha = alpha * 0.3;

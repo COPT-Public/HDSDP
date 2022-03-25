@@ -25,6 +25,7 @@ end % End for
 
 % nnormarray = nnormarray(nnormarray > 0);
 % Only one block 
+dscaler = 1.0;
 if norm(C, 'fro') > 1e+08
     dscaler = 1e+06;
     C = C / dscaler;
