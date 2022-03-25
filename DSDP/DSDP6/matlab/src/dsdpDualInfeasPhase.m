@@ -67,7 +67,7 @@ for i = 1:maxiter
     % Check primal feasibility
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
     for newmu = candmu * muprimal
-        [delta, newpObj] = dsdpgetProxMeasure(d12, d2, d3, u, csinvcsinv, csinv, tau, newmu, dObj, M, A, C, y, Rd);
+        [delta, newpObj] = dsdpgetProxMeasure(d12, d2, d3, u, csinvcsinv, csinv, tau, newmu, dObj, M, A, C, y, Rd, S, b);
         if ~ isinf(newpObj)
             pObj = newpObj / tau;
             if newmu > tol^2
@@ -150,7 +150,7 @@ for i = 1:maxiter
     
 end % End for
 
-[y, S] = dinfeaspotrdc(A, b, C * tau, y, S, sparse(n, n), M, d2 * tau, mu, 12);
+% [y, S] = dinfeaspotrdc(A, b, C * tau, y, S, sparse(n, n), M, d2 * tau, mu, 12);
 
 iter = i;
 
