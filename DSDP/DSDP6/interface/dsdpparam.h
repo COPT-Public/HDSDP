@@ -50,7 +50,7 @@ typedef struct {
 
 static DSDP_INT defaultIntParam[NUM_INT_PARAM] = {
     0,     // INT_PARAM_ACORRECTOR
-    0,     // INT_PARAM_BCORRECTOR
+    12,     // INT_PARAM_BCORRECTOR
     INIT_METHOD_FRO,
            // INT_PARAM_INITMETHOD
     AATEMPT_AGGRESSIVE,
@@ -70,7 +70,7 @@ static double defaultDblParam[NUM_DBL_PARAM] = {
     5.0,   // DBL_PARAM_RHO
     5.0,   // DBL_PARAM_RHON
     1e+10, // DBL_PARAM_INIT_POBJ
-    1, // DBL_PARAM_INIT_BETA
+    1.0, // DBL_PARAM_INIT_BETA
     1e+10, // DBL_PARAM_INIT_MU
     1.0,   // DBL_PARAM_INIT_TAU
     1.0, // DBL_PARAM_INIT_KAPPA

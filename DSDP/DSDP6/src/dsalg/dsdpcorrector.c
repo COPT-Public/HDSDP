@@ -55,20 +55,20 @@ static DSDP_INT adjCorrectorStep( HSDSolver *dsdpSolver ) {
     if (dsdpSolver->alpha < 0.1 && dsdpSolver->mu < 1e-05) { nusercorr = 0; }
     if (dsdpSolver->mu < 1e-06) { nusercorr = 0; }
     
-    if (n >= m) {
+    if (n >= 5 * m) {
+        nusercorr = MIN(nusercorr, 0);
+    } else if (n >= m) {
         nusercorr = MIN(nusercorr, 4);
-    } else if (n >= 0.5 * m) {
-        nusercorr = MIN(nusercorr, 6);
-    } else if (n >= 0.1 * m) {
+    } else if (n >= 0.8 * m) {
         nusercorr = MIN(nusercorr, 8);
     }
     
-    if (m > 5 * n) {
-        nusercorr = MAX(nusercorr, 4);
-    } else if (m > 10 * n) {
-        nusercorr = MAX(nusercorr, 8);
-    } else if (m > 20 * n) {
+    if (m > 20 * n) {
         nusercorr = MAX(nusercorr, 12);
+    } else if (m > 5 * n) {
+        nusercorr = MAX(nusercorr, 10);
+    } else if (m > 2 * n) {
+        nusercorr = MAX(nusercorr, 8);
     }
     
     nusercorr = MIN(nusercorr, 12);
@@ -103,7 +103,11 @@ extern DSDP_INT dualCorrectorStep( HSDSolver *dsdpSolver ) {
             break;
         }
         
-        if (i == 0) { dsdpInCone(dsdpSolver, &inCone); assert(inCone); }
+        if (i == 0) {
+            for (j = 0; j < dsdpSolver->nBlock; ++j) {
+                spsMatFactorize(dsdpSolver->S[j]);
+            }
+        }
         vec_lslack(ynow, sl, -bound); vec_uslack(ynow, su, bound);
         asinvSetup(dsdpSolver->M);  // Compute asinv
         
@@ -116,9 +120,11 @@ extern DSDP_INT dualCorrectorStep( HSDSolver *dsdpSolver ) {
         
         vec_dot(b, d2, &bTd2);
         if (bTd1 > 0 && bTd2 > 0) {
-            dsdpSolver->mu = MIN(dsdpSolver->mu, bTd1 / bTd2);
+//            dsdpSolver->mu = MIN(dsdpSolver->mu, bTd1 / bTd2 * 1.0);
+            dsdpSolver->mu *= shrink;
+            // dsdpSolver->mu = MAX(dsdpSolver->schurmu / rhon, dsdpSolver->mu);
         }
-        dsdpSolver->mu *= shrink; // May be placed outside the loop
+        
         
         // dycorr = dy1 / mu - dy2;
         vec_zaxpby(dycorr, 1 / dsdpSolver->mu, d1, -1.0, d2);

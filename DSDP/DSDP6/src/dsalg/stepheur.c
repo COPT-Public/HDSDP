@@ -313,10 +313,10 @@ extern DSDP_INT selectMu( HSDSolver *dsdpSolver, double *newmu ) {
         tmp = MIN(vec_step(dsdpSolver->sl, dsdpSolver->d1,  alphap / dsdpSolver->mu), tmp);
         tmp = MIN(vec_step(dsdpSolver->su, dsdpSolver->d1, -alphap / dsdpSolver->mu), tmp);
         
-        tmp = MIN(tmp, 1000.0);
+//        tmp = MIN(tmp, 1000.0);
         
         *newmu = (alphap * dsdpSolver->mu) / (1 + tmp) + \
-                  + (1 - alphap) * (dsdpSolver->pObjVal - dsdpSolver->dObjVal) / (dsdpSolver->n);
+                  + (1 - alphap) * (dsdpSolver->pObjVal - dsdpSolver->dObjVal) / (dsdpSolver->n + dsdpSolver->m * 2);
         
         // tmp = MIN(1, 0.97 * tmp); tmp = dsdpSolver->mu / (1.0 + alphap); alphap *= 0.6;
         // *newmu = alphap * tmp + (1.0 - alphap) * dsdpSolver->mu;

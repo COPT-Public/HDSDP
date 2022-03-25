@@ -436,8 +436,9 @@ extern double denseFullTrace( dsMat *dMat, double *S ) {
     register double res = 0.0, *array = dMat->array, *s = S;
     register DSDP_INT i; DSDP_INT n = dMat->dim, k;
     for (i = 0; i < n; ++i) {
+        res -= 0.5 * array[0] * s[0];
         k = n - i; res += ddot(&k, array, &one, s, &one);
-        array += n - i; s += n + 1; res -= 0.5 * array[0] * S[0];
+        array += k; s += n + 1;
     }
     return (2.0 * res);
 }

@@ -41,6 +41,38 @@
             endingLineNumber = "18"
             landmarkName = "checkIterProgress(dsdpSolver, iter)"
             landmarkType = "9">
+            <Locations>
+               <Location
+                  uuid = "280BDC3A-37EB-4E8B-B8F2-B1E549E97B98 - 36907186d6abeaf0"
+                  shouldBeEnabled = "Yes"
+                  ignoreCount = "0"
+                  continueAfterRunningActions = "No"
+                  symbolName = "checkIterProgress"
+                  moduleName = "DSDP6"
+                  usesParentBreakpointCondition = "Yes"
+                  urlString = "file:///Users/gaowenzhi/Desktop/gwz/DSDP/DSDP6/src/dsalg/hsd.c"
+                  startingColumnNumber = "9223372036854775807"
+                  endingColumnNumber = "9223372036854775807"
+                  startingLineNumber = "18"
+                  endingLineNumber = "18"
+                  offsetFromSymbolStart = "312">
+               </Location>
+               <Location
+                  uuid = "280BDC3A-37EB-4E8B-B8F2-B1E549E97B98 - dafb80e6c9d27e26"
+                  shouldBeEnabled = "Yes"
+                  ignoreCount = "0"
+                  continueAfterRunningActions = "No"
+                  symbolName = "checkIterProgress.cold.1"
+                  moduleName = "DSDP6"
+                  usesParentBreakpointCondition = "Yes"
+                  urlString = "file:///Users/gaowenzhi/Desktop/gwz/DSDP/DSDP6/src/dsalg/hsd.c"
+                  startingColumnNumber = "9223372036854775807"
+                  endingColumnNumber = "9223372036854775807"
+                  startingLineNumber = "18"
+                  endingLineNumber = "18"
+                  offsetFromSymbolStart = "4">
+               </Location>
+            </Locations>
          </BreakpointContent>
       </BreakpointProxy>
       <BreakpointProxy
@@ -197,6 +229,38 @@
             endingLineNumber = "275"
             landmarkName = "factorizeDenseData(A, elow, eigvals, eigvecs)"
             landmarkType = "9">
+            <Locations>
+               <Location
+                  uuid = "84E8537E-C1FE-4B13-9892-EFF379B8A004 - 6a9a1a1c4c989a0a"
+                  shouldBeEnabled = "Yes"
+                  ignoreCount = "0"
+                  continueAfterRunningActions = "No"
+                  symbolName = "factorizeDenseData"
+                  moduleName = "DSDP6"
+                  usesParentBreakpointCondition = "Yes"
+                  urlString = "file:///Users/gaowenzhi/Desktop/gwz/DSDP/DSDP6/src/linsys/dsdpeigfact.c"
+                  startingColumnNumber = "9223372036854775807"
+                  endingColumnNumber = "9223372036854775807"
+                  startingLineNumber = "275"
+                  endingLineNumber = "275"
+                  offsetFromSymbolStart = "244">
+               </Location>
+               <Location
+                  uuid = "84E8537E-C1FE-4B13-9892-EFF379B8A004 - 5065f05f2e802231"
+                  shouldBeEnabled = "Yes"
+                  ignoreCount = "0"
+                  continueAfterRunningActions = "No"
+                  symbolName = "factorizeDenseData.cold.2"
+                  moduleName = "DSDP6"
+                  usesParentBreakpointCondition = "Yes"
+                  urlString = "file:///Users/gaowenzhi/Desktop/gwz/DSDP/DSDP6/src/linsys/dsdpeigfact.c"
+                  startingColumnNumber = "9223372036854775807"
+                  endingColumnNumber = "9223372036854775807"
+                  startingLineNumber = "275"
+                  endingLineNumber = "275"
+                  offsetFromSymbolStart = "4">
+               </Location>
+            </Locations>
          </BreakpointContent>
       </BreakpointProxy>
       <BreakpointProxy
@@ -225,8 +289,8 @@
             filePath = "DSDP6/src/dsalg/schurmat.c"
             startingColumnNumber = "9223372036854775807"
             endingColumnNumber = "9223372036854775807"
-            startingLineNumber = "248"
-            endingLineNumber = "248"
+            startingLineNumber = "260"
+            endingLineNumber = "260"
             landmarkName = "schurCGSetup(dsdpSolver)"
             landmarkType = "9">
          </BreakpointContent>
@@ -369,8 +433,8 @@
             filePath = "DSDP6/src/dsalg/schurmat.c"
             startingColumnNumber = "9223372036854775807"
             endingColumnNumber = "9223372036854775807"
-            startingLineNumber = "156"
-            endingLineNumber = "156"
+            startingLineNumber = "164"
+            endingLineNumber = "164"
             landmarkName = "schurMatPerturb(dsdpSolver)"
             landmarkType = "9">
          </BreakpointContent>
@@ -506,22 +570,6 @@
       <BreakpointProxy
          BreakpointExtensionID = "Xcode.Breakpoint.FileBreakpoint">
          <BreakpointContent
-            uuid = "DC514638-D7CF-4690-8B41-7CC34B142B4A"
-            shouldBeEnabled = "Yes"
-            ignoreCount = "0"
-            continueAfterRunningActions = "No"
-            filePath = "DSDP6/main.c"
-            startingColumnNumber = "9223372036854775807"
-            endingColumnNumber = "9223372036854775807"
-            startingLineNumber = "19"
-            endingLineNumber = "19"
-            landmarkName = "main()"
-            landmarkType = "9">
-         </BreakpointContent>
-      </BreakpointProxy>
-      <BreakpointProxy
-         BreakpointExtensionID = "Xcode.Breakpoint.FileBreakpoint">
-         <BreakpointContent
             uuid = "1EBDD1AE-7304-46C4-871F-1113C05BC58A"
             shouldBeEnabled = "No"
             ignoreCount = "0"
@@ -561,8 +609,8 @@
             filePath = "DSDP6/src/dsalg/schurmat.c"
             startingColumnNumber = "9223372036854775807"
             endingColumnNumber = "9223372036854775807"
-            startingLineNumber = "306"
-            endingLineNumber = "306"
+            startingLineNumber = "318"
+            endingLineNumber = "318"
             landmarkName = "cgSolveCheck(cgSolver, b)"
             landmarkType = "9">
          </BreakpointContent>
@@ -577,8 +625,8 @@
             filePath = "DSDP6/src/dsalg/schurmat.c"
             startingColumnNumber = "9223372036854775807"
             endingColumnNumber = "9223372036854775807"
-            startingLineNumber = "287"
-            endingLineNumber = "287"
+            startingLineNumber = "299"
+            endingLineNumber = "299"
             landmarkName = "cgSolveCheck(cgSolver, b)"
             landmarkType = "9">
          </BreakpointContent>
@@ -708,86 +756,6 @@
             startingLineNumber = "161"
             endingLineNumber = "161"
             landmarkName = "factorizeSpecial(A, eigvals, eigvecs, isSpecial)"
-            landmarkType = "9">
-         </BreakpointContent>
-      </BreakpointProxy>
-      <BreakpointProxy
-         BreakpointExtensionID = "Xcode.Breakpoint.FileBreakpoint">
-         <BreakpointContent
-            uuid = "D9A93BB5-8B04-4FFA-B730-7F57C0E65BC2"
-            shouldBeEnabled = "Yes"
-            ignoreCount = "0"
-            continueAfterRunningActions = "No"
-            filePath = "DSDP6/src/dsalg/dsdpcorrector.c"
-            startingColumnNumber = "9223372036854775807"
-            endingColumnNumber = "9223372036854775807"
-            startingLineNumber = "98"
-            endingLineNumber = "98"
-            landmarkName = "dualCorrectorStep(dsdpSolver)"
-            landmarkType = "9">
-         </BreakpointContent>
-      </BreakpointProxy>
-      <BreakpointProxy
-         BreakpointExtensionID = "Xcode.Breakpoint.FileBreakpoint">
-         <BreakpointContent
-            uuid = "7A6C530E-A170-433A-855A-3E69FCAC2135"
-            shouldBeEnabled = "Yes"
-            ignoreCount = "0"
-            continueAfterRunningActions = "No"
-            filePath = "DSDP6/src/dsalg/dsdpcorrector.c"
-            startingColumnNumber = "9223372036854775807"
-            endingColumnNumber = "9223372036854775807"
-            startingLineNumber = "103"
-            endingLineNumber = "103"
-            landmarkName = "dualCorrectorStep(dsdpSolver)"
-            landmarkType = "9">
-         </BreakpointContent>
-      </BreakpointProxy>
-      <BreakpointProxy
-         BreakpointExtensionID = "Xcode.Breakpoint.FileBreakpoint">
-         <BreakpointContent
-            uuid = "47EDCD1C-0F65-4EE1-A9DC-609D8BA76A74"
-            shouldBeEnabled = "Yes"
-            ignoreCount = "0"
-            continueAfterRunningActions = "No"
-            filePath = "DSDP6/src/dsalg/dsdpcorrector.c"
-            startingColumnNumber = "9223372036854775807"
-            endingColumnNumber = "9223372036854775807"
-            startingLineNumber = "117"
-            endingLineNumber = "117"
-            landmarkName = "dualCorrectorStep(dsdpSolver)"
-            landmarkType = "9">
-         </BreakpointContent>
-      </BreakpointProxy>
-      <BreakpointProxy
-         BreakpointExtensionID = "Xcode.Breakpoint.FileBreakpoint">
-         <BreakpointContent
-            uuid = "8BF0039D-2C4C-4BA4-96E3-EC6F1403BC45"
-            shouldBeEnabled = "Yes"
-            ignoreCount = "0"
-            continueAfterRunningActions = "No"
-            filePath = "DSDP6/src/dsalg/dsdpcorrector.c"
-            startingColumnNumber = "9223372036854775807"
-            endingColumnNumber = "9223372036854775807"
-            startingLineNumber = "116"
-            endingLineNumber = "116"
-            landmarkName = "dualCorrectorStep(dsdpSolver)"
-            landmarkType = "9">
-         </BreakpointContent>
-      </BreakpointProxy>
-      <BreakpointProxy
-         BreakpointExtensionID = "Xcode.Breakpoint.FileBreakpoint">
-         <BreakpointContent
-            uuid = "6F85CF86-715B-4CC5-83F2-DBDAD9399311"
-            shouldBeEnabled = "Yes"
-            ignoreCount = "0"
-            continueAfterRunningActions = "No"
-            filePath = "DSDP6/src/dsalg/dsdpcorrector.c"
-            startingColumnNumber = "9223372036854775807"
-            endingColumnNumber = "9223372036854775807"
-            startingLineNumber = "169"
-            endingLineNumber = "169"
-            landmarkName = "dualCorrectorStep(dsdpSolver)"
             landmarkType = "9">
          </BreakpointContent>
       </BreakpointProxy>
