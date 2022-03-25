@@ -26,7 +26,7 @@ for k = 1:ncorr
     sl = y + 1e+07;
     su = 1e+07 - y;
     
-    dy2 = dy2 - sl.^-2 + su.^-2;
+    dy2 = dy2 - sl.^-1 + su.^-1;
     
     dy2 = M \ dy2;
     bTdy2 = b' * dy2;

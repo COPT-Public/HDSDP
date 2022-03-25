@@ -14,8 +14,6 @@ end % End for
 for i = 1:m
     pscaler(i) = sqrt(nnormarray(i) * abs(b(i)));
     
-    pscaler(i) = 1;
-    
     if pscaler(i) == 0
         pscaler(i) = 1;
     end % End if 
@@ -27,13 +25,16 @@ end % End for
 
 % nnormarray = nnormarray(nnormarray > 0);
 % Only one block 
-dscaler = 1.0;
+if norm(C, 'fro') > 1e+08
+    dscaler = 1e+06;
+    C = C / dscaler;
+end % End if 
 % dscaler = sqrt(max(nnormarray) * min(nnormarray));
 
 % for i = 1:m
 %     A{i} = A{i} / dscaler;
 % end % End for 
 % 
-% C = C / dscaler;
+
 
 end % End function
