@@ -84,8 +84,7 @@ static DSDP_INT schurBlockAnalysis( sdpMat *Adata, DSDP_INT *permk, DSDP_INT *MX
     for (i = 0; i < nrkMat; ++i) {
         k = rkidx[i];
         nnzs[k] = ((rkMat *) (Adata->sdpData[k]))->data[0]->nnz;
-        nnzs[k] = nsym(nnzs[k]);
-        ranks[k] = 1;
+        nnzs[k] = nsym(nnzs[k]); ranks[k] = 1;
     }
     
     // Sort f_1, ..., f_m in descending order
@@ -111,9 +110,6 @@ static DSDP_INT schurBlockAnalysis( sdpMat *Adata, DSDP_INT *permk, DSDP_INT *MX
     } else {
         M1M2 = FALSE;
     }
-    
-    // Sinv must be allocated for the corrector step
-    M1M2 = FALSE;
     
     // Determine which strategy to use
     if (M1M2) {
@@ -156,7 +152,9 @@ static void schurMatGetSinv( DSDPSchur *M ) {
     // Compute inverse of the dual matrix when M3, M4 or M5 techniques are used
     M->scaler = 1.0;
     for (DSDP_INT i = 0; i < M->nblock; ++i) {
-        spsMatInverse(M->S[i], M->Sinv[i], M->schurAux);
+        if (!M->useTwo[i]) {
+            spsMatInverse(M->S[i], M->Sinv[i], M->schurAux);
+        }
     }
 }
 
@@ -670,10 +668,8 @@ extern DSDP_INT DSDPSchurReorder( DSDPSchur *M ) {
     for (DSDP_INT i = 0, dim; i < M->nblock; ++i) {
         retcode = schurBlockAnalysis(M->Adata[i], M->perms[i],
                                      M->MX[i], &M->useTwo[i]);
-        if (!M->useTwo[i]) {
-            dim = M->Adata[i]->dimS; maxblock = MAX(dim, maxblock);
-            M->Sinv[i] = (double *) calloc(dim * dim, sizeof(double));
-        }
+        dim = M->Adata[i]->dimS; maxblock = MAX(dim, maxblock);
+        M->Sinv[i] = (double *) calloc(dim * dim, sizeof(double));
     }
     
     M->schurAux = (double *) calloc(MAX(M->m, maxblock * maxblock), sizeof(double));
@@ -884,10 +880,6 @@ extern DSDP_INT asinvSetup( DSDPSchur *M ) {
             asinv->x[i] += res;
         }
     }
-
-    
-    // Add the slack to it 
-    
     
     return DSDP_RETCODE_OK;
 }

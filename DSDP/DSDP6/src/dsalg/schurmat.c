@@ -26,13 +26,37 @@ static DSDP_INT setupBoundYSchur( HSDSolver *dsdpSolver ) {
     DSDP_INT retcode = DSDP_RETCODE_OK;
     
     double *M = dsdpSolver->Msdp->array, *asinv = dsdpSolver->asinv->x, s = 0.0;
-    double *sl = dsdpSolver->sl->x, *su = dsdpSolver->su->x;
+    double *sl = dsdpSolver->sl->x, *su = dsdpSolver->su->x, bound;
     DSDP_INT m = dsdpSolver->m;
     
-    for (DSDP_INT i = 0, idx = 0; i < m; ++i) {
-        s = su[i]; M[idx] += 1.0 / (s * s); asinv[i] += 1.0 / s;
-        s = sl[i]; M[idx] += 1.0 / (s * s); asinv[i] -= 1.0 / s;
-        idx += m - i;
+    if (dsdpSolver->eventMonitor[EVENT_IN_PHASE_A]) {
+        double *u = dsdpSolver->u->x;
+        double sinvsqr, csinvsuml = 0.0, csinvsumu = 0.0, cscssuml = 0.0, cscssumu = 0.0;
+        DSDPGetDblParam(dsdpSolver, DBL_PARAM_PRLX_PENTALTY, &bound);
+        for (DSDP_INT i = 0, idx = 0; i < m; ++i) {
+            // Upperbound
+            s = su[i]; sinvsqr = 1.0 / (s * s);
+            M[idx] += sinvsqr; asinv[i] += 1.0 / s;
+            u[i] += bound * sinvsqr; csinvsumu += 1.0 / s;
+            cscssumu += sinvsqr;
+            // Lowerbound
+            s = sl[i]; sinvsqr = 1.0 / (s * s);
+            M[idx] += sinvsqr; asinv[i] -= 1.0 / s;
+            u[i] += bound * sinvsqr; csinvsuml += 1.0 / s;
+            cscssuml += sinvsqr;
+            
+            idx += m - i;
+        }
+        
+        dsdpSolver->csinv += bound * csinvsumu - bound * csinvsuml;
+        dsdpSolver->csinvcsinv += bound * bound * (cscssumu + cscssuml);
+        
+    } else {
+        for (DSDP_INT i = 0, idx = 0; i < m; ++i) {
+            s = su[i]; M[idx] += 1.0 / (s * s); asinv[i] += 1.0 / s;
+            s = sl[i]; M[idx] += 1.0 / (s * s); asinv[i] -= 1.0 / s;
+            idx += m - i;
+        }
     }
     
     return retcode;
@@ -146,11 +170,6 @@ static DSDP_INT schurMatPerturb( HSDSolver *dsdpSolver ) {
     
     double iterB = 0;
     DSDPGetStats(&dsdpSolver->dsdpStats, STAT_PHASE_B_ITER, &iterB);
-    
-    if ((DSDP_INT) iterB % 21 == 20 && dsdpSolver->pObjVal == 1e+10) {
-        perturb += 1e-04;
-        dsdpSolver->pObjVal = 1e+15;
-    }
     
     if (!dsdpSolver->eventMonitor[EVENT_INVALID_GAP]) {
         
@@ -268,7 +287,9 @@ static DSDP_INT setupPhaseAdvecs( HSDSolver *dsdpSolver ) {
      d2_12_3_4 = M \ [b, u, asinv, asinvrysinv];
     */
     DSDP_INT retcode = DSDP_RETCODE_OK;
-    retcode = vec_copy(dsdpSolver->dObj,  dsdpSolver->d2);
+    DSDP_INT ignoredobj = FALSE;
+    DSDPGetIntParam(dsdpSolver, INT_PARAM_DOBJ_IGNORE, &ignoredobj);
+    retcode = (ignoredobj) ? vec_reset(dsdpSolver->d2) : vec_copy(dsdpSolver->dObj,  dsdpSolver->d2);
     retcode = vec_copy(dsdpSolver->u,     dsdpSolver->d12);
     retcode = vec_copy(dsdpSolver->asinv, dsdpSolver->d3);
     
@@ -308,11 +329,11 @@ static DSDP_INT cgSolveCheck( CGSolver *cgSolver, vec *b ) {
         } else {
             cgSolver->nfailed += 1;
         }
-        
+
         cgSolver->nused = 1024;
         if (cgSolver->nfailed >= 5) { dsdpCGSetPreReuse(cgSolver, MIN(cgSolver->reuse, 5));}
         if (cgSolver->nfailed >= 10) { dsdpCGSetPreReuse(cgSolver, MIN(cgSolver->reuse, 3));}
-        if (cgSolver->nfailed >= 15) { dsdpCGSetPreReuse(cgSolver, MIN(cgSolver->reuse, 1));}
+        if (cgSolver->nfailed >= 15) { dsdpCGSetPreReuse(cgSolver, MIN(cgSolver->reuse, 2));}
         if (cgSolver->nfailed >= 50) { cgSolver->M->isillCond = TRUE;}
         
         // Restart from the last unfinished solution
@@ -322,7 +343,7 @@ static DSDP_INT cgSolveCheck( CGSolver *cgSolver, vec *b ) {
         dsdpCGGetStatus(cgSolver, &status);
         
         if (status != CG_STATUS_SOLVED && status != CG_STATUS_INDEFINITE) {
-            error(etype, "Invalid CG iteration. \n");
+            // error(etype, "Invalid CG iteration. \n");
         }
     }
     
@@ -360,8 +381,9 @@ extern DSDP_INT setupFactorize( HSDSolver *dsdpSolver ) {
     
     // Get dual slack
     double bound = 0.0; DSDPGetDblParam(dsdpSolver, DBL_PARAM_PRLX_PENTALTY, &bound);
-    vec_lslack(dsdpSolver->y, dsdpSolver->sl, -bound);
-    vec_uslack(dsdpSolver->y, dsdpSolver->su, bound);
+    
+    vec_lslack(dsdpSolver->y, dsdpSolver->sl, -bound * dsdpSolver->tau);
+    vec_uslack(dsdpSolver->y, dsdpSolver->su,  bound * dsdpSolver->tau);
     
     dsdpSolver->iterProgress[ITER_DUAL_FACTORIZE] = TRUE;
     return retcode;
@@ -371,6 +393,7 @@ extern DSDP_INT schurPhaseAMatSolve( HSDSolver *dsdpSolver ) {
     // Solve the internal system to get the directions
     // After this routine, d1, d12, d3 and d4 will be filled
     DSDP_INT retcode = DSDP_RETCODE_OK;
+    DSDP_INT ignoredObj = FALSE; DSDPGetIntParam(dsdpSolver, INT_PARAM_DOBJ_IGNORE, &ignoredObj);
     retcode = checkIterProgress(dsdpSolver, ITER_SCHUR_SOLVE);
     assert( !dsdpSolver->iterProgress[ITER_SCHUR_SOLVE] );
     if (dsdpSolver->iterProgress[ITER_SCHUR_SOLVE]) {
@@ -378,7 +401,9 @@ extern DSDP_INT schurPhaseAMatSolve( HSDSolver *dsdpSolver ) {
     }
     // Currently no CG warmstart
     retcode = cgSolveCheck(dsdpSolver->cgSolver, dsdpSolver->d2);
-    retcode = cgSolveCheck(dsdpSolver->cgSolver, dsdpSolver->d12);
+    if (!ignoredObj) {
+        retcode = cgSolveCheck(dsdpSolver->cgSolver, dsdpSolver->d12);
+    }
     retcode = cgSolveCheck(dsdpSolver->cgSolver, dsdpSolver->d3);
     retcode = cgSolveCheck(dsdpSolver->cgSolver, dsdpSolver->d4);
     

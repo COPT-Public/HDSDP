@@ -112,6 +112,7 @@ typedef struct {
     
     // Primal variable
     vec      *pScaler;    // Primal scaling coefficient
+    double    cScaler;    // |C|
     vec      *ymaker;     // y
     vec      *dymaker;    // dy
     double   mumaker;     // mu

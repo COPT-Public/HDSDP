@@ -390,6 +390,13 @@ extern DSDP_INT r1MatOneNorm( r1Mat *x, double *onenrm ) {
     return DSDP_RETCODE_OK;
 }
 
+extern DSDP_INT r1MatScale( r1Mat *x, double a ) {
+    
+    assert( (x->dim) );
+    x->sign = x->sign * a;
+    return DSDP_RETCODE_OK;
+}
+
 extern DSDP_INT r1MatRscale( r1Mat *x, double r ) {
     
     assert( (x->dim) && (r != 0.0) );

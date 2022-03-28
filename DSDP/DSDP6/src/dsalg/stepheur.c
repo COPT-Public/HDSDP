@@ -15,11 +15,16 @@ void spsMatExport( spsMat *A );
 static DSDP_INT getKappaTauStep( HSDSolver *dsdpSolver, double *kappatauStep ) {
     // Compute the maximum step size to take at kappa and tau
     DSDP_INT retcode = DSDP_RETCODE_OK;
-    double Aalpha, tau, kappa, dtau, dkappa, step;
+    double Aalpha, tau, dtau, step;
     retcode = DSDPGetDblParam(dsdpSolver, DBL_PARAM_AALPHA, &Aalpha);
-    tau = dsdpSolver->tau; kappa = dsdpSolver->kappa;
-    dtau = dsdpSolver->dtau; dkappa = dsdpSolver->dkappa;
+    tau = dsdpSolver->tau; dtau = dsdpSolver->dtau;
+#ifdef KAPPATAU
+    double kappa, dkappa;
+    kappa = dsdpSolver->kappa; dkappa = dsdpSolver->dkappa;
     step = MIN((dtau / tau), (dkappa / kappa));
+#else
+    step = dtau / tau;
+#endif
     *kappatauStep = (step < 0.0) ? fabs(Aalpha / step) : DSDP_INFINITY;
     return retcode;
 }
@@ -28,10 +33,12 @@ static DSDP_INT takeKappaTauStep( HSDSolver *dsdpSolver ) {
     // Take step in kappa and tau
     DSDP_INT retcode = DSDP_RETCODE_OK;
     double step = dsdpSolver->alpha;
-    
     dsdpSolver->tau = dsdpSolver->tau + step * dsdpSolver->dtau;
+#ifdef KAPPATAU
     dsdpSolver->kappa = dsdpSolver->kappa + step * dsdpSolver->dkappa;
-    
+#else
+    dsdpSolver->kappa = dsdpSolver->mu / dsdpSolver->tau;
+#endif
     return retcode;
 }
 
@@ -113,10 +120,23 @@ static double getBoundyStep( HSDSolver *dsdpSolver ) {
     vec *y = dsdpSolver->y, *dy = dsdpSolver->dy;
     double bound, yi, dyi, step = DSDP_INFINITY;
     DSDPGetDblParam(dsdpSolver, DBL_PARAM_PRLX_PENTALTY, &bound);
-    for (DSDP_INT i = 0; i < y->dim; ++i) {
-        yi = y->x[i]; dyi = dy->x[i];
-        if (dyi == 0.0) continue;
-        step = (dyi > 0.0) ? MIN(step, (bound - yi) / dyi) : MIN(step, (- bound - yi) / dyi);
+    
+    if (dsdpSolver->eventMonitor[EVENT_IN_PHASE_A]) {
+        double dtau = dsdpSolver->dtau, ds, tmpl = DSDP_INFINITY, tmpu = DSDP_INFINITY;
+        double *sl = dsdpSolver->sl->x, *su = dsdpSolver->su->x;
+        for (DSDP_INT i = 0; i < y->dim; ++i) {
+            yi = y->x[i]; dyi = y->x[i];
+            ds = -dyi + bound * dtau; tmpl = MIN(tmpl, ds / sl[i]);
+            ds =  dyi + bound * dtau; tmpu = MIN(tmpu, ds / su[i]);
+        }
+        step = (tmpl >= 0) ? step : MIN(step, - 1.0 / tmpl);
+        step = (tmpu >= 0) ? step : MIN(step, - 1.0 / tmpu);
+    } else {
+        for (DSDP_INT i = 0; i < y->dim; ++i) {
+            yi = y->x[i]; dyi = dy->x[i];
+            if (dyi == 0.0) continue;
+            step = (dyi > 0.0) ? MIN(step, (bound - yi) / dyi) : MIN(step, (- bound - yi) / dyi);
+        }
     }
     return step;
 }
@@ -199,46 +219,36 @@ static DSDP_INT getCurrentyPotential( HSDSolver *dsdpSolver, vec *y,
 extern DSDP_INT getMaxStep( HSDSolver *dsdpSolver ) {
     // Compute the maximum step size to take for one iteration
     DSDP_INT retcode = DSDP_RETCODE_OK;
-    
     retcode = checkIterProgress(dsdpSolver, ITER_COMPUTE_STEP);
-    
-    assert( !dsdpSolver->iterProgress[ITER_COMPUTE_STEP] );
     if (dsdpSolver->iterProgress[ITER_COMPUTE_STEP]) {
         error(etype, "Stepsize has been computed. \n");
     }
     
-    double stepkappatau = 0.0, steplps = 100.0, sdpS = 0.0, Aalpha;
-    retcode = DSDPGetDblParam(dsdpSolver, DBL_PARAM_AALPHA, &Aalpha);
-    retcode = getKappaTauStep(dsdpSolver, &stepkappatau);
-    // retcode = getLPsStep(dsdpSolver, &steplps);
-    retcode = getSDPSStep(dsdpSolver, &sdpS); checkCode;
+    double stepkappatau = 0.0, steplps = 100.0, sdpS = 0.0, stepbd, Aalpha;
+    DSDPGetDblParam(dsdpSolver, DBL_PARAM_AALPHA, &Aalpha);
+    getKappaTauStep(dsdpSolver, &stepkappatau);
+    getSDPSStep(dsdpSolver, &sdpS);
+    stepbd = getBoundyStep(dsdpSolver);
+    
     sdpS = MIN(sdpS, steplps);
-    dsdpSolver->alpha = MIN(sdpS * Aalpha, stepkappatau);
-    dsdpSolver->alpha = MIN(dsdpSolver->alpha, 1.0);
+    dsdpSolver->alpha = MIN(sdpS, stepkappatau);
+    dsdpSolver->alpha = MIN(dsdpSolver->alpha, stepbd);
+    dsdpSolver->alpha = MIN(dsdpSolver->alpha * Aalpha, 1.0);
     
-    dsdpSolver->iterProgress[ITER_COMPUTE_STEP] = TRUE;
-    
-    return retcode;
+    dsdpSolver->iterProgress[ITER_COMPUTE_STEP] = TRUE; return retcode;
 }
 
 extern DSDP_INT takeStep( HSDSolver *dsdpSolver ) {
     // Take step towards next iterate
     DSDP_INT retcode = DSDP_RETCODE_OK;
-    
     retcode = checkIterProgress(dsdpSolver, ITER_TAKE_STEP);
-    assert( !dsdpSolver->iterProgress[ITER_TAKE_STEP] );
-    
     if (dsdpSolver->iterProgress[ITER_TAKE_STEP]) {
         error(etype, "Step has been taken. \n");
     }
-    
-    retcode = takeKappaTauStep(dsdpSolver);
-    retcode = takeyStep(dsdpSolver);
-    // retcode = takelpsStep(dsdpSolver, step);
-    retcode = takeSDPSStep(dsdpSolver); checkCode;
-    dsdpSolver->iterProgress[ITER_TAKE_STEP] = TRUE;
-    
-    return retcode;
+    takeKappaTauStep(dsdpSolver);
+    takeyStep(dsdpSolver);
+    takeSDPSStep(dsdpSolver);
+    dsdpSolver->iterProgress[ITER_TAKE_STEP] = TRUE; return retcode;
 }
 
 extern DSDP_INT selectMu( HSDSolver *dsdpSolver, double *newmu ) {
@@ -256,6 +266,7 @@ extern DSDP_INT selectMu( HSDSolver *dsdpSolver, double *newmu ) {
     double alpha = DSDP_INFINITY, alphap = 0.0, tmp = 1000;
     
     if (dsdpSolver->eventMonitor[EVENT_PFEAS_FOUND]) {
+        // IMPORTANT: Is it correct ?
         retcode = getPhaseBdS(dsdpSolver, -1.0 / dsdpSolver->mu, dsdpSolver->d1->x, 0.0);
         for (DSDP_INT i = 0; i < dsdpSolver->nBlock; ++i) {
             dsdpGetAlpha(dsdpSolver->lczSolver[i], dsdpSolver->Scker[i],
@@ -266,9 +277,12 @@ extern DSDP_INT selectMu( HSDSolver *dsdpSolver, double *newmu ) {
         // Compute step of bound cone
         alpha = MIN(vec_step(dsdpSolver->su, dsdpSolver->d1, 1.0 / dsdpSolver->mu), alpha);
         alpha = MIN(vec_step(dsdpSolver->sl, dsdpSolver->d1, - 1.0 / dsdpSolver->mu), alpha);
-        *newmu = dsdpSolver->mu / (1 + alpha * 0.95);
+        
+        alpha = MIN(alpha * 0.97, 1000.0);
+        *newmu = dsdpSolver->mu / (1.0 + alpha);
         
     } else {
+        
         // dS = dsdpgetATy(A, dy);
         retcode = getPhaseBdS(dsdpSolver, -1.0, dsdpSolver->b1->x, 0.0);
         // alphap = dsdpgetalpha(S, dS, 0.95 / 1.0);
@@ -282,26 +296,47 @@ extern DSDP_INT selectMu( HSDSolver *dsdpSolver, double *newmu ) {
         alpha = MIN(vec_step(dsdpSolver->su, dsdpSolver->b1,  1.0), alpha);
         alpha = MIN(vec_step(dsdpSolver->sl, dsdpSolver->b1, -1.0), alpha);
         
-        alphap = alpha;
-        // Shat = S + 0.95 * alphap * dS;
-        for (DSDP_INT i = 0; i < dsdpSolver->nBlock; ++i) {
-            memcpy(dsdpSolver->Scker[i]->x, dsdpSolver->S[i]->x,
-                   sizeof(double) * dsdpSolver->S[i]->nnz);
-            // This step sometimes fails due to inaccurate Lanczos
-            spsMataXpbY(MIN(0.95 * alphap, 1.0), dsdpSolver->dS[i],
-                        1.0, dsdpSolver->Scker[i], dsdpSolver->symS[i]);
-        }
+        // Line-search
+        alphap = (alpha < 1.0) ? MIN(1.0, 0.97 * alpha) : 1.0;
+        vec_copy(dsdpSolver->sl, dsdpSolver->d12); // Backup
+        vec_copy(dsdpSolver->su, dsdpSolver->d4);
         
-        // Overwrite sl and su by slhat and suhat
-        vec_axpy(- MIN(0.95 * alphap, 1.0), dsdpSolver->b1, dsdpSolver->sl);
-        vec_axpy(  MIN(0.95 * alphap, 1.0), dsdpSolver->b1, dsdpSolver->su);
+        for (DSDP_INT i = 0, j, inCone = FALSE; ; ++i) {
+            // Shat = S + alphap * dS;
+            for (j = 0; j < dsdpSolver->nBlock; ++j) {
+                memcpy(dsdpSolver->Scker[j]->x, dsdpSolver->S[j]->x,
+                       sizeof(double) * dsdpSolver->S[j]->nnz);
+                // This step sometimes fails due to inaccurate Lanczos and line-search is necessary
+                spsMataXpbY(alphap, dsdpSolver->dS[j],
+                            1.0, dsdpSolver->Scker[j], dsdpSolver->symS[j]);
+            }
+            
+            // Overwrite sl and su by slhat and suhat
+            vec_axpy(- alphap, dsdpSolver->b1, dsdpSolver->sl);
+            vec_axpy(  alphap, dsdpSolver->b1, dsdpSolver->su);
+            
+            inCone = vec_incone(dsdpSolver->sl);
+            inCone = vec_incone(dsdpSolver->su);
+            
+            if (inCone) {
+                for (j = 0; j < dsdpSolver->nBlock; ++j) {
+                    spsMatIspd(dsdpSolver->Scker[j], &inCone);
+                    if (!inCone) { break; }
+                }
+            }
 
-        for (DSDP_INT i = 0; i < dsdpSolver->nBlock; ++i) {
-            spsMatFactorize(dsdpSolver->Scker[i]);
+            if (!inCone) {
+                alphap = (i > 2) ? 0.5 * alphap : 0.97 * alphap;
+                vec_copy(dsdpSolver->d12, dsdpSolver->sl);
+                vec_copy(dsdpSolver->d4, dsdpSolver->su);
+                continue;
+            }
+            
+            if (inCone || alphap < 1e-08) { break; }
         }
         
-        // dS = - alphap * dsdpgetATy(A, dy1) / muk;
-        getPhaseBdS(dsdpSolver, alphap / dsdpSolver->mu, dsdpSolver->d1->x, 0.0);
+        // IMPORTANT: Is it correct ?
+        getPhaseBdS(dsdpSolver, -alphap / dsdpSolver->mu, dsdpSolver->d1->x, 0.0);
         
         tmp = DSDP_INFINITY;
         for (DSDP_INT i = 0; i < dsdpSolver->nBlock; ++i) {
@@ -313,13 +348,10 @@ extern DSDP_INT selectMu( HSDSolver *dsdpSolver, double *newmu ) {
         tmp = MIN(vec_step(dsdpSolver->sl, dsdpSolver->d1,  alphap / dsdpSolver->mu), tmp);
         tmp = MIN(vec_step(dsdpSolver->su, dsdpSolver->d1, -alphap / dsdpSolver->mu), tmp);
         
-//        tmp = MIN(tmp, 1000.0);
+        tmp = MIN(0.97 * tmp, 1000.0);
         
-        *newmu = (alphap * dsdpSolver->mu) / (1 + tmp) + \
-                  + (1 - alphap) * (dsdpSolver->pObjVal - dsdpSolver->dObjVal) / (dsdpSolver->n + dsdpSolver->m * 2);
-        
-        // tmp = MIN(1, 0.97 * tmp); tmp = dsdpSolver->mu / (1.0 + alphap); alphap *= 0.6;
-        // *newmu = alphap * tmp + (1.0 - alphap) * dsdpSolver->mu;
+        *newmu = (alphap * dsdpSolver->mu) / (1.0 + tmp) + \
+                  + (1.0 - alphap) * (dsdpSolver->pObjVal - dsdpSolver->dObjVal) / (dsdpSolver->n + dsdpSolver->m * 2);
     }
     
     return retcode;
@@ -332,18 +364,17 @@ extern DSDP_INT dualPotentialReduction( HSDSolver *dsdpSolver ) {
     DSDP_INT retcode = DSDP_RETCODE_OK;
     retcode = checkIterProgress(dsdpSolver, ITER_COMPUTE_STEP);
     
-    double rho, oldpotential = 0.0, maxstep = 0.0;
-    DSDPSetDblParam(dsdpSolver, DBL_PARAM_RHO,
-                    (dsdpSolver->pObjVal - dsdpSolver->dObjVal) / dsdpSolver->mu);
+    double rho, oldpotential = 0.0, maxstep = 0.0, better = 0.0;
     getDblParam(dsdpSolver->param, DBL_PARAM_RHO, &rho);
     
+    better = (dsdpSolver->Pnrm < 0.5) ? 0.0 : 0.05;
     vec *ytarget = dsdpSolver->d4, *y = dsdpSolver->y, *dy = dsdpSolver->dy;
     getCurrentyPotential(dsdpSolver, NULL, rho, &oldpotential, NULL);
     getSDPSStep(dsdpSolver, &maxstep);
     maxstep = MIN(maxstep, getBoundyStep(dsdpSolver));
     maxstep = MIN(maxstep * 0.95, 1.0);
     
-    double alpha = maxstep, newpotential = 0.0, bestpotential = oldpotential, bestalpha = alpha;
+    double alpha = maxstep, newpotential = 0.0;
     DSDP_INT inCone = FALSE;
     
     // Start line search
@@ -353,34 +384,25 @@ extern DSDP_INT dualPotentialReduction( HSDSolver *dsdpSolver ) {
         if (i == 0) {
             getCurrentyPotential(dsdpSolver, ytarget, rho, &newpotential, &inCone);
             if (!inCone) {
-                alpha *= 0.8; bestalpha *= 0.8; --i;
-                if (alpha <= 1e-03) {
-                    break;
-                }
+                alpha /= 3; --i;
+                if (alpha <= 1e-04) { break; }
                 continue;
             }
         } else {
             getCurrentyPotential(dsdpSolver, ytarget, rho, &newpotential, NULL);
         }
         
-        if (alpha <= 1e-02 || newpotential <= oldpotential - 0.05) {
+        if (alpha <= 1e-04 || (newpotential <= oldpotential - better)
+            || (alpha * dsdpSolver->Pnrm <= 0.001)) {
             break;
-        } else {
-            if (newpotential < bestpotential) {
-                bestalpha = alpha; bestpotential = newpotential;
-            }
         }
-        alpha *= 0.8;
-    }
-    
-    if (alpha <= 1e-02) {
-        alpha = bestalpha;
+        alpha *= 0.3;
     }
     
     // Take step
     vec_axpy(alpha, dy, y); getPhaseBS(dsdpSolver, y->x);
     dsdpSolver->alpha = alpha;
-    dsdpSolver->dPotential = bestpotential;
+    dsdpSolver->dPotential = newpotential;
     
     dsdpSolver->iterProgress[ITER_COMPUTE_STEP] = TRUE;
     dsdpSolver->iterProgress[ITER_TAKE_STEP] = TRUE;

@@ -194,18 +194,25 @@ extern double denseMatxTAx( dsMat *dAMat, double *aux, double *x ) {
     return dot(&dAMat->dim, x, &one, aux, &one);
 }
 
+extern DSDP_INT denseMatScale( dsMat *dXMat, double a ) {
+    
+    DSDP_INT n = nsym(dXMat->dim);
+    dscal(&n, &a, dXMat->array, &one);
+    if (dXMat->factor) {
+        rkMatScale(dXMat->factor, a);
+    }
+    return DSDP_RETCODE_OK;
+}
+
 extern DSDP_INT denseMatRscale( dsMat *dXMat, double r ) {
     // Scale a matrix by reciprocical without over/under flow
-    
-    DSDP_INT retcode = DSDP_RETCODE_OK;
-    assert( dXMat->dim > 0 );
     DSDP_INT n = nsym(dXMat->dim);
     vecdiv(&n, &r, dXMat->array, &one);
     
     if (dXMat->factor) {
         rkMatRscale(dXMat->factor, r);
-    }   
-    return retcode;
+    }
+    return DSDP_RETCODE_OK;
 }
 
 extern DSDP_INT denseMatFnorm( dsMat *dMat, double *fnrm ) {

@@ -447,7 +447,7 @@ static DSDP_INT preRankkEvRdcBlock( sdpMat *dataMat, DSDPStats *stat ) {
                 retcode = factorizeSpecial(spsdata, eigvals, eigvecs, &special);
                 if (!special) {
 #ifndef superDebug
-                if (spsdata->nnz > 2 * n || n > 20) break;
+                 if (spsdata->nnz > 2 * n || n > 20) break;
 #endif
                     retcode = factorizeSparseData(spsdata, -onenrm, eigvals, eigvecs);
                 }
@@ -602,7 +602,6 @@ static DSDP_INT preSDPMatPScale( HSDSolver *dsdpSolver ) {
 }
 
 static DSDP_INT preSDPMatgetDScaler( HSDSolver *dsdpSolver ) {
-    
     // Compute the dual scaler for DSDP
     DSDP_INT retcode = DSDP_RETCODE_OK;
     
@@ -636,7 +635,6 @@ static DSDP_INT preSDPMatgetDScaler( HSDSolver *dsdpSolver ) {
 }
 
 static DSDP_INT preSDPMatDScale( HSDSolver *dsdpSolver ) {
-    
     // Carry out primal scaling of SDP
     DSDP_INT retcode = DSDP_RETCODE_OK;
     
@@ -910,20 +908,43 @@ extern DSDP_INT preRankkRdc( HSDSolver *dsdpSolver ) {
 extern DSDP_INT preSDPPrimal( HSDSolver *dsdpSolver ) {
     // Do matrix coefficient scaling given preScaler for the primal
     DSDP_INT retcode = DSDP_RETCODE_OK;
-    
     retcode = preSDPMatgetPScaler(dsdpSolver); checkCode;
-    retcode = preSDPMatPScale(dsdpSolver); checkCode;
+    retcode = preSDPMatPScale(dsdpSolver);
+    return retcode;
+}
+
+extern DSDP_INT preSDPMatCScale( HSDSolver *dsdpSolver ) {
+    // Scale C by its one norm or decide that the problem is a feasibility problem
+    DSDP_INT retcode = DSDP_RETCODE_OK;
+    DSDPGetStats(&dsdpSolver->dsdpStats, STAT_ONE_NORM_C, &dsdpSolver->cScaler);
+    double tol; DSDPGetDblParam(dsdpSolver, DBL_PARAM_ABS_OPTTOL, &tol);
+    
+    if (dsdpSolver->cScaler > 1e+10) {
+        dsdpSolver->cScaler = 1e+08;
+    } else if (dsdpSolver->cScaler > 1e+08) {
+        dsdpSolver->cScaler = 1e+06;
+    } else if (dsdpSolver->cScaler < 1e-15) {
+        printf("| Optimizing a primal feasibility problem. \n");
+        dsdpSolver->cScaler = 1.0;
+        DSDPStatUpdate(&dsdpSolver->dsdpStats, STAT_PFEAS_PROBLEM, TRUE);
+    } else if (dsdpSolver->cScaler < 1e-08) {
+        dsdpSolver->cScaler = 1e-06;
+    } else {
+        dsdpSolver->cScaler = 1.0;
+    }
+    
+    for (DSDP_INT i = 0; i < dsdpSolver->nBlock; ++i) {
+        matRScale(dsdpSolver, i, dsdpSolver->m, dsdpSolver->cScaler);
+    }
     
     return retcode;
 }
 
 extern DSDP_INT preSDPDual( HSDSolver *dsdpSolver ) {
-    // Dual coefficient scaling
+    // Dual coefficient scaling. Not in use
     DSDP_INT retcode = DSDP_RETCODE_OK;
-    
     retcode = preSDPMatgetDScaler(dsdpSolver); checkCode;
     retcode = preSDPMatDScale(dsdpSolver); checkCode;
-    
     return retcode;
 }
 

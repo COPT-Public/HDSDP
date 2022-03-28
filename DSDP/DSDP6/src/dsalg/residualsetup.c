@@ -3,13 +3,6 @@
 // Setup all the residuals for the dual scaling algorithm to work
 static char etype[] = "Residual setup";
 
-static DSDP_INT getRkappaTau( HSDSolver *dsdpSolver ) {
-    // Setup the complementarity residual rtk
-    DSDP_INT retcode = DSDP_RETCODE_OK;
-    dsdpSolver->rtk = dsdpSolver->tau * dsdpSolver->kappa - dsdpSolver->mu;
-    return retcode;
-}
-
 static DSDP_INT getRy( HSDSolver *dsdpSolver ) {
     // Check the dual infeasibility
     dsdpSolver->Ry *= (1 - dsdpSolver->alpha);
@@ -48,8 +41,7 @@ extern DSDP_INT setupRes( HSDSolver *dsdpSolver ) {
     
     checkIterProgress(dsdpSolver, ITER_RESIDUAL);
     retcode = getRy(dsdpSolver); checkCode;
-    retcode = getRkappaTau(dsdpSolver); checkCode;
-    
+    // retcode = getRkappaTau(dsdpSolver); checkCode;
     dsdpSolver->iterProgress[ITER_RESIDUAL] = TRUE;
     
     return retcode;

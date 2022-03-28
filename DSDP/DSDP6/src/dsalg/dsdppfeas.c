@@ -80,11 +80,9 @@ extern DSDP_INT DSDPPFeasPhase( HSDSolver *dsdpSolver ) {
         newmu = MIN(newmu, muub);
         newmu = MAX(newmu, mulb);
         dsdpSolver->mu = newmu;
-        
-        if (dsdpSolver->Pnrm < 0.1 &&
-            dsdpSolver->eventMonitor[EVENT_PFEAS_FOUND]) {
-            dsdpSolver->mu *= 0.1;
-        }
+
+        DSDPSetDblParam(dsdpSolver, DBL_PARAM_RHO,
+                        (dsdpSolver->pObjVal - dsdpSolver->dObjVal) / dsdpSolver->mu);
         
         dsdpSolver->iterProgress[ITER_PROX_POBJ] = TRUE;
         // Get step direction
@@ -94,7 +92,7 @@ extern DSDP_INT DSDPPFeasPhase( HSDSolver *dsdpSolver ) {
         // Potential reduction
         retcode = dualPotentialReduction(dsdpSolver); checkCode;
         // Corrector step
-         retcode = dualCorrectorStep(dsdpSolver); checkCode;
+        retcode = dualCorrectorStep(dsdpSolver); checkCode;
         // dsdpSolver->iterProgress[ITER_CORRECTOR] = TRUE;
         dsdpSolver->iterProgress[ITER_DECREASE_MU] = TRUE;
         checkIterProgress(dsdpSolver, ITER_NEXT_ITERATION);

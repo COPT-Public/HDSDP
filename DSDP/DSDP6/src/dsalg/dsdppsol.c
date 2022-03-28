@@ -7,9 +7,7 @@ extern DSDP_INT computePrimalX( HSDSolver *dsdpSolver ) {
     
     // Extract primal solution of the current block
     DSDP_INT retcode = DSDP_RETCODE_OK;
-    
-    assert( dsdpSolver->solStatus == DSDP_OPTIMAL );
-    
+        
     DSDP_INT nblock = dsdpSolver->nBlock, dim = 0;
     vec *dymaker = dsdpSolver->dymaker, *ymaker = dsdpSolver->ymaker;
     spsMat *Smaker = NULL, *bnmaker = NULL;

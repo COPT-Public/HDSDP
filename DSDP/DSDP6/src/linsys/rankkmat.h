@@ -24,6 +24,7 @@ extern DSDP_INT rkMatdiagTrace          ( rkMat  *R,  double diag, double *trace
 extern DSDP_INT rkMatCountNnz           ( rkMat  *R                                );
 extern DSDP_INT rkMatFree               ( rkMat  *R                                );
 extern DSDP_INT rkMatFnorm              ( rkMat  *R,  double *fnrm                 );
+extern DSDP_INT rkMatScale              ( rkMat  *R,  double a                     );
 extern DSDP_INT rkMatRscale             ( rkMat  *R,  double r                     );
 extern DSDP_INT rkMatisRank1            ( rkMat  *R,  DSDP_INT *isRank1            );
 extern DSDP_INT rkMatGetRank            ( rkMat  *R                                );

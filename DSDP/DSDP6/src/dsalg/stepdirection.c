@@ -14,7 +14,7 @@ static DSDP_INT assemblePhaseAArrs( HSDSolver *dsdpSolver ) {
     */
     DSDP_INT retcode = DSDP_RETCODE_OK;
     
-    // b1 = b - mu * u
+    // b1 = b - mu * u = mu * (b / mu + u)
     vec_zaxpby(dsdpSolver->b1, 1.0, dsdpSolver->dObj,
                - dsdpSolver->mu, dsdpSolver->u);
     // b2 = tau / mu * d2 - d3
@@ -75,6 +75,17 @@ static DSDP_INT getdyB( HSDSolver *dsdpSolver ) {
     vec_zaxpby(dsdpSolver->dy, 1 / dsdpSolver->mu,
                dsdpSolver->d1, -1.0, dsdpSolver->d2);
     
+    dsdpSolver->Pnrm = denseMatxTAx(dsdpSolver->Msdp, dsdpSolver->M->schurAux, dsdpSolver->dy->x);
+    dsdpSolver->Pnrm = sqrt(MAX(dsdpSolver->Pnrm, 0.0));
+    
+    if (dsdpSolver->Pnrm < 0.1) {
+        dsdpSolver->mu *= 0.1;
+        vec_zaxpby(dsdpSolver->dy, 1 / dsdpSolver->mu,
+                   dsdpSolver->d1, -1.0, dsdpSolver->d2);
+        dsdpSolver->Pnrm = denseMatxTAx(dsdpSolver->Msdp, dsdpSolver->M->schurAux, dsdpSolver->dy->x);
+        dsdpSolver->Pnrm = sqrt(MAX(dsdpSolver->Pnrm, 0.0));
+    }
+    
     return retcode;
 }
 
@@ -98,10 +109,13 @@ static DSDP_INT getdSB( HSDSolver *dsdpSolver ) {
 static DSDP_INT getdKappa( HSDSolver *dsdpSolver ) {
     
     DSDP_INT retcode = DSDP_RETCODE_OK;
-    
+#ifdef KAPPATAU
     dsdpSolver->dkappa = - dsdpSolver->kappa
                          + dsdpSolver->mu / dsdpSolver->tau
                          - (dsdpSolver->kappa * dsdpSolver->dtau) / dsdpSolver->tau;
+#else
+    dsdpSolver->dkappa = 0.0;
+#endif
     return retcode;
 }
 

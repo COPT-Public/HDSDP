@@ -38,6 +38,7 @@ extern DSDP_INT r1MatFree        ( r1Mat *x                   );
 extern DSDP_INT r1MatNormalize   ( r1Mat *x                   );
 extern DSDP_INT r1MatFnorm       ( r1Mat *x, double *fnrm     );
 extern DSDP_INT r1MatOneNorm     ( r1Mat *x, double *onenrm   );
+extern DSDP_INT r1MatScale       ( r1Mat *x, double a         );
 extern DSDP_INT r1MatRscale      ( r1Mat *x, double r         );
 extern DSDP_INT r1MatView        ( r1Mat *x );
 

@@ -20,6 +20,7 @@ extern "C" {
 
 
 extern DSDP_INT preSDPPrimal   ( HSDSolver *dsdpSolver );
+extern DSDP_INT preSDPMatCScale( HSDSolver *dsdpSolver );
 extern DSDP_INT preSDPDual     ( HSDSolver *dsdpSolver );
 // extern DSDP_INT preLPMatScale  ( lpMat  *lpData, vec *lpObj, vec *pScaler );
 extern DSDP_INT preRank1Rdc    ( HSDSolver *dsdpSolver );

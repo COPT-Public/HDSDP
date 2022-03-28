@@ -36,7 +36,8 @@
 #define PRESOLVE_CONSERVATIVE   51
 #define INT_PARAM_AMAXITER       6
 #define INT_PARAM_BMAXITER       7
-#define INT_PARAM_PRELAX         8
+#define INT_PARAM_DOBJ_IGNORE    8
+#define INT_PARAM_PRELAX         9
 
 #define NUM_DBL_PARAM  (DBL_PARAM_PRLX_PENTALTY + 1)
 #define NUM_INT_PARAM  (INT_PARAM_PRELAX        + 1)
@@ -50,16 +51,17 @@ typedef struct {
 
 static DSDP_INT defaultIntParam[NUM_INT_PARAM] = {
     0,     // INT_PARAM_ACORRECTOR
-    12,     // INT_PARAM_BCORRECTOR
+    0,     // INT_PARAM_BCORRECTOR
     INIT_METHOD_FRO,
            // INT_PARAM_INITMETHOD
     AATEMPT_AGGRESSIVE,
            // INT_PARAM_AATTEMPT
-    10,     // INT_PARAM_CG_REUSE
+    10,    // INT_PARAM_CG_REUSE
     PRESOLVE_AGGRESSIVE,
            // INT_PARAM_PRESOLVE
     100,   // INT_PARAM_AMAXITER
     500,   // INT_PARAM_BMAXITER
+    TRUE,  // INT_PARAM_DOBJ_IGNORE
     FALSE  // INT_PARAM_PRELAX
 };
 
@@ -67,17 +69,22 @@ static double defaultDblParam[NUM_DBL_PARAM] = {
     
     0.9,   // DBL_PARAM_ASIGMA
     0.1,   // DBL_PARAM_BSIGMA
-    5.0,   // DBL_PARAM_RHO
-    5.0,   // DBL_PARAM_RHON
+    3.0,   // DBL_PARAM_RHO
+    3.0,   // DBL_PARAM_RHON
     1e+10, // DBL_PARAM_INIT_POBJ
-    1.0, // DBL_PARAM_INIT_BETA
+    
+    
+    1e+06, // DBL_PARAM_INIT_BETA
     1e+10, // DBL_PARAM_INIT_MU
-    1.0,   // DBL_PARAM_INIT_TAU
+    1e+10,   // DBL_PARAM_INIT_TAU
+    
+    
+    
     1.0, // DBL_PARAM_INIT_KAPPA
     0.75,  // DBL_PARAM_AALPHA
     1e+08, // DBL_PARAM_NRM_THRESH
     1e+08, // DBL_PARAM_INFEAS_THRESH
-    1e-05, // DBL_PARAM_ABS_OPTTOL
+    1e-06, // DBL_PARAM_ABS_OPTTOL
     1e-03, // DBL_PARAM_REL_OPTTOL
     1e-06, // DBL_PARAM_ABS_FEASTOL
     1e-03, // DBL_PARAM_REL_FEASTOL

@@ -24,6 +24,7 @@ static double getCurrentLogBarrier( HSDSolver *dsdpSolver, vec *y, DSDP_INT *inC
         }
         getPhaseBS(dsdpSolver, y->x); dsdpInCone(dsdpSolver, &psd);
         if (!psd) { *inCone = FALSE; return 0.0; }
+        *inCone = TRUE;
     } else { // No check
         for (i = 0; i < dsdpSolver->m; ++i) {
             su = bound - y->x[i]; sl = y->x[i] + bound;
@@ -55,12 +56,12 @@ static DSDP_INT adjCorrectorStep( HSDSolver *dsdpSolver ) {
     if (dsdpSolver->alpha < 0.1 && dsdpSolver->mu < 1e-05) { nusercorr = 0; }
     if (dsdpSolver->mu < 1e-06) { nusercorr = 0; }
     
-    if (n >= 5 * m) {
+    if (n >= 2 * m) {
         nusercorr = MIN(nusercorr, 0);
     } else if (n >= m) {
-        nusercorr = MIN(nusercorr, 4);
+        nusercorr = MIN(nusercorr, 2);
     } else if (n >= 0.8 * m) {
-        nusercorr = MIN(nusercorr, 8);
+        nusercorr = MIN(nusercorr, 4);
     }
     
     if (m > 20 * n) {
@@ -97,6 +98,7 @@ extern DSDP_INT dualCorrectorStep( HSDSolver *dsdpSolver ) {
     DSDP_INT ncorrector = adjCorrectorStep(dsdpSolver), inCone = FALSE;
     vec_dot(b, d1, &bTd1);
     
+    
     for (DSDP_INT i = 0, j; i < ncorrector; ++i) {
         
         if (dsdpSolver->mu < 1e-05) {
@@ -120,11 +122,10 @@ extern DSDP_INT dualCorrectorStep( HSDSolver *dsdpSolver ) {
         
         vec_dot(b, d2, &bTd2);
         if (bTd1 > 0 && bTd2 > 0) {
-//            dsdpSolver->mu = MIN(dsdpSolver->mu, bTd1 / bTd2 * 1.0);
-            dsdpSolver->mu *= shrink;
-            // dsdpSolver->mu = MAX(dsdpSolver->schurmu / rhon, dsdpSolver->mu);
+            dsdpSolver->mu = MIN(dsdpSolver->mu, bTd1 / bTd2);
+//             dsdpSolver->mu = MAX(dsdpSolver->schurmu / rhon, dsdpSolver->mu);
         }
-        
+        dsdpSolver->mu *= shrink;
         
         // dycorr = dy1 / mu - dy2;
         vec_zaxpby(dycorr, 1 / dsdpSolver->mu, d1, -1.0, d2);
@@ -159,7 +160,7 @@ extern DSDP_INT dualCorrectorStep( HSDSolver *dsdpSolver ) {
                 newbarrier = getCurrentLogBarrier(dsdpSolver, ynew, NULL);
             }
             
-            if (step <= 1e-04 || newbarrier <= oldbarrier - fabs(0.1 * bTdycorr * step)) {
+            if (step <= 1e-04 || newbarrier <= oldbarrier - fabs(0.05 * bTdycorr * step)) {
                 break;
             } else {
                 aval = 2 * (newbarrier - oldbarrier + bTdycorr * step) / (step * step);

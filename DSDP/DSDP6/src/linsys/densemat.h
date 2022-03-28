@@ -30,6 +30,7 @@ extern DSDP_INT denseMatAdddiagVec( dsMat *dAMat, vec *d                        
 extern double   denseMatxTAx     ( dsMat *dAMat, double *aux,  double *x                    );
 extern DSDP_INT denseMatFnorm    ( dsMat  *dMat, double *fnrm                               );
 extern DSDP_INT denseMatOneNorm  ( dsMat *dMat, double *onenrm                              );
+extern DSDP_INT denseMatScale    ( dsMat *dXMat, double a                                   );
 extern DSDP_INT denseMatRscale   ( dsMat *dXMat, double r                                   );
 
 /* Factorization and linear system solver */

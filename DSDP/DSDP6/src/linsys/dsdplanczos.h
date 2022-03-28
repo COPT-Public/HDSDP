@@ -5,7 +5,7 @@
 #include "structs.h"
 
 // Implementation of Lanczos iteration for SDP stepsize
-#define MAXITER 10
+#define MAXITER 20
 
 typedef struct {
     

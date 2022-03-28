@@ -205,14 +205,7 @@ extern DSDP_INT rkMatFree( rkMat *R ) {
 }
 
 extern DSDP_INT rkMatFnorm( rkMat *R, double *fnrm ) {
-    /* Compute the Frobenius norm of rank k matrix
-            
-      ||\sum_i d_i a_i a_i||F^2 = trace ((\sum_i d_i a_i a_i) (\sum_i d_i a_i a_i))
-                                = d_i^2 norm(a_i)^4
-     */
-    
-    assert( R->dim );
-    
+    /* Compute the Frobenius norm of rank k matrix */
     double res = 0.0, tmp;
     DSDP_INT rank = R->rank;
     
@@ -224,15 +217,21 @@ extern DSDP_INT rkMatFnorm( rkMat *R, double *fnrm ) {
     return DSDP_RETCODE_OK;
 }
 
+extern DSDP_INT rkMatScale( rkMat *R, double a ) {
+    
+    for (DSDP_INT i = 0; i < R->rank; ++i) {
+        r1MatScale(R->data[i], a);
+    }
+    return DSDP_RETCODE_OK;
+}
+
 extern DSDP_INT rkMatRscale( rkMat *R, double r ) {
     
-    DSDP_INT retcode = DSDP_RETCODE_OK;
-    DSDP_INT rank = R->rank;
-    for (DSDP_INT i = 0; i < rank; ++i) {
+    for (DSDP_INT i = 0; i < R->rank; ++i) {
         r1MatRscale(R->data[i], r);
     }
     
-    return retcode;
+    return DSDP_RETCODE_OK;
 }
 
 extern DSDP_INT rkMatisRank1( rkMat *R, DSDP_INT *isRank1 ) {

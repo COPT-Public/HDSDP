@@ -7,12 +7,10 @@ extern DSDP_INT dsdpgetPhaseAProxMeasure( HSDSolver *dsdpSolver, double newmu ) 
     // Check primal feasibility and proximity measure given a new mu parameter
     DSDP_INT retcode = DSDP_RETCODE_OK;
     
-    double taudenom = 0.0;
-    double dtaudelta = 0.0;
-    double tau = dsdpSolver->tau;
-    double dObj = dsdpSolver->dObjVal;
-    double utd2 = 0.0;
-    DSDP_INT ispfeas = FALSE;
+    DSDP_INT ispfeas = FALSE, ignoredobj;
+    DSDPGetIntParam(dsdpSolver, INT_PARAM_DOBJ_IGNORE, &ignoredobj);
+    double taudenom = 0.0, dtaudelta = 0.0, tau = dsdpSolver->tau,
+           dObj = (ignoredobj) ? 0.0 : dsdpSolver->dObjVal, utd2 = 0.0;
     
     // Use b1 as auxiliary
     vec *dydelta = dsdpSolver->b1;

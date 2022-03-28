@@ -311,10 +311,10 @@ extern DSDP_INT spsMataXpbY( double alpha, spsMat *sXMat, double beta,
     DSDP_INT dim = sXMat->dim, *Ap = sXMat->p, *Ai = sXMat->i;
     double   *Ax = sXMat->x, *Bx = sYMat->x;
     if (sumHash) {
-        for (DSDP_INT i = 0, j, hash; i < dim; ++i) {
+        for (DSDP_INT i = 0, j; i < dim; ++i) {
             for (j = Ap[i]; j < Ap[i + 1]; ++j) {
 #ifdef VERIFY_HASH
-                hash = packIdx(sumHash, dim, Ai[j], i);
+                DSDP_INT hash = packIdx(sumHash, dim, Ai[j], i);
                 assert( hash > 0 || j == 0 );
                 Bx[hash] += alpha * Ax[j];
 #else
@@ -384,9 +384,11 @@ extern DSDP_INT spsMatAddr1( spsMat *sXMat, double alpha, r1Mat *r1YMat, DSDP_IN
     // Add a rank 1 matrix to a sparse matrix
     DSDP_INT retcode = DSDP_RETCODE_OK;
     if (alpha == 0.0) { return retcode; }
-    DSDP_INT dim = sXMat->dim, idx = 0, *hash = sumHash, *nzIdx = r1YMat->nzIdx;
+    DSDP_INT dim = sXMat->dim, *hash = sumHash, *nzIdx = r1YMat->nzIdx;
     double sign = r1YMat->sign * alpha, *rx = r1YMat->x;
-    
+#ifdef VERIFY_HASH
+    DSDP_INT idx = 0;
+#endif
     if (sumHash) {
         for (DSDP_INT i = 0; i < r1YMat->nnz; ++i) {
             for (DSDP_INT j = 0; j <= i; ++j) {

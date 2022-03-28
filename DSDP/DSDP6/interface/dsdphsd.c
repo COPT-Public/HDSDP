@@ -119,6 +119,7 @@ static DSDP_INT DSDPIInit( HSDSolver *dsdpSolver ) {
     
     // Primal variable
     dsdpSolver->pScaler = NULL;
+    dsdpSolver->cScaler = 0.0;
     dsdpSolver->ymaker  = NULL;
     dsdpSolver->dymaker = NULL;
     dsdpSolver->mumaker = 0.0;
@@ -481,7 +482,7 @@ static DSDP_INT DSDPIFreeCleanUp( HSDSolver *dsdpSolver ) {
     dsdpSolver->dPotential = 0.0;  dsdpSolver->tau = 0.0;     dsdpSolver->kappa = 0.0;
     dsdpSolver->alpha = 0.0;       dsdpSolver->dtau = 0.0;    dsdpSolver->dkappa = 0.0;
     dsdpSolver->mumaker = 0.0;     dsdpSolver->insStatus = 0; dsdpSolver->solStatus = 0;
-    dsdpSolver->schurmu = 0.0;
+    dsdpSolver->schurmu = 0.0;     dsdpSolver->cScaler = 0.0;
     
     return retcode;
 }
@@ -516,7 +517,9 @@ static DSDP_INT DSDPIPresolve( HSDSolver *dsdpSolver ) {
     
     center = clock();
     retcode = preSDPPrimal(dsdpSolver); checkCode;
-//    retcode = preSDPDual(dsdpSolver); checkCode;
+    retcode = preSDPMatCScale(dsdpSolver);
+//    dsdpSolver->cScaler = 1.0;
+    // retcode = preSDPDual(dsdpSolver); checkCode;
     t = (double) (clock() - center) / CLOCKS_PER_SEC;
     printf("| - Scaling completes in %g seconds \n", t);
     DSDPStatUpdate(stat, STAT_SCAL_TIME, t);
@@ -556,10 +559,16 @@ static DSDP_INT DSDPIPostsolve( HSDSolver *dsdpSolver ) {
     if (dsdpSolver->solStatus != DSDP_OPTIMAL || !dsdpSolver->pScaler) {
         return retcode;
     } else {
-        vec *y = dsdpSolver->y;
-        for (DSDP_INT i = 0; i < y->dim; ++i) {
-            y->x[i] /= dsdpSolver->pScaler->x[i];
-        }
+        vec_vdiv(dsdpSolver->y, dsdpSolver->pScaler);
+    }
+    
+    if (dsdpSolver->cScaler) {
+        vec_scale(dsdpSolver->y, dsdpSolver->cScaler);
+    }
+    
+    for (DSDP_INT i = 0; i < dsdpSolver->nBlock; ++i) {
+        spsMatScale(dsdpSolver->S[i], dsdpSolver->cScaler);
+        denseMatScale(dsdpSolver->dsaux[i], dsdpSolver->cScaler);
     }
     
     DSDPStatUpdate(&dsdpSolver->dsdpStats, STAT_POSTSOLVE_TIME,

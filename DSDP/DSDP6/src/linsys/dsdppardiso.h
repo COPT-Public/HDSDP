@@ -22,8 +22,8 @@ static DSDP_INT msglvl = 0; // Print no information
 static DSDP_INT idummy = 0; // Dummy variable for taking up space
 
 // Pardiso cholesky solver
-#define SYMBOLIC 1
-#define PIVOTING 0
+#define SYMBOLIC 3
+#define PIVOTING 1
 // TODO: Disable matrix checker iparam[26] when the debugging is done
 static DSDP_INT PARDISO_PARAMS_CHOLESKY[PARDISOINDEX] = {
     

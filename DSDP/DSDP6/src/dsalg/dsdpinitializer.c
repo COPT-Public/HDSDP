@@ -52,8 +52,12 @@ static DSDP_INT inity( HSDSolver *dsdpSolver ) {
 static DSDP_INT initkappatau( HSDSolver *dsdpSolver ) {
     
     DSDP_INT retcode = DSDP_RETCODE_OK;
-    retcode = DSDPGetDblParam(dsdpSolver, DBL_PARAM_INIT_KAPPA, &dsdpSolver->kappa);
     retcode = DSDPGetDblParam(dsdpSolver, DBL_PARAM_INIT_TAU, &dsdpSolver->tau);
+#ifdef KAPPATAU
+    retcode = DSDPGetDblParam(dsdpSolver, DBL_PARAM_INIT_KAPPA, &dsdpSolver->kappa);
+#else
+    dsdpSolver->kappa = dsdpSolver->mu / dsdpSolver->tau;
+#endif
     return retcode;
 }
 
@@ -122,7 +126,7 @@ static void adjpObj( HSDSolver *dsdpSolver ) {
     // Adjust primal objecive
     double pObj = dsdpSolver->pObjVal;
     if (pObj > 1e+10) {
-        pObj *= 2.5;
+        pObj *= 1.1;
     } else if (pObj < -1e+05) {
         pObj += 1e+03;
     } else if (pObj < 0) {
@@ -199,6 +203,8 @@ extern DSDP_INT dsdpInitializeB( HSDSolver *dsdpSolver ) {
     
     printf("| Heuristic start: mu: %10.3e pObj: %10.3e  dObj: %10.3e %29s |\n",
            dsdpSolver->mu, dsdpSolver->pObjVal, dsdpSolver->dObjVal, "");
+    
+    dsdpSolver->tau = 1.0;
     
     return retcode;
 }
