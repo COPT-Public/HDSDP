@@ -28,7 +28,7 @@ m = length(b);
 % Prepare iteration arrays
 mu      = dsdpParam{11};
 tau     = dsdpParam{12};
-kappa   = dsdpParam{13};
+kappa   = mu / tau; % dsdpParam{13};
 
 Rdflag = true;
 reason = "DSDP_PRIMAL_DUAL_UNKNOWN";
@@ -137,15 +137,17 @@ if ismember(reason, ["DSDP_OPTIMAL", "DSDP_SMALL_STEP","DSDP_MAXITER"])
         mumaker = xmaker{3};
         bnmaker = dsdpgetATy(A, dymaker);
         Smaker = C - dsdpgetATy(A, ymaker);        
-        Sinv = cholmod2(Smaker, eye(n));
+        % Sinv = cholmod2(Smaker, eye(n));
         % LD = ldlchol(Smaker);
         % [L, D] = ldlsplit(LD);
         % R = (L * sqrt(D))';
         % D = R \ eye(n);
-        X = Sinv * (Smaker + bnmaker) * Sinv;
+        R = lchol(S)';
+        D = R \ eye(n);
+        % X = Sinv * (Smaker + bnmaker) * Sinv;
         % X = X * mumaker;
         % X = R \ (R \ (speye(n) + R' \ (R' \ bnmaker)'))';
-        % X = D * (speye(n) + D' * bnmaker * D) * D';
+        X = D * (speye(n) + D' * bnmaker * D) * D';
         X = X * mumaker;
     end % End if 
     

@@ -12,12 +12,12 @@ end % End if
 
 step = - 1 / min(dsl ./ sl);
 if step > 0
-    alpha = min(1, 0.95 * step);
+    alpha = min(alpha, 0.95 * step);
 end % End if 
 
 step = - 1 / min(dsu ./ su);
 if step > 0
-    alpha = min(1, 0.95 * step);
+    alpha = min(alpha, 0.95 * step);
 end % End if 
 
 assert(alpha > 0);

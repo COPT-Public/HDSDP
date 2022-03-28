@@ -9,13 +9,13 @@ end % End if
 step = min([dtau / tau; dkappa / kappa]);
 
 if step < 0
-    step = min(1, abs(alpha / step));
+    step = abs(1 / step);
 else
-    step = 1.0;
+    step = 1e+03;
 end % End if 
 
 if stepS > 0
-    step = min([step, alpha * stepS, 1]);
+    step = min(step, stepS);
 end % End if 
 
 end % End function

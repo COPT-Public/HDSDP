@@ -99,6 +99,7 @@ for i = 1:maxiter
     
     step = dsdpgetStepsize(S, dS, kappa, dkappa, tau, dtau, stepstrategy, alphaphase1);
     
+    step = min(alphaphase1 * step, 1.0);
     if step < 1e-03
         reason = "DSDP_SMALL_STEP";
         break;

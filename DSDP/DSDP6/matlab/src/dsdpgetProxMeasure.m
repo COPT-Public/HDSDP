@@ -17,7 +17,7 @@ else
     dtaudelta = dtaudelta / taudenom;
 end % End if 
 
-dydelta = d12 * dtaudelta  - d3 + (d2 / mu)* tau;
+dydelta = d12 * dtaudelta - d3 + (d2 / mu)* tau;
 delta = (dydelta' * M * dydelta) - 2 * u' * dydelta * dtaudelta + (csinvcsinv + (1 / tau^2)) * dtaudelta^2;
 delta = sqrt(delta);
 
