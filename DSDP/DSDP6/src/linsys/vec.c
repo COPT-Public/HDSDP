@@ -148,6 +148,15 @@ extern double vec_step( vec *s, vec *ds, double beta ) {
     return alpha;
 }
 
+extern DSDP_INT vec_incone( vec *s ) {
+    for (DSDP_INT i = 0; i < s->dim; ++i) {
+        if (s->x[i] <= 0.0) {
+            return FALSE;
+        }
+    }
+    return TRUE;
+}
+
 extern DSDP_INT vec_set( vec *x, double val) {
     // Set x = val
     for (int i = 0; i < x->dim; ++i) {
