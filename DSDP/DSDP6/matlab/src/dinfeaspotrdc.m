@@ -3,7 +3,7 @@ function [y, S] = dinfeaspotrdc(A, b, C, y, S, Ry, M, dy1, mu, ncorr)
 
 m = length(y);
 dy2 = zeros(m, 1);
-
+bz = zeros(m, 1);
 for iter = 1:ncorr
     
     [L, ~, pmt] = lchol(S);
@@ -14,20 +14,38 @@ for iter = 1:ncorr
         dy2(i) = trace(ASinv);
     end % End for
     
+    sl = y + 1e+07;
+    su = 1e+07 - y;
+    
+    dy2 = dy2 - sl.^-1 + su.^-1;
     dy2 = M \ dy2;
     
     dycorr = dy1 / mu - dy2;
+    dsl = dycorr;
+    dsu = - dycorr;
+    
     dScorr = - dsdpgetATy(A, dycorr);
     alpha = dsdpgetalpha(S, dScorr);
+    
     if alpha < 0
-        alpha = 1;
+        alpha = 1000;
     else
         alpha = min(0.95 * alpha, 1.0); 
     end
     
+    step = - 1 / min(dsl ./ sl);
+    if step > 0
+        alpha = min(alpha, 0.95 * step);
+    end % End if
+    
+    step = - 1 / min(dsu ./ su);
+    if step > 0
+        alpha = min(alpha, 0.95 * step);
+    end % End if
+    
     % oldpot = dsdpgetMeritValue(b, y, mu, L);
-    oldpot = dsdpgetMeritValue(0, 0, mu, L);
-    btdy = b' * dycorr;
+    oldpot = dsdpgetMeritValueRlx(bz, y, mu, L);
+    btdy = 0; % b' * dycorr;
     
     while alpha > 1e-04
         
@@ -40,7 +58,7 @@ for iter = 1:ncorr
             continue;
         end % End try
         % pot = dsdpgetMeritValue(b, ynew, mu, L);
-        pot = dsdpgetMeritValue(0, 0, mu, L);
+        pot = dsdpgetMeritValueRlx(bz, ynew, mu, L);
         
         anum = 2 * (pot - oldpot + btdy * alpha) / (alpha^2);
         bnum = btdy;

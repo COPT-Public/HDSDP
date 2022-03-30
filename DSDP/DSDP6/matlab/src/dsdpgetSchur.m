@@ -1,8 +1,8 @@
-function [M, u, asinv, L, p, CSinv, csinv, csinvcsinv, asinvrdsinv, csinvrdsinv] = dsdpgetSchur(A, S, C, Rd, initstrategy)
+function [M, u, asinv, L, p, CSinv, csinv, csinvcsinv, asinvrdsinv, csinvrdsinv, rdsinv] = dsdpgetSchur(A, S, C, Rd, initstrategy)
 % Compute Schur components
 
 m = length(A);
-
+[n, ~] = size(S);
 if nargin <= 3
     computeRd = false;
     asinvrdsinv = [];
@@ -36,6 +36,7 @@ if computeCu
 end % End if
 
 if computeRd
+    rdsinv = trace(cholSolve(L, pmt, pinv, speye(n))) * Rd(1, 1);
     SinvCSinv = cholSolve(L, pmt, pinv, CSinv);
     if initstrategy == "IdS"
         csinvrdsinv = trace(SinvCSinv * Rd);

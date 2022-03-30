@@ -70,11 +70,11 @@ nora = 0.0;
 showdash(ndash);
 fprintf("Phase 1 start. Eliminating dual infeasibility \n");
 showdash(ndash);
-fprintf("%4s  %10s  %10s  %8s  %8s  %8s  %8s  %8s  %8s \n", "Iter", "pObj", "dObj", "dInf", "tkInf", "muPrimal", "muHSD", "step", "pNorm");
+fprintf("%4s  %10s  %10s  %8s  %8s  %8s  %8s  %8s \n", "Iter", "pObj", "dObj", "dInf", "tkInf", "mu", "step", "pNorm");
 showdash(ndash);
 
 % Phase 1
-[S, y, kappa, tau, muHSD, pObj, reason, iterphase1] =  dsdpDualInfeasPhase(A, b, C, y, S, Rd, mu, kappa, tau, dsdpParam);
+[S, y, kappa, tau, muHSD, pObj, reason, iterphase1] =  dsdpDualInfeasPhaseRlx(A, b, C, y, S, Rd, mu, kappa, tau, dsdpParam);
 
 fprintf("Reason: %s \n", reason);
 showdash(ndash);
@@ -111,7 +111,7 @@ elseif reason == "DSDP_PRIMAL_UNKNOWN_DUAL_FEASIBLE"
 end % End if
 
 showdash(ndash);
-fprintf("%4s  %10s  %10s  %8s  %8s  %8s  %8s  %8s \n", "Iter", "pObj", "dObj", "tkInf", "muPrimal", "muHSD", "step", "pNorm");
+fprintf("%4s  %10s  %10s  %8s  %8s  %8s  %8s  %8s \n", "Iter", "pObj", "dObj", "tkInf", "mu", "pInfeas", "step", "pNorm");
 showdash(ndash);
 
 
@@ -142,7 +142,7 @@ if ismember(reason, ["DSDP_OPTIMAL", "DSDP_SMALL_STEP","DSDP_MAXITER"])
         % [L, D] = ldlsplit(LD);
         % R = (L * sqrt(D))';
         % D = R \ eye(n);
-        R = lchol(S)';
+        R = lchol(Smaker)';
         D = R \ eye(n);
         % X = Sinv * (Smaker + bnmaker) * Sinv;
         % X = X * mumaker;

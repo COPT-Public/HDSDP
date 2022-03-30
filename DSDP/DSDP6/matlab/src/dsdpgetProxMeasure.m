@@ -1,4 +1,4 @@
-function [delta, pObj] = dsdpgetProxMeasure(d12, d2, d3, u, csinvcsinv, csinv, tau, mu, dObj, M, A, C, y, Ry, S, b)
+function [delta, pObj] = dsdpgetProxMeasure(d2, d3, tau, mu, dObj, M, A, C, y, Ry, asinvrysinv, rysinv, asinv, S, b)
 % Get measure of proximity in DSDP
 if nargin >= 14
     verifypfeas = true;
@@ -8,23 +8,24 @@ else
     verifypfeas = false;
 end % End if
 
-taudenom = - u' * d12 + csinvcsinv + (1 / tau^2);
+m = length(y);
+[n, ~] = size(C);
 
-if abs(taudenom) < 1e-15
-    dtaudelta = 0.0;
-else
-    dtaudelta = - (dObj / mu + tau * u' * (d2 / mu)) + (1 / tau + csinv - u' * d3);
-    dtaudelta = dtaudelta / taudenom;
-end % End if 
+dy1 = d2; % M \ b
+dy2 = d3; % M \ asinv
 
-dydelta = d12 * dtaudelta - d3 + (d2 / mu)* tau;
-delta = (dydelta' * M * dydelta) - 2 * u' * dydelta * dtaudelta + (csinvcsinv + (1 / tau^2)) * dtaudelta^2;
-delta = sqrt(delta);
+dydelta = dy1 * tau / mu - dy2;
+delta = dydelta' * M * dydelta;
 
 if verifypfeas
-    if dsdpIspsd((- Ry + C * (tau - dtaudelta) - dsdpgetATy(A, y - dydelta)))
-        kappadelta = mu * (1 / tau - dtaudelta / (tau^2));
-        pObj = dObj - kappadelta;
+    bwnt = y - dydelta;
+    if (max(bwnt) > 1e+07 && min(bwnt) < -1e+07)
+        pObj = inf; 
+        return;
+    end % End if 
+        
+    if dsdpIspsd((- Ry + C * tau - dsdpgetATy(A, bwnt)))
+        pObj = dObj + mu / tau * (rysinv + (asinvrysinv + asinv)' * dydelta + (n + 2 * m)); 
     else
         pObj = inf;
     end % End if 

@@ -8,15 +8,18 @@ alpha            = 0.7;
 pObj             = 1e+10;
 rho              = 5.0;
 initmethod       = "fro"; % "eigs", "linesearch", "IdS"
-initbeta         = 1.0; % 1.0; % 10.0
 reuse            = 0;
-ncorr            = 0;
+ncorr            = 2;
 ncorrdual        = 0;
 corrdelta        = 10;
 corralpha        = 0.6;
+
+initbeta         = 1e+06; % 1.0; % 10.0
 mu               = 1e+10;
-tau              = 1;
-kappa            = 1e+06;
+tau              = 1.0;
+pweight          = 0.0;
+
+kappa            = inf;
 dualInfeasalpha  = 0.75;
 stepsizestrategy = "eigs"; % linesearch
 maxpfeasiter     = 100;
@@ -29,6 +32,9 @@ pInfeasIter      = 50;
 pInfeasAlpha     = 0.75;
 pInfeasSuspicion = 1e+08;
 dualapproxsolve  = false;
+
+% Primal constraint weight 
+dsdpParam{29} = pweight;
 
 % Initial dual solution
 dsdpParam{28} = dualapproxsolve;
