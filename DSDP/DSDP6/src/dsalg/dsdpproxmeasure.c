@@ -6,48 +6,29 @@ extern DSDP_INT dsdpgetPhaseAProxMeasure( HSDSolver *dsdpSolver, double newmu ) 
     
     // Check primal feasibility and proximity measure given a new mu parameter
     DSDP_INT retcode = DSDP_RETCODE_OK;
-    
-    DSDP_INT ispfeas = FALSE, ignoredobj;
-    DSDPGetIntParam(dsdpSolver, INT_PARAM_DOBJ_IGNORE, &ignoredobj);
-    double taudenom = 0.0, dtaudelta = 0.0, tau = dsdpSolver->tau,
-           dObj = (ignoredobj) ? 0.0 : dsdpSolver->dObjVal, utd2 = 0.0;
+    DSDP_INT ispfeas = FALSE;
     
     // Use b1 as auxiliary
     vec *dydelta = dsdpSolver->b1;
-    vec_dot(dsdpSolver->u, dsdpSolver->d12, &taudenom);
+    vec_zaxpby(dydelta, dsdpSolver->tau / dsdpSolver->mu,
+               dsdpSolver->d2, -1.0, dsdpSolver->d3);
     
-    taudenom = - taudenom + dsdpSolver->csinvcsinv + 1 / (tau * tau);
+    // Compute Pnrm
+    dsdpSolver->Pnrm = denseMatxTAx(dsdpSolver->Msdp, dsdpSolver->M->schurAux, dydelta->x);
+    dsdpSolver->Pnrm = sqrt(dsdpSolver->Pnrm);
     
-    if (fabs(taudenom) < 1e-15) {
-        dtaudelta = 0.0;
-    } else {
-        // dtaudelta = - dObj + mu / tau + mu * csinv + tau * u' * d2 - mu * u' * d3;
-        vec_dot(dsdpSolver->u, dsdpSolver->d2, &utd2);
-        dtaudelta = - dObj + newmu * (1 / tau + dsdpSolver->csinv) + tau * utd2;
-        vec_dot(dsdpSolver->u, dsdpSolver->d3, &utd2);
-        dtaudelta -= utd2 * newmu;
-        
-        // dtaudelta = (1 / mu) *  dtaudelta / taudenom;
-        dtaudelta = dtaudelta / (newmu * taudenom);
-    }
+    // Check feasibility
+    retcode = dsdpCheckPhaseAPfeas(dsdpSolver, 0.0, dydelta, &ispfeas);
     
-    // dydelta = d12 * dtaudelta + d2 * tau / mu - d3;
-    vec_zaxpby(dydelta, dtaudelta, dsdpSolver->d12, tau / newmu, dsdpSolver->d2);
-    vec_axpy(-1.0, dsdpSolver->d3, dydelta);
-    vec_dot(dsdpSolver->u, dydelta, &utd2);
-    
-    dsdpSolver->Pnrm = (dsdpSolver->csinvcsinv + 1 / (tau * tau)) * (dtaudelta * dtaudelta);
-    dsdpSolver->Pnrm -= 2 * utd2 * dtaudelta;
-    utd2 = denseMatxTAx(dsdpSolver->Msdp, dsdpSolver->M->schurAux, dydelta->x);
-    dsdpSolver->Pnrm = sqrt(dsdpSolver->Pnrm + dsdpSolver->Mscaler * utd2);
-    
-    retcode = dsdpCheckPhaseAPfeas(dsdpSolver, dtaudelta, dydelta, &ispfeas);
-    
+    // Update primal objective
     if (ispfeas) {
         dsdpSolver->eventMonitor[EVENT_PFEAS_FOUND] = TRUE;
-        utd2 = newmu / (tau * tau) * (tau - dtaudelta);
-        dsdpSolver->pObjVal = dObj - utd2;
-        dsdpSolver->pObjVal = dsdpSolver->pObjVal / dsdpSolver->tau;
+        double pObj = dsdpSolver->dObjVal, tmp1, tmp2;
+        vec_dot(dsdpSolver->u, dydelta, &tmp1);
+        vec_dot(dsdpSolver->asinv, dydelta, &tmp2);
+        pObj += dsdpSolver->mu / dsdpSolver->tau * \
+                (dsdpSolver->rysinv + tmp1 + tmp2 + dsdpSolver->n + dsdpSolver->m * 2);
+        pObj = pObj / dsdpSolver->tau;
     }
     
     return retcode;

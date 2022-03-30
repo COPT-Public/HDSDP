@@ -78,7 +78,7 @@ typedef struct {
     double   dPotential;  // Value of dual potential function
     
     // Residuals
-    double   rtk;         // Complementarity residual
+    double    rysinv;     // Complementarity residual
     double    Ry;         // SDP Dual infeasibility
     vec      *ry;         // LP dual infeasibility
     
@@ -115,7 +115,7 @@ typedef struct {
     double    cScaler;    // |C|
     vec      *ymaker;     // y
     vec      *dymaker;    // dy
-    double   mumaker;     // mu
+    double    mumaker;    // mu
     
     // Solver statistics
     DSDPStats dsdpStats;  // Solver statistics

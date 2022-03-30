@@ -233,6 +233,205 @@ extern DSDP_INT getTraceASinvASinvSlow( HSDSolver *dsdpSolver, DSDP_INT blockid,
     return retcode;
 }
 
+static DSDP_INT setupLPSchur( HSDSolver *dsdpSolver ) {
+    // Set up the schur matrix for LP
+    // After calling this routine, Msdp, asinv, u, csinv and d3 will be updated
+    DSDP_INT retcode = DSDP_RETCODE_OK;
+    
+    assert( !dsdpSolver->iterProgress[ITER_SCHUR] );
+    if (!dsdpSolver->iterProgress[ITER_SCHUR]) {
+        error(etype, "Schur matrix for LP is already setup. \n");
+    }
+    
+    DSDP_INT m = dsdpSolver->m;
+    DSDP_INT n = dsdpSolver->lpDim;
+    
+    vec *c  = dsdpSolver->lpObj, *ry = dsdpSolver->ry, *u  = dsdpSolver->u, *d3 = dsdpSolver->d3;
+    
+    cs *A = dsdpSolver->lpData->lpdata;
+    double *M = dsdpSolver->Msdp->array;
+        
+    // Setup the LP schur matrix AD^-2AT
+    cs *AT = NULL;
+    AT = cs_transpose(A, 0);
+    
+    DSDP_INT *ATp = AT->p;
+    DSDP_INT *ATi = AT->i;
+    double *ATx = AT->x;
+    vec *s = dsdpSolver->s;
+    double *sdata = s->x;
+    double *cdata = c->x;
+    double *rydata = ry->x;
+    double sk = 0.0;
+    
+    double *Arow = NULL;
+    Arow = (double *) calloc(n, sizeof(double));
+    
+    double Mij = 0.0;
+    
+    // Only compute the lower triangular
+    for (DSDP_INT i = 0; i < m; ++i) {
+        Mij = 0.0;
+        memset(Arow, 0, sizeof(double) * n);
+        cs_scatter2(AT, i, Arow);
+        for (DSDP_INT j = 0; j <= i; ++j) {
+            for (DSDP_INT k = ATp[j]; k < ATp[j + 1]; ++k) {
+                sk = sdata[ATi[k]];
+                Mij += ATx[k] * Arow[ATi[k]] * sk * sk;
+            }
+            packIdx(M, m, i, j) += Mij;
+        }
+    }
+    
+    DSDP_FREE(Arow);
+    cs_spfree(AT);
+    
+    // Update asinv
+    vec *sinv = (vec *) calloc(1, sizeof(vec));
+    retcode = vec_init(sinv);
+    retcode = vec_inv(sinv, s);
+    cs_gaxpy(A, sinv->x, dsdpSolver->asinv->x);
+    
+    // Update csinv
+    DSDP_INT one = 1;
+    dsdpSolver->csinv += dot(&n, cdata, &one, sinv->x, &one);
+    
+    // Update u
+    retcode = vec_invsqr(sinv, s);
+    
+    register DSDP_INT i;
+    
+    for (i = 0; i < n; ++i) {
+        sdata[i] = sdata[i] * cdata[i];
+    }
+    
+    cs_gaxpy(A, sdata, u->x);
+    
+    // Update csinvrycsinv
+    dsdpSolver->csinvrysinv += dot(&n, sdata, &one, ry->x, &one);
+    
+    // Update d3
+    retcode = vec_invsqr(sinv, s);
+    
+    for (i = 0; i < n; ++i) {
+        sdata[i] = sdata[i] * rydata[i];
+    }
+    
+    cs_gaxpy(A, sdata, d3->x);
+    
+    // Free allocated memory
+    retcode = vec_free(sinv);
+    DSDP_FREE(sinv);
+    
+    dsdpSolver->iterProgress[ITER_SCHUR] = TRUE;
+    
+    return retcode;
+}
+
+static DSDP_INT getdsLP( HSDSolver *dsdpSolver ) {
+    // Compute the dual direction for LP ry - A' * dy + c * dtau
+    DSDP_INT retcode = DSDP_RETCODE_OK;
+
+    vec *ds = dsdpSolver->ds;
+    double *dydata = dsdpSolver->dy->x;
+    double *dsdata = ds->x;
+    DSDP_INT *Ap = dsdpSolver->lpData->lpdata->p;
+    DSDP_INT *Ai = dsdpSolver->lpData->lpdata->i;
+    double   *Ax = dsdpSolver->lpData->lpdata->x;
+    DSDP_INT n = ds->dim;
+    
+    retcode = vec_copy(dsdpSolver->ry, ds);
+    retcode = vec_axpy(dsdpSolver->dtau, dsdpSolver->lpObj, ds);
+    
+    double tmp = 0.0;
+    
+    for (DSDP_INT i = 0; i < n; ++i) {
+        tmp = 0.0;
+        for (DSDP_INT j = Ap[i]; j < Ap[i + 1]; ++i) {
+            tmp += dydata[Ai[j]] * Ax[j];
+        }
+        dsdata[i] -= tmp;
+    }
+
+    return retcode;
+}
+
+static DSDP_INT getLPsStep( HSDSolver *dsdpSolver, double *sStep ) {
+    // Compute the maixmum step size to take at s for LP
+    DSDP_INT retcode = DSDP_RETCODE_OK;
+    
+    vec *s  = dsdpSolver->s, *ds = dsdpSolver->ds;
+    
+    double step = 100.0;
+    
+    for (DSDP_INT i = 0; i < s->dim; ++i) {
+        step = MIN((ds->x[i] / s->x[i]), step);
+    }
+    
+    if (step < 0.0) {
+        *sStep = fabs(0.995 / step);
+    }
+    
+    return retcode;
+}
+
+static DSDP_INT takelpsStep( HSDSolver *dsdpSolver ) {
+    // Take step in LP s
+    double step = dsdpSolver->alpha;
+    vec *s  = dsdpSolver->s, *ds = dsdpSolver->ds;
+    vec_axpy(step, ds, s);
+    return DSDP_RETCODE_OK;
+}
+
+extern DSDP_INT dsdpgetPhaseAProxMeasure( HSDSolver *dsdpSolver, double newmu ) {
+    
+    // Check primal feasibility and proximity measure given a new mu parameter
+    DSDP_INT retcode = DSDP_RETCODE_OK;
+    
+    DSDP_INT ispfeas = FALSE;
+    double taudenom = 0.0, dtaudelta = 0.0, tau = dsdpSolver->tau,
+           dObj = dsdpSolver->dObjVal, utd2 = 0.0;
+    
+    // Use b1 as auxiliary
+    vec *dydelta = dsdpSolver->b1;
+    vec_dot(dsdpSolver->u, dsdpSolver->d12, &taudenom);
+    
+    taudenom = - taudenom + dsdpSolver->csinvcsinv + 1 / (tau * tau);
+    
+    if (fabs(taudenom) < 1e-15) {
+        dtaudelta = 0.0;
+    } else {
+        // dtaudelta = - dObj + mu / tau + mu * csinv + tau * u' * d2 - mu * u' * d3;
+        vec_dot(dsdpSolver->u, dsdpSolver->d2, &utd2);
+        dtaudelta = - dObj + newmu * (1 / tau + dsdpSolver->csinv) + tau * utd2;
+        vec_dot(dsdpSolver->u, dsdpSolver->d3, &utd2);
+        dtaudelta -= utd2 * newmu;
+        
+        // dtaudelta = (1 / mu) *  dtaudelta / taudenom;
+        dtaudelta = dtaudelta / (newmu * taudenom);
+    }
+    
+    // dydelta = d12 * dtaudelta + d2 * tau / mu - d3;
+    vec_zaxpby(dydelta, dtaudelta, dsdpSolver->d12, tau / newmu, dsdpSolver->d2);
+    vec_axpy(-1.0, dsdpSolver->d3, dydelta);
+    vec_dot(dsdpSolver->u, dydelta, &utd2);
+    
+    dsdpSolver->Pnrm = (dsdpSolver->csinvcsinv + 1 / (tau * tau)) * (dtaudelta * dtaudelta);
+    dsdpSolver->Pnrm -= 2 * utd2 * dtaudelta;
+    utd2 = denseMatxTAx(dsdpSolver->Msdp, dsdpSolver->M->schurAux, dydelta->x);
+    dsdpSolver->Pnrm = sqrt(dsdpSolver->Pnrm + dsdpSolver->Mscaler * utd2);
+    
+    retcode = dsdpCheckPhaseAPfeas(dsdpSolver, dtaudelta, dydelta, &ispfeas);
+    
+    if (ispfeas) {
+        dsdpSolver->eventMonitor[EVENT_PFEAS_FOUND] = TRUE;
+        utd2 = newmu / (tau * tau) * (tau - dtaudelta);
+        dsdpSolver->pObjVal = dObj - utd2;
+        dsdpSolver->pObjVal = dsdpSolver->pObjVal / dsdpSolver->tau;
+    }
+    
+    return retcode;
+}
 
 /*
 extern DSDP_INT getSinvASinvSlow( HSDSolver *dsdpSolver, DSDP_INT blockid, DSDP_INT constrid,

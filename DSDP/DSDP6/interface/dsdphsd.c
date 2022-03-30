@@ -478,7 +478,7 @@ static DSDP_INT DSDPIFreeCleanUp( HSDSolver *dsdpSolver ) {
     // Other data
     dsdpSolver->param = NULL;      dsdpSolver->m = 0;         dsdpSolver->nBlock = 0;
     dsdpSolver->lpDim = 0;         dsdpSolver->mu = 0.0;      dsdpSolver->Mscaler = 0.0;
-    dsdpSolver->csinvrysinv = 0.0; dsdpSolver->rtk = 0.0;     dsdpSolver->Pnrm = 0.0;
+    dsdpSolver->csinvrysinv = 0.0; dsdpSolver->rysinv = 0.0;     dsdpSolver->Pnrm = 0.0;
     dsdpSolver->dPotential = 0.0;  dsdpSolver->tau = 0.0;     dsdpSolver->kappa = 0.0;
     dsdpSolver->alpha = 0.0;       dsdpSolver->dtau = 0.0;    dsdpSolver->dkappa = 0.0;
     dsdpSolver->mumaker = 0.0;     dsdpSolver->insStatus = 0; dsdpSolver->solStatus = 0;

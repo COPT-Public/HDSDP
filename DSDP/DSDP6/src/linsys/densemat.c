@@ -15,14 +15,11 @@ static DSDP_INT packFactorize( dsMat *S ) {
     
     /* Factorize the dsMat matrix */
     DSDP_INT retcode = DSDP_RETCODE_OK;
-    
-    assert( (!S->isFactorized) && (S->dim > 0) );
     if (S->isFactorized) {
         error(etype, "Matrix is already factorized. \n");
     }
     
-    DSDP_INT n = S->dim, info = 0;
-    char uplo = DSDP_MAT_LOW;
+    DSDP_INT n = S->dim, info = 0; char uplo = DSDP_MAT_LOW;
     memcpy(S->lfactor, S->array, sizeof(double) * nsym(n));
     
     if (!S->isillCond) {
@@ -44,17 +41,10 @@ static DSDP_INT packFactorize( dsMat *S ) {
 }
 
 static DSDP_INT packSolve( dsMat *S, DSDP_INT nrhs, double *B, double *X ) {
-    
     /* Solve the linear system S * X = B using Lapack packed format */
     DSDP_INT retcode = DSDP_RETCODE_OK;
-    assert( (S->isFactorized) && (S->dim > 0) && (nrhs > 0) );
-    
-    if (!S->isFactorized) {
-        error(etype, "Matrix is not yet factorized. \n");
-    }
-    
     char uplo = DSDP_MAT_LOW;
-    DSDP_INT n = S->dim, ldb  = S->dim, info = 0;
+    DSDP_INT n = S->dim, ldb = S->dim, info = 0;
     
     // Copy solution data
     memcpy(X, B, sizeof(double) * nrhs * n);
@@ -66,7 +56,6 @@ static DSDP_INT packSolve( dsMat *S, DSDP_INT nrhs, double *B, double *X ) {
     if (info < 0) {
         error(etype, "Packed linear system solution failed. \n");
     }
-    
     return retcode;
 }
 
@@ -84,10 +73,7 @@ extern DSDP_INT denseMatInit( dsMat *dMat ) {
 extern DSDP_INT denseMatAlloc( dsMat *dMat, DSDP_INT dim, DSDP_INT doFactor ) {
     
     // Allocate memory for dense matrix data
-    DSDP_INT retcode = DSDP_RETCODE_OK;
-    assert( dMat->dim == 0 );
-    
-    dMat->dim   = dim;
+    DSDP_INT retcode = DSDP_RETCODE_OK; dMat->dim = dim;
     if (FALSE) {
         dMat->array = (double *) calloc(dim * dim, sizeof(double)); // For dsaux
     } else {
@@ -103,20 +89,15 @@ extern DSDP_INT denseMatAlloc( dsMat *dMat, DSDP_INT dim, DSDP_INT doFactor ) {
 }
 
 extern DSDP_INT denseMatFree( dsMat *dMat ) {
-    
     // Free memory allocated
     DSDP_INT retcode = DSDP_RETCODE_OK;
-    
     if (dMat) {
-        dMat->dim = 0; dMat->isillCond = FALSE;
-        dMat->isFactorized = FALSE;
-        DSDP_FREE(dMat->array); DSDP_FREE(dMat->lfactor);
-        DSDP_FREE(dMat->ipiv);
+        dMat->dim = 0; dMat->isillCond = FALSE; dMat->isFactorized = FALSE;
+        DSDP_FREE(dMat->array); DSDP_FREE(dMat->lfactor); DSDP_FREE(dMat->ipiv);
     }
     if (dMat->factor) {
         rkMatFree(dMat->factor);
     }
-    
     return retcode;
 }
 
@@ -125,16 +106,7 @@ extern DSDP_INT denseMataXpbY( double alpha, dsMat *dXMat, double beta, dsMat *d
     
     // Matrix operation. Let dYMat = alpha * dXMat + beta * dYMat
     DSDP_INT retcode = DSDP_RETCODE_OK;
-    
-    assert( dXMat->dim == dYMat->dim );
-    assert((!dXMat->isFactorized) && (!dYMat->isFactorized));
-    
-    if (dXMat->isFactorized || dYMat->isFactorized) {
-        error(etype, "Adding a factorized matrix. \n");
-    }
-    
     DSDP_INT dim = nsym(dXMat->dim);
-    
     if (beta == 0.0) {
         if (alpha == 0.0) {
             memset(dYMat->array, 0, sizeof(double) * dim);
@@ -145,7 +117,6 @@ extern DSDP_INT denseMataXpbY( double alpha, dsMat *dXMat, double beta, dsMat *d
             }
         }
     } else {
-        
         if (beta != 1.0) {
             vecscal(&dim, &beta, dYMat->array, &one);
         }
@@ -153,7 +124,6 @@ extern DSDP_INT denseMataXpbY( double alpha, dsMat *dXMat, double beta, dsMat *d
             axpy(&dim, &alpha, dXMat->array, &one, dYMat->array, &one);
         }
     }
-    
     return retcode;
 }
 
@@ -208,7 +178,6 @@ extern DSDP_INT denseMatRscale( dsMat *dXMat, double r ) {
     // Scale a matrix by reciprocical without over/under flow
     DSDP_INT n = nsym(dXMat->dim);
     vecdiv(&n, &r, dXMat->array, &one);
-    
     if (dXMat->factor) {
         rkMatRscale(dXMat->factor, r);
     }
@@ -218,8 +187,6 @@ extern DSDP_INT denseMatRscale( dsMat *dXMat, double r ) {
 extern DSDP_INT denseMatFnorm( dsMat *dMat, double *fnrm ) {
     
     DSDP_INT retcode = DSDP_RETCODE_OK;
-    assert( dMat->dim > 0);
-    
     char nrm = DSDP_MAT_FNORM, uplo = DSDP_MAT_LOW;
     double *work = NULL; DSDP_INT rank;
     denseMatGetRank(dMat, &rank);
@@ -229,7 +196,6 @@ extern DSDP_INT denseMatFnorm( dsMat *dMat, double *fnrm ) {
     } else {
         *fnrm = fnorm(&nrm, &uplo, &dMat->dim, dMat->array, work);
     }
-    
     return retcode;
 }
 
@@ -268,28 +234,17 @@ extern DSDP_INT denseArrSolveInp( dsMat *S, DSDP_INT nrhs, double *B ) {
     
     /* Solve the linear system S * X = B using Lapack packed format */
     DSDP_INT retcode = DSDP_RETCODE_OK;
-    assert( (S->isFactorized) && (S->dim > 0) && (nrhs > 0));
-    
-    if (!S->isFactorized) {
-        error(etype, "Matrix is not yet factorized. \n");
-    }
-    
-    char uplo     = DSDP_MAT_LOW;
-    DSDP_INT n    = S->dim;
-    DSDP_INT ldb  = S->dim;
-    DSDP_INT info = 0;
-    
+    char uplo  = DSDP_MAT_LOW;
+    DSDP_INT n = S->dim, ldb  = S->dim, info = 0;
     if (S->isillCond) {
         ldlsolve(&uplo, &n, &nrhs, S->lfactor, S->ipiv, B, &ldb, &info);
     } else {
         packsolve(&uplo, &n, &nrhs, S->lfactor, B, &ldb, &info);
     }
-    
     if (info < 0) {
         error(etype, "Packed linear system solution failed. \n");
         retcode = DSDP_RETCODE_FAILED;
     }
-    
     return retcode;
 }
 

@@ -863,9 +863,11 @@ extern DSDP_INT DSDPPrepareMAssembler( HSDSolver *dsdpSolver ) {
                                &dsdpSolver->csinvrysinv,
                                &dsdpSolver->csinv,
                                &dsdpSolver->csinvcsinv,
+                               &dsdpSolver->rysinv,
                                &dsdpSolver->Ry,
                                dsdpSolver->rkaux,
-                               &dsdpSolver->eventMonitor[EVENT_IN_PHASE_A]);
+                               &dsdpSolver->eventMonitor[EVENT_IN_PHASE_A],
+                               &dsdpSolver->eventMonitor[EVENT_HSD_UPDATE]);
     return retcode;
 }
 

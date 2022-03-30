@@ -33,6 +33,7 @@ static DSDP_INT setupBoundYSchur( HSDSolver *dsdpSolver ) {
         double *u = dsdpSolver->u->x;
         double sinvsqr, csinvsuml = 0.0, csinvsumu = 0.0, cscssuml = 0.0, cscssumu = 0.0;
         DSDPGetDblParam(dsdpSolver, DBL_PARAM_PRLX_PENTALTY, &bound);
+        
         for (DSDP_INT i = 0, idx = 0; i < m; ++i) {
             // Upperbound
             s = su[i]; sinvsqr = 1.0 / (s * s);
@@ -58,104 +59,6 @@ static DSDP_INT setupBoundYSchur( HSDSolver *dsdpSolver ) {
             idx += m - i;
         }
     }
-    
-    return retcode;
-}
-
-static DSDP_INT setupLPSchur( HSDSolver *dsdpSolver ) {
-    // Set up the schur matrix for LP
-    // After calling this routine, Msdp, asinv, u, csinv and d3 will be updated
-    DSDP_INT retcode = DSDP_RETCODE_OK;
-    
-    assert( !dsdpSolver->iterProgress[ITER_SCHUR] );
-    if (!dsdpSolver->iterProgress[ITER_SCHUR]) {
-        error(etype, "Schur matrix for LP is already setup. \n");
-    }
-    
-    DSDP_INT m = dsdpSolver->m;
-    DSDP_INT n = dsdpSolver->lpDim;
-    
-    vec *c  = dsdpSolver->lpObj;
-    vec *ry = dsdpSolver->ry;
-    vec *u  = dsdpSolver->u;
-    vec *d3 = dsdpSolver->d3;
-    
-    cs *A = dsdpSolver->lpData->lpdata;
-    double *M = dsdpSolver->Msdp->array;
-        
-    // Setup the LP schur matrix AD^-2AT
-    cs *AT = NULL;
-    AT = cs_transpose(A, 0);
-    
-    DSDP_INT *ATp = AT->p;
-    DSDP_INT *ATi = AT->i;
-    double *ATx = AT->x;
-    vec *s = dsdpSolver->s;
-    double *sdata = s->x;
-    double *cdata = c->x;
-    double *rydata = ry->x;
-    double sk = 0.0;
-    
-    double *Arow = NULL;
-    Arow = (double *) calloc(n, sizeof(double));
-    
-    double Mij = 0.0;
-    
-    // Only compute the lower triangular
-    for (DSDP_INT i = 0; i < m; ++i) {
-        Mij = 0.0;
-        memset(Arow, 0, sizeof(double) * n);
-        cs_scatter2(AT, i, Arow);
-        for (DSDP_INT j = 0; j <= i; ++j) {
-            for (DSDP_INT k = ATp[j]; k < ATp[j + 1]; ++k) {
-                sk = sdata[ATi[k]];
-                Mij += ATx[k] * Arow[ATi[k]] * sk * sk;
-            }
-            packIdx(M, m, i, j) += Mij;
-        }
-    }
-    
-    DSDP_FREE(Arow);
-    cs_spfree(AT);
-    
-    // Update asinv
-    vec *sinv = (vec *) calloc(1, sizeof(vec));
-    retcode = vec_init(sinv);
-    retcode = vec_inv(sinv, s);
-    cs_gaxpy(A, sinv->x, dsdpSolver->asinv->x);
-    
-    // Update csinv
-    DSDP_INT one = 1;
-    dsdpSolver->csinv += dot(&n, cdata, &one, sinv->x, &one);
-    
-    // Update u
-    retcode = vec_invsqr(sinv, s);
-    
-    register DSDP_INT i;
-    
-    for (i = 0; i < n; ++i) {
-        sdata[i] = sdata[i] * cdata[i];
-    }
-    
-    cs_gaxpy(A, sdata, u->x);
-    
-    // Update csinvrycsinv
-    dsdpSolver->csinvrysinv += dot(&n, sdata, &one, ry->x, &one);
-    
-    // Update d3
-    retcode = vec_invsqr(sinv, s);
-    
-    for (i = 0; i < n; ++i) {
-        sdata[i] = sdata[i] * rydata[i];
-    }
-    
-    cs_gaxpy(A, sdata, d3->x);
-    
-    // Free allocated memory
-    retcode = vec_free(sinv);
-    DSDP_FREE(sinv);
-    
-    dsdpSolver->iterProgress[ITER_SCHUR] = TRUE;
     
     return retcode;
 }
@@ -211,7 +114,6 @@ static DSDP_INT schurMatPerturb( HSDSolver *dsdpSolver ) {
 static DSDP_INT schurMatscale( HSDSolver *dsdpSolver ) {
     
     // Scale Schur matrix if necessary
-    
     dsdpSolver->Mscaler = 1.0;
     return DSDP_RETCODE_OK;
     dsMat *M = dsdpSolver->Msdp;
@@ -261,7 +163,7 @@ static DSDP_INT schurCGSetup( HSDSolver *dsdpSolver ) {
     }
     
     
-//    cgsolver->status = CG_STATUS_INDEFINITE;
+    cgsolver->status = CG_STATUS_INDEFINITE;
     // dsdpCGSetPreReuse(cgsolver, 0);
     
     if (dsdpSolver->m > 20000) {
@@ -287,9 +189,7 @@ static DSDP_INT setupPhaseAdvecs( HSDSolver *dsdpSolver ) {
      d2_12_3_4 = M \ [b, u, asinv, asinvrysinv];
     */
     DSDP_INT retcode = DSDP_RETCODE_OK;
-    DSDP_INT ignoredobj = FALSE;
-    DSDPGetIntParam(dsdpSolver, INT_PARAM_DOBJ_IGNORE, &ignoredobj);
-    retcode = (ignoredobj) ? vec_reset(dsdpSolver->d2) : vec_copy(dsdpSolver->dObj,  dsdpSolver->d2);
+    retcode = vec_copy(dsdpSolver->dObj,  dsdpSolver->d2);
     retcode = vec_copy(dsdpSolver->u,     dsdpSolver->d12);
     retcode = vec_copy(dsdpSolver->asinv, dsdpSolver->d3);
     
@@ -393,7 +293,6 @@ extern DSDP_INT schurPhaseAMatSolve( HSDSolver *dsdpSolver ) {
     // Solve the internal system to get the directions
     // After this routine, d1, d12, d3 and d4 will be filled
     DSDP_INT retcode = DSDP_RETCODE_OK;
-    DSDP_INT ignoredObj = FALSE; DSDPGetIntParam(dsdpSolver, INT_PARAM_DOBJ_IGNORE, &ignoredObj);
     retcode = checkIterProgress(dsdpSolver, ITER_SCHUR_SOLVE);
     assert( !dsdpSolver->iterProgress[ITER_SCHUR_SOLVE] );
     if (dsdpSolver->iterProgress[ITER_SCHUR_SOLVE]) {
@@ -401,9 +300,7 @@ extern DSDP_INT schurPhaseAMatSolve( HSDSolver *dsdpSolver ) {
     }
     // Currently no CG warmstart
     retcode = cgSolveCheck(dsdpSolver->cgSolver, dsdpSolver->d2);
-    if (!ignoredObj) {
-        retcode = cgSolveCheck(dsdpSolver->cgSolver, dsdpSolver->d12);
-    }
+    retcode = cgSolveCheck(dsdpSolver->cgSolver, dsdpSolver->d12);
     retcode = cgSolveCheck(dsdpSolver->cgSolver, dsdpSolver->d3);
     retcode = cgSolveCheck(dsdpSolver->cgSolver, dsdpSolver->d4);
     
@@ -444,6 +341,7 @@ extern DSDP_INT setupSchur( HSDSolver *dsdpSolver ) {
     dsdpSolver->iterProgress[ITER_SCHUR] = TRUE;
     // retcode = setupLPSchur(dsdpSolver);
     schurMatPerturb(dsdpSolver);
+    
     if (dsdpSolver->eventMonitor[EVENT_IN_PHASE_A]) {
         retcode = setupPhaseAdvecs(dsdpSolver); checkCode;
     } else {
@@ -451,6 +349,7 @@ extern DSDP_INT setupSchur( HSDSolver *dsdpSolver ) {
     }
     schurMatscale(dsdpSolver);
     schurCGSetup(dsdpSolver);
+    
     if (dsdpSolver->eventMonitor[EVENT_IN_PHASE_A]) {
         retcode = schurPhaseAMatSolve(dsdpSolver);
     } else {

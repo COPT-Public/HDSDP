@@ -3,6 +3,9 @@
 #include "dsdpsolver.h"
 #include "dsdpSort.h"
 
+#define continue_if_not_in_A_or_not_building_hsd if (!(*M->phaseA) || !(*M->buildhsd) ) { continue; }
+#define return_if_not_in_A_or_not_building_hsd   if (!(*M->phaseA) || !(*M->buildhsd)) { return retcode; }
+
 // Implement the advanced Schur matrix setup in DSDP using M1, M2, M3, M4 techniques
 static char etype[] = "Advanced Schur matrix setup";
 
@@ -56,13 +59,10 @@ static DSDP_INT schurBlockAnalysis( sdpMat *Adata, DSDP_INT *permk, DSDP_INT *MX
     DSDP_INT *dsidx = Adata->denseMatIdx, ndsMat = Adata->ndenseMat,
              *spsidx = Adata->spsMatIdx, nspsMat = Adata->nspsMat,
              *rkidx = Adata->rkMatIdx, nrkMat = Adata->nrkMat,
-             nzeroMat = Adata->nzeroMat, m = Adata->dimy, n = Adata->dimS;
-    
-    assert( ndsMat + nspsMat + nrkMat + nzeroMat == m + 1 );
+             m = Adata->dimy, n = Adata->dimS;
     
     memset(permk, 0, sizeof(DSDP_INT) * (m + 1));
     memset(MXk, 0, sizeof(DSDP_INT) * (m + 1));
-    
     double *scoreM1M2 = (double *) calloc(m + 1, sizeof(double)), ksiM1M2 = 0.0;
     double *scoreM1M5 = (double *) calloc(m + 1, sizeof(double)), ksiM1M5 = 0.0;
     DSDP_INT *ranks   = (DSDP_INT *) calloc(m + 1, sizeof(DSDP_INT));
@@ -89,27 +89,19 @@ static DSDP_INT schurBlockAnalysis( sdpMat *Adata, DSDP_INT *permk, DSDP_INT *MX
     
     // Sort f_1, ..., f_m in descending order
     dsdpSort2(permk, nnzs, 0, m);
-    
     // Determine strategies for setting up the Schur matrix
     for (i = 0; i < m + 1; ++i) {
         getScore(ranks, nnzs, permk, m, // m here is correct
-                 n, i,
-                 &MXk[i], &scoreM1M2[i], &scoreM1M5[i]);
+                 n, i, &MXk[i], &scoreM1M2[i], &scoreM1M5[i]);
     }
     
     // Determine whether to use M3 to M5
     for (i = 0; i < m + 1; ++i) {
-        ksiM1M2 += scoreM1M2[i];
-        ksiM1M5 += scoreM1M5[i];
+        ksiM1M2 += scoreM1M2[i]; ksiM1M5 += scoreM1M5[i];
     }
     
-    double ncbe = n;
-    ncbe *= n; ncbe *= n;
-    if (ksiM1M2 <= ksiM1M5 + ncbe) {
-        M1M2 = TRUE;
-    } else {
-        M1M2 = FALSE;
-    }
+    double ncbe = n; ncbe *= n; ncbe *= n;
+    M1M2 = (ksiM1M2 <= ksiM1M5 + ncbe) ? TRUE: FALSE;
     
     // Determine which strategy to use
     if (M1M2) {
@@ -123,7 +115,6 @@ static DSDP_INT schurBlockAnalysis( sdpMat *Adata, DSDP_INT *permk, DSDP_INT *MX
     }
     
     *useM1M2 = M1M2;
-    
     DSDP_FREE(scoreM1M2); DSDP_FREE(scoreM1M5);
     DSDP_FREE(ranks); DSDP_FREE(nnzs);
     
@@ -142,8 +133,11 @@ static void schurMatCleanup( DSDPSchur *M ) {
     // Clean up the arrays related to the Schur matrix
     denseMatReset(M->M); vec_reset(M->asinv);
     if (*M->phaseA) {
-        vec_reset(M->asinvcsinv); vec_reset(M->asinvrysinv);
-        *M->csinvrysinv = 0.0; *M->csinv = 0.0; *M->csinvcsinv = 0.0;
+        if (*M->buildhsd) {
+            vec_reset(M->asinvcsinv);
+            *M->csinvrysinv = 0.0; *M->csinv = 0.0; *M->csinvcsinv = 0.0;
+        }
+        vec_reset(M->asinvrysinv); *M->rysinv = 0.0;
     }
     schurMatSinvCleanup(M);
 }
@@ -151,10 +145,19 @@ static void schurMatCleanup( DSDPSchur *M ) {
 static void schurMatGetSinv( DSDPSchur *M ) {
     // Compute inverse of the dual matrix when M3, M4 or M5 techniques are used
     M->scaler = 1.0;
+    
     for (DSDP_INT i = 0; i < M->nblock; ++i) {
-        if (!M->useTwo[i]) {
-            spsMatInverse(M->S[i], M->Sinv[i], M->schurAux);
+        spsMatInverse(M->S[i], M->Sinv[i], M->schurAux);
+    }
+    
+    if (*M->phaseA) {
+        DSDP_INT n; double tracesinv = 0.0;
+        for (DSDP_INT i = 0, j; i < M->nblock; ++i) {
+            for (j = 0, n = M->S[i]->dim; j < n; ++j) {
+                tracesinv += M->Sinv[i][j * n + j];
+            }
         }
+        *M->rysinv = tracesinv * (*M->Ry);
     }
 }
 
@@ -187,7 +190,7 @@ static DSDP_INT schurM1rowSetup( DSDPSchur *M, DSDP_INT blockid, DSDP_INT row ) 
     if (k < m) {
         val = &M->asinv->x[k];
     } else {
-        if (!*M->phaseA) { return retcode; }
+        return_if_not_in_A_or_not_building_hsd
         val = M->csinv; computeC = TRUE;
     }
     res = SinvRkSinv(M->S[blockid], factor, rkaux); *val += res;
@@ -216,7 +219,7 @@ static DSDP_INT schurM1rowSetup( DSDPSchur *M, DSDP_INT blockid, DSDP_INT row ) 
         for (i = row; i < m + 1; ++i) {
             j = perm[i];
             if (j == m) {
-                if (!*M->phaseA) { continue; }
+                continue_if_not_in_A_or_not_building_hsd
                 val = &M->asinvcsinv->x[k];
             } else {
                 val = (j > k) ? (&packIdx(array, m, j, k)) : (&packIdx(array, m, k, j));
@@ -266,7 +269,7 @@ static DSDP_INT schurM2rowSetup( DSDPSchur *M, DSDP_INT blockid, DSDP_INT row ) 
     if (k < m) {
         val = &M->asinv->x[k];
     } else {
-        if (!*M->phaseA) { return retcode; }
+        return_if_not_in_A_or_not_building_hsd
         val = M->csinv; computeC = TRUE;
     }
     res = SinvRkSinv(M->S[blockid], factor, rkaux); *val += res;
@@ -302,7 +305,7 @@ static DSDP_INT schurM2rowSetup( DSDPSchur *M, DSDP_INT blockid, DSDP_INT row ) 
             for (i = row; i < m + 1; ++i) {
                 j = perm[i]; if (M->Adata[blockid]->types[j] == MAT_TYPE_ZERO) { continue; }
                 if (j == m) {
-                    if (!*M->phaseA) { continue; }
+                    continue_if_not_in_A_or_not_building_hsd
                     val = &M->asinvcsinv->x[k];
                 } else {
                     val = (j > k) ? (&packIdx(array, m, j, k)) : (&packIdx(array, m, k, j));
@@ -349,7 +352,7 @@ static DSDP_INT schurM3rowSetup( DSDPSchur *M, DSDP_INT blockid, DSDP_INT row ) 
     if (k < m) {
         val = &M->asinv->x[k];
     } else {
-        if (!*M->phaseA) { return retcode; }
+        return_if_not_in_A_or_not_building_hsd
         val = M->csinv; computeC = TRUE;
     }
     
@@ -391,7 +394,7 @@ static DSDP_INT schurM3rowSetup( DSDPSchur *M, DSDP_INT blockid, DSDP_INT row ) 
         for (i = row; i < m + 1; ++i) {
             j = perm[i];
             if (j == m) {
-                if (!*M->phaseA) { continue; }
+                continue_if_not_in_A_or_not_building_hsd
                 val = &M->asinvcsinv->x[k];
             } else {
                 val = (j > k) ? (&packIdx(array, m, j, k)) : (&packIdx(array, m, k, j));
@@ -422,7 +425,7 @@ static DSDP_INT schurM4rowSetup( DSDPSchur *M, DSDP_INT blockid, DSDP_INT row ) 
     if (k < m) {
         val = &M->asinv->x[k];
     } else {
-        if (!*M->phaseA) { return retcode; }
+        return_if_not_in_A_or_not_building_hsd
         val = M->csinv; computeC = TRUE;
     }
     
@@ -463,7 +466,7 @@ static DSDP_INT schurM4rowSetup( DSDPSchur *M, DSDP_INT blockid, DSDP_INT row ) 
         for (i = row; i < m + 1; ++i) {
             j = perm[i];
             if (j == m) {
-                if (!*M->phaseA) { continue; }
+                continue_if_not_in_A_or_not_building_hsd
                 val = &M->asinvcsinv->x[k];
             } else {
                 val = (j > k) ? (&packIdx(array, m, j, k)) : (&packIdx(array, m, k, j));
@@ -524,7 +527,7 @@ static DSDP_INT schurM5rowSetup( DSDPSchur *M, DSDP_INT blockid, DSDP_INT row ) 
     if (k < m) {
         val = &M->asinv->x[k];
     } else {
-        if (!*M->phaseA) { return retcode; }
+        return_if_not_in_A_or_not_building_hsd
         val = M->csinv; computeC = TRUE;
     }
     
@@ -543,7 +546,6 @@ static DSDP_INT schurM5rowSetup( DSDPSchur *M, DSDP_INT blockid, DSDP_INT row ) 
     
     if (computeC) {
         *M->csinvrysinv += res;
-        assert( *M->phaseA );
         for (i = row; i < m + 1; ++i) {
             j = perm[i]; val = (j == m) ? M->csinvcsinv : &M->asinvcsinv->x[j];
             *val += schurM5MatAux(types[k], data[k], types[j], data[j], Sinv);
@@ -554,7 +556,7 @@ static DSDP_INT schurM5rowSetup( DSDPSchur *M, DSDP_INT blockid, DSDP_INT row ) 
         for (i = row; i < m + 1; ++i) {
             j = perm[i];
             if (j == m) {
-                if (!*M->phaseA) { continue; }
+                continue_if_not_in_A_or_not_building_hsd
                 val = &M->asinvcsinv->x[k];
             } else {
                 val = (j > k) ? (&packIdx(array, m, j, k)) : (&packIdx(array, m, k, j));
@@ -593,7 +595,7 @@ extern DSDP_INT SchurMatInit( DSDPSchur *M ) {
     M->Adata = NULL; M->M = NULL; M->asinv = NULL; M->Ry = NULL;
     M->asinvrysinv = NULL; M->asinvcsinv = NULL; M->csinvrysinv = NULL;
     M->csinv = NULL; M->csinvcsinv = NULL; M->Sinv = NULL; M->rkaux = NULL;
-    M->scaler = 0.0;
+    M->scaler = 0.0; M->buildhsd = NULL; M->rysinv = NULL;
     
     return retcode;
 }
@@ -625,7 +627,8 @@ extern DSDP_INT SchurMatAlloc( DSDPSchur *M ) {
 
 extern DSDP_INT SchurMatRegister( DSDPSchur *M, spsMat **S, dsMat **B, sdpMat **Adata, dsMat *Msdp,
                                   vec *asinv, vec *asinvrysinv, vec *asinvcsinv, double *csinvrysinv,
-                                  double *csinv, double *csinvcsinv, double *Ry, rkMat **rkaux, DSDP_INT *phaseA ) {
+                                  double *csinv, double *csinvcsinv, double *rysinv, double *Ry,
+                                  rkMat **rkaux, DSDP_INT *phaseA, DSDP_INT *buildHSD ) {
     // Register information into M
     DSDP_INT retcode = DSDP_RETCODE_OK;
     assert( S && B && Adata && Msdp && !M->Mready);
@@ -635,7 +638,7 @@ extern DSDP_INT SchurMatRegister( DSDPSchur *M, spsMat **S, dsMat **B, sdpMat **
     M->asinv = asinv; M->asinvrysinv = asinvrysinv; M->Ry = Ry;
     M->asinvcsinv = asinvcsinv; M->csinvrysinv = csinvrysinv;
     M->csinv = csinv; M->csinvcsinv = csinvcsinv; M->rkaux = rkaux;
-    M->phaseA = phaseA;
+    M->phaseA = phaseA; M->buildhsd = buildHSD; M->rysinv = rysinv;
     
     return retcode;
 }
@@ -643,17 +646,17 @@ extern DSDP_INT SchurMatRegister( DSDPSchur *M, spsMat **S, dsMat **B, sdpMat **
 extern DSDP_INT SchurMatFree( DSDPSchur *M ) {
     
     DSDP_INT retcode = DSDP_RETCODE_OK;
-    
     for (DSDP_INT i = 0; i < M->nblock; ++i) {
         DSDP_FREE(M->perms[i]); DSDP_FREE(M->MX[i]); DSDP_FREE(M->Sinv[i]);
     }
     
     DSDP_FREE(M->perms); DSDP_FREE(M->MX); DSDP_FREE(M->Sinv); DSDP_FREE(M->schurAux);
-    M->Mready = FALSE; M->m = 0; M->nblock = 0; M->perms = NULL;
-    M->MX= NULL; M->S = NULL; M->B = NULL; M->Adata = NULL;
-    M->M = NULL; M->asinv = NULL; M->asinvrysinv = NULL;
-    M->asinvcsinv = NULL; M->csinvrysinv = NULL; M->useTwo = FALSE;
-    M->csinv = NULL; M->csinvcsinv = NULL; M->scaler = 0.0;
+    M->Mready     = FALSE; M->m           = 0;    M->nblock = 0; M->perms = NULL;
+    M->MX         = NULL;  M->S           = NULL; M->B = NULL;   M->Adata = NULL;
+    M->M          = NULL;  M->asinv       = NULL; M->asinvrysinv = NULL;
+    M->asinvcsinv = NULL;  M->csinvrysinv = NULL; M->useTwo = FALSE;
+    M->csinv      = NULL;  M->csinvcsinv  = NULL; M->scaler = 0.0;
+    M->buildhsd   = NULL;  M->rysinv      = NULL;
     
     return retcode;
 }
@@ -845,17 +848,11 @@ extern DSDP_INT DSDPSchurSetup( DSDPSchur *M ) {
     // Clean up current values and invert blocks
     schurMatCleanup(M);
     schurMatGetSinv(M);
-    
     for (DSDP_INT i = 0; i < M->nblock; ++i) {
         schurMatSetupBlock(M, i);
     }
     
 #endif
-    
-    // Scale asinv and
-    vec_rscale(M->asinv, M->scaler);
-    *M->csinv /= M->scaler;
-    
     return retcode;
 }
 

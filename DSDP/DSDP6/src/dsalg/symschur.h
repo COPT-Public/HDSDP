@@ -1,9 +1,8 @@
 #ifndef symschur_h
 #define symschur_h
 
-/* DSDP Schur matrix setup
-   Advanced version incorporating permutation
-   Only involving setup (no perturbation or solve is available)
+/* DSDP Schur matrix setup: Advanced version incorporating permutation
+   Only involving setup (no perturbation or solve)
  */
 
 #include "dsdphsd.h"
@@ -36,17 +35,19 @@ typedef struct {
     dsMat    *M;      // Schur matrix
     
     // Auxiliary
-    DSDP_INT *phaseA;  // Which phase DSDP is in Phase A
+    DSDP_INT *phaseA;  // Which phase DSDP is in
     vec      *asinv;
     vec      *asinvrysinv;
     vec      *asinvcsinv;
     double   *csinvrysinv;
     double   *csinvcsinv;
     double   *csinv;
+    double   *rysinv;
     
-    double    scaler;  // Scaling factor for S
+    double    scaler;   // Scaling factor for S
     double   *schurAux;
-    DSDP_INT *useTwo;  // Only two strategies used ?
+    DSDP_INT *useTwo;   // Only two strategies used ?
+    DSDP_INT *buildhsd; // Is HSD being used ?
     
 } DSDPSchur;
 
@@ -60,8 +61,9 @@ extern DSDP_INT SchurMatSetDim  ( DSDPSchur *M, DSDP_INT m, DSDP_INT nblock );
 extern DSDP_INT SchurMatAlloc   ( DSDPSchur *M );
 extern DSDP_INT SchurMatRegister( DSDPSchur *M, spsMat **S, dsMat **B, sdpMat **Adata, dsMat *Msdp,
                                   vec *asinv, vec *asinvrysinv, vec *asinvcsinv, double *csinvrysinv,
-                                  double *csinv, double *csinvcsinv, double *Ry, rkMat **rkaux,
-                                  DSDP_INT *phaseA );
+                                  double *csinv, double *csinvcsinv, double *rysinv, double *Ry,
+                                  rkMat **rkaux,
+                                  DSDP_INT *phaseA, DSDP_INT *buildHsd );
 extern DSDP_INT SchurMatFree    ( DSDPSchur *M );
 extern DSDP_INT DSDPSchurReorder( DSDPSchur *M );
 extern DSDP_INT DSDPSchurSetup  ( DSDPSchur *M );

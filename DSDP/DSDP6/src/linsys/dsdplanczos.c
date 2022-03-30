@@ -7,20 +7,6 @@ static char etype[] = "Lanczos iteration";
 #define LWORK   30  // >= MAXITER + 6
 #define IWORK   12  // >= 10
 
-static double firstNnzSign( double *Yk, DSDP_INT k ) {
-    // Return the sign of the first non-zero element
-    for (DSDP_INT i = 0; i < k; ++i) {
-        if (Yk[i] > 0) {
-            return (-1.0);
-        } else if (Yk[i] < 0) {
-            return ( 1.0);
-        }
-    }
-    // We should never be here
-    assert( 0 );
-    return 0.0;
-}
-
 static DSDP_INT lanczosAlloc( vec **v,  vec **w,
                               vec **z1, vec **z2,
                               vec **vecaux,

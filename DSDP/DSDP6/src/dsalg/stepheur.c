@@ -15,6 +15,11 @@ void spsMatExport( spsMat *A );
 static DSDP_INT getKappaTauStep( HSDSolver *dsdpSolver, double *kappatauStep ) {
     // Compute the maximum step size to take at kappa and tau
     DSDP_INT retcode = DSDP_RETCODE_OK;
+    
+    if (!dsdpSolver->eventMonitor[EVENT_HSD_UPDATE]) {
+        *kappatauStep = DSDP_INFINITY; return retcode;
+    }
+    
     double Aalpha, tau, dtau, step;
     retcode = DSDPGetDblParam(dsdpSolver, DBL_PARAM_AALPHA, &Aalpha);
     tau = dsdpSolver->tau; dtau = dsdpSolver->dtau;
@@ -32,6 +37,11 @@ static DSDP_INT getKappaTauStep( HSDSolver *dsdpSolver, double *kappatauStep ) {
 static DSDP_INT takeKappaTauStep( HSDSolver *dsdpSolver ) {
     // Take step in kappa and tau
     DSDP_INT retcode = DSDP_RETCODE_OK;
+    
+    if (!dsdpSolver->eventMonitor[EVENT_HSD_UPDATE]) {
+        return retcode;
+    }
+    
     double step = dsdpSolver->alpha;
     dsdpSolver->tau = dsdpSolver->tau + step * dsdpSolver->dtau;
 #ifdef KAPPATAU
@@ -53,48 +63,16 @@ static DSDP_INT takeyStep( HSDSolver *dsdpSolver ) {
     return retcode;
 }
 
-static DSDP_INT takelpsStep( HSDSolver *dsdpSolver ) {
-    // Take step in LP s
-    double step = dsdpSolver->alpha;
-    vec *s  = dsdpSolver->s, *ds = dsdpSolver->ds;
-    vec_axpy(step, ds, s);
-    return DSDP_RETCODE_OK;
-}
-
 static DSDP_INT takeSDPSStep( HSDSolver *dsdpSolver ) {
     // Take step in SDP S
     return getPhaseAS(dsdpSolver, dsdpSolver->y->x, dsdpSolver->tau);;
 }
 
-static DSDP_INT getLPsStep( HSDSolver *dsdpSolver, double *sStep ) {
-    // Compute the maixmum step size to take at s for LP
-    DSDP_INT retcode = DSDP_RETCODE_OK;
-    
-    vec *s  = dsdpSolver->s, *ds = dsdpSolver->ds;
-    
-    double step = 100.0;
-    
-    for (DSDP_INT i = 0; i < s->dim; ++i) {
-        step = MIN((ds->x[i] / s->x[i]), step);
-    }
-    
-    if (step < 0.0) {
-        *sStep = fabs(0.995 / step);
-    }
-    
-    return retcode;
-}
-
 static DSDP_INT getBlockSDPSStep( HSDSolver *dsdpSolver, DSDP_INT k, double *SkStep ) {
-    // Compute the maixmum step size to take at S for some cone
-    // Note that we compute the step utilizing the Cholesky factorization of S by
-    // S + a * dS = L (I + a L^-1 dS L^-T) L^T
+    // Compute the maixmum step size to take at S for SDP cone
     DSDP_INT retcode = DSDP_RETCODE_OK;
-    assert( k < dsdpSolver->nBlock );
-    retcode = dsdpGetAlpha(dsdpSolver->lczSolver[k], dsdpSolver->S[k], dsdpSolver->dS[k],
-                           dsdpSolver->spaux[k], SkStep);
-    checkCode;
-    
+    dsdpGetAlpha(dsdpSolver->lczSolver[k], dsdpSolver->S[k], dsdpSolver->dS[k],
+                dsdpSolver->spaux[k], SkStep);
     return retcode;
 }
 
@@ -125,7 +103,7 @@ static double getBoundyStep( HSDSolver *dsdpSolver ) {
         double dtau = dsdpSolver->dtau, ds, tmpl = DSDP_INFINITY, tmpu = DSDP_INFINITY;
         double *sl = dsdpSolver->sl->x, *su = dsdpSolver->su->x;
         for (DSDP_INT i = 0; i < y->dim; ++i) {
-            yi = y->x[i]; dyi = y->x[i];
+            yi = y->x[i]; dyi = dy->x[i];
             ds = -dyi + bound * dtau; tmpl = MIN(tmpl, ds / sl[i]);
             ds =  dyi + bound * dtau; tmpu = MIN(tmpu, ds / su[i]);
         }
@@ -245,9 +223,7 @@ extern DSDP_INT takeStep( HSDSolver *dsdpSolver ) {
     if (dsdpSolver->iterProgress[ITER_TAKE_STEP]) {
         error(etype, "Step has been taken. \n");
     }
-    takeKappaTauStep(dsdpSolver);
-    takeyStep(dsdpSolver);
-    takeSDPSStep(dsdpSolver);
+    takeKappaTauStep(dsdpSolver); takeyStep(dsdpSolver); takeSDPSStep(dsdpSolver);
     dsdpSolver->iterProgress[ITER_TAKE_STEP] = TRUE; return retcode;
 }
 
@@ -255,11 +231,9 @@ extern DSDP_INT selectMu( HSDSolver *dsdpSolver, double *newmu ) {
     // Choose the next barrier parameter
     /*
      The backward newton step is stored in b2 and Scker, dy1 is in d1; dy is in b1
-     
      At this stage, if a new primal feasible solution if found, then sl and su are filled by
      backward newton steps. Otherwise sl and su are untouched
-     
-     */
+    */
     
     DSDP_INT retcode = DSDP_RETCODE_OK;
     
@@ -329,7 +303,6 @@ extern DSDP_INT selectMu( HSDSolver *dsdpSolver, double *newmu ) {
                 alphap = (i > 2) ? 0.5 * alphap : 0.97 * alphap;
                 vec_copy(dsdpSolver->d12, dsdpSolver->sl);
                 vec_copy(dsdpSolver->d4, dsdpSolver->su);
-                continue;
             }
             
             if (inCone || alphap < 1e-08) { break; }

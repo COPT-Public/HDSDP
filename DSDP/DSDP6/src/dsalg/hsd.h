@@ -33,8 +33,9 @@
 #define EVENT_LARGE_DOBJ        9  // Large dual objective
 #define EVENT_PINFEAS_DETECTED 10  // Primal infeasibility is detected
 #define EVENT_INVALID_GAP      11  // Dual objective exceeds primal bound
-#define EVENT_IN_PHASE_A       12  // We are in phase A
-#define EVENT_IN_PHASE_B       13  // We are in phase B
+#define EVENT_HSD_UPDATE       12  // Homogeneous self-dual embedding switch
+#define EVENT_IN_PHASE_A       13  // We are in phase A
+#define EVENT_IN_PHASE_B       14  // We are in phase B
 
 #ifdef __cplusplus
 extern "C" {

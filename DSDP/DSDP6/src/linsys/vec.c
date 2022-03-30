@@ -9,16 +9,14 @@ static DSDP_INT one = 1;
 
 extern DSDP_INT vec_init( vec *x ) {
     // Initialize vec
-    x->x = NULL;
-    x->dim = 0;
+    x->x = NULL; x->dim = 0;
     return DSDP_RETCODE_OK;
 }
 
 extern DSDP_INT vec_alloc( vec *x, const DSDP_INT n ) {
     // Allocate memory for vec
     assert( x->dim == 0 );
-    x->dim = n;
-    x->x = (double *) calloc(n, sizeof(double));
+    x->dim = n; x->x = (double *) calloc(n, sizeof(double));
     return DSDP_RETCODE_OK;
 }
 
@@ -49,8 +47,13 @@ extern DSDP_INT vec_zaxpby( vec *z, double alpha, vec *x, double beta, vec *y ) 
     CHECKVEC(z, x);
     CHECKVEC(x, y);
     vec_reset(z);
-    axpy(&(x->dim), &alpha, x->x, &one, z->x, &one);
-    axpy(&(y->dim), &beta,  y->x, &one, z->x, &one);
+    if (alpha) {
+        axpy(&(x->dim), &alpha, x->x, &one, z->x, &one);
+    }
+    if (beta) {
+        axpy(&(y->dim), &beta,  y->x, &one, z->x, &one);
+    }
+    
     return DSDP_RETCODE_OK;
 }
 
@@ -150,9 +153,7 @@ extern double vec_step( vec *s, vec *ds, double beta ) {
 
 extern DSDP_INT vec_incone( vec *s ) {
     for (DSDP_INT i = 0; i < s->dim; ++i) {
-        if (s->x[i] <= 0.0) {
-            return FALSE;
-        }
+        if (s->x[i] <= 0.0) { return FALSE; }
     }
     return TRUE;
 }
@@ -216,13 +217,7 @@ extern DSDP_INT vec_print( vec *x ) {
 }
 
 extern DSDP_INT vec_free( vec *x ) {
-    
-    if (!x) {
-        return DSDP_RETCODE_OK;
-    }
-    
-    // Free the allocated memory in vec structure
-    x->dim = 0;
-    DSDP_FREE(x->x);
+    if (!x) { return DSDP_RETCODE_OK; }
+    x->dim = 0; DSDP_FREE(x->x);
     return DSDP_RETCODE_OK;
 }

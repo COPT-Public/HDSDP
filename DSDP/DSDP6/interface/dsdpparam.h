@@ -21,6 +21,7 @@
 #define DBL_PARAM_ABS_FEASTOL   14
 #define DBL_PARAM_REL_FEASTOL   15
 #define DBL_PARAM_PRLX_PENTALTY 16
+#define DBL_PARAM_OBJ_WEIGHT    17
 
 #define INT_PARAM_ACORRECTOR     0
 #define INT_PARAM_BCORRECTOR     1
@@ -36,11 +37,10 @@
 #define PRESOLVE_CONSERVATIVE   51
 #define INT_PARAM_AMAXITER       6
 #define INT_PARAM_BMAXITER       7
-#define INT_PARAM_DOBJ_IGNORE    8
-#define INT_PARAM_PRELAX         9
+#define INT_PARAM_PRELAX         8
 
-#define NUM_DBL_PARAM  (DBL_PARAM_PRLX_PENTALTY + 1)
-#define NUM_INT_PARAM  (INT_PARAM_PRELAX        + 1)
+#define NUM_DBL_PARAM  (DBL_PARAM_OBJ_WEIGHT + 1)
+#define NUM_INT_PARAM  (INT_PARAM_PRELAX     + 1)
 
 typedef struct {
     
@@ -61,7 +61,6 @@ static DSDP_INT defaultIntParam[NUM_INT_PARAM] = {
            // INT_PARAM_PRESOLVE
     100,   // INT_PARAM_AMAXITER
     500,   // INT_PARAM_BMAXITER
-    TRUE,  // INT_PARAM_DOBJ_IGNORE
     FALSE  // INT_PARAM_PRELAX
 };
 
@@ -73,14 +72,11 @@ static double defaultDblParam[NUM_DBL_PARAM] = {
     3.0,   // DBL_PARAM_RHON
     1e+10, // DBL_PARAM_INIT_POBJ
     
-    
-    1e+06, // DBL_PARAM_INIT_BETA
+    1e+03, // DBL_PARAM_INIT_BETA
     1e+10, // DBL_PARAM_INIT_MU
-    1e+10,   // DBL_PARAM_INIT_TAU
+    1.0, // DBL_PARAM_INIT_TAU
     
-    
-    
-    1.0, // DBL_PARAM_INIT_KAPPA
+    1.0,   // DBL_PARAM_INIT_KAPPA
     0.75,  // DBL_PARAM_AALPHA
     1e+08, // DBL_PARAM_NRM_THRESH
     1e+08, // DBL_PARAM_INFEAS_THRESH
@@ -88,7 +84,8 @@ static double defaultDblParam[NUM_DBL_PARAM] = {
     1e-03, // DBL_PARAM_REL_OPTTOL
     1e-06, // DBL_PARAM_ABS_FEASTOL
     1e-03, // DBL_PARAM_REL_FEASTOL
-    1e+07  // DBL_PARAM_PRLX_PENTALTY
+    1e+07, // DBL_PARAM_PRLX_PENTALTY
+    1.0    // DBL_PARAM_OBJ_WEIGHT
 };
 
 static hsdParam defaultParam =
