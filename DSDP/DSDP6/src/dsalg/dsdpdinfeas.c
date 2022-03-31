@@ -6,6 +6,7 @@
 #include "stepdirection.h"
 #include "stepheur.h"
 #include "dsdpproxmeasure.h"
+#include "dsdpcorrector.h"
 #include "dsdplog.h"
 
 #define timer printf("Elapsed Time %g \n", (double) (clock() - start) / CLOCKS_PER_SEC)
@@ -54,9 +55,9 @@ extern DSDP_INT DSDPDInfeasEliminator( HSDSolver *dsdpSolver ) {
     
     const double *newmu = NULL;
     
-    if (attempt == DSDP_ATTEMPT_NO) {
+    if (attempt == AATEMT_CONSERVATIVE) {
         ntry = 1; newmu = nomu;
-    } else if (attempt == DSDP_ATTEMPT_CONSV) {
+    } else if (attempt == AATEMPT_MILD) {
         ntry = 2; newmu = consvmu;
     } else {
         ntry = 4; newmu = aggmu;
@@ -91,7 +92,16 @@ extern DSDP_INT DSDPDInfeasEliminator( HSDSolver *dsdpSolver ) {
         // Reset monitor
         DSDPResetPhaseAMonitor(dsdpSolver);
         
+        if (i > 90) {
+            dsdpSolver->eventMonitor[EVENT_HSD_UPDATE] = TRUE;
+        }
+        
         if (goOn) {
+            if (i >= 1) {
+                dsdpSolver->ybound = 1e+07 * dsdpSolver->tau;
+                DSDPSetIntParam(dsdpSolver, INT_PARAM_ACORRECTOR, 12);
+                retcode = dInfeasCorrectorStep(dsdpSolver); checkCode;
+            }
             break;
         }
         
@@ -108,7 +118,12 @@ extern DSDP_INT DSDPDInfeasEliminator( HSDSolver *dsdpSolver ) {
                 if (trymu > tol * tol) {
                     muprimal = trymu;
                 }
-                dsdpSolver->mu = MAX(muprimal, dsdpSolver->mu * sigma);
+                
+                // TODO: no 2 * m if not using primal relaxation
+                trymu = dsdpSolver->mu;
+//                dsdpSolver->mu = (dsdpSolver->pObjVal - dsdpSolver->dObjVal -
+//                                  dsdpSolver->Ry * 1e+4) / 5.0 * (2 * dsdpSolver->m + dsdpSolver->n);
+                // dsdpSolver->mu *= sigma;
                 break;
             }
         }
@@ -122,12 +137,13 @@ extern DSDP_INT DSDPDInfeasEliminator( HSDSolver *dsdpSolver ) {
         // Take step
         retcode = takeStep(dsdpSolver); checkCode;
         // Corrector
-        dsdpSolver->iterProgress[ITER_CORRECTOR] = TRUE;
+        retcode = dInfeasCorrectorStep(dsdpSolver); checkCode;
+
         // Decrease mu with sufficient proximity
         checkIterProgress(dsdpSolver, ITER_DECREASE_MU);
         if (dsdpSolver->Pnrm < 0.1 &&
             !dsdpSolver->eventMonitor[EVENT_MU_QUALIFIES]) {
-            dsdpSolver->mu *= 0.1;
+            // dsdpSolver->mu *= 0.1;
             // muprimal *= 0.1;
         }
         

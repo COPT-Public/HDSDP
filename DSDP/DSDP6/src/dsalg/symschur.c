@@ -203,7 +203,12 @@ static DSDP_INT schurM1rowSetup( DSDPSchur *M, DSDP_INT blockid, DSDP_INT row ) 
         assert( *M->phaseA );
         val = M->csinvrysinv; *val += denseDiagTrace(B, Ry);
         for (i = row; i < m + 1; ++i) {
-            j = perm[i]; val = (j == m) ? M->csinvcsinv : &M->asinvcsinv->x[j];
+            j = perm[i];
+            if (j == m) {
+                if (!*M->buildhsd) { continue; } val = M->csinvcsinv;
+            } else {
+                val = &M->asinvcsinv->x[j];
+            }
             switch (M->Adata[blockid]->types[j]) {
                 case MAT_TYPE_ZERO  : continue; break;
                 case MAT_TYPE_DENSE : denseDsTrace(B, M->Adata[blockid]->sdpData[j], &res); break;
@@ -217,7 +222,7 @@ static DSDP_INT schurM1rowSetup( DSDPSchur *M, DSDP_INT blockid, DSDP_INT row ) 
         if (*M->phaseA) { val = &M->asinvrysinv->x[k]; *val += denseDiagTrace(B, Ry); }
         double *array = M->M->array;
         for (i = row; i < m + 1; ++i) {
-            j = perm[i];
+            j = perm[i]; if (M->Adata[blockid]->types[j] == MAT_TYPE_ZERO) { continue; }
             if (j == m) {
                 continue_if_not_in_A_or_not_building_hsd
                 val = &M->asinvcsinv->x[k];
@@ -283,7 +288,11 @@ static DSDP_INT schurM2rowSetup( DSDPSchur *M, DSDP_INT blockid, DSDP_INT row ) 
             r1aux = rkMatGetBase(rkaux, r); coeff = r1aux->sign;
             for (i = row; i < m + 1; ++i) {
                 j = perm[i]; if (M->Adata[blockid]->types[j] == MAT_TYPE_ZERO) { continue; }
-                val = (j == m) ? M->csinvcsinv : &M->asinvcsinv->x[j];
+                if (j == m) {
+                    if (!*M->buildhsd) { continue; } val = M->csinvcsinv;
+                } else {
+                    val = &M->asinvcsinv->x[j];
+                }
                 switch (M->Adata[blockid]->types[j]) {
                     case MAT_TYPE_DENSE : res = denseMatxTAx(M->Adata[blockid]->sdpData[j], M->schurAux, r1aux->x);
                         res *= coeff; break;
@@ -378,7 +387,12 @@ static DSDP_INT schurM3rowSetup( DSDPSchur *M, DSDP_INT blockid, DSDP_INT row ) 
     if (computeC) {
         assert( *M->phaseA ); val = M->csinvrysinv; *val += denseDiagTrace(B, Ry);
         for (i = row; i < m + 1; ++i) {
-            j = perm[i]; val = (j == m) ? M->csinvcsinv : &M->asinvcsinv->x[j];
+            j = perm[i]; if (M->Adata[blockid]->types[j] == MAT_TYPE_ZERO) { continue; }
+            if (j == m) {
+                if (!*M->buildhsd) { continue; } val = M->csinvcsinv;
+            } else {
+                val = &M->asinvcsinv->x[j];
+            }
             switch (M->Adata[blockid]->types[j]) {
                 case MAT_TYPE_ZERO  : continue; break;
                 case MAT_TYPE_DENSE : denseDsTrace(B, M->Adata[blockid]->sdpData[j], &res); break;
@@ -447,7 +461,12 @@ static DSDP_INT schurM4rowSetup( DSDPSchur *M, DSDP_INT blockid, DSDP_INT row ) 
     if (computeC) {
         assert( *M->phaseA ); val = M->csinvrysinv; *val += res;
         for (i = row; i < m + 1; ++i) {
-            j = perm[i]; val = (j == m) ? M->csinvcsinv : &M->asinvcsinv->x[j];
+            j = perm[i]; if (M->Adata[blockid]->types[j] == MAT_TYPE_ZERO) { continue; }
+            if (j == m) {
+                if (!*M->buildhsd) { continue; } val = M->csinvcsinv;
+            } else {
+                val = &M->asinvcsinv->x[j];
+            }
             switch (M->Adata[blockid]->types[j]) {
                 case MAT_TYPE_ZERO  : continue; break;
                 case MAT_TYPE_SPARSE:
@@ -547,7 +566,12 @@ static DSDP_INT schurM5rowSetup( DSDPSchur *M, DSDP_INT blockid, DSDP_INT row ) 
     if (computeC) {
         *M->csinvrysinv += res;
         for (i = row; i < m + 1; ++i) {
-            j = perm[i]; val = (j == m) ? M->csinvcsinv : &M->asinvcsinv->x[j];
+            j = perm[i]; if (M->Adata[blockid]->types[j] == MAT_TYPE_ZERO) { continue; }
+            if (j == m) {
+                if (!*M->buildhsd) { continue; } val = M->csinvcsinv;
+            } else {
+                val = &M->asinvcsinv->x[j];
+            }
             *val += schurM5MatAux(types[k], data[k], types[j], data[j], Sinv);
         }
     } else {

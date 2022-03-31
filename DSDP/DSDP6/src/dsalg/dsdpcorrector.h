@@ -12,6 +12,7 @@
 extern "C" {
 #endif
 
+extern DSDP_INT dInfeasCorrectorStep( HSDSolver *dsdpSolver );
 extern DSDP_INT dualCorrectorStep( HSDSolver *dsdpSolver );
 
 #ifdef __cplusplus

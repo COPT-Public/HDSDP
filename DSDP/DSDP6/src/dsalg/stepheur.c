@@ -97,15 +97,15 @@ static double getBoundyStep( HSDSolver *dsdpSolver ) {
     // Compute the maimum stepsize to take for the bound cones
     vec *y = dsdpSolver->y, *dy = dsdpSolver->dy;
     double bound, yi, dyi, step = DSDP_INFINITY;
-    DSDPGetDblParam(dsdpSolver, DBL_PARAM_PRLX_PENTALTY, &bound);
+    bound = dsdpSolver->ybound;
     
     if (dsdpSolver->eventMonitor[EVENT_IN_PHASE_A]) {
         double dtau = dsdpSolver->dtau, ds, tmpl = DSDP_INFINITY, tmpu = DSDP_INFINITY;
         double *sl = dsdpSolver->sl->x, *su = dsdpSolver->su->x;
         for (DSDP_INT i = 0; i < y->dim; ++i) {
             yi = y->x[i]; dyi = dy->x[i];
-            ds = -dyi + bound * dtau; tmpl = MIN(tmpl, ds / sl[i]);
-            ds =  dyi + bound * dtau; tmpu = MIN(tmpu, ds / su[i]);
+            ds =  dyi + bound * dtau; tmpl = MIN(tmpl, ds / sl[i]);
+            ds = -dyi + bound * dtau; tmpu = MIN(tmpu, ds / su[i]);
         }
         step = (tmpl >= 0) ? step : MIN(step, - 1.0 / tmpl);
         step = (tmpu >= 0) ? step : MIN(step, - 1.0 / tmpu);
@@ -126,8 +126,7 @@ static DSDP_INT getCurrentyPotential( HSDSolver *dsdpSolver, vec *y,
     DSDP_INT retcode = DSDP_RETCODE_OK;
     
     double pval = 0.0, dObjVal = 0.0, *aux = dsdpSolver->M->schurAux;
-    DSDP_INT i; double sl, su, bound;
-    DSDPGetDblParam(dsdpSolver, DBL_PARAM_PRLX_PENTALTY, &bound);
+    DSDP_INT i; double sl, su, bound = dsdpSolver->ybound;
     
     if (inCone) {
         // Not sure whether y is in the cone
@@ -206,8 +205,7 @@ extern DSDP_INT getMaxStep( HSDSolver *dsdpSolver ) {
     DSDPGetDblParam(dsdpSolver, DBL_PARAM_AALPHA, &Aalpha);
     getKappaTauStep(dsdpSolver, &stepkappatau);
     getSDPSStep(dsdpSolver, &sdpS);
-    stepbd = getBoundyStep(dsdpSolver);
-    
+    stepbd = (dsdpSolver->ybound == DSDP_INFINITY) ? DSDP_INFINITY : getBoundyStep(dsdpSolver);
     sdpS = MIN(sdpS, steplps);
     dsdpSolver->alpha = MIN(sdpS, stepkappatau);
     dsdpSolver->alpha = MIN(dsdpSolver->alpha, stepbd);

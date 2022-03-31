@@ -23,8 +23,7 @@ extern DSDP_INT dsdpCheckBackwardNewton( HSDSolver *dsdpSolver, DSDP_INT *ispfea
                -1.0, dsdpSolver->b1);
     
     // Check bound cone
-    double *bwnewton = dsdpSolver->b2->x, bound;
-    DSDPGetDblParam(dsdpSolver, DBL_PARAM_PRLX_PENTALTY, &bound);
+    double *bwnewton = dsdpSolver->b2->x, bound = dsdpSolver->ybound;
     
     for (DSDP_INT i = 0; i < dsdpSolver->m; ++i) {
         if (bound < fabs(bwnewton[i])) {

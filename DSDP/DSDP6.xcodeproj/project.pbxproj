@@ -343,7 +343,6 @@
 		19118D912737B72800D51D03 /* dsalg */ = {
 			isa = PBXGroup;
 			children = (
-				1924445C27E9E07200C99F42 /* dsdpcorrector.c */,
 				1924445B27E9E07200C99F42 /* dsdpcorrector.h */,
 				19C3BC03279527BA00F0331B /* dsdppfeascheck.h */,
 				19118D992737B72800D51D03 /* schurmat.h */,
@@ -371,6 +370,7 @@
 				1950371527B625C400C723FC /* dsdppsol.c */,
 				197A770427C7889A00D3A50B /* symschur.h */,
 				197A770527C7889A00D3A50B /* symschur.c */,
+				1924445C27E9E07200C99F42 /* dsdpcorrector.c */,
 			);
 			path = dsalg;
 			sourceTree = "<group>";
@@ -841,7 +841,7 @@
 			buildSettings = {
 				CODE_SIGN_STYLE = Automatic;
 				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
-				GCC_OPTIMIZATION_LEVEL = 0;
+				GCC_OPTIMIZATION_LEVEL = fast;
 				"HEADER_SEARCH_PATHS[arch=*]" = "./DSDP6/**";
 				LIBRARY_SEARCH_PATHS = (
 					"$(inherited)",
@@ -857,7 +857,7 @@
 			buildSettings = {
 				CODE_SIGN_STYLE = Automatic;
 				DEBUG_INFORMATION_FORMAT = dwarf;
-				GCC_OPTIMIZATION_LEVEL = 0;
+				GCC_OPTIMIZATION_LEVEL = fast;
 				HEADER_SEARCH_PATHS = "./DSDP6/**";
 				LIBRARY_SEARCH_PATHS = (
 					"$(inherited)",

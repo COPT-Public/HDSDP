@@ -926,7 +926,6 @@ extern DSDP_INT preSDPMatCScale( HSDSolver *dsdpSolver ) {
     } else if (dsdpSolver->cScaler > 1e+08) {
         dsdpSolver->cScaler = 1e+06;
     } else if (dsdpSolver->cScaler < 1e-15) {
-        printf("| Optimizing a primal feasibility problem. \n");
         dsdpSolver->cScaler = 1.0;
         DSDPStatUpdate(&dsdpSolver->dsdpStats, STAT_PFEAS_PROBLEM, TRUE);
     } else if (dsdpSolver->cScaler < 1e-08) {

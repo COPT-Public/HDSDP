@@ -43,7 +43,7 @@ extern DSDP_INT getPhaseBS( HSDSolver *dsdpSolver, double *y ) {
             retcode = addMattoS(dsdpSolver, i, j, - y[j]);
         }
         addMattoS(dsdpSolver, i, m, 1.0);
-        spsMatAdddiag(S, - dsdpSolver->Ry, dsdpSolver->symS[i]);
+        spsMatAdddiag(S, dsdpSolver->dperturb, dsdpSolver->symS[i]);
     }
     return retcode;
 }
@@ -61,7 +61,6 @@ extern DSDP_INT getPhaseACheckerS( HSDSolver *dsdpSolver, double *y, double tau 
         }
         retcode = addMattoChecker(dsdpSolver, i, m, tau);
         retcode = spsMatAdddiag(checker, - dsdpSolver->Ry, dsdpSolver->symS[i]);
-        checkCode;
     }
     return retcode;
 }
@@ -77,6 +76,7 @@ extern DSDP_INT getPhaseBCheckerS( HSDSolver *dsdpSolver, double *y ) {
             retcode = addMattoChecker(dsdpSolver, i, j, - y[j]);
         }
         retcode = addMattoChecker(dsdpSolver, i, m, 1.0);
+        retcode = spsMatAdddiag(dsdpSolver->Scker[i], dsdpSolver->dperturb, dsdpSolver->symS[i]);
     }
     return retcode;
 }

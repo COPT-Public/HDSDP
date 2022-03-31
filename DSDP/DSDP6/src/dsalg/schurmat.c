@@ -25,14 +25,17 @@ static DSDP_INT setupBoundYSchur( HSDSolver *dsdpSolver ) {
     // Set up the Schur matrix for the bound
     DSDP_INT retcode = DSDP_RETCODE_OK;
     
+    if (dsdpSolver->ybound == DSDP_INFINITY) {
+        return retcode;
+    }
+    
     double *M = dsdpSolver->Msdp->array, *asinv = dsdpSolver->asinv->x, s = 0.0;
-    double *sl = dsdpSolver->sl->x, *su = dsdpSolver->su->x, bound;
+    double *sl = dsdpSolver->sl->x, *su = dsdpSolver->su->x, bound = dsdpSolver->ybound;
     DSDP_INT m = dsdpSolver->m;
     
     if (dsdpSolver->eventMonitor[EVENT_IN_PHASE_A]) {
         double *u = dsdpSolver->u->x;
         double sinvsqr, csinvsuml = 0.0, csinvsumu = 0.0, cscssuml = 0.0, cscssumu = 0.0;
-        DSDPGetDblParam(dsdpSolver, DBL_PARAM_PRLX_PENTALTY, &bound);
         
         for (DSDP_INT i = 0, idx = 0; i < m; ++i) {
             // Upperbound
@@ -87,15 +90,11 @@ static DSDP_INT schurMatPerturb( HSDSolver *dsdpSolver ) {
         dsdpSolver->Mscaler = maxdiag;
         
         if (dsdpSolver->m < 100) {
-            perturb += MIN(maxdiag * 1e-08, 1e-09);
+            perturb += MIN(maxdiag * 1e-08, 1e-14);
         } else if (dsdpSolver->m < 1000) {
-            perturb += MIN(maxdiag * 1e-08, 1e-08);
+            perturb += MIN(maxdiag * 1e-08, 1e-13);
         } else {
-            perturb += MIN(maxdiag * 1e-08, 1e-07);
-        }
-        
-        if (m > 12 * dsdpSolver->n) {
-            perturb += 1e-06;
+            perturb += MIN(maxdiag * 1e-08, 1e-12);
         }
         
         double invalid;
@@ -116,24 +115,21 @@ static DSDP_INT schurMatscale( HSDSolver *dsdpSolver ) {
     // Scale Schur matrix if necessary
     dsdpSolver->Mscaler = 1.0;
     return DSDP_RETCODE_OK;
-    dsMat *M = dsdpSolver->Msdp;
-    double scaler = sqrt(dsdpSolver->Mscaler);
+    double scaler = dsdpSolver->Mscaler;
     
     if (dsdpSolver->eventMonitor[EVENT_IN_PHASE_A]) {
         if (scaler > 1e+06 || scaler <= 1e-04) {
-            denseMatRscale(M, scaler);
-            vec_rscale(dsdpSolver->d2, scaler);
-            vec_rscale(dsdpSolver->d12, scaler);
-            vec_rscale(dsdpSolver->d3, scaler);
-            vec_rscale(dsdpSolver->d4, scaler);
+            vec_scale(dsdpSolver->d2, scaler);
+            vec_scale(dsdpSolver->d12, scaler);
+            vec_scale(dsdpSolver->d3, scaler);
+            vec_scale(dsdpSolver->d4, scaler);
         } else {
             dsdpSolver->Mscaler = 1.0;
         }
     } else {
         if (scaler > 1e+06 || scaler <= 1e-04) {
-            denseMatRscale(M, scaler);
-            vec_rscale(dsdpSolver->d1, scaler);
-            vec_rscale(dsdpSolver->d2, scaler);
+            vec_scale(dsdpSolver->d1, scaler);
+            vec_scale(dsdpSolver->d2, scaler);
         } else {
             dsdpSolver->Mscaler = 1.0;
         }
@@ -146,32 +142,32 @@ static DSDP_INT schurCGSetup( HSDSolver *dsdpSolver ) {
     // Set CG tolerance and maxiteration based on simple heuristic
     DSDP_INT retcode = DSDP_RETCODE_OK;
     
-    double tol = 0.0; DSDP_INT cgiter = 20;
+    double tol = 0.0; DSDP_INT cgiter;
     CGSolver *cgsolver = dsdpSolver->cgSolver;
     
     // Set parameters
     if (dsdpSolver->mu > 1.0) {
-        tol = 1e-04;
-    } else if (dsdpSolver->mu > 1e-02) {
         tol = 1e-05;
-    } else if (dsdpSolver->mu > 1e-05){
+    } else if (dsdpSolver->mu > 1e-02) {
         tol = 1e-06;
+    } else if (dsdpSolver->mu > 1e-05){
+        tol = 5e-07;
     } else if (dsdpSolver->mu > 1e-07) {
         tol = 1e-07;
     } else {
-        tol = 1e-08;
+        tol = 1e-07;
     }
     
     
-    cgsolver->status = CG_STATUS_INDEFINITE;
+//    cgsolver->status = CG_STATUS_INDEFINITE;
     // dsdpCGSetPreReuse(cgsolver, 0);
     
     if (dsdpSolver->m > 20000) {
         cgiter = 500; tol *= 10.0;
-    } else if (dsdpSolver->m > 10000) {
-        cgiter = 400; tol *= 1.2;
+    } else if (dsdpSolver->m > 15000) {
+        cgiter = 400; tol *= 10.0;
     } else if (dsdpSolver->m > 5000) {
-        cgiter = 250; tol *= 1.1;
+        cgiter = 250; tol *= 2.0;
     } else {
         cgiter = MAX(dsdpSolver->m / 50, 30);
     }
@@ -219,6 +215,7 @@ static DSDP_INT cgSolveCheck( CGSolver *cgSolver, vec *b ) {
     
     double *tmp = (double *) calloc(b->dim, sizeof(double));
     memcpy(tmp, b->x, sizeof(double) * b->dim);
+    
     dsdpCGSolve(cgSolver, b, NULL);
     dsdpCGGetStatus(cgSolver, &status);
     
@@ -280,10 +277,11 @@ extern DSDP_INT setupFactorize( HSDSolver *dsdpSolver ) {
     }
     
     // Get dual slack
-    double bound = 0.0; DSDPGetDblParam(dsdpSolver, DBL_PARAM_PRLX_PENTALTY, &bound);
-    
-    vec_lslack(dsdpSolver->y, dsdpSolver->sl, -bound * dsdpSolver->tau);
-    vec_uslack(dsdpSolver->y, dsdpSolver->su,  bound * dsdpSolver->tau);
+    double bound = dsdpSolver->ybound;
+    if (bound != DSDP_INFINITY) {
+        vec_lslack(dsdpSolver->y, dsdpSolver->sl, -bound * dsdpSolver->tau);
+        vec_uslack(dsdpSolver->y, dsdpSolver->su,  bound * dsdpSolver->tau);
+    }
     
     dsdpSolver->iterProgress[ITER_DUAL_FACTORIZE] = TRUE;
     return retcode;
@@ -320,6 +318,7 @@ extern DSDP_INT schurPhaseBMatSolve( HSDSolver *dsdpSolver ) {
     }
     cgSolveCheck(dsdpSolver->cgSolver, dsdpSolver->d1);
     cgSolveCheck(dsdpSolver->cgSolver, dsdpSolver->d2);
+    
     dsdpSolver->iterProgress[ITER_SCHUR_SOLVE] = TRUE;
     
     return retcode;
@@ -329,15 +328,8 @@ extern DSDP_INT setupSchur( HSDSolver *dsdpSolver ) {
     // Setup the schur matrix Msdp and some of the temporary arrays
     DSDP_INT retcode = DSDP_RETCODE_OK;
     
-    retcode = setupSDPSchur(dsdpSolver);
-    
-    if (dsdpSolver->eventMonitor[EVENT_IN_PHASE_A]) {
-        // TODO: Add primal relaxation to this phase ?
-    } else {
-        retcode = setupBoundYSchur(dsdpSolver);
-    }
-    
-    checkCode;
+    setupSDPSchur(dsdpSolver);
+    setupBoundYSchur(dsdpSolver);
     dsdpSolver->iterProgress[ITER_SCHUR] = TRUE;
     // retcode = setupLPSchur(dsdpSolver);
     schurMatPerturb(dsdpSolver);

@@ -6,7 +6,7 @@ extern DSDP_INT dsdpgetPhaseAProxMeasure( HSDSolver *dsdpSolver, double newmu ) 
     
     // Check primal feasibility and proximity measure given a new mu parameter
     DSDP_INT retcode = DSDP_RETCODE_OK;
-    DSDP_INT ispfeas = FALSE;
+    DSDP_INT ispfeas = FALSE, useprlx = (dsdpSolver->ybound != DSDP_INFINITY);
     
     // Use b1 as auxiliary
     vec *dydelta = dsdpSolver->b1;
@@ -27,8 +27,15 @@ extern DSDP_INT dsdpgetPhaseAProxMeasure( HSDSolver *dsdpSolver, double newmu ) 
         vec_dot(dsdpSolver->u, dydelta, &tmp1);
         vec_dot(dsdpSolver->asinv, dydelta, &tmp2);
         pObj += dsdpSolver->mu / dsdpSolver->tau * \
-                (dsdpSolver->rysinv + tmp1 + tmp2 + dsdpSolver->n + dsdpSolver->m * 2);
+                (dsdpSolver->rysinv + tmp1 + tmp2 + dsdpSolver->n + dsdpSolver->m * 2 * useprlx);
         pObj = pObj / dsdpSolver->tau;
+        dsdpSolver->pObjVal = pObj;
+        
+        if (dsdpSolver->mu < 1e-03) {
+            dsdpSolver->mumaker = dsdpSolver->mu;
+            vec_copy(dsdpSolver->y, dsdpSolver->ymaker);
+            vec_copy(dsdpSolver->b1, dsdpSolver->dymaker);
+        }
     }
     
     return retcode;
@@ -40,9 +47,7 @@ extern DSDP_INT dsdpgetPhaseBProxMeasure( HSDSolver *dsdpSolver, double *muub, d
     DSDP_INT retcode = DSDP_RETCODE_OK;
     DSDP_INT ispfeas = FALSE;
     
-    double gap = 0.0, rho, bound;
-    
-    DSDPGetDblParam(dsdpSolver, DBL_PARAM_PRLX_PENTALTY, &bound);
+    double gap = 0.0, rho, bound = dsdpSolver->ybound;
     DSDPGetDblParam(dsdpSolver, DBL_PARAM_RHON, &rho);
     
     vec_zaxpby(dsdpSolver->b1, 1 / dsdpSolver->mu, dsdpSolver->d1, -1.0, dsdpSolver->d2);
@@ -83,6 +88,7 @@ extern DSDP_INT dsdpgetPhaseBProxMeasure( HSDSolver *dsdpSolver, double *muub, d
     } else {
         *muub = (dsdpSolver->pObjVal - dsdpSolver->dObjVal) / (dsdpSolver->n + 2 *  dsdpSolver->m);
     }
+    
     
     *mulb = (*muub) / rho;
     

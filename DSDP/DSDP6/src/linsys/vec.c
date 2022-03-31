@@ -196,6 +196,14 @@ extern DSDP_INT vec_norm( vec *x, double *nrm ) {
     return DSDP_RETCODE_OK;
 }
 
+extern double vec_infnorm( vec *x ) {
+    double nrm = 0.0;
+    for (DSDP_INT i = 0; i < x->dim; ++i) {
+        nrm = MAX(fabs(x->x[i]), nrm);
+    }
+    return nrm;
+}
+
 extern DSDP_INT vec_dot( vec *x, vec *y, double *xTy ) {
     // Compute x' * y
     assert( x->dim == y->dim );

@@ -273,7 +273,7 @@ extern DSDP_INT DSDPCheckPhaseAConvergence( HSDSolver *dsdpSolver, DSDP_INT *isO
     assert( dsdpSolver->eventMonitor[EVENT_IN_PHASE_A] );
     
     // Dual infeasibility eliminated
-    if (fabs(dsdpSolver->Ry) * sqrt(dsdpSolver->n) < absOptTol * 0.1 * dsdpSolver->tau) {
+    if (fabs(dsdpSolver->Ry) < absOptTol * 0.1 * dsdpSolver->tau) {
         monitor[EVENT_NO_RY] = TRUE;
         
         if (dsdpSolver->pObjVal != DSDP_INFINITY) {
@@ -304,6 +304,11 @@ extern DSDP_INT DSDPCheckPhaseAConvergence( HSDSolver *dsdpSolver, DSDP_INT *isO
         }
         *isOK = TRUE;
         return retcode;
+    }
+    
+    if (fabs(dsdpSolver->Ry) * sqrt(dsdpSolver->n) < absOptTol && dsdpSolver->mu < 1e-05) {
+        dsdpSolver->solStatus = DSDP_OPTIMAL;
+        *isOK = TRUE; return retcode;
     }
 
     // Maximum iteration
@@ -478,6 +483,11 @@ extern DSDP_INT printPhaseABConvert( HSDSolver *dsdpSolver, DSDP_INT *goPb ) {
     DSDP_INT status = dsdpSolver->solStatus;
     
     *goPb = TRUE;
+    
+    if (status == DSDP_OPTIMAL) {
+        printf("| DSDP Phase A solves the problem %35s|\n", "");
+        *goPb = FALSE;
+    }
     
     switch (status) {
         case DSDP_PD_FEASIBLE:

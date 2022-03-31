@@ -58,13 +58,12 @@ static DSDP_INT pardisoNumFactorize( spsMat *S ) {
         double eig = 0.0; spsMatMinEig(S, &eig);
         printf("Minimum Eigenvalue: %g \n", eig);
     }
-    
-    assert( error == PARDISO_OK );
-    
+        
     if (error) {
         printf("[Pardiso Error]: Matrix factorization failed."
                " Error code: "ID" \n", error);
-        error(etype, "Pardiso failes to factorize. \n");
+        // error(etype, "Pardiso failes to factorize. \n");
+        retcode = DSDP_RETCODE_FAILED;
     }
     
     return retcode;
@@ -624,7 +623,7 @@ extern DSDP_INT dsdpGetAlpha( DSDPLanczos *lczSolver, spsMat *S, spsMat *dS, sps
         retcode = spsMatMinEig(spaux, &mineig); checkCode;
         *alpha = (mineig >= 0) ? DSDP_INFINITY : - 1.0 / mineig;
     } else {
-        *alpha = (lbd + delta < 0) ? DSDP_INFINITY : 1.0 / (lbd + delta);
+        *alpha = (lbd + delta <= 0) ? DSDP_INFINITY : 1.0 / (lbd + delta);
     }
     return retcode;
 }

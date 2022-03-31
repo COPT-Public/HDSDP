@@ -201,8 +201,8 @@ extern DSDP_INT setIntParam( hsdParam *param, DSDP_INT pName, DSDP_INT intVal ) 
         return DSDP_RETCODE_FAILED;
     }
     
-    printf("| Before: \n");
-    printIntParam(param->intParams, pName);
+    // printf("| Before: \n");
+    // printIntParam(param->intParams, pName);
     retcode = checkIntParam(pName, intVal);
     
     if (retcode == DSDP_RETCODE_OK) {
@@ -211,8 +211,8 @@ extern DSDP_INT setIntParam( hsdParam *param, DSDP_INT pName, DSDP_INT intVal ) 
         printf("| Invalid parameter range. Parameter unchanged. \n");
     }
     
-    printf("| After: \n");
-    printIntParam(param->intParams, pName);
+    // printf("| After: \n");
+    // printIntParam(param->intParams, pName);
     return retcode;
 }
 

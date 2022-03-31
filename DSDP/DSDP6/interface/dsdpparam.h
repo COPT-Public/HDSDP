@@ -50,42 +50,42 @@ typedef struct {
 } hsdParam;
 
 static DSDP_INT defaultIntParam[NUM_INT_PARAM] = {
-    0,     // INT_PARAM_ACORRECTOR
-    0,     // INT_PARAM_BCORRECTOR
+    4,     // INT_PARAM_ACORRECTOR
+    12,     // INT_PARAM_BCORRECTOR
     INIT_METHOD_FRO,
            // INT_PARAM_INITMETHOD
-    AATEMPT_AGGRESSIVE,
+    AATEMT_CONSERVATIVE,
            // INT_PARAM_AATTEMPT
     10,    // INT_PARAM_CG_REUSE
     PRESOLVE_AGGRESSIVE,
            // INT_PARAM_PRESOLVE
     100,   // INT_PARAM_AMAXITER
     500,   // INT_PARAM_BMAXITER
-    FALSE  // INT_PARAM_PRELAX
+    TRUE  // INT_PARAM_PRELAX
 };
 
 static double defaultDblParam[NUM_DBL_PARAM] = {
     
-    0.9,   // DBL_PARAM_ASIGMA
-    0.1,   // DBL_PARAM_BSIGMA
-    3.0,   // DBL_PARAM_RHO
-    3.0,   // DBL_PARAM_RHON
+    0.7,   // DBL_PARAM_ASIGMA
+    0.5,   // DBL_PARAM_BSIGMA
+    4.0,   // DBL_PARAM_RHO
+    4.0,   // DBL_PARAM_RHON
     1e+10, // DBL_PARAM_INIT_POBJ
     
-    1e+03, // DBL_PARAM_INIT_BETA
-    1e+10, // DBL_PARAM_INIT_MU
+    1e+04, // DBL_PARAM_INIT_BETA
+    1e+15, // DBL_PARAM_INIT_MU
     1.0, // DBL_PARAM_INIT_TAU
     
     1.0,   // DBL_PARAM_INIT_KAPPA
-    0.75,  // DBL_PARAM_AALPHA
+    0.9,  // DBL_PARAM_AALPHA // 0.99995 is good
     1e+08, // DBL_PARAM_NRM_THRESH
     1e+08, // DBL_PARAM_INFEAS_THRESH
-    1e-06, // DBL_PARAM_ABS_OPTTOL
+    1e-08, // DBL_PARAM_ABS_OPTTOL
     1e-03, // DBL_PARAM_REL_OPTTOL
     1e-06, // DBL_PARAM_ABS_FEASTOL
     1e-03, // DBL_PARAM_REL_FEASTOL
     1e+07, // DBL_PARAM_PRLX_PENTALTY
-    1.0    // DBL_PARAM_OBJ_WEIGHT
+    0.0    // DBL_PARAM_OBJ_WEIGHT
 };
 
 static hsdParam defaultParam =

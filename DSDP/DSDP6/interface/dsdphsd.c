@@ -89,6 +89,9 @@ static DSDP_INT DSDPIInit( HSDSolver *dsdpSolver ) {
     dsdpSolver->tau    = 0.0;
     dsdpSolver->kappa  = 0.0;
     dsdpSolver->alpha  = 0.0;
+    
+    dsdpSolver->ybound = 0.0;
+    dsdpSolver->dperturb = 0.0;
     dsdpSolver->Pnrm   = 0.0;
     dsdpSolver->dPotential = 0.0;
     
@@ -297,9 +300,8 @@ static DSDP_INT DSDPICheckData( HSDSolver *dsdpSolver ) {
     
     // Check whether problem data is alreay set up
     DSDP_INT retcode = DSDP_RETCODE_OK;
-    DSDP_INT nblock = dsdpSolver->nBlock;
-    DSDP_INT nblockSet = 0;
-    for (int i = 0; i < nblock; ++i) {
+    DSDP_INT nblock = dsdpSolver->nBlock, nblockSet = 0;
+    for (DSDP_INT i = 0; i < nblock; ++i) {
         nblockSet += dsdpSolver->isSDPset[i];
     }
     if (nblockSet == nblock) {
@@ -361,11 +363,9 @@ static DSDP_INT DSDPIFreeAlgIter( HSDSolver *dsdpSolver ) {
     }
     
     DSDP_INT nblock = dsdpSolver->nBlock;
-    // Free the internal iteration data
-    
     // S
     for (DSDP_INT i = 0; i < nblock; ++i) {
-        retcode = spsMatFree(dsdpSolver->S[i]); checkCode;
+        retcode = spsMatFree(dsdpSolver->S[i]);
         DSDP_FREE(dsdpSolver->S[i]);
     }
     DSDP_FREE(dsdpSolver->S);
@@ -376,26 +376,17 @@ static DSDP_INT DSDPIFreeAlgIter( HSDSolver *dsdpSolver ) {
     }
     DSDP_FREE(dsdpSolver->symS);
     
-    retcode = vec_free(dsdpSolver->s);
-    DSDP_FREE(dsdpSolver->s);
-    retcode = vec_free(dsdpSolver->x);
-    DSDP_FREE(dsdpSolver->x);
-    retcode = vec_free(dsdpSolver->asinv);
-    DSDP_FREE(dsdpSolver->asinv);
-    retcode = denseMatFree(dsdpSolver->Msdp);
-    DSDP_FREE(dsdpSolver->Msdp);
-    retcode = dsdpCGFree(dsdpSolver->cgSolver);
-    DSDP_FREE(dsdpSolver->cgSolver);
-    retcode = vec_free(dsdpSolver->Mdiag);
-    DSDP_FREE(dsdpSolver->Mdiag);
-    retcode = vec_free(dsdpSolver->u );
-    retcode = vec_free(dsdpSolver->d1);
-    retcode = vec_free(dsdpSolver->d12);
-    retcode = vec_free(dsdpSolver->d2);
-    retcode = vec_free(dsdpSolver->d3);
-    retcode = vec_free(dsdpSolver->d4);
-    retcode = vec_free(dsdpSolver->y);
+    vec_free(dsdpSolver->s); DSDP_FREE(dsdpSolver->s);
+    vec_free(dsdpSolver->x); DSDP_FREE(dsdpSolver->x);
+    vec_free(dsdpSolver->asinv); DSDP_FREE(dsdpSolver->asinv);
+    denseMatFree(dsdpSolver->Msdp); DSDP_FREE(dsdpSolver->Msdp);
+    dsdpCGFree(dsdpSolver->cgSolver); DSDP_FREE(dsdpSolver->cgSolver);
+    vec_free(dsdpSolver->Mdiag); DSDP_FREE(dsdpSolver->Mdiag);
     
+    vec_free(dsdpSolver->u); vec_free(dsdpSolver->d1);
+    vec_free(dsdpSolver->d12); vec_free(dsdpSolver->d2);
+    vec_free(dsdpSolver->d3); vec_free(dsdpSolver->d4);
+    vec_free(dsdpSolver->y);
     DSDP_FREE(dsdpSolver->u ); DSDP_FREE(dsdpSolver->d1);
     DSDP_FREE(dsdpSolver->d12); DSDP_FREE(dsdpSolver->d2);
     DSDP_FREE(dsdpSolver->d3); DSDP_FREE(dsdpSolver->d4);
@@ -403,47 +394,43 @@ static DSDP_INT DSDPIFreeAlgIter( HSDSolver *dsdpSolver ) {
 
     // dS
     for (DSDP_INT i = 0; i < nblock; ++i) {
-        retcode = spsMatFree(dsdpSolver->dS[i]); checkCode;
+        retcode = spsMatFree(dsdpSolver->dS[i]);
         DSDP_FREE(dsdpSolver->dS[i]);
     }
-    
     DSDP_FREE(dsdpSolver->dS);
     
     // Scker
     for (DSDP_INT i = 0; i < nblock; ++i) {
-        retcode = spsMatFree(dsdpSolver->Scker[i]); checkCode;
+        retcode = spsMatFree(dsdpSolver->Scker[i]);
         DSDP_FREE(dsdpSolver->Scker[i]);
     }
     DSDP_FREE(dsdpSolver->Scker);
     
     // spaux
     for (DSDP_INT i = 0; i < nblock; ++i) {
-        retcode = spsMatFree(dsdpSolver->spaux[i]); checkCode;
+        spsMatFree(dsdpSolver->spaux[i]);
         DSDP_FREE(dsdpSolver->spaux[i]);
     }
     DSDP_FREE(dsdpSolver->spaux);
     
     // dsaux
     for (DSDP_INT i = 0; i < nblock; ++i) {
-        retcode = denseMatFree(dsdpSolver->dsaux[i]); checkCode;
+        retcode = denseMatFree(dsdpSolver->dsaux[i]);
         DSDP_FREE(dsdpSolver->dsaux[i]);
     }
     DSDP_FREE(dsdpSolver->dsaux);
     
     // rkaux
     for (DSDP_INT i = 0; i < nblock; ++i) {
-        retcode = rkMatFree(dsdpSolver->rkaux[i]); checkCode;
+        retcode = rkMatFree(dsdpSolver->rkaux[i]);
         DSDP_FREE(dsdpSolver->rkaux[i]);
     }
     DSDP_FREE(dsdpSolver->rkaux);
     
-    retcode = vec_free(dsdpSolver->ds); checkCode;
-    retcode = vec_free(dsdpSolver->dy); checkCode;
-    retcode = vec_free(dsdpSolver->sl); checkCode;
-    retcode = vec_free(dsdpSolver->su); checkCode;
-    retcode = vec_free(dsdpSolver->pScaler); checkCode;
-    retcode = vec_free(dsdpSolver->ymaker); checkCode;
-    retcode = vec_free(dsdpSolver->dymaker); checkCode;
+    vec_free(dsdpSolver->ds); vec_free(dsdpSolver->dy);
+    vec_free(dsdpSolver->sl); vec_free(dsdpSolver->su);
+    vec_free(dsdpSolver->pScaler); vec_free(dsdpSolver->ymaker);
+    vec_free(dsdpSolver->dymaker);
     
     DSDP_FREE(dsdpSolver->ds); DSDP_FREE(dsdpSolver->dy);
     DSDP_FREE(dsdpSolver->sl); DSDP_FREE(dsdpSolver->su);
@@ -478,11 +465,12 @@ static DSDP_INT DSDPIFreeCleanUp( HSDSolver *dsdpSolver ) {
     // Other data
     dsdpSolver->param = NULL;      dsdpSolver->m = 0;         dsdpSolver->nBlock = 0;
     dsdpSolver->lpDim = 0;         dsdpSolver->mu = 0.0;      dsdpSolver->Mscaler = 0.0;
-    dsdpSolver->csinvrysinv = 0.0; dsdpSolver->rysinv = 0.0;     dsdpSolver->Pnrm = 0.0;
+    dsdpSolver->csinvrysinv = 0.0; dsdpSolver->rysinv = 0.0;  dsdpSolver->Pnrm = 0.0;
     dsdpSolver->dPotential = 0.0;  dsdpSolver->tau = 0.0;     dsdpSolver->kappa = 0.0;
     dsdpSolver->alpha = 0.0;       dsdpSolver->dtau = 0.0;    dsdpSolver->dkappa = 0.0;
-    dsdpSolver->mumaker = 0.0;     dsdpSolver->insStatus = 0; dsdpSolver->solStatus = 0;
-    dsdpSolver->schurmu = 0.0;     dsdpSolver->cScaler = 0.0;
+    dsdpSolver->mumaker = 0.0;     dsdpSolver->insStatus = 0; dsdpSolver->solStatus = DSDP_STATUS_UNINIT;
+    dsdpSolver->schurmu = 0.0;     dsdpSolver->cScaler = 0.0; dsdpSolver->ybound = 0.0;
+    dsdpSolver->dperturb = 0.0;
     
     return retcode;
 }
@@ -516,9 +504,8 @@ static DSDP_INT DSDPIPresolve( HSDSolver *dsdpSolver ) {
     DSDPStatUpdate(stat, STAT_EIG_TIME, t);
     
     center = clock();
-    retcode = preSDPPrimal(dsdpSolver); checkCode;
+    // retcode = preSDPPrimal(dsdpSolver); checkCode;
     retcode = preSDPMatCScale(dsdpSolver);
-//    dsdpSolver->cScaler = 1.0;
     // retcode = preSDPDual(dsdpSolver); checkCode;
     t = (double) (clock() - center) / CLOCKS_PER_SEC;
     printf("| - Scaling completes in %g seconds \n", t);

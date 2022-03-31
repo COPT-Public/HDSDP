@@ -74,6 +74,8 @@ typedef struct {
     double   alpha;       // Stepsize
     
     // Proximity measure
+    double   ybound;      // Bound of dual variable
+    double   dperturb;    // Dual perturbation
     double   Pnrm;
     double   dPotential;  // Value of dual potential function
     

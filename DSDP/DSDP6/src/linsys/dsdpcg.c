@@ -272,12 +272,10 @@ extern DSDP_INT dsdpCGSolve( CGSolver *cgSolver, vec *b, vec *x0 ) {
         return retcode;
     }
     
-    alpha = MIN(100, alpha);
-    tol = MAX(tol * alpha * 0.1, tol * 1e-01);
+    alpha = MIN(100, alpha); tol = MAX(tol * alpha * 0.1, tol * 1e-01);
     
     // d = P \ r;
-    vec_copy(r, d);
-    preCond(cgSolver, d);
+    vec_copy(r, d); preCond(cgSolver, d);
     // Md = M * d;
     denseMataAxpby(M, 1.0, d, 0.0, Md);
     // Pinvr = P \ r;

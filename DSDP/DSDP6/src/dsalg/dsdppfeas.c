@@ -34,15 +34,26 @@ extern DSDP_INT DSDPPFeasPhase( HSDSolver *dsdpSolver ) {
     DSDP_INT stop = FALSE;
     double start = my_clock();
     double newmu = 0.0, muub = 0.0, mulb = 0.0, time = 0.0;
-    double rhon;
+    double rhon, tol, sigma;
 
     DSDPStats *stat = &dsdpSolver->dsdpStats;
     
     getDblParam(dsdpSolver->param, DBL_PARAM_RHON, &rhon);
+    DSDPGetDblParam(dsdpSolver, DBL_PARAM_ABS_OPTTOL, &tol); tol *= 0.1;
+    DSDPGetDblParam(dsdpSolver, DBL_PARAM_BSIGMA, &sigma);
     
     DSDP_INT i;
     for (i = 0; ; ++i) {
 
+        
+        if (i > 300) {
+            dsdpSolver->dperturb = 1e-07;
+        }
+        
+        if (i > 400) {
+            dsdpSolver->dperturb = 1e-06;
+        }
+        
         // Start iteration
         DSDPStatUpdate(&dsdpSolver->dsdpStats, STAT_PHASE_B_ITER, (double) i);
         dsdpSolver->iterProgress[ITER_LOGGING] = FALSE;
@@ -74,12 +85,16 @@ extern DSDP_INT DSDPPFeasPhase( HSDSolver *dsdpSolver ) {
         
         // Get proximity and check primal feasibility
         retcode = dsdpgetPhaseBProxMeasure(dsdpSolver, &muub, &mulb); checkCode;
-        // Select new mu
-        retcode = selectMu(dsdpSolver, &newmu); checkCode;
         
-        newmu = MIN(newmu, muub);
-        newmu = MAX(newmu, mulb);
-        dsdpSolver->mu = newmu;
+        // Select new mu
+        if (dsdpSolver->mu > 1e-12) {
+            retcode = selectMu(dsdpSolver, &newmu); checkCode;
+            newmu = MIN(newmu, muub);
+            newmu = MAX(newmu, mulb);
+            dsdpSolver->mu = newmu;
+        } else {
+            dsdpSolver->mu = MAX(dsdpSolver->mu * sigma, 1e-12);
+        }
 
         DSDPSetDblParam(dsdpSolver, DBL_PARAM_RHO,
                         (dsdpSolver->pObjVal - dsdpSolver->dObjVal) / dsdpSolver->mu);
