@@ -1,4 +1,4 @@
-function [y, S, mu] = dsdpdualCorrectorRlx(A, b, C, y, S, M, dy1, mu, ncorr, delta, rho)
+function [y, S, mu] = dsdpdualCorrectorRlx(A, b, C, y, S, M, dy1, mu, ncorr, delta, rho, bound)
 % Implement the dual corrector for DSDP
 
 if ncorr == 0
@@ -23,8 +23,8 @@ for k = 1:ncorr
         dy2(i) = trace(ASinv);
     end % End for
     
-    sl = y + 1e+07;
-    su = 1e+07 - y;
+    sl = y + bound;
+    su = bound - y;
     
     dy2 = dy2 - sl.^-1 + su.^-1;
     
@@ -37,7 +37,7 @@ for k = 1:ncorr
     
     mu = mu * n / (n + sqrt(n));
     
-    oldmerit = dsdpgetMeritValueRlx(b, y, mu, L);
+    oldmerit = dsdpgetMeritValueRlx(b, y, mu, L, bound);
     
     dycorr = dy1 / mu - dy2;
     bTdycorr = b' * dycorr;
