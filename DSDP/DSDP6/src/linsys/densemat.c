@@ -337,7 +337,7 @@ extern double denseSinvSolve( const double *Sinv, dsMat *A, double *ASinv, doubl
             daxpy(&n, &coeff, Sinvj, &one, ASinvi, &n);
         }
         for (i = 1; i < n - k; ++i) {
-            coeff = Ax[i + j]; if (fabs(coeff) < 1e-15) { continue; }
+            coeff = Ax[i + j]; if (fabs(coeff) < 1e-25) { continue; }
             Sinvj = Sinv + k * n; ASinvi = ASinv + (k + i);
             daxpy(&n, &coeff, Sinvj, &one, ASinvi, &n);
             Sinvj = Sinv + (k + i) * n; ASinvi = ASinv + k;
@@ -372,7 +372,7 @@ extern double denseSinvASinv( const double *Sinv, dsMat *A, const double *ASinv 
             res += coeff * ddot(&n, Sinvi, &one, ASinvj, &one);
         }
         for (i = 1; i < n - k; ++i) {
-            coeff = Ax[i + j]; if (fabs(coeff) < 1e-15) { continue; }
+            coeff = Ax[i + j]; if (fabs(coeff) < 1e-25) { continue; }
             Sinvi = Sinv + n * k; ASinvj = ASinv + n * (k + i);
             res += coeff * ddot(&n, Sinvi, &one, ASinvj, &one);
             Sinvi = Sinv + n * (k + i); ASinvj = ASinv + n * k;

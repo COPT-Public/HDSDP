@@ -12,6 +12,9 @@
 #define IterStep 20
 #define nEvent   20
 
+#define LIKELY(x)   __builtin_expect(!!(x), 1)
+#define UNLIKELY(x) __builtin_expect(!!(x), 0)
+
 typedef struct {
     
     // Problem data

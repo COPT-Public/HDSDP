@@ -13,7 +13,7 @@
 
 static char etype[] = "DSDP logging";
 
-extern inline double my_clock(void) {
+extern double my_clock(void) {
     struct timeval t;
     gettimeofday(&t, NULL);
     return (1.0e-6 * t.tv_usec + t.tv_sec);
