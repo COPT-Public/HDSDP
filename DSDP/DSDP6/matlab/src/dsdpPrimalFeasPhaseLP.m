@@ -80,7 +80,7 @@ for i = 1:maxiter
     
     % Proximity
     delta = sqrt(dymuprimal' * Mhat * dymuprimal);
-    if (false)
+    if (true)
         csinv = trace(S \ C); %#ok
         [~, pObjtmp, ~] = dsdpgetmualpha(asinv, b, csinv, muprimal, bound, 1e-06);
         
@@ -95,6 +95,18 @@ for i = 1:maxiter
         ismufeas = true;
         reason = "DSDP_PRIMAL_DUAL_FEASIBLE";
         diff = muprimal * (dymuprimal' * asinv + (n + 2 * m));
+        
+        if (false)
+            Xtmp = muprimal * (S \ (S \ (backwardnewton))'); %#ok
+            xl = muprimal * (sl.^-2).*backwardnewtonlb;
+            xu = muprimal * (su.^-2).*backwardnewtonub;
+            ax = zeros(m, 1);
+            for q = 1:m
+                ax(q) = trace(A{q} * Xtmp);
+            end % End for
+            resi = ax - xl + xu - b;
+        end % End if
+        
         pObj = min(dObj + diff, pObj);
         muub = (pObj - dObj) / (n + 2 * m);
         mulb = muub / rhouser;

@@ -14,13 +14,13 @@ ncorrdual        = 0;
 corrdelta        = 10;
 corralpha        = 0.6;
 
-initbeta         = 1e+03; % 1.0; % 10.0
-mu               = 1e+10;
+initbeta         = 1e+06; % 1.0; % 10.0
+mu               = 1e+15;
 tau              = 1.0;
 pweight          = 0.0;
 
 kappa            = inf;
-dualInfeasalpha  = 0.995;
+dualInfeasalpha  = 0.8;
 stepsizestrategy = "eigs"; % linesearch
 maxpfeasiter     = 100;
 dualcorrstep     = "eigs"; % "linesearch"; % eigs

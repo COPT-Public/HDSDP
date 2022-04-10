@@ -29,7 +29,7 @@ su = ub * tau - y;
 pweight      = 0.0;% dsdpParam{29};
 prelax       = true;
 
-drate = 0.8;
+drate = 1.0;
 
 if prelax
     np = 2 * m + n;
@@ -68,10 +68,10 @@ for i = 1:maxiter
     % Primal relaxation
     if prelax
         M = M + diag(sl.^-2 + su.^-2);
-        u = u + 1e+07 * (sl.^-2 + su.^-2);
+        u = u + bound * (sl.^-2 + su.^-2);
         asinv = asinv - sl.^-1 + su.^-1;
-        csinv = csinv + 1e+07 * (sum(su.^-1) - sum(sl.^-1));
-        csinvcsinv = csinvcsinv + (1e+07 * 1e+07) * sum(sl.^-2 + su.^-2);
+        csinv = csinv + bound * (sum(su.^-1) - sum(sl.^-1));
+        csinvcsinv = csinvcsinv + (bound * bound) * sum(sl.^-2 + su.^-2);
     end % End if 
     d2_12_3_4 = M \ [b, u, asinv, asinvrysinv];
     
@@ -84,8 +84,8 @@ for i = 1:maxiter
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
     for newmu = mu
         [delta, newpObj] = dsdpgetProxMeasure(d2, d3, tau, newmu, dObj, M,...
-            A, C, y, Rd, asinvrysinv,...
-            rysinv, asinv, S, b, np, bound);
+            A, C, y, Rd, asinvrysinv / drate,...
+            rysinv / drate, asinv, S, b, np, bound);
         delta = delta / tau^2;
         if ~ isinf(newpObj)
             if ~isinf(pObj)
@@ -102,9 +102,9 @@ for i = 1:maxiter
         break;
     end % End for
 
-%     if delta < 0.1
-%         mu = mu * 0.1;
-%     end % End if
+    if delta < 0.1
+        mu = mu * 0.1;
+    end % End if
     
     % b1  = b * pweight - mu * u;
     b2  = d2 * (pweight * tau / mu) - d3 + d4;
@@ -159,6 +159,7 @@ for i = 1:maxiter
         end % End if
     end % End if
     
+    refstep = step;
     step = min(alphaphase1 * step, 1.0);
     
     if step < 1e-03
@@ -174,50 +175,53 @@ for i = 1:maxiter
     Rd = Rd * (1 - drate * step);
     S = - dsdpgetATy(A, y) + C * tau - Rd;
     
-    if step > 0.9
+    % Dual infeasibility heuristic
+    %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+    if refstep > 1.5
         if drate < 0.5
+            alphaphase1 = 0.95;
             drate = 0.6;
         else
             drate = min(drate * 1.2, 1.0);
+            alphaphase1 = 0.995;
+            ncorrp1 = floor(ncorrp1 / 2);
         end % End if 
     end % End if 
     
-    if step < 0.5
-        drate = drate * 0.8;
-    end 
-    
-    if step < 0.1
+    if refstep < 0.1
         drate = drate * 0.1;
+        alphaphase1 = 0.5;
+        ncorrp1 = min(12, 2 * max(ncorrp1, 2));
+    elseif refstep < 0.5
+        drate = drate * 0.8;
+        alphaphase1 = 0.75;
+        ncorrp1 = min(8, 2 * max(ncorrp1, 1));
     end % End if 
     
     drate = max(drate, 0.05);
+    %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+    % Corrector
+    %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+    [y, S] = dinfeaspotrdc(A, b * tau, C * tau, y, S, Rd, M, d2 * tau, mu, ncorrp1, bound);
+    %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+    assert(min(y) > -1e+07);
     
     if prelax
         sl = y - lb * tau;
         su = ub * tau - y;
     end % End if 
-
-    % Corrector
-    %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-    % [y, S] = dinfeaspotrdc(A, b * tau, C * tau, y, S, Rd, M, d2 * tau, mu, 4);
-    %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
     
-    assert(min(sl) > 0);
-    assert(min(su) > 0);
     % Logging
     dObj = b' * y;
     fprintf("%3d  %10.2e  %10.2e  %8.2e  %8.2e  %8.2e  %8.2e  %8.2e\n",...
         i, pObj, dObj / tau, nrmRd, kappa / tau, mu, step, delta);
     
-    %     if i > 30
-    %         sigma = 0.1;
-    %         alphaphase1 = 0.2;
-    %     end % End if
-    
 end % End for
 
 % Corrector at the end
-% [y, S] = dinfeaspotrdc(A, b, C * tau, y, S, sparse(n, n), M, d2 * tau, mu, 12);
+[y, S] = dinfeaspotrdc(A, b, C * tau, y, S, sparse(n, n), M, d2 * tau, mu, ncorrp1);
 
 iter = i;
 

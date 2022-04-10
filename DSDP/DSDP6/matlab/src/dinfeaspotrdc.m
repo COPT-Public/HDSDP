@@ -1,4 +1,4 @@
-function [y, S] = dinfeaspotrdc(A, b, C, y, S, Ry, M, dy1, mu, ncorr)
+function [y, S] = dinfeaspotrdc(A, b, C, y, S, Ry, M, dy1, mu, ncorr, bound)
 % Potential reduction with presence of dual infeasibility
 
 m = length(y);
@@ -14,13 +14,17 @@ for iter = 1:ncorr
         dy2(i) = trace(ASinv);
     end % End for
     
-    sl = y + 1e+07;
-    su = 1e+07 - y;
+    sl = y + bound;
+    su = bound - y;
     
-    % dy2 = dy2 - sl.^-1 + su.^-1;
+    dy2 = dy2 - sl.^-1 + su.^-1;
     dy2 = M \ dy2;
     
-    dycorr = 0 * dy1 / mu - dy2;
+    if isnan(dy2(1))
+        error("Nan here");
+    end % End if 
+    
+    dycorr = - dy2;
     dsl = dycorr;
     dsu = - dycorr;
     
@@ -35,15 +39,15 @@ for iter = 1:ncorr
     
     step = - 1 / min(dsl ./ sl);
     if step > 0
-        alpha = min(alpha, 0.95 * step);
+        alpha = min(alpha, step);
     end % End if
     
     step = - 1 / min(dsu ./ su);
     if step > 0
-        alpha = min(alpha, 0.95 * step);
+        alpha = min(alpha, step);
     end % End if
     
-    alpha = min(alpha, 1.0);
+    alpha = min(0.95 * alpha, 1.0);
     
     oldpot = dsdpgetMeritValue(bz, y, mu, L);
     % oldpot = dsdpgetMeritValueRlx(bz, y, mu, L);
@@ -63,17 +67,11 @@ for iter = 1:ncorr
         % printf(pot);
         % pot = dsdpgetMeritValueRlx(bz, ynew, mu, L);
         
-        anum = 2 * (pot - oldpot + btdy * alpha) / (alpha^2);
-        bnum = btdy;
-        
         if pot - oldpot > - abs(0.1 * alpha * btdy)
-            if bnum / anum < alpha && bnum / anum > 0
-                alpha = bnum / anum;
-            else
-                alpha = alpha * 0.5;
-            end % End if
+           alpha = alpha * 0.5;
         else
             y = ynew;
+            assert(min(y) > -1e+07);
             S = Snew;
             break;
         end % End if 
