@@ -73,8 +73,14 @@ showdash(ndash);
 fprintf("%4s  %10s  %10s  %8s  %8s  %8s  %8s  %8s \n", "Iter", "pObj", "dObj", "dInf", "tkInf", "mu", "step", "pNorm");
 showdash(ndash);
 
-% Phase 1
-[S, y, kappa, tau, muHSD, pObj, reason, iterphase1] =  dsdpDualInfeasPhaseRlx(A, b, C, y, S, Rd, mu, kappa, tau, dsdpParam);
+% New method
+if (false)
+    [S, y, kappa, tau, muHSD, pObj, reason, iterphase1] = dsdpDualInfeasNew(A, b, C, y, S, Rd, mu, kappa, tau, dsdpParam);
+else
+    % Phase A
+    [S, y, kappa, tau, muHSD, pObj, reason, iterphase1] =  dsdpDualInfeasPhaseRlx(A, b, C, y, S, Rd, mu, kappa, tau, dsdpParam);
+end % End if
+
 
 fprintf("Reason: %s \n", reason);
 showdash(ndash);
@@ -110,16 +116,24 @@ elseif reason == "DSDP_PRIMAL_UNKNOWN_DUAL_FEASIBLE"
     ispdfeas = false;
 end % End if
 
+try
+    bound = min(max(abs(yheur)) * 10, 1e+07);
+catch
+    bound = min(max(abs(y)) * 100, 1e+07);
+end % End try
+
+% bound = 1e+07;
+fprintf("Using bound esimate %e \n", bound);
+
 showdash(ndash);
 fprintf("%4s  %10s  %10s  %8s  %8s  %8s  %8s  %8s \n", "Iter", "pObj", "dObj", "tkInf", "mu", "pInfeas", "step", "pNorm");
 showdash(ndash);
 
-
 % Phase 2
 if ispdfeas
-    [y, S, pObj, muprimal, xmaker, reason] = dsdpPrimalFeasPhaseLP(A, b, C, y, S, muHSD, pObj, dObj, tau, kappa, ispdfeas, dsdpParam);
+    [y, S, pObj, muprimal, xmaker, reason] = dsdpPrimalFeasPhaseLP(A, b, C, y, S, muHSD, pObj, dObj, tau, kappa, ispdfeas, dsdpParam, bound);
 else
-    [y, S, pObj, muprimal, xmaker, reason] = dsdpPrimalFeasPhaseLP(A, b, C, yheur, Sheur, muHSD, pObj, dObj, tau, kappa, ispdfeas, dsdpParam);
+    [y, S, pObj, muprimal, xmaker, reason] = dsdpPrimalFeasPhaseLP(A, b, C, yheur, Sheur, muHSD, pObj, dObj, tau, kappa, ispdfeas, dsdpParam, bound);
 end % End if
 
 X = sparse(n, n);

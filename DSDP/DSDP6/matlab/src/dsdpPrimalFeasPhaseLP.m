@@ -1,4 +1,4 @@
-function [y, S, pObj, muprimal, xmaker, reason] = dsdpPrimalFeasPhaseLP(A, b, C, y, S, muHSD, pObj, dObj, tau, kappa, ispdfeas, dsdpParam)
+function [y, S, pObj, muprimal, xmaker, reason] = dsdpPrimalFeasPhaseLP(A, b, C, y, S, muHSD, pObj, dObj, tau, kappa, ispdfeas, dsdpParam, bound)
 % Implementing primal feasibility certificate for DSDP
 % y and S are input such that ATy + S - C * tau = 0
 % As if using original DSDP to solve
@@ -29,12 +29,13 @@ smallstep = zeros(3, 1);
 
 reason = "DSDP_MAXITER";
 
-u = 1e+07;
+u = bound;
 l = -u;
 sl = y - l;
 su = u - y;
 
 muprimal = min((pObj - dObj) / rhouser, muHSD);
+bettermu = false;
 
 for i = 1:maxiter
     
@@ -79,15 +80,23 @@ for i = 1:maxiter
     
     % Proximity
     delta = sqrt(dymuprimal' * Mhat * dymuprimal);
+    if (false)
+        csinv = trace(S \ C); %#ok
+        [~, pObjtmp, ~] = dsdpgetmualpha(asinv, b, csinv, muprimal, bound, 1e-06);
+        
+        if pObjtmp < pObj
+            pObj = pObjtmp;
+        end
+    end % End if
     
     % Check feasibility of backward Newton step
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
     if dsdpIspsd(backwardnewton) && min(backwardnewtonlb) >= 0 && min(backwardnewtonub) >= 0
         ismufeas = true;
         reason = "DSDP_PRIMAL_DUAL_FEASIBLE";
-        muub = muprimal * (dymuprimal' * asinv + (n + 2 * m));
-        pObj = dObj + muub;
-        muub = muub / (n + 2 * m);
+        diff = muprimal * (dymuprimal' * asinv + (n + 2 * m));
+        pObj = min(dObj + diff, pObj);
+        muub = (pObj - dObj) / (n + 2 * m);
         mulb = muub / rhouser;
         newub = "*";
         xmaker{1} = y;
@@ -99,6 +108,7 @@ for i = 1:maxiter
         pinfeas = max(pinfeasl, pinfeasu);
         % fprintf("pinfeas: %10.3e \n", pinfeas);
     else
+        % fprintf("pinf: %e pObj: %e \n", norm(infeastmp), mutmp * trace(S \ C));
         muub = (pObj - dObj) / (n + 2 * m);
         mulb = muub / rhouser;
         newub = "";
@@ -153,7 +163,7 @@ for i = 1:maxiter
         end % End if
     end % End if
     
-    [y, S, muprimal] = dsdpdualCorrectorRlx(A, b, C, y, S, M, dy1, muprimal, ncorr, delta, rhouser);
+    [y, S, muprimal] = dsdpdualCorrectorRlx(A, b, C, y, S, M, dy1, muprimal, ncorr, delta, rhouser, bound);
     sl = y - l;
     su = u - y;
     

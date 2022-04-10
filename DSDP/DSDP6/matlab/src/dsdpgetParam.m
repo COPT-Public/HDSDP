@@ -3,24 +3,24 @@ function [dsdpParam] = dsdpgetParam()
 
 maxiter          = 100;
 tol              = 1e-05;
-sigma            = 0.1;
-alpha            = 0.7;
+sigma            = 0.7;
+alpha            = 0.95;
 pObj             = 1e+10;
-rho              = 5.0;
+rho              = 4.0;
 initmethod       = "fro"; % "eigs", "linesearch", "IdS"
 reuse            = 0;
-ncorr            = 2;
+ncorr            = 0;
 ncorrdual        = 0;
 corrdelta        = 10;
 corralpha        = 0.6;
 
-initbeta         = 1e+06; % 1.0; % 10.0
+initbeta         = 1e+03; % 1.0; % 10.0
 mu               = 1e+10;
 tau              = 1.0;
 pweight          = 0.0;
 
 kappa            = inf;
-dualInfeasalpha  = 0.75;
+dualInfeasalpha  = 0.995;
 stepsizestrategy = "eigs"; % linesearch
 maxpfeasiter     = 100;
 dualcorrstep     = "eigs"; % "linesearch"; % eigs

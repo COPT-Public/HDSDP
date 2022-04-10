@@ -13,6 +13,7 @@ typedef struct {
     vec      *Pinvr;    // Workspace array
     vec      *Md;       // Workspace array
     vec      *x;        // CG solution vector
+    vec      *aux;      // CG auxiliary array
     
     DSDP_INT pType;     // Pre-conditioner type
     dsMat    *cholPre;  // Cholesky pre-conditioner
@@ -56,6 +57,8 @@ extern DSDP_INT dsdpCGprepareP        ( CGSolver *cgSolver                      
 extern DSDP_INT dsdpCGGetStatus       ( CGSolver *cgSolver, DSDP_INT *status                   );
 extern DSDP_INT dsdpCGGetSolStatistic ( CGSolver *cgSolver, DSDP_INT *status, double *resinorm );
 extern DSDP_INT dsdpCGSetPreReuse     ( CGSolver *cgSolver, DSDP_INT reuse                     );
+extern DSDP_INT dsdpCGStoreRHS        ( CGSolver *cgSolver, vec *bin                           );
+extern DSDP_INT dsdpCGRestoreRHS      ( CGSolver *cgSolver, vec *bout                          );
 extern DSDP_INT dsdpCGSolve           ( CGSolver *cgSolver, vec *b, vec *x0                    );
 
 #ifdef __cplusplus

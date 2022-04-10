@@ -17,10 +17,10 @@ for iter = 1:ncorr
     sl = y + 1e+07;
     su = 1e+07 - y;
     
-    dy2 = dy2 - sl.^-1 + su.^-1;
+    % dy2 = dy2 - sl.^-1 + su.^-1;
     dy2 = M \ dy2;
     
-    dycorr = dy1 / mu - dy2;
+    dycorr = 0 * dy1 / mu - dy2;
     dsl = dycorr;
     dsu = - dycorr;
     
@@ -43,8 +43,10 @@ for iter = 1:ncorr
         alpha = min(alpha, 0.95 * step);
     end % End if
     
-    % oldpot = dsdpgetMeritValue(b, y, mu, L);
-    oldpot = dsdpgetMeritValueRlx(bz, y, mu, L);
+    alpha = min(alpha, 1.0);
+    
+    oldpot = dsdpgetMeritValue(bz, y, mu, L);
+    % oldpot = dsdpgetMeritValueRlx(bz, y, mu, L);
     btdy = 0; % b' * dycorr;
     
     while alpha > 1e-04
@@ -57,8 +59,9 @@ for iter = 1:ncorr
             alpha = alpha * 0.5;
             continue;
         end % End try
-        % pot = dsdpgetMeritValue(b, ynew, mu, L);
-        pot = dsdpgetMeritValueRlx(bz, ynew, mu, L);
+        pot = dsdpgetMeritValue(bz, ynew, mu, L);
+        % printf(pot);
+        % pot = dsdpgetMeritValueRlx(bz, ynew, mu, L);
         
         anum = 2 * (pot - oldpot + btdy * alpha) / (alpha^2);
         bnum = btdy;

@@ -52,7 +52,7 @@ static DSDP_INT setupBoundYSchur( HSDSolver *dsdpSolver ) {
             idx += m - i;
         }
         
-        dsdpSolver->csinv += bound * csinvsumu - bound * csinvsuml;
+        dsdpSolver->csinv      += bound * csinvsumu - bound * csinvsuml;
         dsdpSolver->csinvcsinv += bound * bound * (cscssumu + cscssuml);
         
     } else {
@@ -71,24 +71,17 @@ static DSDP_INT schurMatPerturb( HSDSolver *dsdpSolver ) {
     // Perturb the Schur matrix
     DSDP_INT retcode = DSDP_RETCODE_OK;
     DSDP_INT m = dsdpSolver->m, i;
-    double perturb = 0.0, maxdiag = 0.0;
-    denseMatGetdiag(dsdpSolver->Msdp, dsdpSolver->Mdiag);
+    double perturb = 0.0, maxdiag = 0.0, iterB;
     
-    double iterB = 0;
+    denseMatGetdiag(dsdpSolver->Msdp, dsdpSolver->Mdiag);
     DSDPGetStats(&dsdpSolver->dsdpStats, STAT_PHASE_B_ITER, &iterB);
     
     if (!dsdpSolver->eventMonitor[EVENT_INVALID_GAP]) {
-        
-        if (dsdpSolver->mu < 1e-05) {
-             perturb += 1e-13;
-        }
-        
+        if (dsdpSolver->mu < 1e-05) { perturb += 1e-13; }
         for (DSDP_INT i = 0; i < m; ++i) {
             maxdiag = MAX(dsdpSolver->Mdiag->x[i], maxdiag);
         }
-        
         dsdpSolver->Mscaler = maxdiag;
-        
         if (dsdpSolver->m < 100) {
             perturb += MIN(maxdiag * 1e-08, 1e-14);
         } else if (dsdpSolver->m < 1000) {
@@ -99,7 +92,6 @@ static DSDP_INT schurMatPerturb( HSDSolver *dsdpSolver ) {
         
         double invalid;
         DSDPGetStats(&dsdpSolver->dsdpStats, STAT_GAP_BROKEN, &invalid);
-        
         if (dsdpSolver->eventMonitor[EVENT_IN_PHASE_B] && !invalid) {
             for (i = 0; i < m; ++i) {
                 packIdx(dsdpSolver->Msdp->array, m, i, i) += perturb;
@@ -114,9 +106,8 @@ static DSDP_INT schurMatscale( HSDSolver *dsdpSolver ) {
     
     // Scale Schur matrix if necessary
     dsdpSolver->Mscaler = 1.0;
-    return DSDP_RETCODE_OK;
+    if ((TRUE)) { return DSDP_RETCODE_OK; }
     double scaler = dsdpSolver->Mscaler;
-    
     if (dsdpSolver->eventMonitor[EVENT_IN_PHASE_A]) {
         if (scaler > 1e+06 || scaler <= 1e-04) {
             vec_scale(dsdpSolver->d2, scaler);
@@ -157,11 +148,7 @@ static DSDP_INT schurCGSetup( HSDSolver *dsdpSolver ) {
     } else {
         tol = 1e-07;
     }
-    
-    
 //    cgsolver->status = CG_STATUS_INDEFINITE;
-    // dsdpCGSetPreReuse(cgsolver, 0);
-    
     if (dsdpSolver->m > 20000) {
         cgiter = 500; tol *= 10.0;
     } else if (dsdpSolver->m > 15000) {
@@ -180,86 +167,50 @@ static DSDP_INT schurCGSetup( HSDSolver *dsdpSolver ) {
 }
 
 static DSDP_INT setupPhaseAdvecs( HSDSolver *dsdpSolver ) {
-    // Set up the auxiliary vectors
-    /*
-     d2_12_3_4 = M \ [b, u, asinv, asinvrysinv];
-    */
-    DSDP_INT retcode = DSDP_RETCODE_OK;
-    retcode = vec_copy(dsdpSolver->dObj,  dsdpSolver->d2);
-    retcode = vec_copy(dsdpSolver->u,     dsdpSolver->d12);
-    retcode = vec_copy(dsdpSolver->asinv, dsdpSolver->d3);
-    
-    return retcode;
+    vec_copy(dsdpSolver->dObj,  dsdpSolver->d2);
+    vec_copy(dsdpSolver->u,     dsdpSolver->d12);
+    vec_copy(dsdpSolver->asinv, dsdpSolver->d3);
+    return DSDP_RETCODE_OK;
 }
 
 static DSDP_INT setupPhaseBdvecs( HSDSolver *dsdpSolver ) {
-    // Set up the auxiliary vectors
-    /*
-     dy1dy2 = Mhat \ [b, asinv];
-     dy1 is d1
-     dy2 is d2
-     */
-    
-    DSDP_INT retcode = DSDP_RETCODE_OK;
-    
-    retcode = vec_copy(dsdpSolver->dObj, dsdpSolver->d1);
-    retcode = vec_copy(dsdpSolver->asinv, dsdpSolver->d2);
-    
-    return retcode;
+    vec_copy(dsdpSolver->dObj,  dsdpSolver->d1);
+    vec_copy(dsdpSolver->asinv, dsdpSolver->d2);
+    return DSDP_RETCODE_OK;
 }
 
 static DSDP_INT cgSolveCheck( CGSolver *cgSolver, vec *b ) {
     
-    DSDP_INT retcode = DSDP_RETCODE_OK;
-    DSDP_INT status;
+    DSDP_INT retcode = DSDP_RETCODE_OK, status;
     
-    double *tmp = (double *) calloc(b->dim, sizeof(double));
-    memcpy(tmp, b->x, sizeof(double) * b->dim);
-    
-    dsdpCGSolve(cgSolver, b, NULL);
+    dsdpCGStoreRHS(cgSolver, b); dsdpCGSolve(cgSolver, b, NULL);
     dsdpCGGetStatus(cgSolver, &status);
     
     if (status != CG_STATUS_SOLVED && status != CG_STATUS_INDEFINITE) {
-        
         if (cgSolver->pType == CG_PRECOND_DIAG) {
             dsdpCGSetPType(cgSolver, CG_PRECOND_CHOL);
         } else {
             cgSolver->nfailed += 1;
         }
-
         cgSolver->nused = 1024;
-        if (cgSolver->nfailed >= 5) { dsdpCGSetPreReuse(cgSolver, MIN(cgSolver->reuse, 5));}
-        if (cgSolver->nfailed >= 10) { dsdpCGSetPreReuse(cgSolver, MIN(cgSolver->reuse, 3));}
-        if (cgSolver->nfailed >= 15) { dsdpCGSetPreReuse(cgSolver, MIN(cgSolver->reuse, 2));}
-        if (cgSolver->nfailed >= 50) { cgSolver->M->isillCond = TRUE;}
-        
-        // Restart from the last unfinished solution
-        dsdpCGprepareP(cgSolver);
-        memcpy(b->x, tmp, sizeof(double) * b->dim);
-        dsdpCGSolve(cgSolver, b, cgSolver->x);
-        dsdpCGGetStatus(cgSolver, &status);
-        
-        if (status != CG_STATUS_SOLVED && status != CG_STATUS_INDEFINITE) {
-            // error(etype, "Invalid CG iteration. \n");
+        if (cgSolver->nfailed >= 5) {
+            dsdpCGSetPreReuse(cgSolver, MIN(cgSolver->reuse, 5));
+            if (cgSolver->nfailed >= 10) { dsdpCGSetPreReuse(cgSolver, MIN(cgSolver->reuse, 3));}
+            if (cgSolver->nfailed >= 15) { dsdpCGSetPreReuse(cgSolver, MIN(cgSolver->reuse, 2));}
+            if (cgSolver->nfailed >= 50) { cgSolver->M->isillCond = TRUE;}
         }
+        dsdpCGprepareP(cgSolver);
+        dsdpCGRestoreRHS(cgSolver, b); dsdpCGSolve(cgSolver, b, cgSolver->x);
+        // dsdpCGGetStatus(cgSolver, &status);
     }
     
-    DSDP_FREE(tmp);
     return retcode;
 }
 
-extern DSDP_INT setupFactorize( HSDSolver *dsdpSolver ) {
-    // Factorize the dual solution and compute slack
+static DSDP_INT setupSDPCones( HSDSolver *dsdpSolver ) {
+    
     DSDP_INT retcode = DSDP_RETCODE_OK;
-    retcode = checkIterProgress(dsdpSolver, ITER_DUAL_FACTORIZE);
-    assert( !dsdpSolver->iterProgress[ITER_DUAL_FACTORIZE] );
-    if (dsdpSolver->iterProgress[ITER_DUAL_FACTORIZE]) {
-        error(etype, "Dual variables have been factorized. \n");
-    }
-    
-    DSDP_INT nblock = dsdpSolver->nBlock;
-    double iterA = 0.0;
-    
+    DSDP_INT nblock = dsdpSolver->nBlock; double iterA = 0.0;
     DSDPGetStats(&dsdpSolver->dsdpStats, STAT_PHASE_A_ITER, &iterA);
     
     if (iterA == 0.0) {
@@ -275,13 +226,30 @@ extern DSDP_INT setupFactorize( HSDSolver *dsdpSolver ) {
             checkCode;
         }
     }
-    
+    return retcode;
+}
+
+static void setupBoundYCones( HSDSolver *dsdpSolver ) {
     // Get dual slack
     double bound = dsdpSolver->ybound;
     if (bound != DSDP_INFINITY) {
         vec_lslack(dsdpSolver->y, dsdpSolver->sl, -bound * dsdpSolver->tau);
         vec_uslack(dsdpSolver->y, dsdpSolver->su,  bound * dsdpSolver->tau);
     }
+}
+
+
+extern DSDP_INT setupFactorize( HSDSolver *dsdpSolver ) {
+    // Factorize the dual solution and compute slack
+    DSDP_INT retcode = DSDP_RETCODE_OK;
+    retcode = checkIterProgress(dsdpSolver, ITER_DUAL_FACTORIZE);
+    assert( !dsdpSolver->iterProgress[ITER_DUAL_FACTORIZE] );
+    if (dsdpSolver->iterProgress[ITER_DUAL_FACTORIZE]) {
+        error(etype, "Dual variables have been factorized. \n");
+    }
+    
+    retcode = setupSDPCones(dsdpSolver); checkCode;
+    setupBoundYCones(dsdpSolver);
     
     dsdpSolver->iterProgress[ITER_DUAL_FACTORIZE] = TRUE;
     return retcode;
@@ -292,16 +260,10 @@ extern DSDP_INT schurPhaseAMatSolve( HSDSolver *dsdpSolver ) {
     // After this routine, d1, d12, d3 and d4 will be filled
     DSDP_INT retcode = DSDP_RETCODE_OK;
     retcode = checkIterProgress(dsdpSolver, ITER_SCHUR_SOLVE);
-    assert( !dsdpSolver->iterProgress[ITER_SCHUR_SOLVE] );
-    if (dsdpSolver->iterProgress[ITER_SCHUR_SOLVE]) {
-        error(etype, "Schur matrix has been factorized. \n");
-    }
-    // Currently no CG warmstart
     retcode = cgSolveCheck(dsdpSolver->cgSolver, dsdpSolver->d2);
     retcode = cgSolveCheck(dsdpSolver->cgSolver, dsdpSolver->d12);
     retcode = cgSolveCheck(dsdpSolver->cgSolver, dsdpSolver->d3);
     retcode = cgSolveCheck(dsdpSolver->cgSolver, dsdpSolver->d4);
-    
     dsdpSolver->iterProgress[ITER_SCHUR_SOLVE] = TRUE;
     
     return retcode;
@@ -312,15 +274,9 @@ extern DSDP_INT schurPhaseBMatSolve( HSDSolver *dsdpSolver ) {
     // After this routine, d1 and d2 will be filled
     DSDP_INT retcode = DSDP_RETCODE_OK;
     retcode = checkIterProgress(dsdpSolver, ITER_SCHUR_SOLVE);
-    assert( !dsdpSolver->iterProgress[ITER_SCHUR_SOLVE] );
-    if (dsdpSolver->iterProgress[ITER_SCHUR_SOLVE]) {
-        error(etype, "Schur matrix has been factorized. \n");
-    }
     cgSolveCheck(dsdpSolver->cgSolver, dsdpSolver->d1);
     cgSolveCheck(dsdpSolver->cgSolver, dsdpSolver->d2);
-    
     dsdpSolver->iterProgress[ITER_SCHUR_SOLVE] = TRUE;
-    
     return retcode;
 }
 

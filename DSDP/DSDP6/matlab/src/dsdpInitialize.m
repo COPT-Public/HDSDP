@@ -62,7 +62,7 @@ elseif dsdpInitializeStrategy == "fro"
     if norm(Ctau, 'fro') == 0
         Ry = - speye(n) * initbeta;
     else
-        Ry = - speye(n) * (norm(Ctau, 'fro')) * initbeta;
+        Ry = - speye(n) * max(norm(Ctau, 'fro'), 1e+02) * initbeta;
     end % End if 
     
     S  = Ctau - Ry; 

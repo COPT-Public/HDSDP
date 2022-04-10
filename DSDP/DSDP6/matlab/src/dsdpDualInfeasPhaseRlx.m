@@ -14,19 +14,30 @@ stepstrategy = dsdpParam{15};
 ncorrp1      = dsdpParam{9};
 candmu       = dsdpParam{19};
 ndash        = dsdpParam{20};
-pweight      = dsdpParam{29};
-prelax       = true;
+
 
 pObj = inf;
 muprimal = mu;
 step = 0;
 delta = inf;
-ub = 1e+07;
+bound = 1e+07;
+ub = bound;
 lb = -ub;
 sl = y - lb * tau;
 su = ub * tau - y;
 
-np = 2 * m + n;
+pweight      = 0.0;% dsdpParam{29};
+prelax       = true;
+
+drate = 0.8;
+
+if prelax
+    np = 2 * m + n;
+else
+    np = n;
+end % End if 
+
+corrrhs = zeros(m, 1);
 
 for i = 1:maxiter
     
@@ -52,10 +63,9 @@ for i = 1:maxiter
     dObj = b' * y;
     
     [M, u, asinv, ~, ~, ~, csinv, csinvcsinv, asinvrysinv, csinvrysinv, rysinv] = ...
-        dsdpgetSchur(A, S, C, Rd, initstrategy);
+        dsdpgetSchur(A, S, C, drate * Rd, initstrategy);
     
     % Primal relaxation
-    
     if prelax
         M = M + diag(sl.^-2 + su.^-2);
         u = u + 1e+07 * (sl.^-2 + su.^-2);
@@ -75,7 +85,7 @@ for i = 1:maxiter
     for newmu = mu
         [delta, newpObj] = dsdpgetProxMeasure(d2, d3, tau, newmu, dObj, M,...
             A, C, y, Rd, asinvrysinv,...
-            rysinv, asinv, S, b);
+            rysinv, asinv, S, b, np, bound);
         delta = delta / tau^2;
         if ~ isinf(newpObj)
             if ~isinf(pObj)
@@ -92,32 +102,47 @@ for i = 1:maxiter
         break;
     end % End for
 
-    if delta < 0.1
-        mu = mu * 0.1;
-    end % End if
+%     if delta < 0.1
+%         mu = mu * 0.1;
+%     end % End if
     
-    b1  = b * pweight - mu * u;
+    % b1  = b * pweight - mu * u;
     b2  = d2 * (pweight * tau / mu) - d3 + d4;
     d11 = d2 / mu;
     d1  = pweight * d11 + d12;
     
     % Compute Newton step
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-    taudenom = b1' * d1 + mu * csinvcsinv + kappa / tau;
-    if abs(taudenom) < 1e-15
-        dtau = 0;
-    else
-        dtau = - pweight * b' * y + mu * (1 / tau + csinv - csinvrysinv) - b1' * b2;
-        dtau = dtau / taudenom;
-    end % End if
+%     taudenom = b1' * d1 + mu * csinvcsinv + kappa / tau;
+%     if abs(taudenom) < 1e-15
+%         dtau = 0;
+%     else
+%         dtau = - pweight * b' * y + mu * (1 / tau + csinv - csinvrysinv) - b1' * b2;
+%         dtau = dtau / taudenom;
+%     end % End if
     
     dtau = 0.0;
     
     dy  = d1 * dtau + b2;
-    dS  = Rd + C * dtau - dsdpgetATy(A, dy);
+    dS  = drate * Rd + C * dtau - dsdpgetATy(A, dy);
     % dkappa = - kappa + (mu / tau) - (kappa / tau) * dtau;
-    dsu = -dy + ub * dtau;
-    dsl =  dy - lb * dtau;
+    
+    % Complicated corrector
+    if false
+        invS = S \ speye(n);
+        SinvdSSinvdS = invS * dS * invS * dS * invS;
+        for k = 1:m
+            corrrhs(k) = trace(A{k} * SinvdSSinvdS);
+        end % End for
+        dycorr = - (M \ corrrhs);
+        dy = dy + dycorr;
+        dS = drate * Rd - dsdpgetATy(A, dy);
+    end % End if
+    
+    if prelax
+        dsu = -dy + ub * dtau;
+        dsl =  dy - lb * dtau;
+    end % End if 
     
     % Compute stepsize
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -146,16 +171,39 @@ for i = 1:maxiter
     y = y + step * dy;
     tau = tau + step * dtau;
     kappa = mu / tau;
-    Rd = Rd * (1 - step);
+    Rd = Rd * (1 - drate * step);
     S = - dsdpgetATy(A, y) + C * tau - Rd;
-    sl = y - lb * tau;
-    su = ub * tau - y;
     
+    if step > 0.9
+        if drate < 0.5
+            drate = 0.6;
+        else
+            drate = min(drate * 1.2, 1.0);
+        end % End if 
+    end % End if 
+    
+    if step < 0.5
+        drate = drate * 0.8;
+    end 
+    
+    if step < 0.1
+        drate = drate * 0.1;
+    end % End if 
+    
+    drate = max(drate, 0.05);
+    
+    if prelax
+        sl = y - lb * tau;
+        su = ub * tau - y;
+    end % End if 
+
     % Corrector
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-    [y, S] = dinfeaspotrdc(A, b * tau, C * tau, y, S, Rd, M, d2 * tau, mu, 4);
+    % [y, S] = dinfeaspotrdc(A, b * tau, C * tau, y, S, Rd, M, d2 * tau, mu, 4);
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
     
+    assert(min(sl) > 0);
+    assert(min(su) > 0);
     % Logging
     dObj = b' * y;
     fprintf("%3d  %10.2e  %10.2e  %8.2e  %8.2e  %8.2e  %8.2e  %8.2e\n",...
@@ -169,7 +217,7 @@ for i = 1:maxiter
 end % End for
 
 % Corrector at the end
-[y, S] = dinfeaspotrdc(A, b, C * tau, y, S, sparse(n, n), M, d2 * tau, mu, 12);
+% [y, S] = dinfeaspotrdc(A, b, C * tau, y, S, sparse(n, n), M, d2 * tau, mu, 12);
 
 iter = i;
 
