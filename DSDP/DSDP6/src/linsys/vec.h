@@ -27,6 +27,7 @@ extern DSDP_INT vec_set   ( vec *x, double val);
 extern DSDP_INT vec_inv   ( vec *xinv, vec *x );
 extern DSDP_INT vec_invsqr( vec *xinvsq, vec *x );
 extern DSDP_INT vec_norm  ( vec *x, double *nrm );
+extern double   vec_onenorm( vec *x );
 extern double   vec_infnorm ( vec *x );
 extern DSDP_INT vec_dot   ( vec *x, vec *y, double *xTy );
 extern DSDP_INT vec_reset ( vec *x );

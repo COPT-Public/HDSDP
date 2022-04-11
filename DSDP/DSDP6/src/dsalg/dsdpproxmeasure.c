@@ -6,7 +6,7 @@ extern DSDP_INT dsdpgetPhaseAProxMeasure( HSDSolver *dsdpSolver, double newmu ) 
     
     // Check primal feasibility and proximity measure given a new mu parameter
     DSDP_INT retcode = DSDP_RETCODE_OK;
-    DSDP_INT ispfeas = FALSE, useprlx = (dsdpSolver->ybound != DSDP_INFINITY);
+    DSDP_INT ispfeas = FALSE;
     
     // Use b1 as auxiliary
     vec *dydelta = dsdpSolver->b1;
@@ -22,12 +22,14 @@ extern DSDP_INT dsdpgetPhaseAProxMeasure( HSDSolver *dsdpSolver, double newmu ) 
     
     // Update primal objective
     if (ispfeas) {
+        // Fix the code here about primal objective evaluation
         dsdpSolver->eventMonitor[EVENT_PFEAS_FOUND] = TRUE;
         double pObj = dsdpSolver->dObjVal, tmp1, tmp2;
         vec_dot(dsdpSolver->u, dydelta, &tmp1);
         vec_dot(dsdpSolver->asinv, dydelta, &tmp2);
+        
         pObj += dsdpSolver->mu / dsdpSolver->tau * \
-                (dsdpSolver->rysinv + tmp1 + tmp2 + dsdpSolver->n + dsdpSolver->m * 2 * useprlx);
+                (dsdpSolver->rysinv + tmp1 + tmp2 + dsdpSolver->nall);
         pObj = pObj / dsdpSolver->tau;
         dsdpSolver->pObjVal = pObj;
         
@@ -45,11 +47,11 @@ extern DSDP_INT dsdpgetPhaseBProxMeasure( HSDSolver *dsdpSolver, double *muub, d
     
     // Compute the proximal measure of the current iterate
     DSDP_INT retcode = DSDP_RETCODE_OK;
-    DSDP_INT ispfeas = FALSE;
+    DSDP_INT ispfeas = FALSE, usegold;
     
     double gap = 0.0, rho, bound = dsdpSolver->ybound;
     DSDPGetDblParam(dsdpSolver, DBL_PARAM_RHON, &rho);
-    
+    DSDPGetIntParam(dsdpSolver, INT_PARAM_GOLDSEARCH, &usegold);
     vec_zaxpby(dsdpSolver->b1, 1 / dsdpSolver->mu, dsdpSolver->d1, -1.0, dsdpSolver->d2);
     
     dsdpSolver->Pnrm = denseMatxTAx(dsdpSolver->Msdp, dsdpSolver->M->schurAux, dsdpSolver->b1->x);
@@ -59,9 +61,17 @@ extern DSDP_INT dsdpgetPhaseBProxMeasure( HSDSolver *dsdpSolver, double *muub, d
     if (ispfeas) {
         dsdpSolver->eventMonitor[EVENT_PFEAS_FOUND] = TRUE;
         vec_dot(dsdpSolver->b1, dsdpSolver->asinv, &gap);
-        gap = (gap + dsdpSolver->n + dsdpSolver->m * 2) * dsdpSolver->mu;
-        dsdpSolver->pObjVal = dsdpSolver->dObjVal + gap;
-        *muub = gap / (dsdpSolver->n + dsdpSolver->m * 2);
+        
+        gap = (gap + dsdpSolver->nall) * dsdpSolver->mu;
+        
+        if (usegold) {
+            dsdpSolver->pObjVal = MIN(dsdpSolver->dObjVal + gap, dsdpSolver->pObjVal);
+            gap = dsdpSolver->pObjVal - dsdpSolver->dObjVal;
+        } else {
+            dsdpSolver->pObjVal = dsdpSolver->dObjVal + gap;
+        }
+        
+        *muub = gap / dsdpSolver->nall;
         
         double pinfeas = 0.0, tmp = 0.0, s;
         vec *sl = dsdpSolver->sl, *su = dsdpSolver->su, *dy = dsdpSolver->b1;
@@ -86,7 +96,7 @@ extern DSDP_INT dsdpgetPhaseBProxMeasure( HSDSolver *dsdpSolver, double *muub, d
         }
         
     } else {
-        *muub = (dsdpSolver->pObjVal - dsdpSolver->dObjVal) / (dsdpSolver->n + 2 *  dsdpSolver->m);
+        *muub = (dsdpSolver->pObjVal - dsdpSolver->dObjVal) / dsdpSolver->nall;
     }
     
     

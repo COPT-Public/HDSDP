@@ -196,6 +196,10 @@ extern DSDP_INT vec_norm( vec *x, double *nrm ) {
     return DSDP_RETCODE_OK;
 }
 
+extern double vec_onenorm( vec *x ) {
+    return dasum(&x->dim, x->x, &one);;
+}
+
 extern double vec_infnorm( vec *x ) {
     double nrm = 0.0;
     for (DSDP_INT i = 0; i < x->dim; ++i) {

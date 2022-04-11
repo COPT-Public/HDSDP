@@ -43,12 +43,9 @@ static DSDP_INT sdpMatIAllocByType( sdpMat *sdpData, DSDP_INT k, DSDP_INT *Ai,
     // Ax stores the data, nnz specifies the number of nonzeros
     DSDP_INT retcode = DSDP_RETCODE_OK;
     
-    DSDP_INT m = sdpData->dimy;
-    DSDP_INT n = sdpData->dimS;
-    
+    DSDP_INT m = sdpData->dimy, n = sdpData->dimS;
     // Sort the arrays
     assert( k < m + 1 );
-    
     void *userdata = NULL;
     
 #ifdef SHOWALL
@@ -66,37 +63,26 @@ static DSDP_INT sdpMatIAllocByType( sdpMat *sdpData, DSDP_INT k, DSDP_INT *Ai,
         // Rank 1
         sdpData->nrkMat += 1;
         rkMat *data = NULL;
-        data = (rkMat *) calloc(1, sizeof(rkMat));
-        retcode = rkMatInit(data);
-        
-        r1Mat *r1data = NULL;
-        r1data = (r1Mat *) calloc(1, sizeof(r1Mat));
-        retcode = r1MatInit(r1data); checkCode;
+        data = (rkMat *) calloc(1, sizeof(rkMat)); rkMatInit(data);
+        r1Mat *r1data = (r1Mat *) calloc(1, sizeof(r1Mat)); r1MatInit(r1data);
         retcode = r1MatAlloc(r1data, n); checkCode;
         
         // The first non-zero element must be a diagonal element
-        double adiag    = Ax[0];
-        DSDP_INT isNeg  = FALSE;
-        DSDP_INT rowidx = Ai[0];
+        double adiag = Ax[0];
+        DSDP_INT isNeg = FALSE, rowidx = Ai[0];
         
         if (adiag > 0) {
-            adiag = sqrt(adiag);
-            r1data->sign = 1.0;
+            adiag = sqrt(adiag); r1data->sign = 1.0;
         } else {
-            r1data->sign = - 1.0;
-            adiag = - sqrt(-adiag);
+            r1data->sign = - 1.0; adiag = - sqrt(-adiag);
             isNeg = TRUE;
         }
         
         // Seek which column is correct
-        DSDP_INT where = 0;
-        DSDP_INT diagidx = 0;
+        DSDP_INT where = 0, diagidx = 0;
         for (DSDP_INT i = 0; i < n; ++i) {
-            if (rowidx == diagidx) {
-                break;
-            }
-            diagidx += n - where;
-            where += 1;
+            if (rowidx == diagidx) { break; }
+            diagidx += n - where; where += 1;
         }
         
         if (where == n) {
@@ -111,7 +97,6 @@ static DSDP_INT sdpMatIAllocByType( sdpMat *sdpData, DSDP_INT k, DSDP_INT *Ai,
             }
             r1data->x[rowidx - diagidx + where] = Ax[i] / adiag;
         }
-        
         rkMatAllocAndSetData(data, n, 1, &r1data->sign, r1data->x);
         r1MatFree(r1data);
         DSDP_FREE(r1data);
@@ -127,24 +112,17 @@ static DSDP_INT sdpMatIAllocByType( sdpMat *sdpData, DSDP_INT k, DSDP_INT *Ai,
         // May be put in earlier parts
         idxsort(Ai, Ax, nnz);
         // Sparse
-        sdpData->types[k] = MAT_TYPE_SPARSE;
-        sdpData->nspsMat += 1;
-        spsMat *data      = NULL;
-        data    = (spsMat *) calloc(1, sizeof(spsMat));
-        retcode = spsMatInit(data); checkCode;
+        sdpData->types[k] = MAT_TYPE_SPARSE; sdpData->nspsMat += 1;
+        spsMat *data = (spsMat *) calloc(1, sizeof(spsMat)); spsMatInit(data);
         retcode = spsMatAllocData(data, n, nnz); checkCode;
         
-        data->p[n] = nnz;
-        data->nnz = nnz;
+        data->p[n] = nnz; data->nnz = nnz;
         
         if (n > 10000) {
             DSDP_INT i;
-            
             for (i = 0; i < n - n % 4; i+=4) {
-                data->p[i + 1] = nnz;
-                data->p[i + 2] = nnz;
-                data->p[i + 3] = nnz;
-                data->p[i + 4] = nnz;
+                data->p[i + 1] = nnz; data->p[i + 2] = nnz;
+                data->p[i + 3] = nnz; data->p[i + 4] = nnz;
             }
             for (i = n - n % 4; i < n; ++i) {
                 data->p[i + 1] = nnz;
@@ -157,23 +135,17 @@ static DSDP_INT sdpMatIAllocByType( sdpMat *sdpData, DSDP_INT k, DSDP_INT *Ai,
         
         memcpy(data->x, Ax, sizeof(double) * nnz);
         
-        DSDP_INT rowidx    = 0;
-        DSDP_INT where     = 0;
-        DSDP_INT colnnz    = 0;
-        DSDP_INT idxthresh = n;
+        DSDP_INT rowidx = 0, where = 0, colnnz = 0, idxthresh = n;
         data->p[0] = 0;
         
         for (DSDP_INT i = 0; i < nnz; ++i) {
             rowidx = Ai[i];
             while (rowidx >= idxthresh) {
-                where += 1;
-                data->p[where] = colnnz;
+                where += 1; data->p[where] = colnnz;
                 idxthresh += n - where;
             }
-            colnnz += 1;
-            data->i[i] = rowidx - idxthresh + n;
-            // Record column index
-            data->nzHash[i] = where;
+            colnnz += 1; data->i[i] = rowidx - idxthresh + n;
+            data->nzHash[i] = where; // Record column index
         }
         
 #ifdef SHOWALL
@@ -216,37 +188,27 @@ static DSDP_INT sdpMatIAllocByType( sdpMat *sdpData, DSDP_INT k, DSDP_INT *Ai,
 
 /* LP public methods */
 extern DSDP_INT lpMatInit( lpMat *lpData ) {
-    
     // Initialize LP data
     DSDP_INT retcode = DSDP_RETCODE_OK;
-    
-    lpData->dims = 0;
-    lpData->dimy = 0;
-    lpData->lpdata = NULL;
-    lpData->xscale = NULL;
+    lpData->dims = 0; lpData->dimy = 0;
+    lpData->lpdata = NULL; lpData->xscale = NULL;
     
     return retcode;
 }
 
 extern DSDP_INT lpMatSetDim( lpMat *lpData, DSDP_INT dimy, DSDP_INT dims ) {
-    
     // Set problem dimension
     DSDP_INT retcode = DSDP_RETCODE_OK;
     assert( (lpData->dimy > 0) && (lpData->dims > 0) );
-    
-    lpData->dimy = dimy;
-    lpData->dims = dims;
+    lpData->dimy = dimy; lpData->dims = dims;
     
     return retcode;
 }
 
 extern DSDP_INT lpMatSetData( lpMat *lpData, DSDP_INT *Ap, DSDP_INT *Ai, double *Ax ) {
-    
     // Set LP data
     DSDP_INT retcode = DSDP_RETCODE_OK;
-    DSDP_INT n = lpData->dims;
-    
-    DSDP_INT nnz = Ap[n];
+    DSDP_INT n = lpData->dims, nnz = Ap[n];
     retcode = lpMatIAlloc(lpData, nnz);
     
     // Set problem data
@@ -261,16 +223,12 @@ extern DSDP_INT lpMatSetData( lpMat *lpData, DSDP_INT *Ap, DSDP_INT *Ai, double 
 }
 
 extern DSDP_INT lpMataATy( double alpha, lpMat *lpData, vec *y, double *ATy ) {
-    
     // Compute A' * y
     DSDP_INT retcode = DSDP_RETCODE_OK;
-    DSDP_INT m = lpData->dimy;
-    DSDP_INT n = lpData->dims;
+    DSDP_INT m = lpData->dimy, n = lpData->dims;
 
-    DSDP_INT *Ap  = lpData->lpdata->p;
-    DSDP_INT *Ai  = lpData->lpdata->i;
-    double   *Ax  = lpData->lpdata->x;
-    double *ydata = y->x;
+    DSDP_INT *Ap = lpData->lpdata->p, *Ai = lpData->lpdata->i;
+    double *Ax = lpData->lpdata->x, *ydata = y->x;
     
     assert( m == y->dim );
     memset(ATy, 0, sizeof(double) * n);
@@ -346,12 +304,7 @@ extern DSDP_INT sdpMatSetDim( sdpMat *sdpData, DSDP_INT dimy, DSDP_INT dimS, DSD
     
     // Set dimension of the corresponding block
     DSDP_INT retcode = DSDP_RETCODE_OK;
-    assert( (dimy > 0) && (dimS > 0) );
-    
-    sdpData->blockId = blockId;
-    sdpData->dimy    = dimy;
-    sdpData->dimS    = dimS;
-    
+    sdpData->blockId = blockId; sdpData->dimy = dimy; sdpData->dimS = dimS;
     return retcode;
 }
 
@@ -359,27 +312,15 @@ extern DSDP_INT sdpMatSetHint( sdpMat *sdpData, DSDP_INT *hint ) {
     
     // Set type hint for matrix type
     DSDP_INT retcode = DSDP_RETCODE_OK;
-    
     for (DSDP_INT i = 0; i < sdpData->dimy + 1; ++i) {
         switch (hint[i]) {
-            case MAT_TYPE_RANKK:
-                sdpData->types[i] = MAT_TYPE_RANKK;
-                break;
-            case MAT_TYPE_DENSE:
-                sdpData->types[i] = MAT_TYPE_DENSE;
-                break;
-            case MAT_TYPE_SPARSE:
-                sdpData->types[i] = MAT_TYPE_SPARSE;
-                break;
-            case MAT_TYPE_UNKNOWN:
-                sdpData->types[i] = MAT_TYPE_ZERO;
-                break;
-            default:
-                sdpData->types[i] = MAT_TYPE_UNKNOWN;
-                break;
+            case MAT_TYPE_RANKK  : sdpData->types[i] = MAT_TYPE_RANKK; break;
+            case MAT_TYPE_DENSE  : sdpData->types[i] = MAT_TYPE_DENSE; break;
+            case MAT_TYPE_SPARSE : sdpData->types[i] = MAT_TYPE_SPARSE; break;
+            case MAT_TYPE_UNKNOWN: sdpData->types[i] = MAT_TYPE_ZERO; break;
+            default: sdpData->types[i] = MAT_TYPE_UNKNOWN; break;
         }
     }
-    
     return retcode;
 }
 
@@ -414,29 +355,17 @@ extern DSDP_INT sdpMatFree( sdpMat *sdpData ) {
     
     for (DSDP_INT i = 0; i < sdpData->dimy + 1; ++i) {
         data = sdpData->sdpData[i];
-        
         switch (sdpData->types[i]) {
-            case MAT_TYPE_ZERO:
-                break;
-            case MAT_TYPE_DENSE:
-                retcode = denseMatFree((dsMat *) data); checkCode;
-                break;
-            case MAT_TYPE_SPARSE:
-                retcode = spsMatFree((spsMat *) data); checkCode;
-                break;
-            case MAT_TYPE_RANKK:
-                retcode = rkMatFree((rkMat *) data); checkCode;
-                break;
-            default:
-                error(etype, "Unknown matrix type. \n");
-                break;
+            case MAT_TYPE_ZERO: break;
+            case MAT_TYPE_DENSE: denseMatFree((dsMat *) data); break;
+            case MAT_TYPE_SPARSE: spsMatFree((spsMat *) data); break;
+            case MAT_TYPE_RANKK: rkMatFree((rkMat *) data); checkCode; break;
+            default: error(etype, "Unknown matrix type. \n"); break;
         }
     }
         
     DSDP_FREE(sdpData->types);
-    sdpData->blockId = 0;
-    sdpData->dimy    = 0;
-    sdpData->dimS    = 0;
+    sdpData->blockId = 0; sdpData->dimy = 0; sdpData->dimS = 0;
     
     return retcode;
 }

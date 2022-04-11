@@ -14,6 +14,7 @@ extern "C" {
 
 extern DSDP_INT getMaxStep( HSDSolver *dsdpSolver );
 extern DSDP_INT takeStep  ( HSDSolver *dsdpSolver );
+extern DSDP_INT searchpObj( HSDSolver *dsdpSolver, double *approxpObj );
 extern DSDP_INT selectMu  ( HSDSolver *dsdpSolver, double *newmu );
 extern DSDP_INT dualPotentialReduction ( HSDSolver *dsdpSolver );
 

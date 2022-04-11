@@ -35,6 +35,7 @@ CAPBLAS  : Whether routines are given by ROUTINENAME(params) or routinename(para
 #define axpy DAXPY_
 #define copy DCOPY_
 #define norm DNRM2_
+#define onenrm DASUM_
 #define solve DTRSV_
 #define matvec DGEMV_
 #define symatvec DSYMV_
@@ -68,6 +69,7 @@ CAPBLAS  : Whether routines are given by ROUTINENAME(params) or routinename(para
 #define axpy DAXPY
 #define copy DCOPY
 #define norm DNRM2
+#define onenrm DASUM
 #define solve DTRSV
 #define matvec DGEMV
 #define symmatmat DSYMM
@@ -101,6 +103,7 @@ CAPBLAS  : Whether routines are given by ROUTINENAME(params) or routinename(para
 #define axpy daxpy_
 #define copy dcopy_
 #define norm dnrm2_
+#define onenrm dasum_
 #define solve dtrsv_
 #define matvec dgemv_
 #define symatvec dsymv_
@@ -134,6 +137,7 @@ CAPBLAS  : Whether routines are given by ROUTINENAME(params) or routinename(para
 #define axpy daxpy
 #define copy dcopy
 #define norm dnrm2
+#define onenrm dasum
 #define solve dtrsv
 #define matvec dgemv
 #define symatvec dsymv
@@ -219,6 +223,10 @@ extern void dger( const DSDP_INT *m,
 extern double norm( const DSDP_INT *n,
                     const double   *x,
                     const DSDP_INT *incx );
+
+extern double onenrm( const DSDP_INT *n,
+                      const double *x,
+                      const DSDP_INT *incx );
 
 extern double fnorm(  const char      *nrm,
                       const char      *uplo,

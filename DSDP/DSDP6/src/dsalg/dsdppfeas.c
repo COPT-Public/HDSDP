@@ -1,7 +1,7 @@
 #include "dsdppfeas.h"
 #include "dsdputils.h"
 #include "dsdpinitializer.h"
-#include "schurmat.h"
+#include "schurmatops.h"
 #include "residualsetup.h"
 #include "stepdirection.h"
 #include "stepheur.h"
@@ -31,28 +31,23 @@ extern DSDP_INT DSDPPFeasPhase( HSDSolver *dsdpSolver ) {
     dsdpprintPhaseBheader();
     
     // Start dual scaling
-    DSDP_INT stop = FALSE;
+    DSDP_INT stop = FALSE, usegold = FALSE;
     double start = my_clock();
     double newmu = 0.0, muub = 0.0, mulb = 0.0, time = 0.0;
-    double rhon, tol, sigma;
+    double rhon, tol, sigma, approxpObj;
 
     DSDPStats *stat = &dsdpSolver->dsdpStats;
     
-    getDblParam(dsdpSolver->param, DBL_PARAM_RHON, &rhon);
+    DSDPGetIntParam(dsdpSolver, INT_PARAM_GOLDSEARCH, &usegold);
+    DSDPGetDblParam(dsdpSolver, DBL_PARAM_RHON, &rhon);
     DSDPGetDblParam(dsdpSolver, DBL_PARAM_ABS_OPTTOL, &tol); tol *= 0.1;
     DSDPGetDblParam(dsdpSolver, DBL_PARAM_BSIGMA, &sigma);
     
     DSDP_INT i;
     for (i = 0; ; ++i) {
-
         
-        if (i > 300) {
-            dsdpSolver->dperturb = 1e-07;
-        }
-        
-        if (i > 400) {
-            dsdpSolver->dperturb = 1e-06;
-        }
+        if (i > 200) { dsdpSolver->dperturb = 1e-07; }
+        if (i > 300) { dsdpSolver->dperturb = 1e-06; }
         
         // Start iteration
         DSDPStatUpdate(&dsdpSolver->dsdpStats, STAT_PHASE_B_ITER, (double) i);
@@ -83,14 +78,19 @@ extern DSDP_INT DSDPPFeasPhase( HSDSolver *dsdpSolver ) {
         // Set up Schur matrix and solve the system
         retcode = setupSchur(dsdpSolver); checkCode;
         
+        // Decrease primal objective via golden search
+        if (usegold) {
+            retcode = searchpObj(dsdpSolver, &approxpObj);
+            dsdpSolver->pObjVal = MIN(dsdpSolver->pObjVal, approxpObj);
+        }
+
         // Get proximity and check primal feasibility
         retcode = dsdpgetPhaseBProxMeasure(dsdpSolver, &muub, &mulb); checkCode;
         
         // Select new mu
         if (dsdpSolver->mu > 1e-12) {
             retcode = selectMu(dsdpSolver, &newmu); checkCode;
-            newmu = MIN(newmu, muub);
-            newmu = MAX(newmu, mulb);
+            newmu = MIN(newmu, muub); newmu = MAX(newmu, mulb);
             dsdpSolver->mu = newmu;
         } else {
             dsdpSolver->mu = MAX(dsdpSolver->mu * sigma, 1e-12);
