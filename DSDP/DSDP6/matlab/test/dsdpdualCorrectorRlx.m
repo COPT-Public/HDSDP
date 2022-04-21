@@ -63,7 +63,7 @@ for k = 1:ncorr
             continue;
         end % End try
         
-        newmerit = dsdpgetMeritValueRlx(b, ynew, mu, L);
+        newmerit = dsdpgetMeritValueRlx(b, ynew, mu, L, bound);
         
         anum = 2 * (newmerit - oldmerit + bTdycorr * alpha) / (alpha^2);
         bnum = bTdycorr;

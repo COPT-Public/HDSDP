@@ -1,4 +1,4 @@
-function [delta, pObj] = dsdpgetProxMeasure(d2, d3, tau, mu, dObj, M, A, C, y, Ry, asinvrysinv, rysinv, asinv, S, b, np, bound)
+ function [delta, pObj] = dsdpgetProxMeasure(d2, d3, tau, mu, dObj, M, A, C, y, Ry, asinvrysinv, rysinv, asinv, S, b, np, bound)
 % Get measure of proximity in DSDP
 verifypfeas = true;
 
@@ -9,7 +9,7 @@ dy1 = d2; % M \ b
 dy2 = d3; % M \ asinv
 
 dydelta = dy1 * tau / mu - dy2;
-delta = dydelta' * M * dydelta;
+delta = dydelta' * (b * tau / mu - asinv);
 
 if verifypfeas
     bwnt = y - dydelta;

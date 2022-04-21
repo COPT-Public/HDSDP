@@ -79,7 +79,7 @@ for i = 1:maxiter
     backwardnewtonlb = -l + (y - dymuprimal);
     
     % Proximity
-    delta = sqrt(dymuprimal' * Mhat * dymuprimal);
+    delta = sqrt(dymuprimal' * (b / muprimal - asinv));
     if (true)
         csinv = trace(S \ C); %#ok
         [~, pObjtmp, ~] = dsdpgetmualpha(asinv, b, csinv, muprimal, bound, 1e-06);
