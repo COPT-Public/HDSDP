@@ -1,7 +1,7 @@
 #include "dsdpdinfeas.h"
 #include "dsdputils.h"
 #include "dsdpinitializer.h"
-#include "schurmat.h"
+#include "schurmatops.h"
 #include "residualsetup.h"
 #include "stepdirection.h"
 #include "stepheur.h"
@@ -98,8 +98,8 @@ extern DSDP_INT DSDPDInfeasEliminator( HSDSolver *dsdpSolver ) {
         
         if (goOn) {
             if (i >= 1) {
-                dsdpSolver->ybound = 1e+07 * dsdpSolver->tau;
-                DSDPSetIntParam(dsdpSolver, INT_PARAM_ACORRECTOR, 12);
+                dsdpSolver->ybound = (dsdpSolver->ybound == DSDP_INFINITY) ? 1e+07 * dsdpSolver->tau : dsdpSolver->ybound;
+                DSDPSetIntParam(dsdpSolver, INT_PARAM_ACORRECTOR, 4);
                 retcode = dInfeasCorrectorStep(dsdpSolver); checkCode;
             }
             break;

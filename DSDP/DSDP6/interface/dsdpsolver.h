@@ -30,7 +30,8 @@ typedef struct {
     // Dimension data
     DSDP_INT n;           // Total number of variables (SDP and LP)
     DSDP_INT m;           // Dimension of dual
-    DSDP_INT nBlock;      // Number of SDP blocks ( = 1) currently
+    DSDP_INT nall;        // Total dimension of cones
+    DSDP_INT nBlock;      // Number of SDP blocks
     DSDP_INT lpDim;       // Dimension of LP
     
     // Iteration Monitor

@@ -8,6 +8,10 @@
 #undef ROUGH_MU
 #endif
 
+#ifndef Phi
+#define Phi 1.6180339887498949
+#endif
+
 static char etype[] = "Step size computation";
 
 void spsMatExport( spsMat *A );
@@ -119,6 +123,14 @@ static double getBoundyStep( HSDSolver *dsdpSolver ) {
     return step;
 }
 
+static double getApproxpObj( double mu, vec *asinv, vec *b, double csinv,
+                             double ybound, double *pinfeas ) {
+    // Compute mu * csinv + ybound * || mu * asinv - b ||_1 and estimate primal infeasibility
+    // asinv is not changed and b is used as buffer
+    vec_axpy(-mu, asinv, b); *pinfeas = vec_onenorm(b);
+    return (*pinfeas * ybound + mu * csinv);
+}
+
 static DSDP_INT getCurrentyPotential( HSDSolver *dsdpSolver, vec *y,
                                       double rho, double *potential, DSDP_INT *inCone ) {
     // Compute the current potential
@@ -223,6 +235,43 @@ extern DSDP_INT takeStep( HSDSolver *dsdpSolver ) {
     }
     takeKappaTauStep(dsdpSolver); takeyStep(dsdpSolver); takeSDPSStep(dsdpSolver);
     dsdpSolver->iterProgress[ITER_TAKE_STEP] = TRUE; return retcode;
+}
+
+extern DSDP_INT searchpObj( HSDSolver *dsdpSolver, double *approxpObj ) {
+    // Implement the golden search heuristic to decrease the primal objective
+    /*
+      This heuristic treats mu <S^-1> as the primal objective and computes the
+      relaxed primal objective by evaluating
+        x_l = [mu * asinv - b]_+  and   x_u = [b - mu * asinv]_+
+     A golden line search is applied to find mu such that
+        mu * csinv + M * ||mu * asinv - b||_1
+     is minimized
+    */
+    DSDP_INT retcode = DSDP_RETCODE_OK;
+    
+    double boundy = dsdpSolver->ybound, pinfeas, csinv = dsdpSolver->csinv;
+    double ub = dsdpSolver->mu, lb = 0.0, tol = MIN(1e-06 * ub, 1e-06) / Phi;
+    double c, cObj, d, dObj, diff = (ub - lb) / Phi;
+    vec *b = dsdpSolver->dObj, *asinv = dsdpSolver->asinv, *buffer = dsdpSolver->d4;
+    
+    // Start golden line search
+    for (DSDP_INT i = 0; diff > tol; ++i) {
+        c = ub - diff; d = lb + diff;
+        vec_copy(b, buffer);
+        cObj = getApproxpObj(c, asinv, buffer, csinv, boundy, &pinfeas);
+        vec_copy(b, buffer);
+        dObj = getApproxpObj(d, asinv, buffer, csinv, boundy, &pinfeas);
+        if (cObj < dObj) {
+            ub = d;
+        } else {
+            lb = c;
+        }
+        diff = (ub - lb) / Phi;
+    }
+    
+    ub = (ub + lb) / 2; vec_copy(b, buffer);
+    *approxpObj = getApproxpObj(ub, asinv, buffer, csinv, boundy, &pinfeas);
+    return retcode;
 }
 
 extern DSDP_INT selectMu( HSDSolver *dsdpSolver, double *newmu ) {
@@ -335,39 +384,43 @@ extern DSDP_INT dualPotentialReduction( HSDSolver *dsdpSolver ) {
     DSDP_INT retcode = DSDP_RETCODE_OK;
     retcode = checkIterProgress(dsdpSolver, ITER_COMPUTE_STEP);
     
-    double rho, oldpotential = 0.0, maxstep = 0.0, better = 0.0;
+    double rho, alpha, oldpotential = 0.0, newpotential = 0.0, maxstep = 0.0, better = 0.0;
     getDblParam(dsdpSolver->param, DBL_PARAM_RHO, &rho);
     
     better = (dsdpSolver->Pnrm < 0.5) ? 0.0 : 0.05;
     vec *ytarget = dsdpSolver->d4, *y = dsdpSolver->y, *dy = dsdpSolver->dy;
-    getCurrentyPotential(dsdpSolver, NULL, rho, &oldpotential, NULL);
     getSDPSStep(dsdpSolver, &maxstep);
     maxstep = MIN(maxstep, getBoundyStep(dsdpSolver));
-    maxstep = MIN(maxstep * 0.95, 1.0);
     
-    double alpha = maxstep, newpotential = 0.0;
-    DSDP_INT inCone = FALSE;
-    
-    // Start line search
-    for (DSDP_INT i = 0; ; ++i) {
-        // y = y + alpha * dy
-        vec_zaxpby(ytarget, 1.0, y, alpha, dy);
-        if (i == 0) {
-            getCurrentyPotential(dsdpSolver, ytarget, rho, &newpotential, &inCone);
-            if (!inCone) {
-                alpha /= 3; --i;
-                if (alpha <= 1e-04) { break; }
-                continue;
-            }
-        } else {
-            getCurrentyPotential(dsdpSolver, ytarget, rho, &newpotential, NULL);
-        }
+    if (maxstep > 5.0) {
+        alpha = 1.0;
+    } else {
         
-        if (alpha <= 1e-04 || (newpotential <= oldpotential - better)
-            || (alpha * dsdpSolver->Pnrm <= 0.001)) {
-            break;
+        getCurrentyPotential(dsdpSolver, NULL, rho, &oldpotential, NULL);
+        maxstep = MIN(maxstep * 0.95, 1.0); alpha = maxstep;
+        DSDP_INT inCone = FALSE;
+        
+        // Start line search
+        for (DSDP_INT i = 0; ; ++i) {
+            // y = y + alpha * dy
+            vec_zaxpby(ytarget, 1.0, y, alpha, dy);
+            if (i == 0) {
+                getCurrentyPotential(dsdpSolver, ytarget, rho, &newpotential, &inCone);
+                if (!inCone) {
+                    alpha /= 3; --i;
+                    if (alpha <= 1e-04) { break; }
+                    continue;
+                }
+            } else {
+                getCurrentyPotential(dsdpSolver, ytarget, rho, &newpotential, NULL);
+            }
+            
+            if (alpha <= 1e-04 || (newpotential <= oldpotential - better)
+                || (alpha * dsdpSolver->Pnrm <= 0.001)) {
+                break;
+            }
+            alpha *= 0.3;
         }
-        alpha *= 0.3;
     }
     
     // Take step

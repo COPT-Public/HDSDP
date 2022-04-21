@@ -1,4 +1,4 @@
-#include "schurmat.h"
+#include "schurmatops.h"
 #include "dsdputils.h"
 
 #define M1Threshold 0.7
@@ -58,8 +58,9 @@ static DSDP_INT setupBoundYSchur( HSDSolver *dsdpSolver ) {
     } else {
         for (DSDP_INT i = 0, idx = 0; i < m; ++i) {
             s = su[i]; M[idx] += 1.0 / (s * s); asinv[i] += 1.0 / s;
+            dsdpSolver->csinv += bound / s;
             s = sl[i]; M[idx] += 1.0 / (s * s); asinv[i] -= 1.0 / s;
-            idx += m - i;
+            dsdpSolver->csinv += bound / s; idx += m - i;
         }
     }
     

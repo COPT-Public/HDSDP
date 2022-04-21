@@ -41,6 +41,7 @@ static DSDP_INT DSDPIInit( HSDSolver *dsdpSolver ) {
     
     // Dimension data
     dsdpSolver->n      = 0;
+    dsdpSolver->nall   = 0;
     dsdpSolver->m      = 0;
     dsdpSolver->nBlock = 0;
     dsdpSolver->lpDim  = 0;
@@ -324,7 +325,6 @@ static DSDP_INT DSDPIFreeLPData ( HSDSolver *dsdpSolver ) {
     }
     
     DSDP_FREE(dsdpSolver->lpData);
-    
     return retcode;
 }
 
@@ -341,7 +341,6 @@ static DSDP_INT DSDPIFreeSDPData( HSDSolver *dsdpSolver ) {
     }
     
     DSDP_FREE(dsdpSolver->sdpData);
-    
     return retcode;
 }
 
@@ -470,7 +469,7 @@ static DSDP_INT DSDPIFreeCleanUp( HSDSolver *dsdpSolver ) {
     dsdpSolver->alpha = 0.0;       dsdpSolver->dtau = 0.0;    dsdpSolver->dkappa = 0.0;
     dsdpSolver->mumaker = 0.0;     dsdpSolver->insStatus = 0; dsdpSolver->solStatus = DSDP_STATUS_UNINIT;
     dsdpSolver->schurmu = 0.0;     dsdpSolver->cScaler = 0.0; dsdpSolver->ybound = 0.0;
-    dsdpSolver->dperturb = 0.0;
+    dsdpSolver->dperturb = 0.0;    dsdpSolver->nall = 0;      dsdpSolver->n = 0;
     
     return retcode;
 }
@@ -490,7 +489,7 @@ static DSDP_INT DSDPIPresolve( HSDSolver *dsdpSolver ) {
     
     dsdpshowdash();
     printf("| Start presolving                          "
-           "                                                       | \n");
+           "                                                        \n");
     center = clock();
     retcode = preRank1Rdc(dsdpSolver); checkCode;
     t = (double) (clock() - center) / CLOCKS_PER_SEC;
@@ -567,7 +566,7 @@ static DSDP_INT DSDPIPostsolve( HSDSolver *dsdpSolver ) {
 extern void DSDPPrintVersion(void) {
     dsdpshowdash();
     printf("| Homogeneous Dual Scaling Interior Point Solver. Version %d.%d.%d "
-           "                                   |\n",
+           "                                   \n",
            VERSION_MAJOR, VERSION_MINOR, VERSION_TECHNICAL);
     dsdpshowdash();
 }
@@ -620,7 +619,7 @@ extern DSDP_INT DSDPSetDim( HSDSolver *dsdpSolver,
                "| nConstrs: "ID" "
                "| nLPVars: "ID" "
                "| nSDPVars: "ID" "
-               "| nNonzeros: "ID" |\n", nBlock, nConstrs, lpDim, sdpDim, nnz);
+               "| nNonzeros: "ID" \n", nBlock, nConstrs, lpDim, sdpDim, nnz);
     }
     
     dsdpSolver->nBlock = nBlock; dsdpSolver->m = nConstrs;
@@ -745,13 +744,13 @@ extern DSDP_INT DSDPOptimize( HSDSolver *dsdpSolver ) {
     if (gotoB) {
         retcode = DSDPPFeasPhase(dsdpSolver);
     }
-    printf("| DSDP Ends. %86s| \n", "");
+    printf("| DSDP Ends. %86s \n", "");
     dsdpshowdash();
     
     // Compute solution and get DIMACS errors
     computePrimalX(dsdpSolver);
     printf("| Primal solution is extracted.                      "
-           "                                              |\n");
+           "                                              \n");
     dsdpshowdash();
     computeDIMACS(dsdpSolver);
     

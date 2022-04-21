@@ -6,6 +6,43 @@
 static char etype[] = "Prototype methods";
 /* Recording prototype methods that are no longer in use */
 
+static DSDP_INT isConstant( HSDSolver *dsdpSolver, DSDP_INT *isConstant ) {
+    // Check whether C is a constant
+    DSDP_INT retcode = DSDP_RETCODE_OK;
+    *isConstant = FALSE;
+    
+    DSDP_INT m = dsdpSolver->m, dim = 0;
+    DSDP_INT isCons = TRUE, isRank1 = FALSE;
+    r1Mat *C = NULL; double num = 0.0;
+    
+    for (DSDP_INT i = 0; i < dsdpSolver->nBlock; ++i) {
+        isCons = TRUE;
+        if (dsdpSolver->sdpData[i]->types[m] == MAT_TYPE_RANKK) {
+            rkMatisRank1(dsdpSolver->sdpData[i]->sdpData[m], &isRank1);
+            if (isRank1) {
+                C = (r1Mat *) dsdpSolver->sdpData[i]->sdpData[m];
+                dim = C->dim; num = C->x[0];
+                
+                for (DSDP_INT j = 1; j < dim; ++j) {
+                    if (fabs(num - C->x[j]) > 1e-03) {
+                        isCons = FALSE; break;
+                    }
+                }
+            } else {
+                isCons = FALSE;
+            }
+        } else {
+            isCons = FALSE;
+        }
+        
+        if (isCons) {
+            *isConstant = TRUE; break;
+        }
+    }
+    
+    return retcode;
+}
+
 /* Check if a dense matrix is rank-one
    Depreciated due to inaccuracy
  */

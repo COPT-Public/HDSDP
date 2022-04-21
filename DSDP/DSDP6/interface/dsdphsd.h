@@ -86,10 +86,6 @@ typedef int DSDP_INT;
 // Memory strategy
 #define DSDP_MEMORY_THRESHOLD   10000
 
-// Version Number
-#define MAJOR_VERSION            0
-#define MINOR_VERSION            1
-
 // Error log
 #define error(etype, x)          printf("[%s]: %s", (etype), (x)); assert( 0 ); \
                                  retcode = DSDP_RETCODE_FAILED; return retcode;
@@ -110,7 +106,7 @@ typedef int DSDP_INT;
 #define DSDP_ATTEMPT_AGG        108
 
 #define VERSION_MAJOR           0
-#define VERSION_MINOR           2
+#define VERSION_MINOR           3
 #define VERSION_TECHNICAL       0
 
 #endif /* dsdphsd_h */

@@ -37,7 +37,8 @@
 #define PRESOLVE_CONSERVATIVE   51
 #define INT_PARAM_AMAXITER       6
 #define INT_PARAM_BMAXITER       7
-#define INT_PARAM_PRELAX         8
+#define INT_PARAM_GOLDSEARCH     8
+#define INT_PARAM_PRELAX         9
 
 #define NUM_DBL_PARAM  (DBL_PARAM_OBJ_WEIGHT + 1)
 #define NUM_INT_PARAM  (INT_PARAM_PRELAX     + 1)
@@ -50,8 +51,8 @@ typedef struct {
 } hsdParam;
 
 static DSDP_INT defaultIntParam[NUM_INT_PARAM] = {
-    4,     // INT_PARAM_ACORRECTOR
-    12,     // INT_PARAM_BCORRECTOR
+    0,     // INT_PARAM_ACORRECTOR
+    4,     // INT_PARAM_BCORRECTOR
     INIT_METHOD_FRO,
            // INT_PARAM_INITMETHOD
     AATEMT_CONSERVATIVE,
@@ -61,6 +62,7 @@ static DSDP_INT defaultIntParam[NUM_INT_PARAM] = {
            // INT_PARAM_PRESOLVE
     100,   // INT_PARAM_AMAXITER
     500,   // INT_PARAM_BMAXITER
+    TRUE,  // INT_PARAM_GOLDSEARCH
     TRUE  // INT_PARAM_PRELAX
 };
 
@@ -72,12 +74,12 @@ static double defaultDblParam[NUM_DBL_PARAM] = {
     4.0,   // DBL_PARAM_RHON
     1e+10, // DBL_PARAM_INIT_POBJ
     
-    1e+04, // DBL_PARAM_INIT_BETA
-    1e+10, // DBL_PARAM_INIT_MU
+    1e+03, // DBL_PARAM_INIT_BETA
+    1e+15, // DBL_PARAM_INIT_MU
     1.0, // DBL_PARAM_INIT_TAU
     
     1.0,   // DBL_PARAM_INIT_KAPPA
-    0.9,  // DBL_PARAM_AALPHA // 0.99995 is good
+    0.95,  // DBL_PARAM_AALPHA // 0.99995 is good
     1e+08, // DBL_PARAM_NRM_THRESH
     1e+08, // DBL_PARAM_INFEAS_THRESH
     1e-06, // DBL_PARAM_ABS_OPTTOL

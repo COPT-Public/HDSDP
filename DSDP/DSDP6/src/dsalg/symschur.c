@@ -4,7 +4,7 @@
 #include "dsdpSort.h"
 
 #define continue_if_not_in_A_or_not_building_hsd if (!(*M->phaseA) || !(*M->buildhsd) ) { continue; }
-#define return_if_not_in_A_or_not_building_hsd   if (!(*M->phaseA) || !(*M->buildhsd)) { return retcode; }
+#define return_if_not_in_A_or_not_building_hsd   if ((!(*M->phaseA) || !(*M->buildhsd)) && computeC) { return retcode; }
 
 // Implement the advanced Schur matrix setup in DSDP using M1, M2, M3, M4 techniques
 static char etype[] = "Advanced Schur matrix setup";
@@ -187,13 +187,14 @@ static DSDP_INT schurM1rowSetup( DSDPSchur *M, DSDP_INT blockid, DSDP_INT row ) 
         default             : error(etype, "Invalid matrix type. \n"); break;
     }
     
-    if (k < m) {
+    if (LIKELY(k < m)) {
         val = &M->asinv->x[k];
     } else {
-        return_if_not_in_A_or_not_building_hsd
         val = M->csinv; computeC = TRUE;
     }
-    res = SinvRkSinv(M->S[blockid], factor, rkaux); *val += res;
+    
+    res = SinvRkSinv(M->S[blockid], factor, rkaux);
+    *val += res; return_if_not_in_A_or_not_building_hsd
     
     // Get B through rank-one update
     denseMatReset(B); rkMatdenseUpdate(B, rkaux);
@@ -274,10 +275,10 @@ static DSDP_INT schurM2rowSetup( DSDPSchur *M, DSDP_INT blockid, DSDP_INT row ) 
     if (k < m) {
         val = &M->asinv->x[k];
     } else {
-        return_if_not_in_A_or_not_building_hsd
         val = M->csinv; computeC = TRUE;
     }
-    res = SinvRkSinv(M->S[blockid], factor, rkaux); *val += res;
+    res = SinvRkSinv(M->S[blockid], factor, rkaux);
+    *val += res; return_if_not_in_A_or_not_building_hsd
     rank = rkMatGetRank(factor);
     
     /* Start M2 */
@@ -361,7 +362,6 @@ static DSDP_INT schurM3rowSetup( DSDPSchur *M, DSDP_INT blockid, DSDP_INT row ) 
     if (k < m) {
         val = &M->asinv->x[k];
     } else {
-        return_if_not_in_A_or_not_building_hsd
         val = M->csinv; computeC = TRUE;
     }
     
@@ -381,7 +381,7 @@ static DSDP_INT schurM3rowSetup( DSDPSchur *M, DSDP_INT blockid, DSDP_INT row ) 
         default: error(etype, "Invalid matrix type. \n"); break;
     }
     
-    *val += res;
+    *val += res; return_if_not_in_A_or_not_building_hsd
     
     /* Start M3 */
     if (computeC) {
@@ -439,7 +439,6 @@ static DSDP_INT schurM4rowSetup( DSDPSchur *M, DSDP_INT blockid, DSDP_INT row ) 
     if (k < m) {
         val = &M->asinv->x[k];
     } else {
-        return_if_not_in_A_or_not_building_hsd
         val = M->csinv; computeC = TRUE;
     }
     
@@ -455,7 +454,7 @@ static DSDP_INT schurM4rowSetup( DSDPSchur *M, DSDP_INT blockid, DSDP_INT row ) 
         default: error(etype, "Invalid matrix type. \n"); break;
     }
     
-    *val += tmp;
+    *val += tmp; return_if_not_in_A_or_not_building_hsd
     
     /* Start M4 */
     if (computeC) {
@@ -546,7 +545,6 @@ static DSDP_INT schurM5rowSetup( DSDPSchur *M, DSDP_INT blockid, DSDP_INT row ) 
     if (k < m) {
         val = &M->asinv->x[k];
     } else {
-        return_if_not_in_A_or_not_building_hsd
         val = M->csinv; computeC = TRUE;
     }
     
@@ -561,7 +559,7 @@ static DSDP_INT schurM5rowSetup( DSDPSchur *M, DSDP_INT blockid, DSDP_INT row ) 
             break;
     }
     
-    *val += tmp;
+    *val += tmp; return_if_not_in_A_or_not_building_hsd
     
     if (computeC) {
         *M->csinvrysinv += res;

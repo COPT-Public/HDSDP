@@ -83,7 +83,7 @@ static double getCurrentLogdet( HSDSolver *dsdpSolver, vec *y, double tau, DSDP_
 static DSDP_INT adjCorrectorStep( HSDSolver *dsdpSolver ) {
     // Automatically adjust the number of currector steps by problem structure
     
-    DSDP_INT m = dsdpSolver->m, n = dsdpSolver->n, nusercorr;
+    DSDP_INT nusercorr;
     DSDPGetIntParam(dsdpSolver, INT_PARAM_BCORRECTOR, &nusercorr);
     
     if (nusercorr == 0) { return 0; }
@@ -91,25 +91,6 @@ static DSDP_INT adjCorrectorStep( HSDSolver *dsdpSolver ) {
     if (dsdpSolver->alpha < 0.1 && dsdpSolver->mu < 1e-05) { nusercorr = 0; }
     if (dsdpSolver->mu < 1e-06) { nusercorr = 0; }
     
-    /*
-    if (n >= 2 * m) {
-        nusercorr = MIN(nusercorr, 0);
-    } else if (n >= m) {
-        nusercorr = MIN(nusercorr, 2);
-    } else if (n >= 0.8 * m) {
-        nusercorr = MIN(nusercorr, 4);
-    }
-    
-    if (m > 20 * n) {
-        nusercorr = MAX(nusercorr, 12);
-    } else if (m > 5 * n) {
-        nusercorr = MAX(nusercorr, 10);
-    } else if (m > 2 * n) {
-        nusercorr = MAX(nusercorr, 8);
-    }
-    
-    nusercorr = MIN(nusercorr, 12);
-    */
     return nusercorr;
 }
 
@@ -263,6 +244,12 @@ extern DSDP_INT dualCorrectorStep( HSDSolver *dsdpSolver ) {
         
         step = MIN(0.95 * step, 1.0);
         step = MIN(step, rhon / dsdpSolver->Pnrm);
+        
+        if (step == 1.0) {
+            vec_zaxpby(ynew, step, dycorr, 1.0, ynow);
+            vec_copy(ynew, ynow); getPhaseBS(dsdpSolver, ynow->x);
+            continue;
+        }
         
         // Do line search
         for (j = 0; ; ++j) {
