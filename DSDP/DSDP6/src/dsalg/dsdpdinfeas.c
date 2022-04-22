@@ -47,8 +47,8 @@ extern DSDP_INT DSDPDInfeasEliminator( HSDSolver *dsdpSolver ) {
     retcode = DSDPGetIntParam(dsdpSolver, INT_PARAM_AMAXITER,   &agiter  );
     agiter  = MIN(agiter, 30);
     
-    double trymu    = 0.0;
-    double time     = 0.0;
+    double trymu = 0.0;
+    double time = 0.0;
     
     DSDP_INT ntry   = 0;
     double start    = my_clock();
@@ -86,7 +86,7 @@ extern DSDP_INT DSDPDInfeasEliminator( HSDSolver *dsdpSolver ) {
         // Check algorithm convergence
         DSDPCheckPhaseAConvergence(dsdpSolver, &goOn);
         // Compute dual objective
-        retcode = getDualObj(dsdpSolver); checkCode;
+        getDualObj(dsdpSolver);
         // Logging
         DSDPPhaseALogging(dsdpSolver);
         // Reset monitor
@@ -99,8 +99,8 @@ extern DSDP_INT DSDPDInfeasEliminator( HSDSolver *dsdpSolver ) {
         if (goOn) {
             if (i >= 1) {
                 dsdpSolver->ybound = (dsdpSolver->ybound == DSDP_INFINITY) ? 1e+07 * dsdpSolver->tau : dsdpSolver->ybound;
-                DSDPSetIntParam(dsdpSolver, INT_PARAM_ACORRECTOR, 4);
-                retcode = dInfeasCorrectorStep(dsdpSolver); checkCode;
+                DSDPSetIntParam(dsdpSolver, INT_PARAM_ACORRECTOR, 8);
+                retcode = dInfeasCorrectorStep(dsdpSolver, TRUE); checkCode;
             }
             break;
         }
@@ -115,19 +115,16 @@ extern DSDP_INT DSDPDInfeasEliminator( HSDSolver *dsdpSolver ) {
             trymu = newmu[j] * muprimal;
             retcode = dsdpgetPhaseAProxMeasure(dsdpSolver, trymu); checkCode;
             if (dsdpSolver->eventMonitor[EVENT_PFEAS_FOUND]) {
-                if (trymu > tol * tol) {
-                    muprimal = trymu;
-                }
-                
-                // TODO: no 2 * m if not using primal relaxation
-                trymu = dsdpSolver->mu;
-//                dsdpSolver->mu = (dsdpSolver->pObjVal - dsdpSolver->dObjVal -
-//                                  dsdpSolver->Ry * 1e+4) / 5.0 * (2 * dsdpSolver->m + dsdpSolver->n);
-                // dsdpSolver->mu *= sigma;
-                break;
+                muprimal = trymu; break;
             }
         }
+        trymu = (dsdpSolver->pObjVal - dsdpSolver->dObjVal -
+                 dsdpSolver->Ry * 1e+06) / (5.0 * dsdpSolver->nall);
+        dsdpSolver->mu = MAX(dsdpSolver->mu * 0.5, trymu);
+        
         dsdpSolver->iterProgress[ITER_PROX_POBJ] = TRUE;
+        // Adaptive dual infeasibility
+        retcode = computeAdaptivedRate(dsdpSolver); checkCode;
         // Setup directions
         retcode = getStepDirs(dsdpSolver); checkCode;
         // Compute maximum available stepsize
@@ -137,7 +134,7 @@ extern DSDP_INT DSDPDInfeasEliminator( HSDSolver *dsdpSolver ) {
         // Take step
         retcode = takeStep(dsdpSolver); checkCode;
         // Corrector
-        retcode = dInfeasCorrectorStep(dsdpSolver); checkCode;
+        retcode = dInfeasCorrectorStep(dsdpSolver, FALSE); checkCode;
 
         // Decrease mu with sufficient proximity
         checkIterProgress(dsdpSolver, ITER_DECREASE_MU);
@@ -148,13 +145,6 @@ extern DSDP_INT DSDPDInfeasEliminator( HSDSolver *dsdpSolver ) {
         }
         
         dsdpSolver->iterProgress[ITER_DECREASE_MU] = TRUE;
-        
-        // Be more aggressive if
-        if (i == agiter) {
-            sigma = 0.1;
-            DSDPSetDblParam(dsdpSolver, DBL_PARAM_AALPHA, 0.2);
-        }
-        
         checkIterProgress(dsdpSolver, ITER_NEXT_ITERATION);
         time = my_clock() - start;
     }

@@ -58,9 +58,8 @@ static DSDP_INT setupBoundYSchur( HSDSolver *dsdpSolver ) {
     } else {
         for (DSDP_INT i = 0, idx = 0; i < m; ++i) {
             s = su[i]; M[idx] += 1.0 / (s * s); asinv[i] += 1.0 / s;
-            dsdpSolver->csinv += bound / s;
             s = sl[i]; M[idx] += 1.0 / (s * s); asinv[i] -= 1.0 / s;
-            dsdpSolver->csinv += bound / s; idx += m - i;
+            idx += m - i;
         }
     }
     
@@ -149,7 +148,11 @@ static DSDP_INT schurCGSetup( HSDSolver *dsdpSolver ) {
     } else {
         tol = 1e-07;
     }
-//    cgsolver->status = CG_STATUS_INDEFINITE;
+    
+#ifdef compareMode
+    cgsolver->status = CG_STATUS_INDEFINITE;
+#endif
+    
     if (dsdpSolver->m > 20000) {
         cgiter = 500; tol *= 10.0;
     } else if (dsdpSolver->m > 15000) {
@@ -171,6 +174,7 @@ static DSDP_INT setupPhaseAdvecs( HSDSolver *dsdpSolver ) {
     vec_copy(dsdpSolver->dObj,  dsdpSolver->d2);
     vec_copy(dsdpSolver->u,     dsdpSolver->d12);
     vec_copy(dsdpSolver->asinv, dsdpSolver->d3);
+    vec_copy(dsdpSolver->asinvrysinv, dsdpSolver->d4);
     return DSDP_RETCODE_OK;
 }
 
@@ -262,7 +266,9 @@ extern DSDP_INT schurPhaseAMatSolve( HSDSolver *dsdpSolver ) {
     DSDP_INT retcode = DSDP_RETCODE_OK;
     retcode = checkIterProgress(dsdpSolver, ITER_SCHUR_SOLVE);
     retcode = cgSolveCheck(dsdpSolver->cgSolver, dsdpSolver->d2);
-    retcode = cgSolveCheck(dsdpSolver->cgSolver, dsdpSolver->d12);
+    if (dsdpSolver->eventMonitor[EVENT_HSD_UPDATE]) {
+        retcode = cgSolveCheck(dsdpSolver->cgSolver, dsdpSolver->d12);
+    }
     retcode = cgSolveCheck(dsdpSolver->cgSolver, dsdpSolver->d3);
     retcode = cgSolveCheck(dsdpSolver->cgSolver, dsdpSolver->d4);
     dsdpSolver->iterProgress[ITER_SCHUR_SOLVE] = TRUE;
@@ -286,6 +292,7 @@ extern DSDP_INT setupSchur( HSDSolver *dsdpSolver ) {
     DSDP_INT retcode = DSDP_RETCODE_OK;
     
     setupSDPSchur(dsdpSolver);
+    vec_copy(dsdpSolver->asinv, dsdpSolver->d12);
     setupBoundYSchur(dsdpSolver);
     dsdpSolver->iterProgress[ITER_SCHUR] = TRUE;
     // retcode = setupLPSchur(dsdpSolver);

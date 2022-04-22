@@ -5,7 +5,7 @@ static char etype[] = "Residual setup";
 
 static DSDP_INT getRy( HSDSolver *dsdpSolver ) {
     // Check the dual infeasibility
-    dsdpSolver->Ry *= (1 - dsdpSolver->alpha);
+    dsdpSolver->Ry *= (1 - dsdpSolver->drate * dsdpSolver->alpha);
     return DSDP_RETCODE_OK;
 }
 

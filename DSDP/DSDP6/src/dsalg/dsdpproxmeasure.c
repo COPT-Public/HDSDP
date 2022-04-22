@@ -25,13 +25,17 @@ extern DSDP_INT dsdpgetPhaseAProxMeasure( HSDSolver *dsdpSolver, double newmu ) 
         // Fix the code here about primal objective evaluation
         dsdpSolver->eventMonitor[EVENT_PFEAS_FOUND] = TRUE;
         double pObj = dsdpSolver->dObjVal, tmp1, tmp2;
-        vec_dot(dsdpSolver->u, dydelta, &tmp1);
+        
+        vec_zaxpby(dydelta, dsdpSolver->tau / dsdpSolver->mu,
+                   dsdpSolver->d2, -1.0, dsdpSolver->d3);
+        vec_dot(dsdpSolver->asinvrysinv, dydelta, &tmp1);
         vec_dot(dsdpSolver->asinv, dydelta, &tmp2);
         
         pObj += dsdpSolver->mu / dsdpSolver->tau * \
                 (dsdpSolver->rysinv + tmp1 + tmp2 + dsdpSolver->nall);
         pObj = pObj / dsdpSolver->tau;
-        dsdpSolver->pObjVal = pObj;
+        
+        dsdpSolver->pObjVal = (dsdpSolver->pObjVal == DSDP_INFINITY) ? pObj : MIN(pObj, dsdpSolver->pObjVal);
         
         if (dsdpSolver->mu < 1e-03) {
             dsdpSolver->mumaker = dsdpSolver->mu;
@@ -64,6 +68,23 @@ extern DSDP_INT dsdpgetPhaseBProxMeasure( HSDSolver *dsdpSolver, double *muub, d
         
         gap = (gap + dsdpSolver->nall) * dsdpSolver->mu;
         
+        // Bound tightening
+        double pinfeas = 0.0, tmp = 0.0, s;
+        vec *sl = dsdpSolver->sl, *su = dsdpSolver->su, *dy = dsdpSolver->b1;
+
+// #define tightbound
+#ifdef tightbound
+        double xl, xu, tightsum = 0.0;
+        for (DSDP_INT i = 0; i < dsdpSolver->m; ++i) {
+            tmp = dy->x[i];
+            s = sl->x[i]; xl = 1.0 / s + tmp / (s * s);
+            s = su->x[i]; xu = 1.0 / s + tmp / (s * s);
+            tightsum += fabs(xl) + fabs(xu) - fabs(xl - xu);
+        }
+        
+        gap -= tightsum * dsdpSolver->ybound * dsdpSolver->mu;
+#endif
+        
         if (usegold) {
             dsdpSolver->pObjVal = MIN(dsdpSolver->dObjVal + gap, dsdpSolver->pObjVal);
             gap = dsdpSolver->pObjVal - dsdpSolver->dObjVal;
@@ -72,9 +93,6 @@ extern DSDP_INT dsdpgetPhaseBProxMeasure( HSDSolver *dsdpSolver, double *muub, d
         }
         
         *muub = gap / dsdpSolver->nall;
-        
-        double pinfeas = 0.0, tmp = 0.0, s;
-        vec *sl = dsdpSolver->sl, *su = dsdpSolver->su, *dy = dsdpSolver->b1;
         
         // Get primal infeasibility
         for (DSDP_INT i = 0; i < dsdpSolver->m; ++i) {

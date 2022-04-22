@@ -48,7 +48,7 @@ static DSDP_INT initresi( HSDSolver *dsdpSolver ) {
     for (DSDP_INT i = 0; i < dsdpSolver->nBlock; ++i) {
         getMatFnorm(dsdpSolver, i, m, &nrm); Cnrm = nrm * nrm + Cnrm;
     }
-    dsdpSolver->Ry = - MAX(sqrt(Cnrm), 10.0) * tau * beta;
+    dsdpSolver->Ry = (Cnrm == 0) ? (-1.0) : - MAX(sqrt(Cnrm), 100.0) * tau * beta;
     for (DSDP_INT i = 0; i < dsdpSolver->nBlock; ++i) {
         addMattoS(dsdpSolver, i, m, tau);
         spsMatAdddiag(dsdpSolver->S[i], -dsdpSolver->Ry, dsdpSolver->symS[i]);
@@ -90,14 +90,14 @@ static void initparams( HSDSolver *dsdpSolver ) {
     dsdpSolver->ybound = dblparam;
     
     // Corrector
-    DSDP_INT m = dsdpSolver->m, n = dsdpSolver->n, nusercorr, ncorrA = 0;
+    DSDP_INT m = dsdpSolver->m, n = dsdpSolver->n / dsdpSolver->nBlock, nusercorr, ncorrA = 0;
     DSDPGetIntParam(dsdpSolver, INT_PARAM_BCORRECTOR, &nusercorr);
     
-    if (nusercorr) {
-        if (n >= m) {
+    if ((TRUE)) {
+        if (n >= 2 * m) {
             nusercorr = MIN(nusercorr, 0);
             ncorrA = 2;
-        } else if (n >= 0.8 * m) {
+        } else if (n >= 1.5 * m) {
             nusercorr = MIN(nusercorr, 2);
             ncorrA = 4;
         } else {
@@ -106,18 +106,19 @@ static void initparams( HSDSolver *dsdpSolver ) {
         
         if (m > 20 * n) {
             nusercorr = MAX(nusercorr, 12);
-            ncorrA = 12;
+            ncorrA = 6;
         } else if (m > 5 * n) {
             nusercorr = MAX(nusercorr, 10);
-            ncorrA = 12;
+            ncorrA = 4;
         } else if (m > 2 * n) {
             nusercorr = MAX(nusercorr, 8);
-            ncorrA = 12;
+            ncorrA = 2;
         }
         nusercorr = MIN(nusercorr, 12);
     }
     
-    DSDPSetIntParam(dsdpSolver, INT_PARAM_ACORRECTOR, ncorrA);
+    
+    DSDPSetIntParam(dsdpSolver, INT_PARAM_ACORRECTOR, 1);
     DSDPSetIntParam(dsdpSolver, INT_PARAM_BCORRECTOR, nusercorr);
     
     printf("| Corrector A: %d  Corrector B: %d \n", ncorrA, nusercorr);
@@ -136,8 +137,7 @@ static void adjpObj( HSDSolver *dsdpSolver ) {
         pObj *= 0.5;
     }
     
-    pObj = MAX(1e+08, pObj);
-    pObj = MIN(1e+15, pObj);
+    pObj = MAX(1e+15, pObj);
     dsdpSolver->pObjVal = pObj;
 }
 
@@ -205,16 +205,17 @@ extern DSDP_INT dsdpInitializeB( HSDSolver *dsdpSolver ) {
     DSDPGetStats(&dsdpSolver->dsdpStats, STAT_PHASE_A_ITER, &tmp);
     DSDPGetStats(&dsdpSolver->dsdpStats, STAT_ONE_NORM_C, &tmp2);
     if (tmp >= 80) {
-        dsdpSolver->dperturb = 5e-06 * tmp2;
+        dsdpSolver->dperturb = 5e-07 * tmp2;
     } else if (tmp >= 50) {
-        dsdpSolver->dperturb = 1e-06 * tmp2;
-    } else if (tmp >= 30) {
-        dsdpSolver->dperturb = 1e-07 * tmp2;
+        dsdpSolver->dperturb = 5e-08 * tmp2;
+    } else if (tmp >= 20) {
+        dsdpSolver->dperturb = 1e-08 * tmp2;
     } else {
         dsdpSolver->dperturb = 0.0;
     }
     
-    dsdpSolver->dperturb = MIN(1e-03, dsdpSolver->dperturb);
+    dsdpSolver->dperturb = MIN(1e-06, dsdpSolver->dperturb);
+    dsdpSolver->dperturb = MAX(-dsdpSolver->Ry, dsdpSolver->dperturb);
     
     printf("| Perturbing dual iterations by %10.3e \n", dsdpSolver->dperturb);
     switch (dsdpSolver->solStatus) {
@@ -223,9 +224,8 @@ extern DSDP_INT dsdpInitializeB( HSDSolver *dsdpSolver ) {
             // mu = min((pObj - dObj) / rho, muPrimal)
             if (pfeas) {
                 dsdpSolver->pObjVal = 0.0;
-            } else {
-                adjpObj(dsdpSolver);
             }
+            
             dsdpSolver->mu = MIN((dsdpSolver->pObjVal - dsdpSolver->dObjVal) / rho, dsdpSolver->mu);
             printf("| DSDP Phase B starts. Restarting dual-scaling %51s \n", "");
             break;

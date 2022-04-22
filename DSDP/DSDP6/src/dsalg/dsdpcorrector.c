@@ -94,7 +94,7 @@ static DSDP_INT adjCorrectorStep( HSDSolver *dsdpSolver ) {
     return nusercorr;
 }
 
-extern DSDP_INT dInfeasCorrectorStep( HSDSolver *dsdpSolver )  {
+extern DSDP_INT dInfeasCorrectorStep( HSDSolver *dsdpSolver, DSDP_INT isfinal )  {
     // Corrector step in Phase A.
     DSDP_INT retcode = DSDP_RETCODE_OK;
     CGSolver *cg = dsdpSolver->cgSolver; dsdpCGSetMaxIter(cg, 300); dsdpCGSetTol(cg, 1e-04);
@@ -108,7 +108,8 @@ extern DSDP_INT dInfeasCorrectorStep( HSDSolver *dsdpSolver )  {
     bound = dsdpSolver->ybound; DSDPGetDblParam(dsdpSolver, DBL_PARAM_RHON, &rhon);
     DSDP_INT ncorrector, inCone = FALSE; DSDPGetIntParam(dsdpSolver, INT_PARAM_ACORRECTOR, &ncorrector);
     
-    for (DSDP_INT i = 0, j; i < ncorrector; ++i) {
+    
+    for (DSDP_INT i = 0, j; i < ncorrector && dsdpSolver->Ry; ++i) {
         
         if (i == 0) {
             for (j = 0; j < dsdpSolver->nBlock; ++j) {
@@ -144,8 +145,13 @@ extern DSDP_INT dInfeasCorrectorStep( HSDSolver *dsdpSolver )  {
             tmp = vec_step(su, dycorr, -1.0); step = MIN(tmp, step);
         }
         
-        step = MIN(0.95 * step, 1.0); // Update Pnrm ?
-        step = MIN(step, rhon / dsdpSolver->Pnrm);
+        
+        if (isfinal) {
+            step = 0.9 * step; // Update Pnrm ?
+        } else {
+            step = MIN(0.95 * step, 1.0); // Update Pnrm ?
+            step = MIN(step, rhon / dsdpSolver->Pnrm);
+        }
         
         // Do line search
         for (j = 0; ; ++j) {
@@ -161,7 +167,7 @@ extern DSDP_INT dInfeasCorrectorStep( HSDSolver *dsdpSolver )  {
                 newbarrier = getCurrentLogdet(dsdpSolver, ynow, dsdpSolver->tau, prelax, NULL);
             }
             
-            if (step <= 1e-04 || newbarrier <= oldbarrier) {
+            if (step <= 1e-04 || newbarrier <= oldbarrier || isfinal) {
                 break;
             } else {
                 step *= 0.5;
@@ -185,7 +191,7 @@ extern DSDP_INT dualCorrectorStep( HSDSolver *dsdpSolver ) {
     // Prepare CG solver
     CGSolver *cg = dsdpSolver->cgSolver; dsdpCGSetMaxIter(cg, 300); dsdpCGSetTol(cg, 1e-04);
     
-    DSDP_INT nall = dsdpSolver->n + dsdpSolver->m * 2;
+    DSDP_INT nall = dsdpSolver->nall;
     vec *d2 = dsdpSolver->M->asinv; // asinv is directed solved using CG
     vec *d1 = dsdpSolver->d1, *b = dsdpSolver->dObj, *ynew = dsdpSolver->d4; // d4 is reused for storing ynew
     vec *dycorr = dsdpSolver->b1, *sl = dsdpSolver->sl, *su = dsdpSolver->su, *ynow = dsdpSolver->y;
@@ -242,14 +248,14 @@ extern DSDP_INT dualCorrectorStep( HSDSolver *dsdpSolver ) {
         tmp = vec_step(sl, dycorr,  1.0); step = MIN(tmp, step);
         tmp = vec_step(su, dycorr, -1.0); step = MIN(tmp, step);
         
-        step = MIN(0.95 * step, 1.0);
-        step = MIN(step, rhon / dsdpSolver->Pnrm);
-        
-        if (step == 1.0) {
-            vec_zaxpby(ynew, step, dycorr, 1.0, ynow);
+        if (step >= 5.0) {
+            vec_zaxpby(ynew, 1.0, dycorr, 1.0, ynow);
             vec_copy(ynew, ynow); getPhaseBS(dsdpSolver, ynow->x);
             continue;
         }
+        
+        step = MIN(0.95 * step, 1.0);
+        step = MIN(step, rhon / dsdpSolver->Pnrm);
         
         // Do line search
         for (j = 0; ; ++j) {

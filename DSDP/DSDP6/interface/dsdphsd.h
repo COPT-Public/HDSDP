@@ -9,15 +9,13 @@
     Yinyu Ye, Stanford University
     Gwz,      Shanghai University of Finance and Economics
  
-    Development log:
-    
-    Nov 5th, 2021.
-    Ready to write up the interface for Single-block HSD
- 
 */
 #ifdef superDebug
 #undef superDebug
 #endif
+
+// #define compareMode
+
 
 //#define superDebug
 

@@ -49,8 +49,8 @@ typedef struct {
     vec      *s;          // LP dual iteration matrix
     vec      *x;          // LP primal iteration vector
     
-    vec      *asinv;      // Store the sum of trace(A * Sinv) for different A_i (including C),
-                          // setup as a by product
+    vec      *asinv;      // Store the sum of trace(A * Sinv) for different A_i (excluding C),
+    vec      *asinvrysinv;
     double   csinvcsinv;  // Store trace(C * Sinv * C * Sinv)
     double   csinv;       // Store csinv
     double   csinvrysinv; // Store trace(C * Sinv * Ry * Sinv)
@@ -86,6 +86,7 @@ typedef struct {
     // Residuals
     double    rysinv;     // Complementarity residual
     double    Ry;         // SDP Dual infeasibility
+    double    drate;      // Rate for eliminating dual infeasibility
     vec      *ry;         // LP dual infeasibility
     
     // Step matrix

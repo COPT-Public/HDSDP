@@ -8,7 +8,7 @@ static DSDP_INT assemblePhaseAArrs( HSDSolver *dsdpSolver ) {
     // Assemble auxiliary arrays
     /*
      b1 = b * pweight - mu * u;
-     b2 = d2 * pweight * tau / mu - d3 + d4;
+     b2 = d2 * pweight * tau / mu - d3 + drate * d4;
      d11 = d2 / mu;
      d1  = d11 * pweight + d12;
     */
@@ -19,7 +19,7 @@ static DSDP_INT assemblePhaseAArrs( HSDSolver *dsdpSolver ) {
     vec_zaxpby(dsdpSolver->b2, pweight * dsdpSolver->tau / dsdpSolver->mu,
                dsdpSolver->d2, -1.0, dsdpSolver->d3);
     // b2 = b2 + d4
-    vec_axpy(1.0, dsdpSolver->d4, dsdpSolver->b2);
+    vec_axpy(dsdpSolver->drate, dsdpSolver->d4, dsdpSolver->b2);
     // d1 = d2
     vec_copy(dsdpSolver->d2, dsdpSolver->d1);
     // d1 = d1 / mu * pweight
@@ -78,7 +78,7 @@ static void getdyB( HSDSolver *dsdpSolver ) {
 
 static void getdS( HSDSolver *dsdpSolver ) {
     double *dy = dsdpSolver->dy->x, dtau = dsdpSolver->dtau;
-    getPhaseAdS(dsdpSolver, dy, dtau);
+    getPhaseAdS(dsdpSolver, dsdpSolver->drate, dy, dtau);
 }
 
 static void getdSB( HSDSolver *dsdpSolver ) {
@@ -112,6 +112,7 @@ extern DSDP_INT getStepDirs( HSDSolver *dsdpSolver ) {
     if (dsdpSolver->iterProgress[ITER_STEP_DIRECTION]) {
         error(etype, "SDP directions have been set up. \n");
     }
+    
     if (dsdpSolver->eventMonitor[EVENT_IN_PHASE_A]) {
         retcode = assemblePhaseAArrs(dsdpSolver);
     }

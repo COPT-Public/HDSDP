@@ -135,10 +135,11 @@ static void schurMatCleanup( DSDPSchur *M ) {
     if (*M->phaseA) {
         if (*M->buildhsd) {
             vec_reset(M->asinvcsinv);
-            *M->csinvrysinv = 0.0; *M->csinv = 0.0; *M->csinvcsinv = 0.0;
+            *M->csinvrysinv = 0.0; *M->csinvcsinv = 0.0;
         }
         vec_reset(M->asinvrysinv); *M->rysinv = 0.0;
     }
+    *M->csinv = 0.0;
     schurMatSinvCleanup(M);
 }
 

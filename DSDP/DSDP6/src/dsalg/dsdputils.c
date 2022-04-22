@@ -81,8 +81,8 @@ extern DSDP_INT getPhaseBCheckerS( HSDSolver *dsdpSolver, double *y ) {
     return retcode;
 }
 
-/* Retrieve dS = Ry + C * dtau - ATdy across all the blocks */
-extern DSDP_INT getPhaseAdS( HSDSolver *dsdpSolver, double *dy, double dtau ) {
+/* Retrieve dS = drate * Ry + C * dtau - ATdy across all the blocks */
+extern DSDP_INT getPhaseAdS( HSDSolver *dsdpSolver, double drate, double *dy, double dtau ) {
     
     DSDP_INT retcode = DSDP_RETCODE_OK;
     spsMat *dS = NULL; DSDP_INT m = dsdpSolver->m;
@@ -92,7 +92,7 @@ extern DSDP_INT getPhaseAdS( HSDSolver *dsdpSolver, double *dy, double dtau ) {
             retcode = addMattodS(dsdpSolver, i, j, - dy[j]);
         }
         addMattodS(dsdpSolver, i, m, dtau);
-        spsMatAdddiag(dS, dsdpSolver->Ry, dsdpSolver->symS[i]);
+        spsMatAdddiag(dS, drate * dsdpSolver->Ry, dsdpSolver->symS[i]);
     }
     return retcode;
 }

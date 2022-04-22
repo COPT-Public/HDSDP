@@ -12,6 +12,7 @@
 extern "C" {
 #endif
 
+extern DSDP_INT computeAdaptivedRate( HSDSolver *dsdpSolver );
 extern DSDP_INT getMaxStep( HSDSolver *dsdpSolver );
 extern DSDP_INT takeStep  ( HSDSolver *dsdpSolver );
 extern DSDP_INT searchpObj( HSDSolver *dsdpSolver, double *approxpObj );

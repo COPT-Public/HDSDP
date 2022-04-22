@@ -333,7 +333,7 @@ extern DSDP_INT DSDPCheckPhaseAConvergence( HSDSolver *dsdpSolver, DSDP_INT *isO
     DSDPGetStats(stat, STAT_PHASE_A_ITER, &statval1);
     DSDPGetStats(stat, STAT_NUM_SMALL_ITER, &statval2);
     
-    if (statval1 > 0 && dsdpSolver->alpha < 1e-02) {
+    if (statval1 > 0 && dsdpSolver->alpha < 1e-02 && fabs(dsdpSolver->Ry) < 1e-06 ) {
         monitor[EVENT_SMALL_STEP] = TRUE;
         statval2 += 1.0;
         DSDPStatUpdate(stat, STAT_NUM_SMALL_ITER, statval2);

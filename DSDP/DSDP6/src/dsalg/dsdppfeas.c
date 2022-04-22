@@ -88,7 +88,7 @@ extern DSDP_INT DSDPPFeasPhase( HSDSolver *dsdpSolver ) {
         retcode = dsdpgetPhaseBProxMeasure(dsdpSolver, &muub, &mulb); checkCode;
         
         // Select new mu
-        if (dsdpSolver->mu > 1e-12) {
+        if (dsdpSolver->mu > 1e-12 && i <= 480) {
             retcode = selectMu(dsdpSolver, &newmu); checkCode;
             newmu = MIN(newmu, muub); newmu = MAX(newmu, mulb);
             dsdpSolver->mu = newmu;

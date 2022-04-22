@@ -9,6 +9,10 @@
 #include "dsdpdata.h"
 #include "structs.h"
 
+#define NOT_READY
+#define SPARSE_READY
+#define DENSE_READY
+
 #define SCHUR_M1 1
 #define SCHUR_M2 2
 #define SCHUR_M3 3

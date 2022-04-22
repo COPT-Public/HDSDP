@@ -14,8 +14,6 @@
 
 static char etype[] = "Step size computation";
 
-void spsMatExport( spsMat *A );
-
 static DSDP_INT getKappaTauStep( HSDSolver *dsdpSolver, double *kappatauStep ) {
     // Compute the maximum step size to take at kappa and tau
     DSDP_INT retcode = DSDP_RETCODE_OK;
@@ -85,9 +83,7 @@ static DSDP_INT getSDPSStep( HSDSolver *dsdpSolver, double *SStep ) {
     DSDP_INT retcode = DSDP_RETCODE_OK;
     DSDP_INT nblock = dsdpSolver->nBlock;
     
-    double res = 0.0;
-    double step = DSDP_INFINITY;
-    
+    double res = 0.0, step = DSDP_INFINITY;
     for (DSDP_INT i = 0; i < nblock; ++i) {
         retcode = getBlockSDPSStep(dsdpSolver, i, &res);
         step = MIN(step, res);
@@ -205,6 +201,54 @@ static DSDP_INT getCurrentyPotential( HSDSolver *dsdpSolver, vec *y,
     return retcode;
 }
 
+extern DSDP_INT computeAdaptivedRate( HSDSolver *dsdpSolver ) {
+    // Use heuristic to determine the rate for eliminating dual infeasibility
+    DSDP_INT retcode = DSDP_RETCODE_OK;
+    double alphac = 0.0, alphainf = DSDP_INFINITY, tmp, alpharef;
+    // dSd3 = A^T * d3
+    getPhaseBdS(dsdpSolver, -1.0, dsdpSolver->d3->x, 0.0);
+    getSDPSStep(dsdpSolver, &alphac);
+    
+    alpharef = alphac;
+    alphac = MIN(alphac * 0.98, 1.0);
+    dsdpSolver->alpha = alphac;
+    
+    // Shat = S + alphac * dSd3
+    for (DSDP_INT j = 0; j < dsdpSolver->nBlock; ++j) {
+        memcpy(dsdpSolver->Scker[j]->x, dsdpSolver->S[j]->x,
+               sizeof(double) * dsdpSolver->S[j]->nnz);
+        // This step sometimes fails due to inaccurate Lanczos and line-search is necessary
+        spsMataXpbY(alphac, dsdpSolver->dS[j],
+                    1.0, dsdpSolver->Scker[j], dsdpSolver->symS[j]);
+    }
+    // drate
+    DSDP_INT inCone = TRUE; dsdpCheckerInCone(dsdpSolver, &inCone);
+    if (!inCone) { error(etype, "Invalid adaptive Shat.\n"); }
+    vec_zaxpby(dsdpSolver->d12, alphac, dsdpSolver->d4, 0.0, dsdpSolver->d4);
+    getPhaseAdS(dsdpSolver, 1.0, dsdpSolver->d12->x, 0.0);
+    for (DSDP_INT i = 0; i < dsdpSolver->nBlock; ++i) {
+        dsdpGetAlpha(dsdpSolver->lczSolver[i], dsdpSolver->Scker[i],
+                     dsdpSolver->dS[i], dsdpSolver->spaux[i], &tmp);
+        alphainf = MIN(alphainf, tmp);
+    }
+    
+    dsdpSolver->drate = MIN(1.0, 0.98 * alphainf);
+    // double ratio = (alphac * 0.75) / (alphainf + alphac * 0.75);
+    // dsdpSolver->alpha = dsdpSolver->alpha * ratio + dsdpSolver->drate * (1 - ratio);
+//    printf("| drate %e \n", dsdpSolver->drate);
+    
+    if (dsdpSolver->Pnrm < 1.0) {
+        dsdpSolver->drate = MAX(0.8, dsdpSolver->drate);
+    } else if (dsdpSolver->Pnrm < 5.0) {
+        dsdpSolver->drate = MAX(0.5, dsdpSolver->drate);
+    } else {
+        dsdpSolver->drate = MAX(0.1, dsdpSolver->drate);
+    }
+    
+    // dsdpSolver->drate = MAX(0.1, dsdpSolver->drate);
+    return retcode;
+}
+
 extern DSDP_INT getMaxStep( HSDSolver *dsdpSolver ) {
     // Compute the maximum step size to take for one iteration
     DSDP_INT retcode = DSDP_RETCODE_OK;
@@ -216,13 +260,15 @@ extern DSDP_INT getMaxStep( HSDSolver *dsdpSolver ) {
     double stepkappatau = 0.0, steplps = 100.0, sdpS = 0.0, stepbd, Aalpha;
     DSDPGetDblParam(dsdpSolver, DBL_PARAM_AALPHA, &Aalpha);
     getKappaTauStep(dsdpSolver, &stepkappatau);
+    sdpS = dsdpSolver->alpha;
     getSDPSStep(dsdpSolver, &sdpS);
     stepbd = (dsdpSolver->ybound == DSDP_INFINITY) ? DSDP_INFINITY : getBoundyStep(dsdpSolver);
     sdpS = MIN(sdpS, steplps);
     dsdpSolver->alpha = MIN(sdpS, stepkappatau);
-    dsdpSolver->alpha = MIN(dsdpSolver->alpha, stepbd);
-    dsdpSolver->alpha = MIN(dsdpSolver->alpha * Aalpha, 1.0);
+    dsdpSolver->alpha = MIN(dsdpSolver->alpha * 0.95, stepbd * 0.95);
     
+    // MIN(dsdpSolver->alpha * XXX, 1.0): XXX is the most critical parameter
+    dsdpSolver->alpha = MIN(dsdpSolver->alpha, 1.0);
     dsdpSolver->iterProgress[ITER_COMPUTE_STEP] = TRUE; return retcode;
 }
 
@@ -252,10 +298,10 @@ extern DSDP_INT searchpObj( HSDSolver *dsdpSolver, double *approxpObj ) {
     double boundy = dsdpSolver->ybound, pinfeas, csinv = dsdpSolver->csinv;
     double ub = dsdpSolver->mu, lb = 0.0, tol = MIN(1e-06 * ub, 1e-06) / Phi;
     double c, cObj, d, dObj, diff = (ub - lb) / Phi;
-    vec *b = dsdpSolver->dObj, *asinv = dsdpSolver->asinv, *buffer = dsdpSolver->d4;
+    vec *b = dsdpSolver->dObj, *asinv = dsdpSolver->d12, *buffer = dsdpSolver->d4;
     
     // Start golden line search
-    for (DSDP_INT i = 0; diff > tol; ++i) {
+    for (DSDP_INT i = 0; diff > tol && i <= 100; ++i) {
         c = ub - diff; d = lb + diff;
         vec_copy(b, buffer);
         cObj = getApproxpObj(c, asinv, buffer, csinv, boundy, &pinfeas);
@@ -392,7 +438,7 @@ extern DSDP_INT dualPotentialReduction( HSDSolver *dsdpSolver ) {
     getSDPSStep(dsdpSolver, &maxstep);
     maxstep = MIN(maxstep, getBoundyStep(dsdpSolver));
     
-    if (maxstep > 5.0) {
+    if (maxstep > 1000.0) {
         alpha = 1.0;
     } else {
         
