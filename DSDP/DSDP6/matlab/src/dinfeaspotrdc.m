@@ -14,7 +14,7 @@ asinvrysinv = zeros(m, 1);
 
 if Ry(1, 1) == 0.0
     dratemax = 0.0;
-    ncorr = 1;
+    % ncorr = 1;
 end % End if 
 
 for iter = 1:ncorr
@@ -103,7 +103,7 @@ for iter = 1:ncorr
         S = Shat;
     else
         % alpha improves centrality
-        gammafeas = dsdpgetalpha(Shat, Ry - dsdpgetATy(A, alpha * d4));
+        gammafeas = dsdpgetalpha(Shat, Ry - dsdpgetATy(A, alpha * d4)); 
         drate = min(gammafeas * dratemax, 1.0);
         
         % Assemble the two directions and take step
@@ -116,7 +116,7 @@ for iter = 1:ncorr
             break;
         end % End if
         
-        if drate < 0.1
+        if drate * alpha < 0.1
             dratemax = 0.0;
             ncorr = min(ncorr, iter + 2);
         end % End if

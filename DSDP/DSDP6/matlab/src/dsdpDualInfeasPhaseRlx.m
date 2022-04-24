@@ -15,7 +15,8 @@ ncorrp1      = dsdpParam{9};
 candmu       = dsdpParam{19};
 ndash        = dsdpParam{20};
 
-pObj = inf;
+initpObj = 1e+10;
+pObj = 1e+10;
 muprimal = mu;
 step = 0;
 delta = inf;
@@ -35,12 +36,13 @@ else
 end % End if 
 
 corrrhs = zeros(m, 1);
+mu = (pObj - Rd(1, 1) * 1e+15) / np;
 
 for i = 1:maxiter
     
     nrmRd = sqrt(n) * abs(full(Rd(1, 1))) / (tau * (1 + nrmC));
     if nrmRd < tol / 10
-        if ~ isinf(pObj)
+        if pObj ~= initpObj
             reason = "DSDP_PRIMAL_DUAL_FEASIBLE";
         else
             reason = "DSDP_PRIMAL_UNKNOWN_DUAL_FEASIBLE";
@@ -49,7 +51,7 @@ for i = 1:maxiter
     end % End if
     
     if tau < (0.001 * kappa) && mu < tol
-        if ~ isinf(pObj)
+        if pObj ~= initpObj
             reason = "DSDP_PRIMAL_FEASIBLE_DUAL_INFEASIBLE";
         else
             reason = "DSDP_DUAL_INFEASIBLE";
@@ -84,13 +86,13 @@ for i = 1:maxiter
             A, C, y, Rd, asinvrysinv, rysinv, asinv, S, b, np, bound);
         delta = sqrt(delta / tau^2);
         if ~ isinf(newpObj)
-            if ~isinf(pObj)
+            if pObj ~= initpObj
                 pObj = min(pObj, newpObj);
-                muprimal = (pObj - dObj - Rd(1, 1) / tau * 1e+06) / (np * 3);
+                muprimal = (pObj - dObj - Rd(1, 1) / tau * 1e+15) / (np * 3);
                 mu = min(mu, muprimal);
             else
                 pObj = newpObj / tau;
-                muprimal = (pObj - dObj - Rd(1, 1) / tau * 1e+06) / (np * 3);
+                muprimal = (pObj - dObj - Rd(1, 1) / tau * 1e+15) / (np * 3);
                 mu = muprimal;
             end % End if
         end % End if
@@ -225,7 +227,7 @@ for i = 1:maxiter
 end % End for
 
 % Corrector at the end
-[y, S] = dinfeaspotrdc(A, b, C * tau, y, S, sparse(n, n), M, d2 * tau, mu, 4, bound, 0.0);
+% [y, S] = dinfeaspotrdc(A, b, C * tau, y, S, sparse(n, n), M, d2 * tau, mu, 8, bound, 0.0);
 
 iter = i;
 
