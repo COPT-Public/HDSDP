@@ -100,14 +100,15 @@ extern DSDP_INT dInfeasCorrectorStep( HSDSolver *dsdpSolver, DSDP_INT isfinal ) 
     CGSolver *cg = dsdpSolver->cgSolver; dsdpCGSetMaxIter(cg, 300); dsdpCGSetTol(cg, 1e-04);
     
     DSDP_INT prelax = (dsdpSolver->ybound != DSDP_INFINITY);
-    vec *d2 = dsdpSolver->M->asinv; // asinv is directed solved using CG
+    vec *d4 = dsdpSolver->M->asinvrysinv; // asinvrysinv is directly solved using CG
+    vec *d2 = dsdpSolver->M->asinv; // asinv is directly solved using CG
     vec *d1 = dsdpSolver->d1, *ynew = dsdpSolver->d4; // d4 is reused for storing ynew
     vec *dycorr = dsdpSolver->b1, *sl = dsdpSolver->sl, *su = dsdpSolver->su, *ynow = dsdpSolver->y;
-    double oldbarrier, newbarrier = 0.0, step, tmp, bound, rhon;
+    double oldbarrier, newbarrier = 0.0, step, tmp, tmp2, bound, rhon, dratemax, alphainf, drate;
     
     bound = dsdpSolver->ybound; DSDPGetDblParam(dsdpSolver, DBL_PARAM_RHON, &rhon);
     DSDP_INT ncorrector, inCone = FALSE; DSDPGetIntParam(dsdpSolver, INT_PARAM_ACORRECTOR, &ncorrector);
-    
+    dratemax = (isfinal) ? 0.0 : 0.8; // 0.6 37
     
     for (DSDP_INT i = 0, j; i < ncorrector && dsdpSolver->Ry; ++i) {
         
@@ -117,7 +118,13 @@ extern DSDP_INT dInfeasCorrectorStep( HSDSolver *dsdpSolver, DSDP_INT isfinal ) 
             }
         }
         
-        asinvSetup(dsdpSolver->M);  // Compute asinv
+        if (dratemax) {
+            arysinvSetup(dsdpSolver->M); // Compute asinv and asinvrysinv
+        } else {
+            asinvSetup(dsdpSolver->M);  // Compute asinv
+        }
+        
+        // vec_print(d4);
         
         if (prelax) {
             vec_lslack(ynow, sl, -bound); vec_uslack(ynow, su, bound);
@@ -127,7 +134,11 @@ extern DSDP_INT dInfeasCorrectorStep( HSDSolver *dsdpSolver, DSDP_INT isfinal ) 
             }
         }
         
-        dsdpCGSolve(cg, d2, NULL); // Compute corrector step
+        dsdpCGSolve(cg, d2, NULL); // Compute corrector step for centrality
+        if (dratemax) {
+            dsdpCGSolve(cg, d4, NULL); // Compute corrector step for dual infeasibility
+        }
+        
         vec_zaxpby(dycorr, 0.0, d1, -1.0, d2);
         oldbarrier = (i == 0) ? getCurrentLogdet(dsdpSolver, ynow, dsdpSolver->tau, prelax, NULL) : newbarrier;
         
@@ -145,12 +156,11 @@ extern DSDP_INT dInfeasCorrectorStep( HSDSolver *dsdpSolver, DSDP_INT isfinal ) 
             tmp = vec_step(su, dycorr, -1.0); step = MIN(tmp, step);
         }
         
-        
         if (isfinal) {
-            step = 0.9 * step; // Update Pnrm ?
+            step = MIN(step, 1.0); // Update Pnrm ?
         } else {
-            step = MIN(0.95 * step, 1.0); // Update Pnrm ?
-            step = MIN(step, rhon / dsdpSolver->Pnrm);
+            step = MIN(0.8 * step, 1.0); // Change of parameter step = MIN(0.75 * step, 1.0); // Update Pnrm ?
+            // step = MIN(step, rhon / dsdpSolver->Pnrm);
         }
         
         // Do line search
@@ -160,24 +170,83 @@ extern DSDP_INT dInfeasCorrectorStep( HSDSolver *dsdpSolver, DSDP_INT isfinal ) 
                 newbarrier = getCurrentLogdet(dsdpSolver, ynew, dsdpSolver->tau, prelax, &inCone);
                 if (!inCone) {
                     step *= 0.5; --j;
-                    if (step <= 1e-04) { break; }
+                    if (step <= 0.005) { break; }
                     continue;
                 }
             } else {
-                newbarrier = getCurrentLogdet(dsdpSolver, ynow, dsdpSolver->tau, prelax, NULL);
+                newbarrier = getCurrentLogdet(dsdpSolver, ynew, dsdpSolver->tau, prelax, NULL);
+                newbarrier = -1e+100;
             }
             
-            if (step <= 1e-04 || newbarrier <= oldbarrier || isfinal) {
+            if (step <= 0.005 || newbarrier <= oldbarrier || isfinal) {
                 break;
             } else {
                 step *= 0.5;
             }
         }
         
-        if (step <= 1e-04) { break; }
-        vec_copy(ynew, ynow); getPhaseAS(dsdpSolver, ynow->x, dsdpSolver->tau);
+        if (step <= 0.005) {
+            break;
+        }
+        
+        if (dratemax) {
+            alphainf = DSDP_INFINITY;
+            // Bite off more infeasibility. Shat is now factorized
+            vec_copy(d4, dsdpSolver->d12);
+            getPhaseAdS(dsdpSolver, 1.0, dsdpSolver->d12->x, 0.0);
+            for (j = 0; j < dsdpSolver->nBlock; ++j) {
+                dsdpGetAlpha(dsdpSolver->lczSolver[j], dsdpSolver->S[j],
+                             dsdpSolver->dS[j], dsdpSolver->spaux[j], &tmp);
+                alphainf = MIN(alphainf, tmp);
+            }
+            
+            // Check bound of y
+            tmp = DSDP_INFINITY;
+            for (j = 0; j < dsdpSolver->m; ++j) {
+                tmp2 = dsdpSolver->d12->x[j];
+                if (tmp2 == 0.0) { continue; }
+                tmp = (tmp2 > 0.0) ? MIN(tmp, (bound - ynew->x[j]) / tmp2) : MIN(tmp, (- bound - ynew->x[j]) / tmp2);
+            }
+            alphainf = MIN(alphainf, tmp);
+            drate = MIN(1.0, alphainf * dratemax / step); tmp = dsdpSolver->Ry;
+            for (inCone = FALSE; !inCone;) {
+                dsdpSolver->Ry = tmp * (1 - step * drate);
+                vec_copy(ynow, ynew);
+                vec_zaxpby(dycorr, -1.0, d2, drate, d4);
+                vec_axpy(step, dycorr, ynew);
+                
+                if (vec_infnorm(ynew) > bound) {
+                    printf("Norm of Y: %e \n", vec_infnorm(dsdpSolver->y));
+                    assert (FALSE);
+                }
+                
+                getPhaseAS(dsdpSolver, ynew->x, dsdpSolver->tau);
+                dsdpInCone(dsdpSolver, &inCone);
+                if (inCone) {
+                    break;
+                } else {
+                    drate *= 0.8;
+                }
+            }
+            
+            // printf("Reduce dual infeasibility %e \n", drate * step);
+            if (drate * step < 0.1) {
+                dratemax *= 0.9;
+            }
+            
+            if (drate * step < 5e-04) {
+                dratemax *= 0.0;
+                ncorrector = MIN(ncorrector, i + 1);
+            }
+            
+            if (drate * step > 0.3) {
+                dratemax = MIN(drate * 2.0, 0.8);
+            }
+            
+        }
+        vec_copy(ynew, ynow);
     }
-    
+
     dsdpSolver->iterProgress[ITER_CORRECTOR] = TRUE;
     return retcode;
 }

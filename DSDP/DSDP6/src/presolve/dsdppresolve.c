@@ -536,6 +536,10 @@ static DSDP_INT preSDPMatgetPScaler( HSDSolver *dsdpSolver ) {
     DSDP_INT retcode = DSDP_RETCODE_OK;
     DSDP_INT m = dsdpSolver->m;
     
+    
+    DSDPStatUpdate(&dsdpSolver->dsdpStats, STAT_ONE_NORM_B, vec_onenorm(dsdpSolver->dObj));
+    return retcode;
+    
     dsdpSolver->pScaler = (vec *) calloc(1, sizeof(vec));
     vec_init(dsdpSolver->pScaler);
     vec_alloc(dsdpSolver->pScaler, m);
@@ -849,11 +853,11 @@ extern DSDP_INT DSDPPrepareMAssembler( HSDSolver *dsdpSolver ) {
     // Initialize the internal Schur matrix structure
     DSDP_INT retcode = DSDP_RETCODE_OK;
     
-    DSDPSchur *M = dsdpSolver->M;
-    retcode = SchurMatInit(M);
-    retcode = SchurMatSetDim(M, dsdpSolver->m, dsdpSolver->nBlock);
-    retcode = SchurMatAlloc(M);
-    retcode = SchurMatRegister(M, dsdpSolver->S,
+    DSDPSymSchur *M = dsdpSolver->M;
+    retcode = symSchurMatInit(M);
+    retcode = symSchurMatSetDim(M, dsdpSolver->m, dsdpSolver->nBlock);
+    retcode = symSchurMatAlloc(M);
+    retcode = symSchurMatRegister(M, dsdpSolver->S,
                                dsdpSolver->dsaux,
                                dsdpSolver->sdpData,
                                dsdpSolver->Msdp,
@@ -911,7 +915,7 @@ extern DSDP_INT preSDPPrimal( HSDSolver *dsdpSolver ) {
     // Do matrix coefficient scaling given preScaler for the primal
     DSDP_INT retcode = DSDP_RETCODE_OK;
     retcode = preSDPMatgetPScaler(dsdpSolver); checkCode;
-    retcode = preSDPMatPScale(dsdpSolver);
+    // retcode = preSDPMatPScale(dsdpSolver);
     return retcode;
 }
 
@@ -923,8 +927,8 @@ extern DSDP_INT preSDPMatCScale( HSDSolver *dsdpSolver ) {
     
     if (dsdpSolver->cScaler > 1e+10) {
         dsdpSolver->cScaler = 1e+08;
-    } else if (dsdpSolver->cScaler > 1e+03) {
-        dsdpSolver->cScaler = 1e+03;
+    } else if (dsdpSolver->cScaler > 1e+04) {
+        dsdpSolver->cScaler = 1e+04;
     } else if (dsdpSolver->cScaler < 1e-15) {
         dsdpSolver->cScaler = 1.0;
         DSDPStatUpdate(&dsdpSolver->dsdpStats, STAT_PFEAS_PROBLEM, TRUE);

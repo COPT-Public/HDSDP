@@ -51,7 +51,7 @@ typedef struct {
 } hsdParam;
 
 static DSDP_INT defaultIntParam[NUM_INT_PARAM] = {
-    0,     // INT_PARAM_ACORRECTOR
+    4,     // INT_PARAM_ACORRECTOR
     0,     // INT_PARAM_BCORRECTOR
     INIT_METHOD_FRO,
            // INT_PARAM_INITMETHOD
@@ -72,9 +72,9 @@ static double defaultDblParam[NUM_DBL_PARAM] = {
     0.5,   // DBL_PARAM_BSIGMA
     4.0,   // DBL_PARAM_RHO
     4.0,   // DBL_PARAM_RHON
-    1e+15, // DBL_PARAM_INIT_POBJ
+    1e+10, // DBL_PARAM_INIT_POBJ
     
-    1e+02, // DBL_PARAM_INIT_BETA
+    1e+04, // DBL_PARAM_INIT_BETA
     1e+15, // DBL_PARAM_INIT_MU
     1.0, // DBL_PARAM_INIT_TAU
     

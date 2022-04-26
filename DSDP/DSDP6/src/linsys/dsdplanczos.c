@@ -1,4 +1,3 @@
-#include <assert.h>
 #include "sparsemat.h"
 #include "dsdplanczos.h"
 
@@ -67,23 +66,15 @@ static DSDP_INT lanczosFree( vec **v,  vec **w,
 }
 
 static DSDP_INT lanczositerInitalize( vec *v, double *V ) {
-    /*
-     v = v / norm(v);
-     V(:, 1) = v;
-    */
+    // v = v / norm(v); V(:, 1) = v;
     DSDP_INT retcode = DSDP_RETCODE_OK;
-    srand(v->dim);
-    double nrm = 0.0;
     
+    srand(v->dim); double nrm = 0.0;
     for (DSDP_INT i = 0; i < v->dim; ++i) {
         srand(rand());
         v->x[i] = sqrt(sqrt((rand() % 1627)));
-        v->x[i] = 1.0;
     }
-    
-    vec_norm(v, &nrm);
-    vec_rscale(v, nrm);
-    
+    vec_norm(v, &nrm); vec_rscale(v, nrm);
     // V(:, 1) = v;
     memcpy(V, v->x, sizeof(double) * v->dim);
     return retcode;
@@ -166,10 +157,7 @@ extern DSDP_INT dsdpLanczosStep( DSDPLanczos *lczSolver, spsMat *S, spsMat *dS, 
                     mataux[p] += V[p * n + q] * w->x[q];
                 }
             }
-            /*
-            dgemv(&trans, &n, &idx, &alpha, V, &n, w->x,
-                  &one, &beta, mataux, &one);
-            */
+            
             dgemv(&notrans, &n, &idx, &alpha, V, &n, mataux,
                   &one, &alpha, w->x, &one); // w = w - V(:, 1:k) * s;
             daxpy(&idx, &alpha, mataux, &one, &H[mH * k], &one); // H(1:k, k) = H(1:k, k) + s;
@@ -187,7 +175,7 @@ extern DSDP_INT dsdpLanczosStep( DSDPLanczos *lczSolver, spsMat *S, spsMat *dS, 
         }
         
         // Check convergence
-        if ( ((k + 1) % 5 == 0 || k >= maxiter - 1 ) || nrm2 == 0.0) {
+        if ( ((k + 1) % 5 == 0 || k >= maxiter - 1 ) || nrm2 == 0 ) {
             DSDP_INT kp1 = k + 1;
             // Hk = H(1:k, 1:k);
             for (DSDP_INT i = 0; i < kp1; ++i) {

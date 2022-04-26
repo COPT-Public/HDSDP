@@ -55,10 +55,13 @@ CAPBLAS  : Whether routines are given by ROUTINENAME(params) or routinename(para
 #define eigs DSYEVX_
 #define eigs2 DSYEVR_
 #define fnorm DLANSP_
+#define fullchol DPOTRF_
 #define packchol DPPTRF_
+#define fullsolve DPOTRS_
 #define packsolve DPPTRS_
+#define fullldl DSYTRF_
 #define packldl DSPTRF_
-#define ldlsolve DSPTRS_
+#define ldlsolve DSYTRS_
 
 #endif
 
@@ -89,10 +92,13 @@ CAPBLAS  : Whether routines are given by ROUTINENAME(params) or routinename(para
 #define eigs DSYEVX
 #define eigs2 DSYEVR
 #define fnorm DLANSP
+#define fullchol DPOTRF
 #define packchol DPPTRF
+#define fullsolve DPOTRS
 #define packsolve DPPTRS
+#define fullldl DSYTRF
 #define packldl DSPTRF
-#define ldlsolve DSPTRS
+#define ldlsolve DSYTRS
 
 #endif
 
@@ -123,10 +129,13 @@ CAPBLAS  : Whether routines are given by ROUTINENAME(params) or routinename(para
 #define eigs dsyevx_
 #define eigs2 dsyevr_
 #define fnorm dlansp_
+#define fullchol dpotrf_
 #define packchol dpptrf_
+#define fullsolve dpotrs_
 #define packsolve dpptrs_
+#define fullldl dsytrf_
 #define packldl dsptrf_
-#define ldlsolve dsptrs_
+#define ldlsolve dsytrs_
 
 #endif
 
@@ -157,10 +166,13 @@ CAPBLAS  : Whether routines are given by ROUTINENAME(params) or routinename(para
 #define eigs dsyevx
 #define eigs2 dsyevr
 #define fnorm dlansp
+#define fullchol dpotrf
 #define packchol dpptrf
+#define fullsolve dpotrs
 #define packsolve dpptrs
+#define fullldl dsytrf
 #define packldl dsptrf
-#define ldlsolve dsptrs
+#define ldlsolve dsytrs
 
 #endif
 
@@ -519,7 +531,26 @@ extern void eigs2( const char     *jobz,
  manner.
 */
 
-extern void packchol( const char *uplo, const DSDP_INT *n, double *ap, DSDP_INT *info );
+void fullchol ( const char     *uplo,
+                const DSDP_INT *n,
+                double         *a,
+                const DSDP_INT *lda,
+                DSDP_INT       *info );
+
+void dpotrs( const char     *uplo,
+             const DSDP_INT *n,
+             const DSDP_INT *nrhs,
+             const double   *a,
+             const DSDP_INT *lda,
+             double         *b,
+             const DSDP_INT *ldb,
+             DSDP_INT       *info );
+
+extern void packchol( const char     *uplo,
+                      const DSDP_INT *n,
+                      double         *ap,
+                      DSDP_INT       *info );
+
 extern void packsolve( const char      *uplo,
                        const DSDP_INT  *n,
                        const DSDP_INT  *nrhs,
@@ -528,20 +559,30 @@ extern void packsolve( const char      *uplo,
                        const DSDP_INT  *ldb,
                        const DSDP_INT  *info );
 
-extern void packldl( const char      *uplo,
+extern void packldl( const char     *uplo,
                     const DSDP_INT  *n,
                     double          *ap,
                     DSDP_INT        *ipiv,
                     DSDP_INT        *info );
 
+void fullldl( const char      *uplo,
+              const DSDP_INT  *n,
+              double          *a,
+              const DSDP_INT  *lda,
+              DSDP_INT        *ipiv,
+              double          *work,
+              const DSDP_INT  *lwork,
+              DSDP_INT        *info );
+
 void ldlsolve( const char      *uplo,
-             const DSDP_INT  *n,
-             const DSDP_INT  *nrhs,
-             const double    *ap,
-             const DSDP_INT  *ipiv,
-             double          *b,
-             const DSDP_INT  *ldb,
-             DSDP_INT        *info );
+               const DSDP_INT  *n,
+               const DSDP_INT  *nrhs,
+               const double    *a,
+               const DSDP_INT  *lda,
+               const DSDP_INT  *ipiv,
+               double          *b,
+               const DSDP_INT  *ldb,
+               DSDP_INT        *info );
 
 void packr1update( const char *uplo,
            const DSDP_INT *n,

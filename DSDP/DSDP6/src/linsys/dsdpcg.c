@@ -1,6 +1,6 @@
-#include <assert.h>
 #include "sparsemat.h"
 #include "densemat.h"
+#include "schurmat.h"
 #include "dsdpcg.h"
 
 static void diagPrecond( vec *P, vec *x ) {
@@ -8,13 +8,13 @@ static void diagPrecond( vec *P, vec *x ) {
     vec_vdiv(x, P); return;
 }
 
-static void cholPrecond( dsMat *P, vec *x ) {
+static void cholPrecond( schurMat *P, vec *x, vec *aux ) {
     // Cholesky preconditioning
-    assert( P->dim == x->dim );
+    assert( P->m == x->dim );
     if (!P->isFactorized) {
-        denseMatFactorize(P);
+        schurMatFactorize(P);
     }
-    denseArrSolveInp(P, 1, x->x);
+    schurMatSolve(P, 1, x->x, aux->x);
     return;
 }
 
@@ -22,7 +22,7 @@ static void preCond( CGSolver *cgSolver, vec *x ) {
     if (cgSolver->pType == CG_PRECOND_DIAG) {
         diagPrecond(cgSolver->vecPre, x);
     } else {
-        cholPrecond(cgSolver->cholPre, x);
+        cholPrecond(cgSolver->cholPre, x, cgSolver->aux);
     }
     return;
 }
@@ -54,7 +54,6 @@ extern DSDP_INT dsdpCGAlloc( CGSolver *cgSolver, DSDP_INT m ) {
     DSDP_INT retcode = DSDP_RETCODE_OK;
     
     assert( m > 0 );
-    
     cgSolver->dim   = m;
     cgSolver->r     = (vec *) calloc(1, sizeof(vec));
     cgSolver->rnew  = (vec *) calloc(1, sizeof(vec));
@@ -113,8 +112,8 @@ extern DSDP_INT dsdpCGSetMaxIter( CGSolver *cgSolver, DSDP_INT maxiter ) {
     return DSDP_RETCODE_OK;
 }
 
-extern DSDP_INT dsdpCGSetM( CGSolver *cgSolver, dsMat *M ) {
-    assert( M->dim == cgSolver->dim );
+extern DSDP_INT dsdpCGSetM( CGSolver *cgSolver, schurMat *M ) {
+    assert( M->m == cgSolver->dim );
     cgSolver->M = M;
     return DSDP_RETCODE_OK;
 }
@@ -124,7 +123,7 @@ extern DSDP_INT dsdpCGSetDPre( CGSolver *cgSolver, vec *preCond ) {
     return DSDP_RETCODE_OK;
 }
 
-extern DSDP_INT dsdpCGSetCholPre( CGSolver *cgSolver, dsMat *preCond ) {
+extern DSDP_INT dsdpCGSetCholPre( CGSolver *cgSolver, schurMat *preCond ) {
     cgSolver->cholPre = preCond;
     return DSDP_RETCODE_OK;
 }
@@ -160,8 +159,8 @@ extern DSDP_INT dsdpCGResetPreReuse( CGSolver *cgSolver ) {
 extern DSDP_INT dsdpCGprepareP( CGSolver *cgSolver ) {
     
     if (cgSolver->status == CG_STATUS_INDEFINITE) {
-        denseMatResetFactor(cgSolver->M);
-        denseMatFactorize(cgSolver->M);
+        schurMatReset(cgSolver->M, FALSE); // Clean factor
+        schurMatFactorize(cgSolver->M);
         return DSDP_RETCODE_OK;
     }
     
@@ -173,11 +172,14 @@ extern DSDP_INT dsdpCGprepareP( CGSolver *cgSolver ) {
     if (cgSolver->pType == CG_PRECOND_DIAG) {
         return DSDP_RETCODE_OK;
     } else if (cgSolver->pType == CG_PRECOND_CHOL && cgSolver->nused > cgSolver->reuse){
-        denseMatResetFactor(cgSolver->M);
-        denseMatFactorize(cgSolver->M);
+        schurMatReset(cgSolver->M, FALSE);
+        schurMatFactorize(cgSolver->M);
+        if (cgSolver->M->denseM->isillCond) {
+            cgSolver->M->isillCond = TRUE;
+        }
         dsdpCGResetPreReuse(cgSolver);
     } else {
-        if (cgSolver->M->isillCond) {
+        if (cgSolver->M->isillCond || cgSolver->M->denseM->isillCond) {
             cgSolver->status = CG_STATUS_INDEFINITE;
             return DSDP_RETCODE_OK;
         }
@@ -207,10 +209,10 @@ extern DSDP_INT dsdpCGSolve( CGSolver *cgSolver, vec *b, vec *x0 ) {
     DSDP_INT retcode = DSDP_RETCODE_OK;
     
     if (cgSolver->status == CG_STATUS_INDEFINITE) {
-        denseArrSolveInp(cgSolver->M, 1, b->x);
+        schurMatSolve(cgSolver->M, 1, b->x, cgSolver->r->x);
         return retcode;
     }
-    
+
     /* Initialize
      x = x0;
      r = b - M * x;
@@ -219,7 +221,7 @@ extern DSDP_INT dsdpCGSolve( CGSolver *cgSolver, vec *b, vec *x0 ) {
      Pinvr = P \ r;
     */
     
-    dsMat *M = cgSolver->M;
+    schurMat *M = cgSolver->M;
     vec *r = cgSolver->r, *rnew = cgSolver->rnew, *x = cgSolver->x,
         *d = cgSolver->d, *Pinvr = cgSolver->Pinvr, *Md = cgSolver->Md;
     
@@ -230,9 +232,8 @@ extern DSDP_INT dsdpCGSolve( CGSolver *cgSolver, vec *b, vec *x0 ) {
     
     if (x0) {
         // Warm start CG solver
-        vec_copy(x0, x); vec_copy(b, r);
-        denseMataAxpby(M, -1.0, x, 1.0, r);
-        vec_norm(r, &alpha); // Get initial residual
+        vec_copy(x0, x); vec_copy(b, r); schurMatMx(M, x, cgSolver->d);
+        vec_axpy(-1.0, cgSolver->d, r); vec_norm(r, &alpha); // Get initial residual
         if (alpha < 1e-06 * tol) {
             cgSolver->status = CG_STATUS_SOLVED; vec_copy(x, b);
             return retcode;
@@ -241,7 +242,13 @@ extern DSDP_INT dsdpCGSolve( CGSolver *cgSolver, vec *b, vec *x0 ) {
         vec_reset(x); vec_copy(b, r);
     }
     
-    vec_norm(r, &alpha);
+    vec_norm(r, &alpha); vec_norm(b, &resinorm);
+    
+    if (resinorm < alpha) {
+        vec_reset(x); vec_copy(b, r);
+        alpha = resinorm;
+    }
+    
     if (alpha == 0.0) {
         cgSolver->status = CG_STATUS_SOLVED;
         return retcode;
@@ -250,7 +257,8 @@ extern DSDP_INT dsdpCGSolve( CGSolver *cgSolver, vec *b, vec *x0 ) {
     alpha = MIN(100, alpha); tol = MAX(tol * alpha * 0.1, tol * 1e-01);
     
     vec_copy(r, d); preCond(cgSolver, d); // d = P \ r;
-    denseMataAxpby(M, 1.0, d, 0.0, Md); // Md = M * d;
+    
+    schurMatMx(M, d, Md); // Md = M * d;
     vec_copy(d, Pinvr); // Pinvr = P \ r;
     
     // Start CG
@@ -262,11 +270,11 @@ extern DSDP_INT dsdpCGSolve( CGSolver *cgSolver, vec *b, vec *x0 ) {
         vec_copy(rnew, Pinvr); // Pinvr = P \ rnew;
         preCond(cgSolver, Pinvr);
         vec_dot(rnew, Pinvr, &beta); // beta = rnew' * Pinvr / rTPinvr;
-        beta = beta / rTPinvr; vec_axpby(1.0, Pinvr, beta, d); // d = Pinvr + beta * d;
-        denseMataAxpby(M, 1.0, d, 0.0, Md); // Md = M * d;
+        beta = beta / rTPinvr;
+        vec_axpby(1.0, Pinvr, beta, d); // d = Pinvr + beta * d;
+        schurMatMx(M, d, Md); // Md = M * d;
         vec_copy(rnew, r); // r = rnew
-        vec_norm(r, &resinorm); // norm(r)
-        // printf("%3d %10.3e %20.10e \n", iter + 1, alpha, resinorm);
+        vec_norm(r, &resinorm); // norm(r) // printf("%3d %10.3e %20.10e \n", iter + 1, alpha, resinorm);
         if (resinorm <= tol) {
             cgSolver->status = CG_STATUS_SOLVED; break;
         }

@@ -1,5 +1,6 @@
 #include "schurmatops.h"
 #include "dsdputils.h"
+#include "schurmat.h"
 
 #define M1Threshold 0.7
 static char etype[] = "Schur matrix setup";
@@ -29,7 +30,7 @@ static DSDP_INT setupBoundYSchur( HSDSolver *dsdpSolver ) {
         return retcode;
     }
     
-    double *M = dsdpSolver->Msdp->array, *asinv = dsdpSolver->asinv->x, s = 0.0;
+    double **Mdiag = dsdpSolver->Msdp->diag, *asinv = dsdpSolver->asinv->x, s = 0.0;
     double *sl = dsdpSolver->sl->x, *su = dsdpSolver->su->x, bound = dsdpSolver->ybound;
     DSDP_INT m = dsdpSolver->m;
     
@@ -37,29 +38,26 @@ static DSDP_INT setupBoundYSchur( HSDSolver *dsdpSolver ) {
         double *u = dsdpSolver->u->x;
         double sinvsqr, csinvsuml = 0.0, csinvsumu = 0.0, cscssuml = 0.0, cscssumu = 0.0;
         
-        for (DSDP_INT i = 0, idx = 0; i < m; ++i) {
+        for (DSDP_INT i = 0; i < m; ++i) {
             // Upperbound
             s = su[i]; sinvsqr = 1.0 / (s * s);
-            M[idx] += sinvsqr; asinv[i] += 1.0 / s;
+            *Mdiag[i] += sinvsqr; asinv[i] += 1.0 / s;
             u[i] += bound * sinvsqr; csinvsumu += 1.0 / s;
             cscssumu += sinvsqr;
             // Lowerbound
             s = sl[i]; sinvsqr = 1.0 / (s * s);
-            M[idx] += sinvsqr; asinv[i] -= 1.0 / s;
+            *Mdiag[i] += sinvsqr; asinv[i] -= 1.0 / s;
             u[i] += bound * sinvsqr; csinvsuml += 1.0 / s;
             cscssuml += sinvsqr;
-            
-            idx += m - i;
         }
         
         dsdpSolver->csinv      += bound * csinvsumu - bound * csinvsuml;
         dsdpSolver->csinvcsinv += bound * bound * (cscssumu + cscssuml);
         
     } else {
-        for (DSDP_INT i = 0, idx = 0; i < m; ++i) {
-            s = su[i]; M[idx] += 1.0 / (s * s); asinv[i] += 1.0 / s;
-            s = sl[i]; M[idx] += 1.0 / (s * s); asinv[i] -= 1.0 / s;
-            idx += m - i;
+        for (DSDP_INT i = 0; i < m; ++i) {
+            s = su[i]; *Mdiag[i] += 1.0 / (s * s); asinv[i] += 1.0 / s;
+            s = sl[i]; *Mdiag[i] += 1.0 / (s * s); asinv[i] -= 1.0 / s;
         }
     }
     
@@ -70,18 +68,16 @@ static DSDP_INT schurMatPerturb( HSDSolver *dsdpSolver ) {
     
     // Perturb the Schur matrix
     DSDP_INT retcode = DSDP_RETCODE_OK;
-    DSDP_INT m = dsdpSolver->m, i;
     double perturb = 0.0, maxdiag = 0.0, iterB;
     
-    denseMatGetdiag(dsdpSolver->Msdp, dsdpSolver->Mdiag);
+    schurMatGetdiag(dsdpSolver->Msdp, dsdpSolver->Mdiag);
     DSDPGetStats(&dsdpSolver->dsdpStats, STAT_PHASE_B_ITER, &iterB);
     
     if (!dsdpSolver->eventMonitor[EVENT_INVALID_GAP]) {
         if (dsdpSolver->mu < 1e-05) { perturb += 1e-13; }
-        for (DSDP_INT i = 0; i < m; ++i) {
-            maxdiag = MAX(dsdpSolver->Mdiag->x[i], maxdiag);
-        }
+        maxdiag = vec_infnorm(dsdpSolver->Mdiag);
         dsdpSolver->Mscaler = maxdiag;
+        
         if (dsdpSolver->m < 100) {
             perturb += MIN(maxdiag * 1e-08, 1e-14);
         } else if (dsdpSolver->m < 1000) {
@@ -93,10 +89,9 @@ static DSDP_INT schurMatPerturb( HSDSolver *dsdpSolver ) {
         double invalid;
         DSDPGetStats(&dsdpSolver->dsdpStats, STAT_GAP_BROKEN, &invalid);
         if (dsdpSolver->eventMonitor[EVENT_IN_PHASE_B] && !invalid) {
-            for (i = 0; i < m; ++i) {
-                packIdx(dsdpSolver->Msdp->array, m, i, i) += perturb;
-            }
+            schurMatAdddiag(dsdpSolver->Msdp, perturb);
         }
+        schurMatGetdiag(dsdpSolver->Msdp, dsdpSolver->Mdiag);
     }
     
     return retcode;
@@ -188,7 +183,8 @@ static DSDP_INT cgSolveCheck( CGSolver *cgSolver, vec *b ) {
     
     DSDP_INT retcode = DSDP_RETCODE_OK, status;
     
-    dsdpCGStoreRHS(cgSolver, b); dsdpCGSolve(cgSolver, b, NULL);
+    dsdpCGStoreRHS(cgSolver, b);
+    dsdpCGSolve(cgSolver, b, NULL);
     dsdpCGGetStatus(cgSolver, &status);
     
     if (status != CG_STATUS_SOLVED && status != CG_STATUS_INDEFINITE) {
@@ -205,7 +201,8 @@ static DSDP_INT cgSolveCheck( CGSolver *cgSolver, vec *b ) {
             if (cgSolver->nfailed >= 50) { cgSolver->M->isillCond = TRUE;}
         }
         dsdpCGprepareP(cgSolver);
-        dsdpCGRestoreRHS(cgSolver, b); dsdpCGSolve(cgSolver, b, cgSolver->x);
+        dsdpCGRestoreRHS(cgSolver, b);
+        dsdpCGSolve(cgSolver, b, cgSolver->x);
         // dsdpCGGetStatus(cgSolver, &status);
     }
     
@@ -226,10 +223,10 @@ static DSDP_INT setupSDPCones( HSDSolver *dsdpSolver ) {
             checkCode;
         }
     } else {
-        for (DSDP_INT i = 0; i < nblock; ++i) {
-            retcode = spsMatFactorize(dsdpSolver->S[i]);
-            checkCode;
-        }
+//        for (DSDP_INT i = 0; i < nblock; ++i) {
+//            retcode = spsMatFactorize(dsdpSolver->S[i]);
+//            checkCode;
+//        }
     }
     return retcode;
 }
@@ -287,11 +284,31 @@ extern DSDP_INT schurPhaseBMatSolve( HSDSolver *dsdpSolver ) {
     return retcode;
 }
 
+extern void schurMatPrint( schurMat *sMat ) {
+    if (sMat->stype == SCHUR_TYPE_DENSE) {
+        for (DSDP_INT i = 0, j; i < sMat->m; ++i) {
+            for (j = 0; j < sMat->m; ++j) {
+                printf("%6.3e, ", fullIdx(sMat->denseM->array, sMat->m, i, j));
+            }
+            printf("\n");
+        }
+    }
+}
+
+/*
+ 
+ parray 10 dsdpSolver->Msdp->denseM->array
+ 
+ 
+ */
 extern DSDP_INT setupSchur( HSDSolver *dsdpSolver ) {
     // Setup the schur matrix Msdp and some of the temporary arrays
     DSDP_INT retcode = DSDP_RETCODE_OK;
     
     setupSDPSchur(dsdpSolver);
+#ifdef compareMode
+        assert( TRUE );
+#endif
     vec_copy(dsdpSolver->asinv, dsdpSolver->d12);
     setupBoundYSchur(dsdpSolver);
     dsdpSolver->iterProgress[ITER_SCHUR] = TRUE;
@@ -312,5 +329,8 @@ extern DSDP_INT setupSchur( HSDSolver *dsdpSolver ) {
         retcode = schurPhaseBMatSolve(dsdpSolver);
     }
     
+#ifdef compareMode
+        assert( TRUE );
+#endif
     return retcode;
 }

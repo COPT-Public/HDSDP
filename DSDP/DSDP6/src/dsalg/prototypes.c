@@ -6,6 +6,85 @@
 static char etype[] = "Prototype methods";
 /* Recording prototype methods that are no longer in use */
 
+extern DSDP_INT dsdpGetAlphaLS( spsMat *S, spsMat *dS, spsMat *Scker,
+                                double alphamax, double *alpha, DSDP_INT *sumHash ) {
+    // Get the maximum alpha such that S + alpha * dS is PSD by line-search
+    DSDP_INT retcode = DSDP_RETCODE_OK;
+    
+    double step = 1 / alphamax, *src = NULL;
+    DSDP_INT ispsd = FALSE;
+    spsMat *buffer = NULL;
+    
+    if (Scker) {
+        src = Scker->x; buffer = Scker;
+    } else {
+        assert( FALSE );
+        src = (double *) calloc(S->nnz, sizeof(double));
+        memcpy(src, S->x, sizeof(double) * S->nnz); buffer = S;
+    }
+    
+    for (DSDP_INT i = 0; ; ++i) {
+        if (step <= 1e-05) {
+            *alpha = 0.0; break;
+        }
+        memcpy(src, S->x, sizeof(double) * S->nnz);
+        spsMataXpbY(step, dS, 1.0, buffer, sumHash); spsMatIspd(buffer, &ispsd);
+        if (ispsd) { *alpha = step; break; }
+        step *= 0.8;
+    }
+
+    if (!Scker) { DSDP_FREE(src); }
+    return retcode;
+}
+
+static DSDP_INT packFactorize( dsMat *S ) {
+    
+    /* Factorize the dsMat matrix */
+    DSDP_INT retcode = DSDP_RETCODE_OK;
+    if (S->isFactorized) {
+        error(etype, "Matrix is already factorized. \n");
+    }
+    
+    DSDP_INT n = S->dim, info = 0; char uplo = DSDP_MAT_LOW;
+    memcpy(S->lfactor, S->array, sizeof(double) * nsym(n));
+    
+    if (!S->isillCond) {
+        packchol(&uplo, &n, S->lfactor, &info);
+        if (info > 0) {
+            S->isillCond = TRUE;
+            packldl(&uplo, &n, S->lfactor, S->ipiv, &info);
+        }
+    } else {
+        packldl(&uplo, &n, S->lfactor, S->ipiv, &info);
+    }
+    
+    if (info < 0) {
+        error(etype, "Illegal value detected in packed dense format. \n");
+    }
+    
+    S->isFactorized = TRUE;
+    return retcode;
+}
+
+static DSDP_INT packSolve( dsMat *S, DSDP_INT nrhs, double *B, double *X ) {
+    /* Solve the linear system S * X = B using Lapack packed format */
+    DSDP_INT retcode = DSDP_RETCODE_OK;
+    char uplo = DSDP_MAT_LOW;
+    DSDP_INT n = S->dim, ldb = S->dim, info = 0;
+    
+    // Copy solution data
+    memcpy(X, B, sizeof(double) * nrhs * n);
+    if (S->isillCond) {
+        ldlsolve(&uplo, &n, &nrhs, S->lfactor, S->ipiv, X, &ldb, &info);
+    } else {
+        packsolve(&uplo, &n, &nrhs, S->lfactor, X, &ldb, &info);
+    }
+    if (info < 0) {
+        error(etype, "Packed linear system solution failed. \n");
+    }
+    return retcode;
+}
+
 static DSDP_INT isConstant( HSDSolver *dsdpSolver, DSDP_INT *isConstant ) {
     // Check whether C is a constant
     DSDP_INT retcode = DSDP_RETCODE_OK;

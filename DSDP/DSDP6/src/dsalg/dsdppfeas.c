@@ -79,8 +79,9 @@ extern DSDP_INT DSDPPFeasPhase( HSDSolver *dsdpSolver ) {
         retcode = setupSchur(dsdpSolver); checkCode;
         
         // Decrease primal objective via golden search
-        if (usegold) {
+        if (usegold && dsdpSolver->mu < 1e+07) {
             retcode = searchpObj(dsdpSolver, &approxpObj);
+            approxpObj = MAX(dsdpSolver->pObjVal * 0.3, approxpObj);
             dsdpSolver->pObjVal = MIN(dsdpSolver->pObjVal, approxpObj);
         }
 
@@ -88,7 +89,7 @@ extern DSDP_INT DSDPPFeasPhase( HSDSolver *dsdpSolver ) {
         retcode = dsdpgetPhaseBProxMeasure(dsdpSolver, &muub, &mulb); checkCode;
         
         // Select new mu
-        if (dsdpSolver->mu > 1e-12 && i <= 480) {
+        if (dsdpSolver->mu > 1e-10 && i <= 480) {
             retcode = selectMu(dsdpSolver, &newmu); checkCode;
             newmu = MIN(newmu, muub); newmu = MAX(newmu, mulb);
             dsdpSolver->mu = newmu;

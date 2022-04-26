@@ -14,8 +14,13 @@
 #undef superDebug
 #endif
 
-// #define compareMode
+//#define compareMode
 
+#ifdef RELEASE
+#define assert(x) if (!(x)) { printf("Fatal error. \n"); exit(0); };
+#else
+#include <assert.h>
+#endif
 
 //#define superDebug
 
@@ -104,7 +109,7 @@ typedef int DSDP_INT;
 #define DSDP_ATTEMPT_AGG        108
 
 #define VERSION_MAJOR           0
-#define VERSION_MINOR           3
+#define VERSION_MINOR           4
 #define VERSION_TECHNICAL       0
 
 #endif /* dsdphsd_h */

@@ -64,6 +64,7 @@ static void initparams( HSDSolver *dsdpSolver ) {
     // TODO: Adjust solver parameter based on problem features
     
     double dblparam, stats; DSDP_INT intparam;
+    dsdpSolver->pObjVal = 1e+10;
     
     // Adjust bound on the y variable. Set it to the initial value
     DSDPGetDblParam(dsdpSolver, DBL_PARAM_PRLX_PENTALTY, &dblparam);
@@ -94,51 +95,57 @@ static void initparams( HSDSolver *dsdpSolver ) {
     DSDPGetIntParam(dsdpSolver, INT_PARAM_BCORRECTOR, &nusercorr);
     
     if ((TRUE)) {
-        if (n >= 2 * m) {
+        if (n >= 5 * m) {
             nusercorr = MIN(nusercorr, 0);
-            ncorrA = 2;
-        } else if (n >= 1.5 * m) {
-            nusercorr = MIN(nusercorr, 2);
-            ncorrA = 4;
-        } else {
             ncorrA = 8;
+        } else if (n >= 2 * m) {
+            nusercorr = MIN(nusercorr, 2);
+            ncorrA = 10;
+        } else {
+            ncorrA = 12;
         }
         
         if (m > 20 * n) {
             nusercorr = MAX(nusercorr, 12);
-            ncorrA = 6;
         } else if (m > 5 * n) {
             nusercorr = MAX(nusercorr, 10);
-            ncorrA = 4;
         } else if (m > 2 * n) {
             nusercorr = MAX(nusercorr, 8);
-            ncorrA = 2;
         }
         nusercorr = MIN(nusercorr, 12);
     }
     
+    ncorrA = MAX(ncorrA, 8);
     
-    DSDPSetIntParam(dsdpSolver, INT_PARAM_ACORRECTOR, 1);
+    double ds;
+    DSDPGetStats(&dsdpSolver->dsdpStats, STAT_NUM_DENSE_MAT, &ds);
+    if (ds > 0.7 * dsdpSolver->nBlock * dsdpSolver->m) {
+        ncorrA = 1;
+    }
+    DSDPSetIntParam(dsdpSolver, INT_PARAM_ACORRECTOR, ncorrA);
     DSDPSetIntParam(dsdpSolver, INT_PARAM_BCORRECTOR, nusercorr);
     
-    printf("| Corrector A: %d  Corrector B: %d \n", ncorrA, nusercorr);
-    // Conditions for using conservative HSD start and bound
-    // Conditions for using aggressive dual infeasibility elimination scheme and fixed bound
-}
-
-static void adjpObj( HSDSolver *dsdpSolver ) {
-    // Adjust primal objecive
-    double pObj = dsdpSolver->pObjVal;
-    if (pObj > 1e+10) {
-        pObj *= 1.1;
-    } else if (pObj < -1e+05) {
-        pObj += 1e+03;
-    } else if (pObj < 0) {
-        pObj *= 0.5;
+    // Some other heuristics
+    if (dsdpSolver->nBlock == 1) {
+        double bnrm;
+        DSDPGetStats(&dsdpSolver->dsdpStats, STAT_ONE_NORM_B, &bnrm);
+        if (bnrm <= 10.0) {
+            dsdpSolver->ybound = 1e+04;
+            DSDPSetDblParam(dsdpSolver, DBL_PARAM_INIT_BETA, 1e+02);
+        }
+        
+        if (dsdpSolver->m >= dsdpSolver->n * 4) {
+            if (bnrm >= 1e+04 && dsdpSolver->m >= 3000) {
+                dsdpSolver->ybound = 1e+04;
+            }
+        }
     }
     
-    pObj = MAX(1e+15, pObj);
-    dsdpSolver->pObjVal = pObj;
+    if (fabs((double) dsdpSolver->n / dsdpSolver->m - 1.25) < 0.05) {
+        dsdpSolver->ybound = 1e+04;
+    }
+    
+    printf("| Corrector A: %d  Corrector B: %d \n", ncorrA, nusercorr);
 }
 
 extern DSDP_INT dsdpInitializeA( HSDSolver *dsdpSolver ) {
@@ -147,9 +154,11 @@ extern DSDP_INT dsdpInitializeA( HSDSolver *dsdpSolver ) {
     DSDP_INT retcode = DSDP_RETCODE_OK;
     
     inity(dsdpSolver);  initkappatau(dsdpSolver);
-    initmu(dsdpSolver); initresi(dsdpSolver);
-    initparams(dsdpSolver);
+    initmu(dsdpSolver); initparams(dsdpSolver);
+    initresi(dsdpSolver);
+    
     dsdpSolver->nall = dsdpSolver->n + dsdpSolver->m * 2;
+    dsdpSolver->mu = (dsdpSolver->pObjVal - dsdpSolver->dObjVal - dsdpSolver->Ry * 1e+10) / dsdpSolver->nall;
     dsdpSolver->Pnrm = DSDP_INFINITY;
     
     printf("| DSDP is initialized with Ry = %3.3e * I %52s\n", dsdpSolver->Ry, "");
@@ -187,7 +196,7 @@ extern DSDP_INT dsdpInitializeB( HSDSolver *dsdpSolver ) {
     if (!pfeas) {
         tmp = vec_infnorm(dsdpSolver->y);
         if (tmp > 1e+07) {
-            dsdpSolver->ybound = 1.5 * tmp;
+            tmp = 1.5 * tmp;
         } else if (tmp > 1e+05) {
             tmp = MIN(tmp * 10, 1e+07);
         } else if (tmp > 1e+03) {
@@ -197,7 +206,7 @@ extern DSDP_INT dsdpInitializeB( HSDSolver *dsdpSolver ) {
         } else {
             tmp = MIN(tmp * 1000, 1e+04);
         }
-        dsdpSolver->ybound = tmp;
+        dsdpSolver->ybound = MIN(dsdpSolver->ybound, tmp);
     }
 
     printf("| Primal relaxation penalty is set to %10.3e \n", dsdpSolver->ybound);
@@ -222,18 +231,14 @@ extern DSDP_INT dsdpInitializeB( HSDSolver *dsdpSolver ) {
             
         case DSDP_PD_FEASIBLE:
             // mu = min((pObj - dObj) / rho, muPrimal)
-            if (pfeas) {
-                dsdpSolver->pObjVal = 0.0;
-            }
-            
-            dsdpSolver->mu = MIN((dsdpSolver->pObjVal - dsdpSolver->dObjVal) / rho, dsdpSolver->mu);
+            dsdpSolver->mu = MIN((dsdpSolver->pObjVal - dsdpSolver->dObjVal) / (rho * dsdpSolver->nall), dsdpSolver->mu);
             printf("| DSDP Phase B starts. Restarting dual-scaling %51s \n", "");
             break;
         case DSDP_PUNKNOWN_DFEAS:
             if (pfeas) {
                 dsdpSolver->pObjVal = 0.0;
             }
-            // pObj  = max(dsdpParam{5}, dObj + dsdpParam{5} / 10);
+            
             dsdpSolver->pObjVal = MAX(initpObj, dsdpSolver->dObjVal + 0.1 * initpObj);
             dsdpSolver->mu = (dsdpSolver->pObjVal - dsdpSolver->dObjVal) / rho;
             printf("| DSDP Phase B starts. "

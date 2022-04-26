@@ -1,5 +1,6 @@
 #include "dsdppsol.h"
 #include "dsdputils.h"
+#include "dsdplog.h"
 
 static char etype[] = "Primal solution extraction";
 
@@ -14,7 +15,7 @@ extern DSDP_INT computePrimalX( HSDSolver *dsdpSolver ) {
     double mumaker = dsdpSolver->mumaker;
     double *Xtmp = NULL;
     
-    clock_t start = clock();
+    double start = my_clock();
     
     // getPhaseBS(dsdpSolver, dsdpSolver->y->x);
     // Smaker = C - dsdpgetATy(A, ymaker);
@@ -53,7 +54,7 @@ extern DSDP_INT computePrimalX( HSDSolver *dsdpSolver ) {
     }
     
     DSDPStatUpdate(&dsdpSolver->dsdpStats, STAT_GET_X_TIME,
-                   (double) (clock() - start) / CLOCKS_PER_SEC);
+                   my_clock() - start);
     
     return retcode;
 }
@@ -72,6 +73,7 @@ extern DSDP_INT computeDIMACS( HSDSolver *dsdpSolver ) {
     DSDPGetStats(stat, STAT_ONE_NORM_B, &bnrm);
     
     vec_dot(dsdpSolver->dObj, dsdpSolver->y, &dObj);
+    dObj *= dsdpSolver->cScaler;
     
     /*  DIMACS Error 1    */
     pInf = 0.0;
@@ -101,14 +103,13 @@ extern DSDP_INT computeDIMACS( HSDSolver *dsdpSolver ) {
             trace += tmp;
         }
         tmp = dsdpSolver->dObj->x[i] - trace;
-        if (fabs(tmp) > 0.1) {
-            
-        }
         pInf += tmp * tmp;
     }
     
+    pInf = sqrt(pInf);
+    
     /*  DIMACS Error 3    */
-    dInf = 0.0;
+    dInf = sqrt(dsdpSolver->n) * dsdpSolver->dperturb;
     
     pObj = 0.0; tmp = 0.0;
     for (DSDP_INT i = 0; i < nblock; ++i) {
@@ -135,6 +136,7 @@ extern DSDP_INT computeDIMACS( HSDSolver *dsdpSolver ) {
         pObj += tmp;
     }
     
+    pObj *= dsdpSolver->cScaler;
     
     /* DIMACS Error 4     */
     minEigX = DSDP_INFINITY;
@@ -152,6 +154,7 @@ extern DSDP_INT computeDIMACS( HSDSolver *dsdpSolver ) {
         denseSpsTrace(dsdpSolver->dsaux[i], dsdpSolver->S[i], &tmp);
         compslack += tmp;
     }
+    compslack *= dsdpSolver->cScaler;
     
     /*  DIMACS Error 2    */
     minEigS = DSDP_INFINITY;
@@ -167,8 +170,8 @@ extern DSDP_INT computeDIMACS( HSDSolver *dsdpSolver ) {
     // Collect errors
     DSDPStatUpdate(stat, STAT_DIMACS_ERR1, pInf / (1 + bnrm));
     DSDPStatUpdate(stat, STAT_DIMACS_ERR2, MAX(0.0, -minEigX) / (1 + bnrm));
-    DSDPStatUpdate(stat, STAT_DIMACS_ERR3, 0.0);
-    DSDPStatUpdate(stat, STAT_DIMACS_ERR4, MAX(0.0, -minEigS) / (1 + Cnrm));
+    DSDPStatUpdate(stat, STAT_DIMACS_ERR3, dInf * Cnrm / (1 + Cnrm));
+    DSDPStatUpdate(stat, STAT_DIMACS_ERR4, MAX(0.0, -minEigS) * dsdpSolver->cScaler / (1 + Cnrm));
     DSDPStatUpdate(stat, STAT_DIMACS_ERR5, gap / (1 + fabs(pObj) + fabs(dObj)));
     DSDPStatUpdate(stat, STAT_DIMACS_ERR6, compslack / (1 + fabs(pObj) + fabs(dObj)));
                    

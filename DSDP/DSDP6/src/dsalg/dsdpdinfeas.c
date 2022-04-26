@@ -9,8 +9,6 @@
 #include "dsdpcorrector.h"
 #include "dsdplog.h"
 
-#define timer printf("Elapsed Time %g \n", (double) (clock() - start) / CLOCKS_PER_SEC)
-
 // Implement the phase A of the dual scaling algorithm: Dual infeasibility elimination
 static char etype[] = "DSDP Dual infeasibility elimination";
 
@@ -98,8 +96,8 @@ extern DSDP_INT DSDPDInfeasEliminator( HSDSolver *dsdpSolver ) {
         
         if (goOn) {
             if (i >= 1) {
-                dsdpSolver->ybound = (dsdpSolver->ybound == DSDP_INFINITY) ? 1e+07 * dsdpSolver->tau : dsdpSolver->ybound;
-                DSDPSetIntParam(dsdpSolver, INT_PARAM_ACORRECTOR, 8);
+                dsdpSolver->ybound = (dsdpSolver->ybound == DSDP_INFINITY) ? 1e+05 * dsdpSolver->tau : dsdpSolver->ybound;
+                DSDPSetIntParam(dsdpSolver, INT_PARAM_ACORRECTOR, 2);
                 retcode = dInfeasCorrectorStep(dsdpSolver, TRUE); checkCode;
             }
             break;
@@ -107,32 +105,54 @@ extern DSDP_INT DSDPDInfeasEliminator( HSDSolver *dsdpSolver ) {
         
         // Factorize dual matrices
         retcode = setupFactorize(dsdpSolver); checkCode;
+
+#ifdef compareMode
+        assert( TRUE );
+#endif
+        
         // Set up Schur matrix and solve the system
         retcode = setupSchur(dsdpSolver);
         
         // Get proximity and check primal feasibility
-        for (DSDP_INT j = 0; j < ntry; ++j) {
-            trymu = newmu[j] * muprimal;
-            retcode = dsdpgetPhaseAProxMeasure(dsdpSolver, trymu); checkCode;
-            if (dsdpSolver->eventMonitor[EVENT_PFEAS_FOUND]) {
-                muprimal = trymu; break;
-            }
+        trymu = muprimal;
+        retcode = dsdpgetPhaseAProxMeasure(dsdpSolver, trymu); checkCode;
+        if (dsdpSolver->eventMonitor[EVENT_PFEAS_FOUND]) {
+            muprimal = trymu;
         }
         trymu = (dsdpSolver->pObjVal - dsdpSolver->dObjVal -
-                 dsdpSolver->Ry * 1e+06) / (5.0 * dsdpSolver->nall);
-        dsdpSolver->mu = MAX(dsdpSolver->mu * 0.5, trymu);
+                 dsdpSolver->Ry * 1e+10) / (5.0 * dsdpSolver->nall);
+        
+        
+        if (dsdpSolver->Pnrm < 5) {
+            dsdpSolver->mu = MAX(dsdpSolver->mu * 0.01, trymu);
+        } else if (dsdpSolver->mu < 10) {
+            dsdpSolver->mu = MAX(dsdpSolver->mu * 0.1, trymu);
+        } else {
+            dsdpSolver->mu = MAX(dsdpSolver->mu * 0.95, trymu);
+        }
+        
         
         dsdpSolver->iterProgress[ITER_PROX_POBJ] = TRUE;
         // Adaptive dual infeasibility
+#ifdef compareMode
+        assert( TRUE );
+#endif
         retcode = computeAdaptivedRate(dsdpSolver); checkCode;
         // Setup directions
         retcode = getStepDirs(dsdpSolver); checkCode;
+        dsdpSolver->iterProgress[ITER_STEP_DIRECTION] = TRUE;
         // Compute maximum available stepsize
         retcode = getMaxStep(dsdpSolver); checkCode;
+        dsdpSolver->iterProgress[ITER_COMPUTE_STEP] = TRUE;
         // Compute residual
         retcode = setupRes(dsdpSolver); checkCode;
+        dsdpSolver->iterProgress[ITER_RESIDUAL] = TRUE;
         // Take step
         retcode = takeStep(dsdpSolver); checkCode;
+        dsdpSolver->iterProgress[ITER_TAKE_STEP] = TRUE;
+#ifdef compareMode
+        assert( TRUE );
+#endif
         // Corrector
         retcode = dInfeasCorrectorStep(dsdpSolver, FALSE); checkCode;
 

@@ -6,6 +6,7 @@
 #include "sparsemat.h"
 #include "densemat.h"
 #include "rankonemat.h"
+#include "schurmat.h"
 #include "dsdppresolve.h"
 #include "dsdpparam.h"
 #include "dsdpsolver.h"
@@ -155,7 +156,7 @@ static DSDP_INT DSDPIAlloc( HSDSolver *dsdpSolver ) {
     dsdpSolver->lczSolver = (DSDPLanczos **) calloc(nblock, sizeof(DSDPLanczos *));
     dsdpSolver->lpData    = (lpMat    *) calloc(1,      sizeof(lpMat   ));
     dsdpSolver->lpObj     = (vec      *) calloc(1,      sizeof(vec     ));
-    dsdpSolver->M         = (DSDPSchur*) calloc(1,      sizeof(DSDPSchur));
+    dsdpSolver->M         = (DSDPSymSchur*) calloc(1,      sizeof(DSDPSymSchur));
     dsdpSolver->cgSolver  = (CGSolver *) calloc(1,      sizeof(CGSolver));
     dsdpSolver->isSDPset  = (DSDP_INT *) calloc(nblock, sizeof(DSDP_INT));
     
@@ -223,16 +224,15 @@ static DSDP_INT DSDPIAllocIter( HSDSolver *dsdpSolver ) {
     vec_init_alloc(dsdpSolver->asinvrysinv, m);
     
     // Allocate Msdp
-    dsIter = (dsMat *) calloc(1, sizeof(dsMat));
-    dsdpSolver->Msdp = dsIter;
-    retcode = denseMatInit(dsIter); checkCode;
-    retcode = denseMatAlloc(dsIter, m, TRUE); checkCode;
+    dsdpSolver->Msdp = (schurMat *) calloc(1, sizeof(schurMat));
+    schurMatInit(dsdpSolver->Msdp);
+    retcode = schurMatAlloc(dsdpSolver->Msdp, m); checkCode;
     
     // Allocate CG solver
     retcode = dsdpCGAlloc(dsdpSolver->cgSolver, m);
     retcode = dsdpCGSetTol(dsdpSolver->cgSolver, 1e-05);
     retcode = dsdpCGSetPreReuse(dsdpSolver->cgSolver, CGreuse);
-    retcode = dsdpCGSetM(dsdpSolver->cgSolver, dsIter);
+    retcode = dsdpCGSetM(dsdpSolver->cgSolver, dsdpSolver->Msdp);
     retcode = dsdpCGSetCholPre(dsdpSolver->cgSolver, dsdpSolver->Msdp);
     
     // Allocate Mdiag, u, b1, b2, d1, d12, d2, d3 and d4
@@ -365,7 +365,7 @@ static DSDP_INT DSDPIFreeAlgIter( HSDSolver *dsdpSolver ) {
     vec_free(dsdpSolver->x); DSDP_FREE(dsdpSolver->x);
     vec_free(dsdpSolver->asinv); DSDP_FREE(dsdpSolver->asinv);
     vec_free(dsdpSolver->asinvrysinv); DSDP_FREE(dsdpSolver->asinvrysinv);
-    denseMatFree(dsdpSolver->Msdp); DSDP_FREE(dsdpSolver->Msdp);
+    schurMatFree(dsdpSolver->Msdp); DSDP_FREE(dsdpSolver->Msdp);
     dsdpCGFree(dsdpSolver->cgSolver); DSDP_FREE(dsdpSolver->cgSolver);
     vec_free(dsdpSolver->Mdiag); DSDP_FREE(dsdpSolver->Mdiag);
     
@@ -423,7 +423,7 @@ static DSDP_INT DSDPIFreeAlgIter( HSDSolver *dsdpSolver ) {
     DSDP_FREE(dsdpSolver->pScaler); DSDP_FREE(dsdpSolver->ymaker);
     DSDP_FREE(dsdpSolver->dymaker);
     
-    SchurMatFree(dsdpSolver->M); DSDP_FREE(dsdpSolver->M);
+    symSchurMatFree(dsdpSolver->M); DSDP_FREE(dsdpSolver->M);
     
     return retcode;
 }
@@ -467,7 +467,7 @@ static DSDP_INT DSDPIPresolve( HSDSolver *dsdpSolver ) {
     // Do presolve
     DSDP_INT retcode = DSDP_RETCODE_OK;
     DSDPStats *stat = &dsdpSolver->dsdpStats;
-    clock_t start = clock(), center;
+    double start = my_clock(), center;
     double t = 0.0;
     
     assert( dsdpSolver->insStatus == DSDP_STATUS_SET );
@@ -478,51 +478,52 @@ static DSDP_INT DSDPIPresolve( HSDSolver *dsdpSolver ) {
     dsdpshowdash();
     printf("| Start presolving                          "
            "                                                        \n");
-    center = clock();
+    center = my_clock();
     retcode = preRank1Rdc(dsdpSolver); checkCode;
-    t = (double) (clock() - center) / CLOCKS_PER_SEC;
+    t = my_clock() - center;
     printf("| - Rank one detection completes in %g seconds \n", t);
     DSDPStatUpdate(stat, STAT_RONE_TIME, t);
     
-    center = clock();
+    center = my_clock();
     retcode = preRankkRdc(dsdpSolver); checkCode;
-    t = (double) (clock() - center) / CLOCKS_PER_SEC;
+    t = my_clock() - center;
     printf("| - Eigen decomposition completes in %g seconds \n", t);
     DSDPStatUpdate(stat, STAT_EIG_TIME, t);
     
-    center = clock();
+    center = my_clock();
 #ifndef compareMode
-//     retcode = preSDPPrimal(dsdpSolver); checkCode;
+    retcode = preSDPPrimal(dsdpSolver); checkCode;
     retcode = preSDPMatCScale(dsdpSolver);
     // retcode = preSDPDual(dsdpSolver); checkCode;
 #else
     dsdpSolver->cScaler = 1.0;
 #endif
-    t = (double) (clock() - center) / CLOCKS_PER_SEC;
+    t = my_clock() - center;
     printf("| - Scaling completes in %g seconds \n", t);
     DSDPStatUpdate(stat, STAT_SCAL_TIME, t);
     
-    center = clock();
+    center = my_clock();
     retcode = getMatIdx(dsdpSolver); checkCode;
-    t = (double) (clock() - center) / CLOCKS_PER_SEC;
+    t = my_clock() - center;
     printf("| - Matrix statistics ready in %g seconds \n", t);
     DSDPStatUpdate(stat, STAT_MATSTAT_TIME, t);
     
-    center = clock();
+    center = my_clock();
     retcode = preSymbolic(dsdpSolver); checkCode;
-    t = (double) (clock() - center) / CLOCKS_PER_SEC;
+    t = my_clock() - center;
     printf("| - Dual symbolic check completes in %g seconds \n", t);
     DSDPStatUpdate(stat, STAT_SYMBOLIC_TIME, t);
     
-    center = clock();
+    center = my_clock();
     retcode = DSDPPrepareMAssembler(dsdpSolver); checkCode;
+    retcode = DSDPCheckSchurType(dsdpSolver->M); checkCode;
     retcode = DSDPSchurReorder(dsdpSolver->M); checkCode;
-    t = (double) (clock() - center) / CLOCKS_PER_SEC;
+    t = my_clock() - center;
     printf("| - Schur matrix re-ordering completes in %g seconds \n", t);
     DSDPStatUpdate(stat, STAT_SCHURORD_TIME, t);
     
     dsdpSolver->insStatus = DSDP_STATUS_PRESOLVED;
-    t = (double) (clock() - start) / CLOCKS_PER_SEC;
+    t = my_clock() - start;
     retcode = DSDPStatUpdate(stat, STAT_PRESOLVE_TIME, t);
     printf("| Presolve Ends. Elapsed Time: %10.3e. \n", t);
     
@@ -532,7 +533,7 @@ static DSDP_INT DSDPIPresolve( HSDSolver *dsdpSolver ) {
 static DSDP_INT DSDPIPostsolve( HSDSolver *dsdpSolver ) {
     
     DSDP_INT retcode = DSDP_RETCODE_OK;
-    clock_t start = clock();
+    double start = my_clock();
     
     if (dsdpSolver->solStatus != DSDP_OPTIMAL || !dsdpSolver->pScaler) {
         return retcode;
@@ -550,7 +551,7 @@ static DSDP_INT DSDPIPostsolve( HSDSolver *dsdpSolver ) {
     }
     
     DSDPStatUpdate(&dsdpSolver->dsdpStats, STAT_POSTSOLVE_TIME,
-                   (double) (clock() - start) / CLOCKS_PER_SEC);
+                   my_clock() - start);
     
     return retcode;
 }

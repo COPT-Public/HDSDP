@@ -10,7 +10,7 @@ static char etype[] = "DSDP Utility";
 extern void invertDualVars( HSDSolver *dsdpSolver ) {
     // Compute inverse of the dual matrix when M3, M4 or M5 techniques are used
     // Also used if corrector is being computed
-    DSDPSchur *M = dsdpSolver->M;
+    DSDPSymSchur *M = dsdpSolver->M;
     for (DSDP_INT i = 0; i < M->nblock; ++i) {
         spsMatInverse(M->S[i], M->Sinv[i], M->schurAux);
     }

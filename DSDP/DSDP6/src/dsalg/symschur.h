@@ -9,10 +9,6 @@
 #include "dsdpdata.h"
 #include "structs.h"
 
-#define NOT_READY
-#define SPARSE_READY
-#define DENSE_READY
-
 #define SCHUR_M1 1
 #define SCHUR_M2 2
 #define SCHUR_M3 3
@@ -36,7 +32,7 @@ typedef struct {
     
     sdpMat   **Adata; // Data arrays
     double   *Ry;     // Dual infeasibility
-    dsMat    *M;      // Schur matrix
+    schurMat *M;      // Schur matrix
     
     // Auxiliary
     DSDP_INT *phaseA;  // Which phase DSDP is in
@@ -53,25 +49,26 @@ typedef struct {
     DSDP_INT *useTwo;   // Only two strategies used ?
     DSDP_INT *buildhsd; // Is HSD being used ?
     
-} DSDPSchur;
+} DSDPSymSchur;
 
 
 #ifdef __cplusplus
 extern "C" {
 #endif
 
-extern DSDP_INT SchurMatInit    ( DSDPSchur *M );
-extern DSDP_INT SchurMatSetDim  ( DSDPSchur *M, DSDP_INT m, DSDP_INT nblock );
-extern DSDP_INT SchurMatAlloc   ( DSDPSchur *M );
-extern DSDP_INT SchurMatRegister( DSDPSchur *M, spsMat **S, dsMat **B, sdpMat **Adata, dsMat *Msdp,
-                                  vec *asinv, vec *asinvrysinv, vec *asinvcsinv, double *csinvrysinv,
-                                  double *csinv, double *csinvcsinv, double *rysinv, double *Ry,
-                                  rkMat **rkaux,
-                                  DSDP_INT *phaseA, DSDP_INT *buildHsd );
-extern DSDP_INT SchurMatFree    ( DSDPSchur *M );
-extern DSDP_INT DSDPSchurReorder( DSDPSchur *M );
-extern DSDP_INT DSDPSchurSetup  ( DSDPSchur *M );
-extern DSDP_INT asinvSetup      ( DSDPSchur *M );
+extern DSDP_INT symSchurMatInit    ( DSDPSymSchur *M );
+extern DSDP_INT symSchurMatSetDim  ( DSDPSymSchur *M, DSDP_INT m, DSDP_INT nblock );
+extern DSDP_INT symSchurMatAlloc   ( DSDPSymSchur *M );
+extern DSDP_INT symSchurMatRegister( DSDPSymSchur *M, spsMat **S, dsMat **B, sdpMat **Adata, schurMat *Msdp,
+                                     vec *asinv, vec *asinvrysinv, vec *asinvcsinv, double *csinvrysinv,
+                                     double *csinv, double *csinvcsinv, double *rysinv, double *Ry,
+                                     rkMat **rkaux, DSDP_INT *phaseA, DSDP_INT *buildHsd );
+extern DSDP_INT symSchurMatFree    ( DSDPSymSchur *M );
+extern DSDP_INT DSDPSchurReorder   ( DSDPSymSchur *M );
+extern DSDP_INT DSDPCheckSchurType ( DSDPSymSchur *M );
+extern DSDP_INT DSDPSchurSetup     ( DSDPSymSchur *M );
+extern DSDP_INT asinvSetup         ( DSDPSymSchur *M );
+extern DSDP_INT arysinvSetup       ( DSDPSymSchur *M );
 
 #ifdef __cplusplus
 }

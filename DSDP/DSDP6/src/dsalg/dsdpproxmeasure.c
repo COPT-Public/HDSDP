@@ -9,12 +9,13 @@ extern DSDP_INT dsdpgetPhaseAProxMeasure( HSDSolver *dsdpSolver, double newmu ) 
     DSDP_INT ispfeas = FALSE;
     
     // Use b1 as auxiliary
-    vec *dydelta = dsdpSolver->b1;
+    vec *dydelta = dsdpSolver->b1, *vecaux = dsdpSolver->cgSolver->aux;
     vec_zaxpby(dydelta, dsdpSolver->tau / dsdpSolver->mu,
                dsdpSolver->d2, -1.0, dsdpSolver->d3);
     
     // Compute Pnrm
-    dsdpSolver->Pnrm = denseMatxTAx(dsdpSolver->Msdp, dsdpSolver->M->schurAux, dydelta->x);
+    vec_zaxpby(vecaux, 1 / dsdpSolver->mu, dsdpSolver->dObj, -1.0, dsdpSolver->asinv);
+    vec_dot(vecaux, dydelta, &dsdpSolver->Pnrm);
     dsdpSolver->Pnrm = sqrt(dsdpSolver->Pnrm);
     
     // Check feasibility
@@ -35,7 +36,7 @@ extern DSDP_INT dsdpgetPhaseAProxMeasure( HSDSolver *dsdpSolver, double newmu ) 
                 (dsdpSolver->rysinv + tmp1 + tmp2 + dsdpSolver->nall);
         pObj = pObj / dsdpSolver->tau;
         
-        dsdpSolver->pObjVal = (dsdpSolver->pObjVal == DSDP_INFINITY) ? pObj : MIN(pObj, dsdpSolver->pObjVal);
+        dsdpSolver->pObjVal = pObj; // (dsdpSolver->pObjVal == DSDP_INFINITY) ? pObj : MIN(pObj, dsdpSolver->pObjVal);
         
         if (dsdpSolver->mu < 1e-03) {
             dsdpSolver->mumaker = dsdpSolver->mu;
@@ -57,8 +58,8 @@ extern DSDP_INT dsdpgetPhaseBProxMeasure( HSDSolver *dsdpSolver, double *muub, d
     DSDPGetDblParam(dsdpSolver, DBL_PARAM_RHON, &rho);
     DSDPGetIntParam(dsdpSolver, INT_PARAM_GOLDSEARCH, &usegold);
     vec_zaxpby(dsdpSolver->b1, 1 / dsdpSolver->mu, dsdpSolver->d1, -1.0, dsdpSolver->d2);
-    
-    dsdpSolver->Pnrm = denseMatxTAx(dsdpSolver->Msdp, dsdpSolver->M->schurAux, dsdpSolver->b1->x);
+    vec_zaxpby(dsdpSolver->d4, 1 / dsdpSolver->mu, dsdpSolver->dObj, -1.0, dsdpSolver->asinv);
+    vec_dot(dsdpSolver->d4, dsdpSolver->dy, &dsdpSolver->Pnrm);
     dsdpSolver->Pnrm = sqrt(MAX(dsdpSolver->Pnrm, 0.0));
     retcode = dsdpCheckBackwardNewton(dsdpSolver, &ispfeas);
     

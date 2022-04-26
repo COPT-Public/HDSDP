@@ -56,8 +56,8 @@ typedef struct {
     double   csinvrysinv; // Store trace(C * Sinv * Ry * Sinv)
     
     
-    DSDPSchur *M;         // Advanced Schur matrix setup
-    dsMat    *Msdp;       // Schur matrix for SDP (dense)
+    DSDPSymSchur *M;      // Advanced Schur matrix setup
+    schurMat *Msdp;       // Schur matrix for SDP (dense or sparse)
     CGSolver *cgSolver;   // Internal CG solvers
     vec      *Mdiag;      // Diagonal elements of Schur matrix for pre-conditioning
     double   Mscaler;     // Scaler of Schur complement

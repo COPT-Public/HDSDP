@@ -210,12 +210,12 @@ extern void DSDPBProfilerPrint( DSDPStats *stat ) {
     dsdpshowdash();
     printf("| %15s | %10s | \n", "Event", "Time(s)");
     dsdpshowdash();
-    printf("| %15s | %10g | \n", "Presolve", tpresolve);
-    printf("| %15s | %10g | (%d) \n", "Phase A (iter)", tphaseA, (DSDP_INT) iterA);
-    printf("| %15s | %10g | (%d) \n", "Phase B (iter)", tphaseB, (DSDP_INT) iterB);
-    printf("| %15s | %10g | \n", "Get X", tgetX);
-    printf("| %15s | %10g | \n", "Postsolve", tpostsolve);
-    printf("| %15s | %10g | (%d) \n", "All",
+    printf("| %15s | %10.5f | \n", "Presolve", tpresolve);
+    printf("| %15s | %10.5f | (%d) \n", "Phase A (iter)", tphaseA, (DSDP_INT) iterA);
+    printf("| %15s | %10.5f | (%d) \n", "Phase B (iter)", tphaseB, (DSDP_INT) iterB);
+    printf("| %15s | %10.5f | \n", "Get X", tgetX);
+    printf("| %15s | %10.5f | \n", "Postsolve", tpostsolve);
+    printf("| %15s | %10.5f | (%d) \n", "All",
            tpresolve + tphaseA + tphaseB + tgetX + tpostsolve, (DSDP_INT) (iterA + iterB));
     
     return;

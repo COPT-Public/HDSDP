@@ -47,11 +47,13 @@ typedef struct {
     DSDP_INT dim;          // Dimension of the matrix
     DSDP_INT isFactorized; // Whether the dense matrix is factorized
     DSDP_INT isillCond;    // Whether the matrix suffers from ill conditioning
+    DSDP_INT lwork;        // Length of the working array
     
     rkMat    *factor;      // Eigenvalue decomposition
-    double   *array;       // The (dim + 1) * dim / 2 array
-    double   *lfactor;     // The packed Cholesky factor returned by dppsv or other Lapack routines
+    double   *array;       // The schur matrix
+    double   *lfactor;     // Cholesky factor
     DSDP_INT *ipiv;        // Array in case of indefinite Schur matrix
+    double   *work;        // Working array for LDLT
     
 } dsMat;
 
@@ -63,7 +65,21 @@ typedef struct {
     
 } vec;
 
+typedef struct {
+    
+    DSDP_INT m;
+    DSDP_INT stype;  // Type of the schur matrix
+    dsMat  *denseM;  // Dense schur matrix
+    spsMat *spsM;    // Sparse schur matrix
+    
+    DSDP_INT isillCond;    // Is the matrix ill-conditioned
+    DSDP_INT isFactorized; // Is the matrix factorized
+    
+    double **diag;   // Store the address of the diagonal array
+    
+} schurMat;
 
 #define packIdx(P, n, i, j) (P[(DSDP_INT)((2 * (n) - (j) - 1) * (j) / 2) + (i)])
+#define fullIdx(P, n, i, j) (P[(j) * (n) + (i)])
 
 #endif /* structs_h */

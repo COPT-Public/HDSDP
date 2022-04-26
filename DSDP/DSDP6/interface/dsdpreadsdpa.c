@@ -1,6 +1,7 @@
 #include "dsdpreadsdpa.h"
 #include "dsdphsd.h"
 #include "dsdpsolver.h"
+#include "dsdplog.h"
 // A simple SDPA reader for HDSDP
 
 static char etype[] = "SDPA File Reader";
@@ -232,7 +233,7 @@ extern DSDP_INT DSDPSolveSDPA(int argc, char *argv[]) {
     DSDP_INT nConstrs = 0, nBlocks = 0, nSDPVars = 0, nNz = 0;
     
     DSDPPrintVersion();
-    clock_t start = clock();
+    double start = my_clock();
     DSDPPrepareSDPData(filename, &dObj, &coneAp, &coneAi, &coneAx,
                        &nBlocks, &blocksizes, &nSDPVars, &nConstrs, &nNz);
     retcode = DSDPSetDim(hsdSolver, nSDPVars, nBlocks, nConstrs, 0, &nNz);
@@ -242,7 +243,7 @@ extern DSDP_INT DSDPSolveSDPA(int argc, char *argv[]) {
                                      coneAp[i], coneAi[i], coneAx[i]);
     }
     printf("| Data read into solver."
-           " Elapsed Time: %10.3e. \n", (double) (clock() - start) / CLOCKS_PER_SEC);
+           " Elapsed Time: %10.3e. \n", my_clock() - start);
     
     retcode = DSDPSetObj(hsdSolver, dObj);
     retcode = DSDPOptimize(hsdSolver);

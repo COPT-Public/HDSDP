@@ -55,13 +55,13 @@ static DSDP_INT pardisoNumFactorize( spsMat *S ) {
             &msglvl, NULL, NULL, &error);
     
     if (error == -4) {
-        double eig = 0.0; spsMatMinEig(S, &eig);
-        printf("Minimum Eigenvalue: %g \n", eig);
+        // double eig = 0.0; spsMatMinEig(S, &eig);
+        // printf("Minimum Eigenvalue: %g \n", eig);
     }
         
     if (error) {
-        printf("[Pardiso Error]: Matrix factorization failed."
-               " Error code: "ID" \n", error);
+        printf("| [Pardiso Error]: Matrix factorization failed with"
+               " code: "ID". Going without current factorization  |\n", error);
         // error(etype, "Pardiso failes to factorize. \n");
         retcode = DSDP_RETCODE_FAILED;
     }
@@ -260,7 +260,7 @@ extern DSDP_INT spsMatAx( spsMat *A, vec *x, vec *Ax ) {
     
     if (nnz == nsym(n)) {
         dspmv(&uplolow, &n, &coeff, Axdata, xdata, &one, &dzero, Axres, &one);
-    } else if (nnz <= 0.8 * n * n && cidx) {
+    } else if (cidx) {
         for (DSDP_INT i, j, k = 0; k < nnz; ++k) {
             i = Ai[k]; j = cidx[k]; Axres[i] -= Axdata[k] * xdata[j];
             if (i != j) { Axres[j] -= Axdata[k] * xdata[i]; }
@@ -286,6 +286,32 @@ extern DSDP_INT spsMatAx( spsMat *A, vec *x, vec *Ax ) {
     }
     
     return retcode;
+}
+
+extern void spsMatAx2( spsMat *A, vec *x, vec *Ax ) {
+    // Sparse matrix multiplication for Schur matrix in CG
+    assert( A->dim == x->dim && x->dim == Ax->dim );
+    DSDP_INT *Ap = A->p, *Ai = A->i, n = A->dim, idx;
+    double *Axdata = A->x, *Axres = Ax->x, *xdata = x->x, coeff = -1.0;
+    vec_reset(Ax);
+    
+    for (DSDP_INT i = 0, j; i < n ; ++i) {
+        coeff = xdata[i]; if (coeff == 0.0) { continue; }
+        idx = Ap[i];
+        
+        if (Ai[idx] == i) {
+            Axres[i] += coeff * Axdata[idx];
+        } else {
+            Axres[Ai[idx]] += coeff * Axdata[idx];
+            Axres[i] += xdata[Ai[idx]] * Axdata[idx];
+        }
+        
+        for (j = Ap[i] + 1; j < Ap[i + 1]; ++j) {
+            idx = Ai[j];
+            Axres[idx] += coeff * Axdata[j];
+            Axres[i] += xdata[idx] * Axdata[j];
+        }
+    }
 }
 
 extern double spsMatxTAx( spsMat *A, double *x ) {
@@ -517,6 +543,11 @@ extern DSDP_INT spsMatFactorize( spsMat *sAMat ) {
     return pardisoNumFactorize(sAMat);
 }
 
+extern DSDP_INT spsArrSolveInp( spsMat *sAMat, DSDP_INT nrhs, double *B, double *aux ) {
+    // Sparse matrix operation X = A \ b
+    return pardisoSolveInplace(sAMat, nrhs, B, aux);
+}
+
 extern DSDP_INT spsMatVecSolve( spsMat *sAMat, vec *sbVec, double *Ainvb ) {
     // Sparse matrix operation X = A \ b
     return pardisoSolve(sAMat, 1, sbVec->x, Ainvb);;
@@ -619,43 +650,11 @@ extern DSDP_INT dsdpGetAlpha( DSDPLanczos *lczSolver, spsMat *S, spsMat *dS, sps
     
     if (0 || lbd != lbd || delta != delta || (lbd + delta > 1e+04)) {
         // MKL extremal routine
-        retcode = spsMatLspLSolve(S, dS, spaux); checkCode;
-        retcode = spsMatMinEig(spaux, &mineig); checkCode;
+        spsMatLspLSolve(S, dS, spaux); spsMatMinEig(spaux, &mineig);
         *alpha = (mineig >= 0) ? DSDP_INFINITY : - 1.0 / mineig;
     } else {
         *alpha = (lbd + delta <= 0) ? DSDP_INFINITY : 1.0 / (lbd + delta);
     }
-    return retcode;
-}
-
-extern DSDP_INT dsdpGetAlphaLS( spsMat *S, spsMat *dS, spsMat *Scker,
-                                double alphamax, double *alpha, DSDP_INT *sumHash ) {
-    // Get the maximum alpha such that S + alpha * dS is PSD by line-search
-    DSDP_INT retcode = DSDP_RETCODE_OK;
-    
-    double step = 1 / alphamax, *src = NULL;
-    DSDP_INT ispsd = FALSE;
-    spsMat *buffer = NULL;
-    
-    if (Scker) {
-        src = Scker->x; buffer = Scker;
-    } else {
-        assert( FALSE );
-        src = (double *) calloc(S->nnz, sizeof(double));
-        memcpy(src, S->x, sizeof(double) * S->nnz); buffer = S;
-    }
-    
-    for (DSDP_INT i = 0; ; ++i) {
-        if (step <= 1e-05) {
-            *alpha = 0.0; break;
-        }
-        memcpy(src, S->x, sizeof(double) * S->nnz);
-        spsMataXpbY(step, dS, 1.0, buffer, sumHash); spsMatIspd(buffer, &ispsd);
-        if (ispsd) { *alpha = step; break; }
-        step *= 0.8;
-    }
-
-    if (!Scker) { DSDP_FREE(src); }
     return retcode;
 }
 
@@ -908,8 +907,7 @@ extern DSDP_INT spsMatIspd( spsMat *sMat, DSDP_INT *ispd ) {
             &msglvl, NULL, NULL, &error);
         
     if (error == 0) {
-        sMat->isFactorized = TRUE;
-        *ispd = TRUE;
+        sMat->isFactorized = TRUE; *ispd = TRUE;
     } else if (error == -4) {
         *ispd = FALSE;
     } else {

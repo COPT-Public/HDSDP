@@ -1,5 +1,5 @@
-#ifndef schurmat_h
-#define schurmat_h
+#ifndef schurmatops_h
+#define schurmatops_h
 
 /* Schuar matrix assembly routine in DSDP
  This part completes the setup of the auxiliary arrays in SDP solution
