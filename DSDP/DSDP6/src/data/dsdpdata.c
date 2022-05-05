@@ -1,3 +1,4 @@
+#include <string.h>
 #include "dsdpdata.h"
 #include "dsdpsort.h"
 // Implement the data interface for DSDP-HSD Solver

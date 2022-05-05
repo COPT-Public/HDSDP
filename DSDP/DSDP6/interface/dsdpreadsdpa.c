@@ -1,3 +1,4 @@
+#include <string.h>
 #include "dsdpreadsdpa.h"
 #include "dsdphsd.h"
 #include "dsdpsolver.h"
@@ -221,6 +222,7 @@ extern DSDP_INT DSDPSolveSDPA(int argc, char *argv[]) {
     
     Solver *hsdSolver = NULL;
     Solver **phsdSolver = &hsdSolver;
+    
     retcode = DSDPCreate(phsdSolver);
     
     strncpy(filename, argv[1], 90);

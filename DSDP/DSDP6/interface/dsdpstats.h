@@ -38,6 +38,8 @@
 #define STAT_PFEAS_PROBLEM   23
 #define STAT_DFEAS_PROBLEM   24
 
+#define STAT_LARGEST_BLOCK   25
+
 // 20 ~ 50 left for event profiling
 #define STAT_PHASE_A_ITER    51
 #define STAT_PHASE_B_ITER    52

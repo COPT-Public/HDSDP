@@ -68,6 +68,8 @@ extern DSDP_INT DSDPDInfeasEliminator( HSDSolver *dsdpSolver ) {
     dsdpshowdash();
     retcode = dsdpInitializeA(dsdpSolver); checkCode;
     
+    double initpObj = dsdpSolver->pObjVal;
+    
     /* Print algorithm header */
     dsdpprintPhaseAheader();
     
@@ -140,13 +142,13 @@ extern DSDP_INT DSDPDInfeasEliminator( HSDSolver *dsdpSolver ) {
         retcode = computeAdaptivedRate(dsdpSolver); checkCode;
         // Setup directions
         retcode = getStepDirs(dsdpSolver); checkCode;
-        dsdpSolver->iterProgress[ITER_STEP_DIRECTION] = TRUE;
         // Compute maximum available stepsize
         retcode = getMaxStep(dsdpSolver); checkCode;
-        dsdpSolver->iterProgress[ITER_COMPUTE_STEP] = TRUE;
         // Compute residual
         retcode = setupRes(dsdpSolver); checkCode;
-        dsdpSolver->iterProgress[ITER_RESIDUAL] = TRUE;
+        if (i == 3 && fabs(dsdpSolver->pObjVal - initpObj) < 1e-10) {
+            dsdpSolver->Ry = MIN(dsdpSolver->Ry * 1e+10, 1e+10);
+        }
         // Take step
         retcode = takeStep(dsdpSolver); checkCode;
         dsdpSolver->iterProgress[ITER_TAKE_STEP] = TRUE;

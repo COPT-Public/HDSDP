@@ -1,6 +1,7 @@
 #ifndef structs_h
 #define structs_h
 
+#include <string.h>
 #include "cs.h"
 #include "dsdphsd.h"
 #include "dsdppardiso.h"

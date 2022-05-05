@@ -1,3 +1,4 @@
+#include <string.h>
 #include "dsdpfeast.h"
 #include "densemat.h"
 #include "sparsemat.h"

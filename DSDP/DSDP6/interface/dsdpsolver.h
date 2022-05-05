@@ -1,6 +1,7 @@
 #ifndef dsdpsolver_h
 #define dsdpsolver_h
 
+#include <string.h>
 #include "structs.h"
 #include "dsdpdata.h"
 #include "dsdpcg.h"
@@ -126,6 +127,7 @@ typedef struct {
     
     // Solver statistics
     DSDPStats dsdpStats;  // Solver statistics
+    double    startTime;  // Solver start time
     
 } HSDSolver;
 

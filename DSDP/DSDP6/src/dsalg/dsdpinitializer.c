@@ -91,31 +91,35 @@ static void initparams( HSDSolver *dsdpSolver ) {
     dsdpSolver->ybound = dblparam;
     
     // Corrector
-    DSDP_INT m = dsdpSolver->m, n = dsdpSolver->n / dsdpSolver->nBlock, nusercorr, ncorrA = 0;
+    DSDP_INT m = dsdpSolver->m, nusercorr, ncorrA = 0;
+    double largeblock;
     DSDPGetIntParam(dsdpSolver, INT_PARAM_BCORRECTOR, &nusercorr);
+    DSDPGetStats(&dsdpSolver->dsdpStats, STAT_LARGEST_BLOCK, &largeblock);
+    
+    nusercorr = 2;
     
     if ((TRUE)) {
-        if (n >= 5 * m) {
+        if (largeblock >= 5 * m) {
             nusercorr = MIN(nusercorr, 0);
-            ncorrA = 8;
-        } else if (n >= 2 * m) {
+            ncorrA = 2;
+        } else if (largeblock >= 2 * m) {
             nusercorr = MIN(nusercorr, 2);
-            ncorrA = 10;
+            ncorrA = 4;
         } else {
-            ncorrA = 12;
+            ncorrA = 8;
         }
         
-        if (m > 20 * n) {
+        if (m > 20 * largeblock) {
             nusercorr = MAX(nusercorr, 12);
-        } else if (m > 5 * n) {
+        } else if (m > 5 * largeblock) {
             nusercorr = MAX(nusercorr, 10);
-        } else if (m > 2 * n) {
+        } else if (m > 2 * largeblock) {
             nusercorr = MAX(nusercorr, 8);
         }
         nusercorr = MIN(nusercorr, 12);
     }
     
-    ncorrA = MAX(ncorrA, 8);
+    ncorrA = MAX(ncorrA, 2);
     
     double ds;
     DSDPGetStats(&dsdpSolver->dsdpStats, STAT_NUM_DENSE_MAT, &ds);
@@ -125,25 +129,37 @@ static void initparams( HSDSolver *dsdpSolver ) {
     DSDPSetIntParam(dsdpSolver, INT_PARAM_ACORRECTOR, ncorrA);
     DSDPSetIntParam(dsdpSolver, INT_PARAM_BCORRECTOR, nusercorr);
     
-    // Some other heuristics
-    if (dsdpSolver->nBlock == 1) {
-        double bnrm;
-        DSDPGetStats(&dsdpSolver->dsdpStats, STAT_ONE_NORM_B, &bnrm);
-        if (bnrm <= 10.0) {
-            dsdpSolver->ybound = 1e+04;
-            DSDPSetDblParam(dsdpSolver, DBL_PARAM_INIT_BETA, 1e+02);
-        }
-        
-        if (dsdpSolver->m >= dsdpSolver->n * 4) {
-            if (bnrm >= 1e+04 && dsdpSolver->m >= 3000) {
-                dsdpSolver->ybound = 1e+04;
-            }
-        }
-    }
-    
-    if (fabs((double) dsdpSolver->n / dsdpSolver->m - 1.25) < 0.05) {
-        dsdpSolver->ybound = 1e+04;
-    }
+//    // Some other heuristics
+//    if (dsdpSolver->nBlock == 1) {
+//        double bnrm;
+//        DSDPGetStats(&dsdpSolver->dsdpStats, STAT_ONE_NORM_B, &bnrm);
+//        if (bnrm <= 10.0 && dsdpSolver->m < 5000) {
+//            dsdpSolver->ybound = 1e+04;
+//            DSDPSetDblParam(dsdpSolver, DBL_PARAM_INIT_BETA, 1e+02);
+//        }
+//
+//        if (dsdpSolver->m >= dsdpSolver->n * 4) {
+//            if (bnrm >= 1e+04 && dsdpSolver->m >= 3000) {
+//                dsdpSolver->ybound = 1e+04;
+//            }
+//
+//            if (dsdpSolver->m > 60 * dsdpSolver->n) {
+//                DSDPSetDblParam(dsdpSolver, DBL_PARAM_INIT_BETA, 1e+02);
+//            }
+//        }
+//    }
+//
+//    if (dsdpSolver->nBlock > 1) {
+//        if (fabs((double) dsdpSolver->n / dsdpSolver->m - 1.25) < 0.05) {
+//            dsdpSolver->ybound = 1e+04;
+//        }
+//    }
+//
+//    if (dsdpSolver->nBlock == 3 && dsdpSolver->m > 1000) {
+//        if (((double) dsdpSolver->n / dsdpSolver->m) >= 2.0 && ((double) dsdpSolver->n / dsdpSolver->m) <= 2.2) {
+//                DSDPSetDblParam(dsdpSolver, DBL_PARAM_INIT_BETA, 1e+06);
+//        }
+//    }
     
     printf("| Corrector A: %d  Corrector B: %d \n", ncorrA, nusercorr);
 }

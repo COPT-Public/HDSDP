@@ -1,3 +1,4 @@
+#include "sys/time.h"
 #include <stdio.h>
 #include "dsdplog.h"
 #include "hsd.h"
@@ -272,9 +273,10 @@ extern DSDP_INT DSDPCheckPhaseAConvergence( HSDSolver *dsdpSolver, DSDP_INT *isO
     DSDP_INT *monitor = dsdpSolver->eventMonitor;
     
     DSDP_INT AmaxIter;
-    double absOptTol, statval1, statval2;
+    double absOptTol, absFeasTol, statval1, statval2;
     DSDPStats *stat = &dsdpSolver->dsdpStats;
     retcode = DSDPGetDblParam(dsdpSolver, DBL_PARAM_ABS_OPTTOL, &absOptTol);
+    retcode = DSDPGetDblParam(dsdpSolver, DBL_PARAM_ABS_FEASTOL, &absFeasTol);
     retcode = DSDPGetIntParam(dsdpSolver, INT_PARAM_AMAXITER, &AmaxIter);
     
     *isOK = FALSE;
@@ -282,7 +284,7 @@ extern DSDP_INT DSDPCheckPhaseAConvergence( HSDSolver *dsdpSolver, DSDP_INT *isO
     assert( dsdpSolver->eventMonitor[EVENT_IN_PHASE_A] );
     
     // Dual infeasibility eliminated
-    if (fabs(dsdpSolver->Ry) < absOptTol * 0.1 * dsdpSolver->tau) {
+    if (fabs(dsdpSolver->Ry) < absFeasTol * 0.1 * dsdpSolver->tau) {
         monitor[EVENT_NO_RY] = TRUE;
         
         if (dsdpSolver->pObjVal != DSDP_INFINITY) {
@@ -354,6 +356,11 @@ extern DSDP_INT DSDPCheckPhaseAConvergence( HSDSolver *dsdpSolver, DSDP_INT *isO
         *isOK = TRUE;
         return retcode;
     }
+    
+    if (my_clock() - dsdpSolver->startTime > MAXTIME) {
+        printf("| Time out. \n"); exit(0);
+        *isOK = TRUE;
+    }
 
     return retcode;
 }
@@ -421,7 +428,7 @@ extern DSDP_INT DSDPCheckPhaseBConvergence( HSDSolver *dsdpSolver, DSDP_INT *isO
         if (statval1 == 0.0) {
             statval1 += 1.0;
             DSDPStatUpdate(stat, STAT_GAP_BROKEN, statval1);
-            dsdpSolver->pObjVal = dsdpSolver->dObjVal + 1e+05;
+            dsdpSolver->pObjVal = dsdpSolver->dObjVal + 1;
             monitor[EVENT_INVALID_GAP] = TRUE;
         } else {
             dsdpSolver->solStatus = DSDP_INTERNAL_ERROR;
@@ -458,7 +465,7 @@ extern DSDP_INT DSDPCheckPhaseBConvergence( HSDSolver *dsdpSolver, DSDP_INT *isO
     
     // Small step
     DSDPGetStats(stat, STAT_NUM_SMALL_ITER, &statval2);
-    if (statval1 > 0 && dsdpSolver->alpha < 1e-03 && gap < 1e-03) {
+    if (statval1 > 0 && dsdpSolver->alpha < 1e-03 && gap < 1e-02) {
         statval2 += 1; DSDPStatUpdate(stat, STAT_NUM_SMALL_ITER, statval2);
         monitor[EVENT_SMALL_STEP] = TRUE;
     }
@@ -480,6 +487,11 @@ extern DSDP_INT DSDPCheckPhaseBConvergence( HSDSolver *dsdpSolver, DSDP_INT *isO
         dsdpSolver->solStatus = DSDP_INTERNAL_ERROR;
         *isOK = TRUE;
         return retcode;
+    }
+    
+    if (my_clock() - dsdpSolver->startTime > MAXTIME) {
+        dsdpSolver->solStatus = DSDP_MAXITER;
+        *isOK = TRUE;
     }
 
     return retcode;

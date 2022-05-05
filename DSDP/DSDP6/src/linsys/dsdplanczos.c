@@ -181,7 +181,7 @@ extern DSDP_INT dsdpLanczosStep( DSDPLanczos *lczSolver, spsMat *S, spsMat *dS, 
             for (DSDP_INT i = 0; i < kp1; ++i) {
                 memcpy(&mataux[kp1 * i], &H[mH * i], sizeof(double) * kp1);
             }
-            alpha = -1; il = k; iu = kp1;
+            alpha = 0; il = k; iu = kp1;
             dsyevr(&jobz, &range, &uplo, &kp1, mataux, &kp1,
                    NULL, NULL, &il, &iu, &alpha, &neigs, d,
                    Y, &kp1, isuppz, eigaux, &lwork, eigintaux,

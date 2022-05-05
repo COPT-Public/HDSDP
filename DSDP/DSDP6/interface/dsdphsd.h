@@ -14,6 +14,8 @@
 #undef superDebug
 #endif
 
+// #define superDebug
+
 //#define compareMode
 
 #ifdef RELEASE
@@ -23,6 +25,9 @@
 #endif
 
 //#define superDebug
+#ifndef MAXTIME
+#define MAXTIME 3600
+#endif
 
 #ifdef SHOWALL
 #undef SHOWALL
@@ -109,7 +114,7 @@ typedef int DSDP_INT;
 #define DSDP_ATTEMPT_AGG        108
 
 #define VERSION_MAJOR           0
-#define VERSION_MINOR           4
+#define VERSION_MINOR           5
 #define VERSION_TECHNICAL       0
 
 #endif /* dsdphsd_h */

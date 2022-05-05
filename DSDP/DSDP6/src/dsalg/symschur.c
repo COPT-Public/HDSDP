@@ -16,7 +16,8 @@ static DSDP_INT getScore( DSDP_INT *ranks, DSDP_INT *nnzs, DSDP_INT *perm,
     // Compute the estimated number of multiplications for technique M1 to M5
     
     DSDP_INT i, j, k = perm[idx]; //, npack = nsym(n);
-    double d1, d2, d3, d4, d5, nsqr = n * n, ncbe = n * nsqr, sumnnz = 0.0, rsigma = ranks[k], best = SCHUR_M1;
+    double d1, d2, d3, d4, d5, nsqr = n * n, ncbe = n * nsqr,\
+           sumnnz = 0.0, rsigma = ranks[k], best = SCHUR_M1, npack = nsym(n);
     double m1m5 = 0.0, m1m2 = 0.0;
     // On exit, MX is set 10 * MX12 + M12345
 
@@ -33,7 +34,6 @@ static DSDP_INT getScore( DSDP_INT *ranks, DSDP_INT *nnzs, DSDP_INT *perm,
     d5 = KAPPA * (2 * KAPPA * nnzs[idx] + 1) * sumnnz + ncbe / m;
         
     // printf("d1: %f   d2: %f \n", d1, d2);
-    
     // Get better of d1 and d2
     j = 0;
     if (d1 < d2) {
@@ -102,7 +102,7 @@ static DSDP_INT schurBlockAnalysis( sdpMat *Adata, DSDP_INT *permk, DSDP_INT *MX
     }
     
     double ncbe = n; ncbe *= n; ncbe *= n;
-    M1M2 = (ksiM1M2 <= ksiM1M5 + ncbe) ? TRUE: FALSE;
+    M1M2 = FALSE;// (ksiM1M2 <= ksiM1M5 + ncbe) ? TRUE: FALSE;
     
     // Determine which strategy to use
     if (M1M2) {
@@ -769,7 +769,7 @@ extern DSDP_INT DSDPSchurSetup( DSDPSymSchur *M ) {
     double *MM3 = (double *) calloc(mpack, sizeof(double));
     double *MM4 = (double *) calloc(mpack, sizeof(double));
     double *MM5 = (double *) calloc(mpack, sizeof(double));
-    double *Mref = M->M->array;
+    double *Mref = M->M->denseM->array;
     
     double *asinvMM1 = (double *) calloc(m, sizeof(double));
     double *asinvMM2 = (double *) calloc(m, sizeof(double));

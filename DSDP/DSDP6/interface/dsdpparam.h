@@ -74,7 +74,7 @@ static double defaultDblParam[NUM_DBL_PARAM] = {
     4.0,   // DBL_PARAM_RHON
     1e+10, // DBL_PARAM_INIT_POBJ
     
-    1e+04, // DBL_PARAM_INIT_BETA
+    1e+06, // DBL_PARAM_INIT_BETA
     1e+15, // DBL_PARAM_INIT_MU
     1.0, // DBL_PARAM_INIT_TAU
     
@@ -82,8 +82,8 @@ static double defaultDblParam[NUM_DBL_PARAM] = {
     0.9,  // DBL_PARAM_AALPHA // 0.99995 is good
     1e+08, // DBL_PARAM_NRM_THRESH
     1e+08, // DBL_PARAM_INFEAS_THRESH
-    5e-06, // DBL_PARAM_ABS_OPTTOL
-    1e-03, // DBL_PARAM_REL_OPTTOL
+    1e-06, // DBL_PARAM_ABS_OPTTOL
+    1e-06, // DBL_PARAM_REL_OPTTOL
     1e-08, // DBL_PARAM_ABS_FEASTOL
     1e-03, // DBL_PARAM_REL_FEASTOL
     1e+07, // DBL_PARAM_PRLX_PENTALTY

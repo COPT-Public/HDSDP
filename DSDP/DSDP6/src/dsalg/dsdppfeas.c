@@ -46,8 +46,8 @@ extern DSDP_INT DSDPPFeasPhase( HSDSolver *dsdpSolver ) {
     DSDP_INT i;
     for (i = 0; ; ++i) {
         
-        if (i > 200) { dsdpSolver->dperturb = 1e-07; }
-        if (i > 300) { dsdpSolver->dperturb = 1e-06; }
+        if (i > 300) { dsdpSolver->dperturb = 1e-07; }
+        if (i > 400) { dsdpSolver->dperturb = 1e-06; }
         
         // Start iteration
         DSDPStatUpdate(&dsdpSolver->dsdpStats, STAT_PHASE_B_ITER, (double) i);
@@ -81,7 +81,7 @@ extern DSDP_INT DSDPPFeasPhase( HSDSolver *dsdpSolver ) {
         // Decrease primal objective via golden search
         if (usegold && dsdpSolver->mu < 1e+07) {
             retcode = searchpObj(dsdpSolver, &approxpObj);
-            approxpObj = MAX(dsdpSolver->pObjVal * 0.3, approxpObj);
+            approxpObj = MAX(dsdpSolver->pObjVal * 0.8, approxpObj);
             dsdpSolver->pObjVal = MIN(dsdpSolver->pObjVal, approxpObj);
         }
 

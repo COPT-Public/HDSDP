@@ -1,3 +1,4 @@
+#include <string.h>
 #include "dsdpstats.h"
 #include "hsd.h"
 #include "dsdplog.h"

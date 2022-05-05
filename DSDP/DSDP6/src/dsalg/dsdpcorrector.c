@@ -88,8 +88,15 @@ static DSDP_INT adjCorrectorStep( HSDSolver *dsdpSolver ) {
     
     if (nusercorr == 0) { return 0; }
     if (dsdpSolver->Pnrm < 0.1) { nusercorr = 0; }
-    if (dsdpSolver->alpha < 0.1 && dsdpSolver->mu < 1e-05) { nusercorr = 0; }
-    if (dsdpSolver->mu < 1e-06) { nusercorr = 0; }
+    if ((dsdpSolver->alpha < 0.1 && dsdpSolver->mu < 1e-05) || (dsdpSolver->alpha < 1e-03)) {
+        DSDPSetIntParam(dsdpSolver, INT_PARAM_BCORRECTOR, 0);
+        nusercorr = 0;
+    }
+    if (dsdpSolver->mu < 1e-06) {
+        nusercorr = 0;
+        DSDPSetIntParam(dsdpSolver, INT_PARAM_BCORRECTOR, 0);
+    }
+    
     
     return nusercorr;
 }

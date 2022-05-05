@@ -74,7 +74,7 @@ static DSDP_INT schurMatPerturb( HSDSolver *dsdpSolver ) {
     DSDPGetStats(&dsdpSolver->dsdpStats, STAT_PHASE_B_ITER, &iterB);
     
     if (!dsdpSolver->eventMonitor[EVENT_INVALID_GAP]) {
-        if (dsdpSolver->mu < 1e-05) { perturb += 1e-13; }
+        if (dsdpSolver->mu < 1e-05) { perturb += 1e-12; }
         maxdiag = vec_infnorm(dsdpSolver->Mdiag);
         dsdpSolver->Mscaler = maxdiag;
         

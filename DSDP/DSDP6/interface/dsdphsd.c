@@ -1,5 +1,6 @@
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
 #include "dsdphsd.h"
 #include "dsdpdata.h"
 #include "vec.h"
@@ -132,6 +133,7 @@ static DSDP_INT DSDPIInit( HSDSolver *dsdpSolver ) {
     dsdpSolver->mumaker = 0.0;
     
     DSDPStatInit(&dsdpSolver->dsdpStats);
+    dsdpSolver->startTime = my_clock();
     
     return retcode;
 }
@@ -457,7 +459,7 @@ static DSDP_INT DSDPIFreeCleanUp( HSDSolver *dsdpSolver ) {
     dsdpSolver->mumaker = 0.0;     dsdpSolver->insStatus = 0; dsdpSolver->solStatus = DSDP_STATUS_UNINIT;
     dsdpSolver->schurmu = 0.0;     dsdpSolver->cScaler = 0.0; dsdpSolver->ybound = 0.0;
     dsdpSolver->dperturb = 0.0;    dsdpSolver->nall = 0;      dsdpSolver->n = 0;
-    dsdpSolver->drate = 0.0;
+    dsdpSolver->drate = 0.0;       dsdpSolver->startTime = 0.0;
     
     return retcode;
 }
@@ -723,7 +725,7 @@ extern DSDP_INT DSDPOptimize( HSDSolver *dsdpSolver ) {
         retcode = DSDPSetObj(dsdpSolver, NULL);
         checkCode;
     }
-        
+    
     assert( dsdpSolver->insStatus == DSDP_STATUS_SET );
     retcode = DSDPIPresolve(dsdpSolver); checkCode;
     
