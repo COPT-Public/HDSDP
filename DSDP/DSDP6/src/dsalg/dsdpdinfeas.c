@@ -124,7 +124,6 @@ extern DSDP_INT DSDPDInfeasEliminator( HSDSolver *dsdpSolver ) {
         trymu = (dsdpSolver->pObjVal - dsdpSolver->dObjVal -
                  dsdpSolver->Ry * 1e+10) / (5.0 * dsdpSolver->nall);
         
-        
         if (dsdpSolver->Pnrm < 5) {
             dsdpSolver->mu = MAX(dsdpSolver->mu * 0.01, trymu);
         } else if (dsdpSolver->mu < 10) {
@@ -147,7 +146,7 @@ extern DSDP_INT DSDPDInfeasEliminator( HSDSolver *dsdpSolver ) {
         // Compute residual
         retcode = setupRes(dsdpSolver); checkCode;
         if (i == 3 && fabs(dsdpSolver->pObjVal - initpObj) < 1e-10) {
-            dsdpSolver->Ry = MIN(dsdpSolver->Ry * 1e+10, 1e+10);
+            dsdpSolver->Ry = - MIN(fabs(dsdpSolver->Ry) * 1e+08, 1e+15);
         }
         // Take step
         retcode = takeStep(dsdpSolver); checkCode;
@@ -172,7 +171,6 @@ extern DSDP_INT DSDPDInfeasEliminator( HSDSolver *dsdpSolver ) {
     }
     
     dsdpSolver->mu = muprimal;
-    
     DSDPStatUpdate(stat, STAT_PHASE_A_TIME, (double) time);
     DSDPStatUpdate(stat, STAT_PHASE_A_ITER, (double) i + 1);
     printPhaseASummary(dsdpSolver);

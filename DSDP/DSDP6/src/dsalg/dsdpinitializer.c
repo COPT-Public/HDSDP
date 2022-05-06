@@ -1,6 +1,7 @@
 #include "dsdpinitializer.h"
 #include "dsdpcorrector.h"
 #include "dsdputils.h"
+#include "heurpool.h"
 /* Implement the initialization procedure of DSDP */
 static char etype[] = "DSDP Initialization";
 
@@ -95,26 +96,51 @@ static void initparams( HSDSolver *dsdpSolver ) {
     double largeblock;
     DSDPGetIntParam(dsdpSolver, INT_PARAM_BCORRECTOR, &nusercorr);
     DSDPGetStats(&dsdpSolver->dsdpStats, STAT_LARGEST_BLOCK, &largeblock);
+        
+    /*
+     its=(m-2)/sdpnmax;
+     if (np<100 && its==0) its=1;
+     if (its>=1) its++;
+     its=its*its;
+     if (m<2000 && its>10) its=10;
+     if (its>12) its=12;
+     */
     
-    nusercorr = 2;
+    ncorrA = (m - 2) / largeblock;
+    if (dsdpSolver->nall < 100 && ncorrA == 0) {
+        ncorrA = 1;
+    }
+    if (ncorrA >= 1) {
+        ncorrA ++;
+    }
+    ncorrA *= ncorrA;
+    
+    if (m < 2000 && ncorrA > 10) {
+        ncorrA = 10;
+    }
+    
+    nusercorr = ncorrA;
     
     if ((TRUE)) {
         if (largeblock >= 5 * m) {
             nusercorr = MIN(nusercorr, 0);
             ncorrA = 2;
-        } else if (largeblock >= 2 * m) {
+        } else if (largeblock >= m) {
             nusercorr = MIN(nusercorr, 2);
             ncorrA = 4;
         } else {
-            ncorrA = 8;
+            ncorrA = 6;
         }
         
         if (m > 20 * largeblock) {
             nusercorr = MAX(nusercorr, 12);
+            ncorrA = 12;
         } else if (m > 5 * largeblock) {
             nusercorr = MAX(nusercorr, 10);
+            ncorrA = 10;
         } else if (m > 2 * largeblock) {
             nusercorr = MAX(nusercorr, 8);
+            ncorrA = 8;
         }
         nusercorr = MIN(nusercorr, 12);
     }
@@ -128,6 +154,11 @@ static void initparams( HSDSolver *dsdpSolver ) {
     }
     DSDPSetIntParam(dsdpSolver, INT_PARAM_ACORRECTOR, ncorrA);
     DSDPSetIntParam(dsdpSolver, INT_PARAM_BCORRECTOR, nusercorr);
+    
+    // Some other heuristics
+    adjustSolverParams(dsdpSolver, largeblock);
+    
+    // dsdpSolver->pObjVal /= dsdpSolver->cScaler;
     
 //    // Some other heuristics
 //    if (dsdpSolver->nBlock == 1) {
@@ -230,11 +261,11 @@ extern DSDP_INT dsdpInitializeB( HSDSolver *dsdpSolver ) {
     DSDPGetStats(&dsdpSolver->dsdpStats, STAT_PHASE_A_ITER, &tmp);
     DSDPGetStats(&dsdpSolver->dsdpStats, STAT_ONE_NORM_C, &tmp2);
     if (tmp >= 80) {
-        dsdpSolver->dperturb = 5e-07 * tmp2;
+        dsdpSolver->dperturb = 5e-07 / dsdpSolver->cScaler;
     } else if (tmp >= 50) {
-        dsdpSolver->dperturb = 5e-08 * tmp2;
+        dsdpSolver->dperturb = 5e-08 / dsdpSolver->cScaler;
     } else if (tmp >= 20) {
-        dsdpSolver->dperturb = 1e-08 * tmp2;
+        dsdpSolver->dperturb = 1e-08 / dsdpSolver->cScaler;
     } else {
         dsdpSolver->dperturb = 0.0;
     }

@@ -92,6 +92,7 @@
 		19BACAF727521A7800E987FD /* test_pardiso.c in Sources */ = {isa = PBXBuildFile; fileRef = 19BACAF627521A7800E987FD /* test_pardiso.c */; };
 		19BACAFA2753C0D600E987FD /* test_presolve.c in Sources */ = {isa = PBXBuildFile; fileRef = 19BACAF92753C0D600E987FD /* test_presolve.c */; };
 		19BACAFD2753C17500E987FD /* gen_test_data.c in Sources */ = {isa = PBXBuildFile; fileRef = 19BACAFC2753C17500E987FD /* gen_test_data.c */; };
+		19BCF811282179D3000B6AC5 /* speigs.c in Sources */ = {isa = PBXBuildFile; fileRef = 19BCF810282179D3000B6AC5 /* speigs.c */; };
 		19BEEC212756065600C36C9E /* cs_entry.c in Sources */ = {isa = PBXBuildFile; fileRef = 19BEEC1B2756065600C36C9E /* cs_entry.c */; };
 		19BEEC222756065600C36C9E /* cs_load.c in Sources */ = {isa = PBXBuildFile; fileRef = 19BEEC1C2756065600C36C9E /* cs_load.c */; };
 		19BEEC232756065600C36C9E /* cs_chol.c in Sources */ = {isa = PBXBuildFile; fileRef = 19BEEC1D2756065600C36C9E /* cs_chol.c */; };
@@ -246,6 +247,7 @@
 		1997804727CF5D68006B7E6A /* libiomp5.dylib */ = {isa = PBXFileReference; lastKnownFileType = "compiled.mach-o.dylib"; name = libiomp5.dylib; path = ../../../../../usr/local/lib/libiomp5.dylib; sourceTree = "<group>"; };
 		1997805127CF6426006B7E6A /* libmkl_intel_lp64.1.dylib */ = {isa = PBXFileReference; lastKnownFileType = "compiled.mach-o.dylib"; name = libmkl_intel_lp64.1.dylib; path = ../../../../../usr/local/lib/libmkl_intel_lp64.1.dylib; sourceTree = "<group>"; };
 		1997805227CF6426006B7E6A /* libmkl_core.1.dylib */ = {isa = PBXFileReference; lastKnownFileType = "compiled.mach-o.dylib"; name = libmkl_core.1.dylib; path = ../../../../../usr/local/lib/libmkl_core.1.dylib; sourceTree = "<group>"; };
+		199F256D2824AA4300D6B778 /* heurpool.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = heurpool.h; sourceTree = "<group>"; };
 		199FC14027AD061A0072897D /* dsdpeigfact.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = dsdpeigfact.c; sourceTree = "<group>"; };
 		199FC14227AD82680072897D /* dsdpeigfact.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = dsdpeigfact.h; sourceTree = "<group>"; };
 		19ABC01127C09F6B00105887 /* dsdpparam.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = dsdpparam.c; sourceTree = "<group>"; };
@@ -258,6 +260,8 @@
 		19BACAF627521A7800E987FD /* test_pardiso.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = test_pardiso.c; sourceTree = "<group>"; };
 		19BACAF92753C0D600E987FD /* test_presolve.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = test_presolve.c; sourceTree = "<group>"; };
 		19BACAFC2753C17500E987FD /* gen_test_data.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = gen_test_data.c; sourceTree = "<group>"; };
+		19BCF80F282179D3000B6AC5 /* speigs.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = speigs.h; sourceTree = "<group>"; };
+		19BCF810282179D3000B6AC5 /* speigs.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = speigs.c; sourceTree = "<group>"; };
 		19BEEC1B2756065600C36C9E /* cs_entry.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = cs_entry.c; sourceTree = "<group>"; };
 		19BEEC1C2756065600C36C9E /* cs_load.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = cs_load.c; sourceTree = "<group>"; };
 		19BEEC1D2756065600C36C9E /* cs_chol.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = cs_chol.c; sourceTree = "<group>"; };
@@ -374,6 +378,7 @@
 				197A770427C7889A00D3A50B /* symschur.h */,
 				197A770527C7889A00D3A50B /* symschur.c */,
 				1924445C27E9E07200C99F42 /* dsdpcorrector.c */,
+				199F256D2824AA4300D6B778 /* heurpool.h */,
 			);
 			path = dsalg;
 			sourceTree = "<group>";
@@ -390,6 +395,7 @@
 				19118D9D2737B72800D51D03 /* sparsemat.h */,
 				19118D9E2737B72800D51D03 /* densemat.h */,
 				19808F44273817510014086F /* rankonemat.h */,
+				1982375F2802B966005F85B4 /* schurmat.h */,
 				19C3732527A7F2DA0021A708 /* rankkmat.h */,
 				1901C7F027B15FB30046EFB2 /* dsdpcg.h */,
 				19118D9F2737B72800D51D03 /* vec.c */,
@@ -397,11 +403,12 @@
 				19118DA22737B72800D51D03 /* sparsemat.c */,
 				19808F45273817510014086F /* rankonemat.c */,
 				19C3732627A7F2DA0021A708 /* rankkmat.c */,
+				198237602802B966005F85B4 /* schurmat.c */,
 				19C3732A27A98B0D0021A708 /* dsdplanczos.c */,
 				199FC14027AD061A0072897D /* dsdpeigfact.c */,
 				1901C7F127B15FB30046EFB2 /* dsdpcg.c */,
-				1982375F2802B966005F85B4 /* schurmat.h */,
-				198237602802B966005F85B4 /* schurmat.c */,
+				19BCF80F282179D3000B6AC5 /* speigs.h */,
+				19BCF810282179D3000B6AC5 /* speigs.c */,
 			);
 			path = linsys;
 			sourceTree = "<group>";
@@ -697,6 +704,7 @@
 				19118E142737B72800D51D03 /* cs_ereach.c in Sources */,
 				19ABC01227C09F6B00105887 /* dsdpparam.c in Sources */,
 				19118DF22737B72800D51D03 /* cs_reach.c in Sources */,
+				19BCF811282179D3000B6AC5 /* speigs.c in Sources */,
 				19118E132737B72800D51D03 /* cs_happly.c in Sources */,
 				19118E0A2737B72800D51D03 /* cs_maxtrans.c in Sources */,
 				192B24B22768D1A900F5C7C0 /* test_data.c in Sources */,

@@ -1,5 +1,6 @@
 #include "dsdpproxmeasure.h"
 #include "dsdppfeascheck.h"
+#include "stepheur.h"
 #include "dsdputils.h"
 
 extern DSDP_INT dsdpgetPhaseAProxMeasure( HSDSolver *dsdpSolver, double newmu ) {
@@ -35,8 +36,12 @@ extern DSDP_INT dsdpgetPhaseAProxMeasure( HSDSolver *dsdpSolver, double newmu ) 
         pObj += dsdpSolver->mu / dsdpSolver->tau * \
                 (dsdpSolver->rysinv + tmp1 + tmp2 + dsdpSolver->nall);
         pObj = pObj / dsdpSolver->tau;
-        
-        dsdpSolver->pObjVal = pObj; // (dsdpSolver->pObjVal == DSDP_INFINITY) ? pObj : MIN(pObj, dsdpSolver->pObjVal);
+        tmp1 = dsdpSolver->pObjVal;
+        if (tmp1 == 1e+10 || tmp1 == 1e+05) {
+            dsdpSolver->pObjVal = pObj;
+        } else {
+            dsdpSolver->pObjVal = MIN(pObj, dsdpSolver->pObjVal);
+        }
         
         if (dsdpSolver->mu < 1e-03) {
             dsdpSolver->mumaker = dsdpSolver->mu;
@@ -86,7 +91,11 @@ extern DSDP_INT dsdpgetPhaseBProxMeasure( HSDSolver *dsdpSolver, double *muub, d
         gap -= tightsum * dsdpSolver->ybound * dsdpSolver->mu;
 #endif
         
-        if (usegold) {
+        if (usegold && dsdpSolver->mu > 1e-04) {
+            double approxpObj;
+            searchpObj(dsdpSolver, &approxpObj);
+            dsdpSolver->pObjVal = MIN(dsdpSolver->pObjVal, \
+                                      0.5 * approxpObj + 0.5 * dsdpSolver->pObjVal);
             dsdpSolver->pObjVal = MIN(dsdpSolver->dObjVal + gap, dsdpSolver->pObjVal);
             gap = dsdpSolver->pObjVal - dsdpSolver->dObjVal;
         } else {
@@ -115,11 +124,15 @@ extern DSDP_INT dsdpgetPhaseBProxMeasure( HSDSolver *dsdpSolver, double *muub, d
         }
         
     } else {
+        if (usegold && dsdpSolver->mu > 1e-04) {
+            double approxpObj;
+            searchpObj(dsdpSolver, &approxpObj);
+            dsdpSolver->pObjVal = MIN(dsdpSolver->pObjVal, \
+                                      0.9 * approxpObj + 0.1 * dsdpSolver->pObjVal);
+        }
         *muub = (dsdpSolver->pObjVal - dsdpSolver->dObjVal) / dsdpSolver->nall;
     }
     
-    
     *mulb = (*muub) / rho;
-    
     return retcode;
 }

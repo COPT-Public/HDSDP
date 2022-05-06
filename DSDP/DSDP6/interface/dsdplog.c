@@ -371,6 +371,7 @@ extern DSDP_INT printPhaseASummary( HSDSolver *dsdpSolver ) {
     DSDP_INT retcode = DSDP_RETCODE_OK;
     char sAlog[80] = "| DSDP Phase A ends with status: ";
     dsdpshowdash();
+    printf("Phase A Log Ends. \n");
     dsdpstatus(dsdpSolver->solStatus, &sAlog[33]);
     double time; printf("\n");
     dsdpshowdash();
@@ -387,6 +388,7 @@ extern DSDP_INT printPhaseBSummary( HSDSolver *dsdpSolver ) {
     DSDP_INT retcode = DSDP_RETCODE_OK;
     char sBlog[80] = "| DSDP Phase B ends with status: ";
     dsdpshowdash();
+    printf("Phase B Log Ends. \n");
     dsdpstatus(dsdpSolver->solStatus, &sBlog[33]);
     double time; printf("\n");
     dsdpshowdash();

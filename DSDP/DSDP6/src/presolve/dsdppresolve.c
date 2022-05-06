@@ -934,7 +934,7 @@ extern DSDP_INT preSDPMatCScale( HSDSolver *dsdpSolver ) {
     if (dsdpSolver->cScaler > 1e+10) {
         dsdpSolver->cScaler = 1e+08;
     } else if (dsdpSolver->cScaler > 1e+04) {
-        dsdpSolver->cScaler = (dsdpSolver->m > 15000) ? 1e+02 : 1e+04;
+        dsdpSolver->cScaler = 1.0;
     } else if (dsdpSolver->cScaler < 1e-15) {
         dsdpSolver->cScaler = 1.0;
         DSDPStatUpdate(&dsdpSolver->dsdpStats, STAT_PFEAS_PROBLEM, TRUE);

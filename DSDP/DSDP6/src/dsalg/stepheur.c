@@ -419,7 +419,11 @@ extern DSDP_INT selectMu( HSDSolver *dsdpSolver, double *newmu ) {
         tmp = MIN(0.97 * tmp, 1000.0);
         
         *newmu = (alphap * dsdpSolver->mu) / (1.0 + tmp) + \
-                  + (1.0 - alphap) * (dsdpSolver->pObjVal - dsdpSolver->dObjVal) / (dsdpSolver->n + dsdpSolver->m * 2);
+                  + (1.0 - alphap) * (dsdpSolver->pObjVal - dsdpSolver->dObjVal) / dsdpSolver->nall;
+    }
+    
+    if (*newmu == 0.0) {
+        
     }
     
     return retcode;
