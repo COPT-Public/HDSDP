@@ -47,7 +47,7 @@ extern DSDP_INT spsMatAddds        ( spsMat *sXMat, double alpha, dsMat *sYMat )
 extern DSDP_INT spsMatAddr1        ( spsMat *sXMat, double alpha, r1Mat *r1YMat, DSDP_INT *sumHash );
 extern DSDP_INT spsMatAddrk        ( spsMat *sXMat, double alpha, rkMat *rkYMat, DSDP_INT *sumHash );
 extern DSDP_INT spsMatFnorm        ( spsMat *sMat,  double *fnrm );
-extern DSDP_INT spsMatOneNorm      ( spsMat *sMat,  double *onenrm );
+extern double   spsMatOneNorm      ( spsMat *sMat );
 extern DSDP_INT spsMatScale        ( spsMat *sXMat, double alpha );
 extern DSDP_INT spsMatRscale       ( spsMat *sXMat, double r );
 

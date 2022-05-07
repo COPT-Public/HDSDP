@@ -363,7 +363,7 @@ extern DSDP_INT r1MatFnorm( r1Mat *x, double *fnrm ) {
     return DSDP_RETCODE_OK;
 }
 
-extern DSDP_INT r1MatOneNorm( r1Mat *x, double *onenrm ) {
+extern double r1MatOneNorm( r1Mat *x ) {
     
     double res = 0.0, *xdata = x->x;
     DSDP_INT i, j, *nzIdx = x->nzIdx;
@@ -386,8 +386,7 @@ extern DSDP_INT r1MatOneNorm( r1Mat *x, double *onenrm ) {
         }
     }
     
-    *onenrm = 2 * fabs(x->sign) * res;
-    return DSDP_RETCODE_OK;
+    return 2 * fabs(x->sign) * res;
 }
 
 extern DSDP_INT r1MatScale( r1Mat *x, double a ) {

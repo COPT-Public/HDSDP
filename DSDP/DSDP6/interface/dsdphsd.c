@@ -483,13 +483,13 @@ static DSDP_INT DSDPIPresolve( HSDSolver *dsdpSolver ) {
     center = my_clock();
     retcode = preRank1Rdc(dsdpSolver); checkCode;
     t = my_clock() - center;
-    printf("| - Rank one detection completes in %g seconds \n", t);
+    printf("| - Rank one detection completes in %3.3f seconds \n", t);
     DSDPStatUpdate(stat, STAT_RONE_TIME, t);
     
     center = my_clock();
     retcode = preRankkRdc(dsdpSolver); checkCode;
     t = my_clock() - center;
-    printf("| - Eigen decomposition completes in %g seconds \n", t);
+    printf("| - Eigen decomposition completes in %3.3f seconds \n", t);
     DSDPStatUpdate(stat, STAT_EIG_TIME, t);
     
     center = my_clock();
@@ -501,19 +501,19 @@ static DSDP_INT DSDPIPresolve( HSDSolver *dsdpSolver ) {
     dsdpSolver->cScaler = 1.0;
 #endif
     t = my_clock() - center;
-    printf("| - Scaling completes in %g seconds \n", t);
+    printf("| - Scaling completes in %3.3f seconds \n", t);
     DSDPStatUpdate(stat, STAT_SCAL_TIME, t);
     
     center = my_clock();
     retcode = getMatIdx(dsdpSolver); checkCode;
     t = my_clock() - center;
-    printf("| - Matrix statistics ready in %g seconds \n", t);
+    printf("| - Matrix statistics ready in %3.3f seconds \n", t);
     DSDPStatUpdate(stat, STAT_MATSTAT_TIME, t);
     
     center = my_clock();
     retcode = preSymbolic(dsdpSolver); checkCode;
     t = my_clock() - center;
-    printf("| - Dual symbolic check completes in %g seconds \n", t);
+    printf("| - Dual symbolic check completes in %3.3f seconds \n", t);
     DSDPStatUpdate(stat, STAT_SYMBOLIC_TIME, t);
     
     center = my_clock();
@@ -521,13 +521,13 @@ static DSDP_INT DSDPIPresolve( HSDSolver *dsdpSolver ) {
     retcode = DSDPCheckSchurType(dsdpSolver->M); checkCode;
     retcode = DSDPSchurReorder(dsdpSolver->M); checkCode;
     t = my_clock() - center;
-    printf("| - Schur matrix re-ordering completes in %g seconds \n", t);
+    printf("| - Schur matrix re-ordering completes in %3.3f seconds \n", t);
     DSDPStatUpdate(stat, STAT_SCHURORD_TIME, t);
     
     dsdpSolver->insStatus = DSDP_STATUS_PRESOLVED;
     t = my_clock() - start;
     retcode = DSDPStatUpdate(stat, STAT_PRESOLVE_TIME, t);
-    printf("| Presolve Ends. Elapsed Time: %10.3e. \n", t);
+    printf("| Presolve Ends. Elapsed Time: %3.3f seconds \n", t);
     
     return retcode;
 }

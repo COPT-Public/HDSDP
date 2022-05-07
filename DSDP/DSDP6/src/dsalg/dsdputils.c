@@ -1,11 +1,99 @@
 #include "dsdputils.h"
 #include "dsdpsolver.h"
-static char etype[] = "DSDP Utility";
+static char etype[] = "DSDP Conic Utility";
 
 /*
   Utility routines that manage the operations between
   different types of matrices
 */
+
+/*
+ Conic operations: Scaling operations
+ Compute one-norm for SDP, LP and other cones
+ */
+
+static double SDPConic( COPS_GET_A_ONE_NORM )
+( HSDSolver *dsdpSolver ) {
+    DSDP_INT k = dsdpSolver->nBlock, m = dsdpSolver->m, i, j;
+    double onenorm = 0.0;
+    for (i = 0; i < k; ++i) {
+        for (j = 0; j < m; ++j) {
+            onenorm += getMatOneNorm(dsdpSolver, i, j);
+        }
+    }
+    return onenorm;
+}
+
+static double LPConic( COPS_GET_A_ONE_NORM )
+( HSDSolver *dsdpSolver ) {
+    // TODO: LP conic
+    return 0.0;
+}
+
+static double BConic( COPS_GET_A_ONE_NORM )
+( HSDSolver *dsdpSolver ) {
+    return 0.0;
+}
+
+static double SDPConic( COPS_GET_C_ONE_NORM )
+( HSDSolver *dsdpSolver ) {
+    DSDP_INT k = dsdpSolver->nBlock, m = dsdpSolver->m, i;
+    double onenorm = 0.0;
+    for (i = 0; i < k; ++i) {
+        onenorm += getMatOneNorm(dsdpSolver, i, m);
+    }
+    return onenorm;
+}
+
+static double LPConic( COPS_GET_C_ONE_NORM )
+( HSDSolver *dsdpSolver ) {
+    // TODO: LP conic
+    return 0.0;
+}
+
+static double BConic( COPS_GET_C_ONE_NORM )
+( HSDSolver *dsdpSolver ) {
+    return 0.0;
+}
+
+static void SDPConic( COPS_DO_C_SCALE )
+( HSDSolver *dsdpSolver ) {
+    for (DSDP_INT k = 0; k < dsdpSolver->nBlock; ++k) {
+        matRScale(dsdpSolver, k, dsdpSolver->m, dsdpSolver->cScaler);
+    }
+    return;
+}
+
+static void LPConic( COPS_DO_C_SCALE )
+( HSDSolver *dsdsSpolver ) {
+    // TODO: LP conic
+}
+
+static void BConic( COPS_DO_C_SCALE )
+( HSDSolver *dsdsSpolver ) {
+    return;
+}
+
+extern double DSDPConic( COPS_GET_A_ONE_NORM )
+( HSDSolver *dsdpSolver ) {
+    return SDPConic( COPS_GET_A_ONE_NORM )(dsdpSolver) + \
+           LPConic ( COPS_GET_A_ONE_NORM )(dsdpSolver) + \
+           BConic  ( COPS_GET_A_ONE_NORM )(dsdpSolver);
+}
+
+extern double DSDPConic( COPS_GET_C_ONE_NORM )
+( HSDSolver *dsdpSolver ) {
+    return SDPConic( COPS_GET_C_ONE_NORM )(dsdpSolver) + \
+           LPConic ( COPS_GET_C_ONE_NORM )(dsdpSolver) + \
+           BConic  ( COPS_GET_C_ONE_NORM )(dsdpSolver);
+}
+
+extern void DSDPConic( COPS_DO_C_SCALE )
+( HSDSolver *dsdpSolver ) {
+    SDPConic( COPS_DO_C_SCALE )(dsdpSolver);
+    LPConic ( COPS_DO_C_SCALE )(dsdpSolver);
+    BConic  ( COPS_DO_C_SCALE )(dsdpSolver);
+}
 
 extern void invertDualVars( HSDSolver *dsdpSolver ) {
     // Compute inverse of the dual matrix when M3, M4 or M5 techniques are used
@@ -154,18 +242,15 @@ extern DSDP_INT getMatFnorm( HSDSolver *dsdpSolver, DSDP_INT blockid, DSDP_INT c
     return retcode;
 }
 
-extern DSDP_INT getMatOneNorm( HSDSolver *dsdpSolver, DSDP_INT blockid, DSDP_INT constrid, double *nrm ) {
-    
-    DSDP_INT retcode = DSDP_RETCODE_OK;
+extern double getMatOneNorm( HSDSolver *dsdpSolver, DSDP_INT blockid, DSDP_INT constrid ) {
     void *data = dsdpSolver->sdpData[blockid]->sdpData[constrid];
     switch (dsdpSolver->sdpData[blockid]->types[constrid]) {
-        case MAT_TYPE_ZERO  : *nrm = 0.0; break;
-        case MAT_TYPE_DENSE : denseMatOneNorm(data, nrm); break;
-        case MAT_TYPE_SPARSE: spsMatOneNorm(data, nrm); break;
-        case MAT_TYPE_RANKK : r1MatOneNorm(data, nrm); break;
-        default             : error(etype, "Unknown matrix type. \n"); break;
+        case MAT_TYPE_ZERO  : return 0.0;
+        case MAT_TYPE_DENSE : return denseMatOneNorm(data);
+        case MAT_TYPE_SPARSE: return spsMatOneNorm(data);
+        case MAT_TYPE_RANKK : return r1MatOneNorm(((rkMat *) data)->data[0]);
+        default             : assert( FALSE );
     }
-    return retcode;
 }
 
 /* Matrix Scaler */
@@ -275,3 +360,4 @@ extern DSDP_INT getSDPPrimalObjPhaseB( HSDSolver *dsdpSolver ) {
     dsdpSolver->pObjVal = pObjVal * mu + dsdpSolver->dObjVal;
     return retcode;
 }
+

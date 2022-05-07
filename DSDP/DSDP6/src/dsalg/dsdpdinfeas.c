@@ -18,15 +18,6 @@ static char etype[] = "DSDP Dual infeasibility elimination";
  solution to start the second phase
 
  */
-static const double nomu[1]    = {1.0};
-static const double consvmu[2] = {0.3, 1.0};
-static const double aggmu[4]   = {0.1, 0.4, 0.7, 1.0};
-
-extern void funcA( dsMat *A, DSDP_INT i, DSDP_INT j) {
-    assert( i >= j );
-    printf("%30.20e \n", packIdx(A->array, A->dim, i, j));
-}
-
 extern DSDP_INT DSDPDInfeasEliminator( HSDSolver *dsdpSolver ) {
     
     DSDP_INT retcode = DSDP_RETCODE_OK;
@@ -35,40 +26,20 @@ extern DSDP_INT DSDPDInfeasEliminator( HSDSolver *dsdpSolver ) {
     dsdpSolver->pObjVal = DSDP_INFINITY;
     
     // Initialize
-    double muprimal, tol, sigma;
-    DSDP_INT attempt, agiter;
+    double muprimal, tol, sigma, initpObj = dsdpSolver->pObjVal;
+    double trymu = 0.0, time = 0.0, start = my_clock();
+    DSDP_INT attempt;
     
-    retcode = DSDPGetDblParam(dsdpSolver, DBL_PARAM_INIT_MU,    &muprimal);
-    retcode = DSDPGetDblParam(dsdpSolver, DBL_PARAM_ABS_OPTTOL, &tol     );
-    retcode = DSDPGetDblParam(dsdpSolver, DBL_PARAM_ASIGMA,     &sigma   );
-    retcode = DSDPGetIntParam(dsdpSolver, INT_PARAM_AATTEMPT,   &attempt );
-    retcode = DSDPGetIntParam(dsdpSolver, INT_PARAM_AMAXITER,   &agiter  );
-    agiter  = MIN(agiter, 30);
-    
-    double trymu = 0.0;
-    double time = 0.0;
-    
-    DSDP_INT ntry   = 0;
-    double start    = my_clock();
-    
-    const double *newmu = NULL;
-    
-    if (attempt == AATEMT_CONSERVATIVE) {
-        ntry = 1; newmu = nomu;
-    } else if (attempt == AATEMPT_MILD) {
-        ntry = 2; newmu = consvmu;
-    } else {
-        ntry = 4; newmu = aggmu;
-    }
-        
+    DSDPGetDblParam(dsdpSolver, DBL_PARAM_INIT_MU,    &muprimal);
+    DSDPGetDblParam(dsdpSolver, DBL_PARAM_ABS_OPTTOL, &tol     );
+    DSDPGetDblParam(dsdpSolver, DBL_PARAM_ASIGMA,     &sigma   );
+    DSDPGetIntParam(dsdpSolver, INT_PARAM_AATTEMPT,   &attempt );
     dsdpSolver->eventMonitor[EVENT_IN_PHASE_A] = TRUE;
     dsdpSolver->eventMonitor[EVENT_IN_PHASE_B] = FALSE;
     
     /* Start Phase A algorithm */
     dsdpshowdash();
-    retcode = dsdpInitializeA(dsdpSolver); checkCode;
-    
-    double initpObj = dsdpSolver->pObjVal;
+    dsdpInitializeA(dsdpSolver);
     
     /* Print algorithm header */
     dsdpprintPhaseAheader();
@@ -132,7 +103,6 @@ extern DSDP_INT DSDPDInfeasEliminator( HSDSolver *dsdpSolver ) {
             dsdpSolver->mu = MAX(dsdpSolver->mu * 0.95, trymu);
         }
         
-        
         dsdpSolver->iterProgress[ITER_PROX_POBJ] = TRUE;
         // Adaptive dual infeasibility
 #ifdef compareMode
@@ -151,9 +121,7 @@ extern DSDP_INT DSDPDInfeasEliminator( HSDSolver *dsdpSolver ) {
         // Take step
         retcode = takeStep(dsdpSolver); checkCode;
         dsdpSolver->iterProgress[ITER_TAKE_STEP] = TRUE;
-#ifdef compareMode
-        assert( TRUE );
-#endif
+        
         // Corrector
         retcode = dInfeasCorrectorStep(dsdpSolver, FALSE); checkCode;
 

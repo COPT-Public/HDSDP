@@ -507,11 +507,9 @@ extern DSDP_INT spsMatFnorm( spsMat *sMat, double *fnrm ) {
     return retcode;
 }
 
-extern DSDP_INT spsMatOneNorm( spsMat *sMat, double *onenrm ) {
+extern double spsMatOneNorm( spsMat *sMat ) {
     
     // Element-wise sum of absolute values
-    DSDP_INT retcode = DSDP_RETCODE_OK;
-    
     double nrm = 0.0;
     DSDP_INT i, j, k;
     if (sMat->nzHash) {
@@ -529,7 +527,7 @@ extern DSDP_INT spsMatOneNorm( spsMat *sMat, double *onenrm ) {
         }
         nrm *= 2;
     }
-    *onenrm = nrm; return retcode;
+    return nrm;
 }
 
 /* Factorization and linear system solver */

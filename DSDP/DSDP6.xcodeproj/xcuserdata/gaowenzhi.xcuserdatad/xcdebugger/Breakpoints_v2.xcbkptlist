@@ -273,8 +273,8 @@
             filePath = "DSDP6/src/linsys/sparsemat.c"
             startingColumnNumber = "9223372036854775807"
             endingColumnNumber = "9223372036854775807"
-            startingLineNumber = "674"
-            endingLineNumber = "674"
+            startingLineNumber = "672"
+            endingLineNumber = "672"
             landmarkName = "SinvSpSinv(Sinv, aux, A, SinvASinv)"
             landmarkType = "9">
          </BreakpointContent>
@@ -353,8 +353,8 @@
             filePath = "DSDP6/src/linsys/sparsemat.c"
             startingColumnNumber = "9223372036854775807"
             endingColumnNumber = "9223372036854775807"
-            startingLineNumber = "824"
-            endingLineNumber = "824"
+            startingLineNumber = "822"
+            endingLineNumber = "822"
             landmarkName = "spsSinvspsSinv(A, B, Sinv)"
             landmarkType = "9">
          </BreakpointContent>
@@ -417,8 +417,8 @@
             filePath = "DSDP6/src/linsys/sparsemat.c"
             startingColumnNumber = "9223372036854775807"
             endingColumnNumber = "9223372036854775807"
-            startingLineNumber = "879"
-            endingLineNumber = "879"
+            startingLineNumber = "877"
+            endingLineNumber = "877"
             landmarkName = "spsMatMaxEig(sMat, maxEig)"
             landmarkType = "9">
          </BreakpointContent>
@@ -641,8 +641,8 @@
             filePath = "DSDP6/src/linsys/sparsemat.c"
             startingColumnNumber = "9223372036854775807"
             endingColumnNumber = "9223372036854775807"
-            startingLineNumber = "789"
-            endingLineNumber = "789"
+            startingLineNumber = "787"
+            endingLineNumber = "787"
             landmarkName = "spsRySinv(A, Sinv, asinv, Ry)"
             landmarkType = "9">
          </BreakpointContent>
@@ -657,8 +657,8 @@
             filePath = "DSDP6/src/dsalg/dsdpdinfeas.c"
             startingColumnNumber = "9223372036854775807"
             endingColumnNumber = "9223372036854775807"
-            startingLineNumber = "116"
-            endingLineNumber = "116"
+            startingLineNumber = "87"
+            endingLineNumber = "87"
             landmarkName = "DSDPDInfeasEliminator(dsdpSolver)"
             landmarkType = "9">
          </BreakpointContent>
@@ -753,25 +753,9 @@
             filePath = "DSDP6/src/dsalg/dsdpdinfeas.c"
             startingColumnNumber = "9223372036854775807"
             endingColumnNumber = "9223372036854775807"
-            startingLineNumber = "112"
-            endingLineNumber = "112"
+            startingLineNumber = "83"
+            endingLineNumber = "83"
             landmarkName = "DSDPDInfeasEliminator(dsdpSolver)"
-            landmarkType = "9">
-         </BreakpointContent>
-      </BreakpointProxy>
-      <BreakpointProxy
-         BreakpointExtensionID = "Xcode.Breakpoint.FileBreakpoint">
-         <BreakpointContent
-            uuid = "D898312D-8570-42AB-8E5A-584F57FE606A"
-            shouldBeEnabled = "No"
-            ignoreCount = "0"
-            continueAfterRunningActions = "No"
-            filePath = "DSDP6/src/dsalg/schurmatops.c"
-            startingColumnNumber = "9223372036854775807"
-            endingColumnNumber = "9223372036854775807"
-            startingLineNumber = "310"
-            endingLineNumber = "310"
-            landmarkName = "setupSchur(dsdpSolver)"
             landmarkType = "9">
          </BreakpointContent>
       </BreakpointProxy>
@@ -1098,22 +1082,6 @@
       <BreakpointProxy
          BreakpointExtensionID = "Xcode.Breakpoint.FileBreakpoint">
          <BreakpointContent
-            uuid = "247A4EE0-9AEC-4C4C-84B4-247524104F2A"
-            shouldBeEnabled = "Yes"
-            ignoreCount = "0"
-            continueAfterRunningActions = "No"
-            filePath = "DSDP6/src/linsys/dsdplanczos.c"
-            startingColumnNumber = "9223372036854775807"
-            endingColumnNumber = "9223372036854775807"
-            startingLineNumber = "178"
-            endingLineNumber = "178"
-            landmarkName = "dsdpLanczosStep(lczSolver, S, dS, lbd, delta)"
-            landmarkType = "9">
-         </BreakpointContent>
-      </BreakpointProxy>
-      <BreakpointProxy
-         BreakpointExtensionID = "Xcode.Breakpoint.FileBreakpoint">
-         <BreakpointContent
             uuid = "C260929C-AF16-4A1F-8B6B-2C24236D26A4"
             shouldBeEnabled = "Yes"
             ignoreCount = "0"
@@ -1140,6 +1108,54 @@
             startingLineNumber = "102"
             endingLineNumber = "102"
             landmarkName = "DSDPPFeasPhase(dsdpSolver)"
+            landmarkType = "9">
+         </BreakpointContent>
+      </BreakpointProxy>
+      <BreakpointProxy
+         BreakpointExtensionID = "Xcode.Breakpoint.FileBreakpoint">
+         <BreakpointContent
+            uuid = "BF2583A9-31F2-4DFF-91F3-B5198E7D1DF8"
+            shouldBeEnabled = "Yes"
+            ignoreCount = "0"
+            continueAfterRunningActions = "No"
+            filePath = "DSDP6/src/dsalg/dsdpdinfeas.c"
+            startingColumnNumber = "9223372036854775807"
+            endingColumnNumber = "9223372036854775807"
+            startingLineNumber = "122"
+            endingLineNumber = "122"
+            landmarkName = "DSDPDInfeasEliminator(dsdpSolver)"
+            landmarkType = "9">
+         </BreakpointContent>
+      </BreakpointProxy>
+      <BreakpointProxy
+         BreakpointExtensionID = "Xcode.Breakpoint.FileBreakpoint">
+         <BreakpointContent
+            uuid = "2599D5F4-75FA-4859-B367-7CAB7FAE24A0"
+            shouldBeEnabled = "Yes"
+            ignoreCount = "0"
+            continueAfterRunningActions = "No"
+            filePath = "DSDP6/src/dsalg/schurmatops.c"
+            startingColumnNumber = "9223372036854775807"
+            endingColumnNumber = "9223372036854775807"
+            startingLineNumber = "270"
+            endingLineNumber = "270"
+            landmarkName = "schurPhaseAMatSolve(dsdpSolver)"
+            landmarkType = "9">
+         </BreakpointContent>
+      </BreakpointProxy>
+      <BreakpointProxy
+         BreakpointExtensionID = "Xcode.Breakpoint.FileBreakpoint">
+         <BreakpointContent
+            uuid = "6356EA2D-0F6E-4CB3-96DB-E48C436D3488"
+            shouldBeEnabled = "Yes"
+            ignoreCount = "0"
+            continueAfterRunningActions = "No"
+            filePath = "DSDP6/src/dsalg/schurmatops.c"
+            startingColumnNumber = "9223372036854775807"
+            endingColumnNumber = "9223372036854775807"
+            startingLineNumber = "312"
+            endingLineNumber = "312"
+            landmarkName = "setupSchur(dsdpSolver)"
             landmarkType = "9">
          </BreakpointContent>
       </BreakpointProxy>

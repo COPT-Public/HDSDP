@@ -272,29 +272,23 @@ extern DSDP_INT DSDPCheckPhaseAConvergence( HSDSolver *dsdpSolver, DSDP_INT *isO
     DSDP_INT retcode = DSDP_RETCODE_OK;
     DSDP_INT *monitor = dsdpSolver->eventMonitor;
     
-    DSDP_INT AmaxIter;
-    double absOptTol, absFeasTol, statval1, statval2;
+    DSDP_INT AmaxIter; *isOK = FALSE;
+    double absOptTol, absFeasTol, statval1, statval2, initpObj;
     DSDPStats *stat = &dsdpSolver->dsdpStats;
-    retcode = DSDPGetDblParam(dsdpSolver, DBL_PARAM_ABS_OPTTOL, &absOptTol);
-    retcode = DSDPGetDblParam(dsdpSolver, DBL_PARAM_ABS_FEASTOL, &absFeasTol);
-    retcode = DSDPGetIntParam(dsdpSolver, INT_PARAM_AMAXITER, &AmaxIter);
-    
-    *isOK = FALSE;
-    
-    assert( dsdpSolver->eventMonitor[EVENT_IN_PHASE_A] );
+    DSDPGetDblParam(dsdpSolver, DBL_PARAM_ABS_OPTTOL, &absOptTol);
+    DSDPGetDblParam(dsdpSolver, DBL_PARAM_ABS_FEASTOL, &absFeasTol);
+    DSDPGetDblParam(dsdpSolver, DBL_PARAM_INIT_POBJ, &initpObj);
+    DSDPGetIntParam(dsdpSolver, INT_PARAM_AMAXITER, &AmaxIter);
     
     // Dual infeasibility eliminated
-    if (fabs(dsdpSolver->Ry) < absFeasTol * 0.1 * dsdpSolver->tau) {
+    if (fabs(dsdpSolver->Ry) < absFeasTol * dsdpSolver->tau) {
         monitor[EVENT_NO_RY] = TRUE;
-        
-        if (dsdpSolver->pObjVal != DSDP_INFINITY) {
+        if (dsdpSolver->pObjVal != initpObj) {
             dsdpSolver->solStatus = DSDP_PD_FEASIBLE;
         } else {
             dsdpSolver->solStatus = DSDP_PUNKNOWN_DFEAS;
         }
-        
-        *isOK = TRUE;
-        return retcode;
+        *isOK = TRUE; return retcode;
     }
     
     // Dual infeasibility certificate found
@@ -327,8 +321,7 @@ extern DSDP_INT DSDPCheckPhaseAConvergence( HSDSolver *dsdpSolver, DSDP_INT *isO
     if (statval1 >= AmaxIter) {
         monitor[EVENT_MAX_ITERATION] = TRUE;
         dsdpSolver->solStatus = DSDP_MAXITER;
-        *isOK = TRUE;
-        return retcode;
+        *isOK = TRUE; return retcode;
     }
     
     // Small step
@@ -377,7 +370,7 @@ extern DSDP_INT printPhaseASummary( HSDSolver *dsdpSolver ) {
     dsdpshowdash();
     DSDPGetStats(&dsdpSolver->dsdpStats, STAT_PHASE_A_TIME, &time);
     printf("%-80s %18s\n", sAlog, "");
-    printf("| Elapsed Time: %6.2e seconds %65s \n", time, "");
+    printf("| Elapsed Time: %3.3f seconds %65s \n", time, "");
     dsdpshowdash();
     return retcode;
 }
@@ -394,7 +387,7 @@ extern DSDP_INT printPhaseBSummary( HSDSolver *dsdpSolver ) {
     dsdpshowdash();
     DSDPGetStats(&dsdpSolver->dsdpStats, STAT_PHASE_B_TIME, &time);
     printf("%-80s %18s\n", sBlog, "");
-    printf("| Elapsed Time: %6.2e seconds %65s \n", time, "");
+    printf("| Elapsed Time: %3.3f seconds %65s \n", time, "");
     dsdpshowdash();
     return retcode;
 }
@@ -421,8 +414,7 @@ extern DSDP_INT DSDPCheckPhaseBConvergence( HSDSolver *dsdpSolver, DSDP_INT *isO
     // Primal infeasibility detected
     if (monitor[EVENT_PINFEAS_DETECTED]) {
         dsdpSolver->solStatus = DSDP_PINFEAS_DFEAS;
-        *isOK = TRUE;
-        return retcode;
+        *isOK = TRUE; return retcode;
     }
     
     DSDPGetStats(stat, STAT_GAP_BROKEN, &statval1);
@@ -434,8 +426,7 @@ extern DSDP_INT DSDPCheckPhaseBConvergence( HSDSolver *dsdpSolver, DSDP_INT *isO
             monitor[EVENT_INVALID_GAP] = TRUE;
         } else {
             dsdpSolver->solStatus = DSDP_INTERNAL_ERROR;
-            *isOK = TRUE;
-            return retcode;
+            *isOK = TRUE; return retcode;
         }
     }
     
@@ -474,21 +465,18 @@ extern DSDP_INT DSDPCheckPhaseBConvergence( HSDSolver *dsdpSolver, DSDP_INT *isO
     
     if (statval2 >= 2) {
         dsdpSolver->solStatus = DSDP_INTERNAL_ERROR;
-        *isOK = TRUE;
-        return retcode;
+        *isOK = TRUE; return retcode;
     }
     
     // NAN in iteration
     if (monitor[EVENT_NAN_IN_ITER]) {
         dsdpSolver->solStatus = DSDP_INTERNAL_ERROR;
-        *isOK = TRUE;
-        return retcode;
+        *isOK = TRUE; return retcode;
     }
     
     if (monitor[EVENT_BAD_SCHUR]) {
         dsdpSolver->solStatus = DSDP_INTERNAL_ERROR;
-        *isOK = TRUE;
-        return retcode;
+        *isOK = TRUE; return retcode;
     }
     
     if (my_clock() - dsdpSolver->startTime > MAXTIME) {

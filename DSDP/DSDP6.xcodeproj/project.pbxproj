@@ -85,6 +85,7 @@
 		1997805027CF6426006B7E6A /* libmkl_sequential.1.dylib in Frameworks */ = {isa = PBXBuildFile; fileRef = 1997804227CF5CFB006B7E6A /* libmkl_sequential.1.dylib */; };
 		1997805327CF6426006B7E6A /* libmkl_intel_lp64.1.dylib in Frameworks */ = {isa = PBXBuildFile; fileRef = 1997805127CF6426006B7E6A /* libmkl_intel_lp64.1.dylib */; };
 		1997805427CF6426006B7E6A /* libmkl_core.1.dylib in Frameworks */ = {isa = PBXBuildFile; fileRef = 1997805227CF6426006B7E6A /* libmkl_core.1.dylib */; };
+		199F256F2826377600D6B778 /* heurpool.c in Sources */ = {isa = PBXBuildFile; fileRef = 199F256E2826377600D6B778 /* heurpool.c */; };
 		199FC14127AD061A0072897D /* dsdpeigfact.c in Sources */ = {isa = PBXBuildFile; fileRef = 199FC14027AD061A0072897D /* dsdpeigfact.c */; };
 		19ABC01227C09F6B00105887 /* dsdpparam.c in Sources */ = {isa = PBXBuildFile; fileRef = 19ABC01127C09F6B00105887 /* dsdpparam.c */; };
 		19BACAF3274EBC1900E987FD /* test_sparse.c in Sources */ = {isa = PBXBuildFile; fileRef = 19BACAF2274EBC1900E987FD /* test_sparse.c */; };
@@ -248,6 +249,7 @@
 		1997805127CF6426006B7E6A /* libmkl_intel_lp64.1.dylib */ = {isa = PBXFileReference; lastKnownFileType = "compiled.mach-o.dylib"; name = libmkl_intel_lp64.1.dylib; path = ../../../../../usr/local/lib/libmkl_intel_lp64.1.dylib; sourceTree = "<group>"; };
 		1997805227CF6426006B7E6A /* libmkl_core.1.dylib */ = {isa = PBXFileReference; lastKnownFileType = "compiled.mach-o.dylib"; name = libmkl_core.1.dylib; path = ../../../../../usr/local/lib/libmkl_core.1.dylib; sourceTree = "<group>"; };
 		199F256D2824AA4300D6B778 /* heurpool.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = heurpool.h; sourceTree = "<group>"; };
+		199F256E2826377600D6B778 /* heurpool.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = heurpool.c; sourceTree = "<group>"; };
 		199FC14027AD061A0072897D /* dsdpeigfact.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = dsdpeigfact.c; sourceTree = "<group>"; };
 		199FC14227AD82680072897D /* dsdpeigfact.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = dsdpeigfact.h; sourceTree = "<group>"; };
 		19ABC01127C09F6B00105887 /* dsdpparam.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = dsdpparam.c; sourceTree = "<group>"; };
@@ -350,13 +352,15 @@
 		19118D912737B72800D51D03 /* dsalg */ = {
 			isa = PBXGroup;
 			children = (
+				19C3BBE1279454D600F0331B /* dsdputils.h */,
+				19C3BBE2279454D600F0331B /* dsdputils.c */,
+				199F256D2824AA4300D6B778 /* heurpool.h */,
 				1924445B27E9E07200C99F42 /* dsdpcorrector.h */,
 				19C3BC03279527BA00F0331B /* dsdppfeascheck.h */,
 				19118D992737B72800D51D03 /* schurmatops.h */,
 				19118D922737B72800D51D03 /* residualsetup.h */,
 				19118D932737B72800D51D03 /* stepheur.h */,
 				1950371427B625C400C723FC /* dsdppsol.h */,
-				19C3BBE1279454D600F0331B /* dsdputils.h */,
 				19F11959275A627B0051D808 /* stepdirection.h */,
 				19C3BBDB2794539600F0331B /* dsdpdinfeas.h */,
 				19C3BBDE279453F200F0331B /* dsdpinitializer.h */,
@@ -370,7 +374,6 @@
 				19C3BBDC2794539600F0331B /* dsdpdinfeas.c */,
 				19C3BBDF279453F200F0331B /* dsdpinitializer.c */,
 				19118D982737B72800D51D03 /* hsd.h */,
-				19C3BBE2279454D600F0331B /* dsdputils.c */,
 				19C3BBE52795054900F0331B /* dsdpproxmeasure.c */,
 				19118D942737B72800D51D03 /* schurmatops.c */,
 				1985AC3C279B9DB400B7B8EB /* dsdppfeas.c */,
@@ -378,7 +381,7 @@
 				197A770427C7889A00D3A50B /* symschur.h */,
 				197A770527C7889A00D3A50B /* symschur.c */,
 				1924445C27E9E07200C99F42 /* dsdpcorrector.c */,
-				199F256D2824AA4300D6B778 /* heurpool.h */,
+				199F256E2826377600D6B778 /* heurpool.c */,
 			);
 			path = dsalg;
 			sourceTree = "<group>";
@@ -645,6 +648,7 @@
 				19118E152737B72800D51D03 /* cs_sqr.c in Sources */,
 				19118E172737B72800D51D03 /* cs_cumsum.c in Sources */,
 				19C3BC05279527BA00F0331B /* dsdppfeascheck.c in Sources */,
+				199F256F2826377600D6B778 /* heurpool.c in Sources */,
 				19C3BBDA2794032000F0331B /* dsdplog.c in Sources */,
 				19118E022737B72800D51D03 /* cs_dfs.c in Sources */,
 				19BACAF727521A7800E987FD /* test_pardiso.c in Sources */,

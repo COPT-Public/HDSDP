@@ -170,7 +170,7 @@ extern DSDP_INT computeDIMACS( HSDSolver *dsdpSolver ) {
     // Collect errors
     DSDPStatUpdate(stat, STAT_DIMACS_ERR1, pInf / (1 + bnrm));
     DSDPStatUpdate(stat, STAT_DIMACS_ERR2, MAX(0.0, -minEigX) / (1 + bnrm));
-    DSDPStatUpdate(stat, STAT_DIMACS_ERR3, dInf * Cnrm / (1 + Cnrm));
+    DSDPStatUpdate(stat, STAT_DIMACS_ERR3, dInf * dsdpSolver->cScaler / (1 + Cnrm));
     DSDPStatUpdate(stat, STAT_DIMACS_ERR4, MAX(0.0, -minEigS) * dsdpSolver->cScaler / (1 + Cnrm));
     DSDPStatUpdate(stat, STAT_DIMACS_ERR5, gap / (1 + fabs(pObj) + fabs(dObj)));
     DSDPStatUpdate(stat, STAT_DIMACS_ERR6, compslack / (1 + fabs(pObj) + fabs(dObj)));

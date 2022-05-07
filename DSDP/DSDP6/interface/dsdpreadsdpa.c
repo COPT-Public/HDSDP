@@ -245,7 +245,7 @@ extern DSDP_INT DSDPSolveSDPA(int argc, char *argv[]) {
                                      coneAp[i], coneAi[i], coneAx[i]);
     }
     printf("| Data read into solver."
-           " Elapsed Time: %10.3e. \n", my_clock() - start);
+           " Elapsed Time: %3.3f. \n", my_clock() - start);
     
     retcode = DSDPSetObj(hsdSolver, dObj);
     retcode = DSDPOptimize(hsdSolver);
