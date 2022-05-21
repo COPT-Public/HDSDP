@@ -21,7 +21,7 @@
 static char etype[] = "DSDP Interface";
 
 #define vec_init_alloc(v, n) vecIter = (vec *) calloc(1, sizeof(vec)); (v) = vecIter; \
-                             retcode = vec_init(vecIter); retcode = vec_alloc(vecIter, (n)); checkCode;
+                             vec_init(vecIter); retcode = vec_alloc(vecIter, (n)); checkCode;
 
 /* DSDP internal methods */
 static DSDP_INT DSDPIInit( HSDSolver *dsdpSolver ) {
@@ -103,6 +103,7 @@ static DSDP_INT DSDPIInit( HSDSolver *dsdpSolver ) {
     // Step matrix
     dsdpSolver->dS     = NULL;
     dsdpSolver->Scker  = NULL;
+    dsdpSolver->scker  = NULL;
     
     dsdpSolver->lczSolver = NULL;
     dsdpSolver->spaux  = NULL;
@@ -115,7 +116,9 @@ static DSDP_INT DSDPIInit( HSDSolver *dsdpSolver ) {
     
     // Primal relaxation
     dsdpSolver->sl = NULL;
+    dsdpSolver->slcker = NULL;
     dsdpSolver->su = NULL;
+    dsdpSolver->sucker = NULL;
     dsdpSolver->pinfeas = 0.0;
     
     dsdpSolver->param     = &defaultParam;
@@ -129,8 +132,11 @@ static DSDP_INT DSDPIInit( HSDSolver *dsdpSolver ) {
     dsdpSolver->pScaler = NULL;
     dsdpSolver->cScaler = 0.0;
     dsdpSolver->ymaker  = NULL;
+    dsdpSolver->ymaker2 = NULL;
     dsdpSolver->dymaker = NULL;
+    dsdpSolver->dymaker2 = NULL;
     dsdpSolver->mumaker = 0.0;
+    dsdpSolver->mumaker2 = 0.0;
     
     DSDPStatInit(&dsdpSolver->dsdpStats);
     dsdpSolver->startTime = my_clock();
@@ -182,7 +188,7 @@ static DSDP_INT DSDPIAllocResi( HSDSolver *dsdpSolver ) {
 
     // Allocate ry
     dsdpSolver->ry = (vec *) calloc(1, sizeof(vec));
-    retcode = vec_init(dsdpSolver->ry);
+    vec_init(dsdpSolver->ry);
     retcode = vec_alloc(dsdpSolver->ry, lpdim);
     
     return retcode;
@@ -256,10 +262,15 @@ static DSDP_INT DSDPIAllocIter( HSDSolver *dsdpSolver ) {
     vec_init_alloc(dsdpSolver->dy, dsdpSolver->m);
     vec_init_alloc(dsdpSolver->ymaker, dsdpSolver->m);
     vec_init_alloc(dsdpSolver->dymaker, dsdpSolver->m);
+    vec_init_alloc(dsdpSolver->ymaker2, dsdpSolver->m);
+    vec_init_alloc(dsdpSolver->dymaker2, dsdpSolver->m);
     
-    // sl, su
+    // sl, su, scker, slcker, sucker
     vec_init_alloc(dsdpSolver->sl, dsdpSolver->m);
     vec_init_alloc(dsdpSolver->su, dsdpSolver->m);
+    vec_init_alloc(dsdpSolver->scker, dsdpSolver->m);
+    vec_init_alloc(dsdpSolver->slcker, dsdpSolver->m);
+    vec_init_alloc(dsdpSolver->sucker, dsdpSolver->m);
     
     // Allocate Scker and spaux
     dsdpSolver->Scker = (spsMat **) calloc(nblock, sizeof(spsMat *));
@@ -415,15 +426,21 @@ static DSDP_INT DSDPIFreeAlgIter( HSDSolver *dsdpSolver ) {
     }
     DSDP_FREE(dsdpSolver->rkaux);
     
-    vec_free(dsdpSolver->ds); vec_free(dsdpSolver->dy);
-    vec_free(dsdpSolver->sl); vec_free(dsdpSolver->su);
+    vec_free(dsdpSolver->scker);  vec_free(dsdpSolver->slcker);
+    vec_free(dsdpSolver->sucker); vec_free(dsdpSolver->ds);
+    vec_free(dsdpSolver->dy);
+    vec_free(dsdpSolver->sl);      vec_free(dsdpSolver->su);
     vec_free(dsdpSolver->pScaler); vec_free(dsdpSolver->ymaker);
-    vec_free(dsdpSolver->dymaker);
+    vec_free(dsdpSolver->dymaker); vec_free(dsdpSolver->ymaker2);
+    vec_free(dsdpSolver->dymaker2);
     
-    DSDP_FREE(dsdpSolver->ds); DSDP_FREE(dsdpSolver->dy);
-    DSDP_FREE(dsdpSolver->sl); DSDP_FREE(dsdpSolver->su);
+    DSDP_FREE(dsdpSolver->scker);  DSDP_FREE(dsdpSolver->slcker);
+    DSDP_FREE(dsdpSolver->sucker); DSDP_FREE(dsdpSolver->ds);
+    DSDP_FREE(dsdpSolver->dy);
+    DSDP_FREE(dsdpSolver->sl);      DSDP_FREE(dsdpSolver->su);
     DSDP_FREE(dsdpSolver->pScaler); DSDP_FREE(dsdpSolver->ymaker);
-    DSDP_FREE(dsdpSolver->dymaker);
+    DSDP_FREE(dsdpSolver->dymaker); DSDP_FREE(dsdpSolver->ymaker2);
+    DSDP_FREE(dsdpSolver->dymaker2);
     
     symSchurMatFree(dsdpSolver->M); DSDP_FREE(dsdpSolver->M);
     
@@ -440,13 +457,13 @@ static DSDP_INT DSDPIFreeCleanUp( HSDSolver *dsdpSolver ) {
     
     // lpObj
     if (dsdpSolver->isLPset) {
-        retcode = vec_free(dsdpSolver->lpObj); checkCode;
+        vec_free(dsdpSolver->lpObj); checkCode;
     }
     DSDP_FREE(dsdpSolver->lpObj);
     
     // dObj
     if (dsdpSolver->dObj) {
-        retcode = vec_free(dsdpSolver->dObj); checkCode;
+        vec_free(dsdpSolver->dObj); checkCode;
         DSDP_FREE(dsdpSolver->dObj);
     }
     
@@ -456,8 +473,9 @@ static DSDP_INT DSDPIFreeCleanUp( HSDSolver *dsdpSolver ) {
     dsdpSolver->csinvrysinv = 0.0; dsdpSolver->rysinv = 0.0;  dsdpSolver->Pnrm = 0.0;
     dsdpSolver->dPotential = 0.0;  dsdpSolver->tau = 0.0;     dsdpSolver->kappa = 0.0;
     dsdpSolver->alpha = 0.0;       dsdpSolver->dtau = 0.0;    dsdpSolver->dkappa = 0.0;
-    dsdpSolver->mumaker = 0.0;     dsdpSolver->insStatus = 0; dsdpSolver->solStatus = DSDP_STATUS_UNINIT;
-    dsdpSolver->schurmu = 0.0;     dsdpSolver->cScaler = 0.0; dsdpSolver->ybound = 0.0;
+    dsdpSolver->mumaker = 0.0;     dsdpSolver->mumaker2 = 0.0;
+    dsdpSolver->insStatus = 0;     dsdpSolver->solStatus = DSDP_STATUS_UNINIT;
+    dsdpSolver->cScaler = 0.0; dsdpSolver->ybound = 0.0;
     dsdpSolver->dperturb = 0.0;    dsdpSolver->nall = 0;      dsdpSolver->n = 0;
     dsdpSolver->drate = 0.0;       dsdpSolver->startTime = 0.0;
     

@@ -69,12 +69,12 @@ static DSDP_INT defaultIntParam[NUM_INT_PARAM] = {
 static double defaultDblParam[NUM_DBL_PARAM] = {
     
     0.7,   // DBL_PARAM_ASIGMA
-    0.5,   // DBL_PARAM_BSIGMA
+    0.8,   // DBL_PARAM_BSIGMA
     4.0,   // DBL_PARAM_RHO
     4.0,   // DBL_PARAM_RHON
     1e+10, // DBL_PARAM_INIT_POBJ
     
-    1e+04, // DBL_PARAM_INIT_BETA
+    1e+05, // DBL_PARAM_INIT_BETA
     1e+15, // DBL_PARAM_INIT_MU
     1.0, // DBL_PARAM_INIT_TAU
     

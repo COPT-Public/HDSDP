@@ -49,7 +49,7 @@ extern DSDP_INT spsMatAddrk        ( spsMat *sXMat, double alpha, rkMat *rkYMat,
 extern DSDP_INT spsMatFnorm        ( spsMat *sMat,  double *fnrm );
 extern double   spsMatOneNorm      ( spsMat *sMat );
 extern DSDP_INT spsMatScale        ( spsMat *sXMat, double alpha );
-extern DSDP_INT spsMatRscale       ( spsMat *sXMat, double r );
+extern void spsMatRscale       ( spsMat *sXMat, double r );
 
 /* Factorization and linear system solver */
 extern DSDP_INT spsMatSymbolic     ( spsMat *sAMat );
@@ -60,7 +60,7 @@ extern DSDP_INT spsMatVecFSolve    ( spsMat *sAmat, vec *sbVec, vec *Ainvb );
 extern DSDP_INT spsMatVecBSolve    ( spsMat *sAmat, vec *sbVec, vec *Ainvb );
 extern DSDP_INT spsMatLspLSolve    ( spsMat *S,     spsMat *dS,    spsMat *spaux );
 extern DSDP_INT spsMatGetX         ( spsMat *S, spsMat *dS, double *LinvSLTinv   );
-extern DSDP_INT dsdpGetAlpha       ( DSDPLanczos *lczSolver, spsMat *S, spsMat *dS, spsMat *spaux, double *alpha );
+extern double   dsdpGetAlpha       ( DSDPLanczos *lczSolver, spsMat *S, spsMat *dS, spsMat *spaux, double *alpha );
 
 /* Schur matrix assembly */
 extern double SinvSpSinv   ( const double *Sinv, double *aux, spsMat *A, dsMat *SinvASinv );

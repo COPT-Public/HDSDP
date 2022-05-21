@@ -188,7 +188,7 @@ print_log:
     DSDPGetStats(&dsdpSolver->dsdpStats, STAT_PHASE_A_ITER, &statval);
     
     if ((DSDP_INT) statval % 1 == 0) {
-        printf("| %4d | %12.3e | %12.3e | %9.2e | %8.2e | %8.2e | %8.2e | %8.2e | %3s |\n",
+        printf("| %4d | %12.5e | %12.5e | %9.2e | %8.2e | %8.2e | %8.2f | %8.1e | %3s |\n",
                 (DSDP_INT) statval + 1, pobj,
                 dsdpSolver->dObjVal / tau * dsdpSolver->cScaler,
                 nRy / tau, kovert, dsdpSolver->mu, dsdpSolver->alpha, dsdpSolver->Pnrm,
@@ -233,7 +233,7 @@ extern DSDP_INT DSDPPhaseBLogging( HSDSolver *dsdpSolver ) {
     }
     
     DSDPGetStats(&dsdpSolver->dsdpStats, STAT_NUM_SMALL_ITER, &statval);
-    if (statval >= 3 ||
+    if (statval >= 2 ||
         moniter[EVENT_NAN_IN_ITER] ||
         moniter[EVENT_BAD_SCHUR]   ||
         dsdpSolver->solStatus == DSDP_INTERNAL_ERROR) {
@@ -256,7 +256,7 @@ extern DSDP_INT DSDPPhaseBLogging( HSDSolver *dsdpSolver ) {
 print_log:
     DSDPGetStats(&dsdpSolver->dsdpStats, STAT_PHASE_B_ITER, &statval);
     if ((DSDP_INT) statval % 1 == 0) {
-        printf("| %4d | %17.10e | %17.10e | %10.3e | %8.2e | %8.2e | %8.2e | %3s |\n",
+        printf("| %4d | %17.10e | %17.10e | %10.3e | %8.2e | %8.2f | %8.1e | %3s |\n",
                 (DSDP_INT) statval + 1, dsdpSolver->pObjVal * dsdpSolver->cScaler,
                 dsdpSolver->dObjVal * dsdpSolver->cScaler,
                 dsdpSolver->pinfeas, dsdpSolver->mu, dsdpSolver->alpha, dsdpSolver->Pnrm, event);
@@ -332,7 +332,7 @@ extern DSDP_INT DSDPCheckPhaseAConvergence( HSDSolver *dsdpSolver, DSDP_INT *isO
         monitor[EVENT_SMALL_STEP] = TRUE;
         statval2 += 1.0;
         DSDPStatUpdate(stat, STAT_NUM_SMALL_ITER, statval2);
-        if (statval2 >= 3) {
+        if (statval2 >= 2) {
             *isOK = TRUE;
         }
     }
@@ -458,7 +458,7 @@ extern DSDP_INT DSDPCheckPhaseBConvergence( HSDSolver *dsdpSolver, DSDP_INT *isO
     
     // Small step
     DSDPGetStats(stat, STAT_NUM_SMALL_ITER, &statval2);
-    if (statval1 > 0 && dsdpSolver->alpha < 1e-03 && gap < 1e-02) {
+    if (statval1 > 0 && dsdpSolver->alpha < 2e-02 && gap < 1e-02) {
         statval2 += 1; DSDPStatUpdate(stat, STAT_NUM_SMALL_ITER, statval2);
         monitor[EVENT_SMALL_STEP] = TRUE;
     }
@@ -491,10 +491,7 @@ extern DSDP_INT printPhaseABConvert( HSDSolver *dsdpSolver, DSDP_INT *goPb ) {
     
     // Print the conversion logging between phase A and B
     DSDP_INT retcode = DSDP_RETCODE_OK;
-    
-    assert( dsdpSolver->eventMonitor[EVENT_IN_PHASE_A] );
     DSDP_INT status = dsdpSolver->solStatus;
-    
     *goPb = TRUE;
     
     if (status == DSDP_OPTIMAL) {
@@ -512,20 +509,16 @@ extern DSDP_INT printPhaseABConvert( HSDSolver *dsdpSolver, DSDP_INT *goPb ) {
         case DSDP_PFEAS_DINFEAS:
             printf("| DSDP Phase A certificates dual infeasibility "
                    "and primal feasibility \n");
-            *goPb = FALSE;
-            break;
+            *goPb = FALSE; break;
         case DSDP_PUNKNOWN_DINFEAS:
             printf("| DSDP Phase A certificates dual infeasibility \n");
-            *goPb = FALSE;
-            break;
+            *goPb = FALSE; break;
         case DSDP_INTERNAL_ERROR:
             printf("| DSDP Phase A encounters internal error \n");
-            *goPb = FALSE;
-            break;
+            *goPb = FALSE; break;
         case DSDP_MAXITER:
             printf("| DSDP Phase A reaches maximum iteration \n");
-            *goPb = FALSE;
-            break;
+            *goPb = FALSE; break;
         default:
             error(etype, "Invalid status code at the end of Phase A. \n");
             break;

@@ -2,23 +2,21 @@
 #include "dsdputils.h"
 
 /* Implement DSDP primal feasibility check */
-extern DSDP_INT dsdpCheckPhaseAPfeas( HSDSolver *dsdpSolver, double dtaudelta,
+extern void dsdpCheckPhaseAPfeas( HSDSolver *dsdpSolver, double dtaudelta,
                                      vec *dydelta, DSDP_INT *ispfeas ) {
     // Phase A feasibility check
     // - Ry + C * (tau - dtaudelta) - dsdpgetATy(A, y - dydelta)
-    DSDP_INT retcode = DSDP_RETCODE_OK;
-    
     vec_axpby(1.0, dsdpSolver->y, -1.0, dydelta);
-    retcode = getPhaseACheckerS(dsdpSolver, dydelta->x, dsdpSolver->tau - dtaudelta);
-    retcode = dsdpCheckerInCone(dsdpSolver, ispfeas);
-    
-    return retcode;
+    DSDPConic( COPS_CONSTR_EXPR )(dsdpSolver, CHECKER, -1.0,
+                                  dydelta, dsdpSolver->tau - dtaudelta, -1.0);
+    *ispfeas = DSDPConic( COPS_CHECK_INCONE )(dsdpSolver, CHECKER);
+//     getPhaseACheckerS(dsdpSolver, dydelta, dsdpSolver->tau - dtaudelta);
+//     dsdpCheckerInCone(dsdpSolver, ispfeas);
 }
 
-extern DSDP_INT dsdpCheckBackwardNewton( HSDSolver *dsdpSolver, DSDP_INT *ispfeas ) {
+extern void dsdpCheckBackwardNewton( HSDSolver *dsdpSolver, DSDP_INT *ispfeas ) {
     
     // Check backward newton step C - dsdpgetATy(A, y - dymuprimal)
-    DSDP_INT retcode = DSDP_RETCODE_OK;
     vec_zaxpby(dsdpSolver->b2, 1.0, dsdpSolver->y,
                -1.0, dsdpSolver->b1);
     
@@ -27,21 +25,17 @@ extern DSDP_INT dsdpCheckBackwardNewton( HSDSolver *dsdpSolver, DSDP_INT *ispfea
     
     for (DSDP_INT i = 0; i < dsdpSolver->m; ++i) {
         if (bound < fabs(bwnewton[i])) {
-            *ispfeas = FALSE; return retcode;
+            *ispfeas = FALSE; return;
         }
     }
     
-    retcode = getPhaseBCheckerS(dsdpSolver, dsdpSolver->b2->x);
-    retcode = dsdpCheckerInCone(dsdpSolver, ispfeas);
-    
-    return retcode;
+    getPhaseBCheckerS(dsdpSolver, dsdpSolver->b2);
+    dsdpCheckerInCone(dsdpSolver, ispfeas);
 }
 
-extern DSDP_INT dsdpCheckPrimalInfeas( HSDSolver *dsdpSolver ) {
+extern void dsdpCheckPrimalInfeas( HSDSolver *dsdpSolver ) {
     
     // Check dual unboundedness (primal infeasibility) through iterations
-    DSDP_INT retcode = DSDP_RETCODE_OK;
-    
     if (dsdpSolver->pObjVal <= dsdpSolver->dObjVal) {
         dsdpSolver->eventMonitor[EVENT_INVALID_GAP] = TRUE;
         dsdpSolver->pObjVal = dsdpSolver->dObjVal + 1e+05;
@@ -58,7 +52,7 @@ extern DSDP_INT dsdpCheckPrimalInfeas( HSDSolver *dsdpSolver ) {
     
     if ((!dsdpSolver->eventMonitor[EVENT_INVALID_GAP]) &&
         (!dsdpSolver->eventMonitor[EVENT_LARGE_DOBJ])) {
-        return retcode;
+        return;
     }
     
     double bTdy = 0.0;
@@ -66,11 +60,11 @@ extern DSDP_INT dsdpCheckPrimalInfeas( HSDSolver *dsdpSolver ) {
     vec_dot(dsdpSolver->dObj, dsdpSolver->dy, &bTdy);
     
     if (bTdy <= 0.0) {
-        return retcode;
+        return;
     }
     
     for (DSDP_INT i = 0; i < dsdpSolver->nBlock; ++i) {
-        getPhaseBS(dsdpSolver, dsdpSolver->dy->x);
+        getPhaseBS(dsdpSolver, dsdpSolver->dy);
         memcpy(dsdpSolver->Scker[i]->x, dsdpSolver->dS[i]->x,
                sizeof(double) * dsdpSolver->Scker[i]->nnz);
         spsMatIspd(dsdpSolver->Scker[i], &incone);
@@ -83,5 +77,5 @@ extern DSDP_INT dsdpCheckPrimalInfeas( HSDSolver *dsdpSolver ) {
         dsdpSolver->eventMonitor[EVENT_PINFEAS_DETECTED] = TRUE;
     }
         
-    return retcode;
+    return;
 }

@@ -27,17 +27,16 @@ extern DSDP_INT DSDPPFeasPhase( HSDSolver *dsdpSolver ) {
     dsdpSolver->eventMonitor[EVENT_IN_PHASE_B] = TRUE;
     dsdpSolver->iterProgress[ITER_RESIDUAL] = TRUE;
     
-    retcode = dsdpInitializeB(dsdpSolver);
+    dsdpInitializeB(dsdpSolver);
     dsdpprintPhaseBheader();
     
     // Start dual scaling
-    DSDP_INT stop = FALSE, usegold = FALSE;
+    DSDP_INT stop = FALSE, usegold = FALSE, nopfeasIter = 0;
     double start = my_clock();
     double newmu = 0.0, muub = 0.0, mulb = 0.0, time = 0.0;
-    double rhon, tol, sigma, approxpObj;
+    double rhon, tol, sigma, approxpObj, currentpObj = dsdpSolver->pObjVal;
 
     DSDPStats *stat = &dsdpSolver->dsdpStats;
-    
     DSDPGetIntParam(dsdpSolver, INT_PARAM_GOLDSEARCH, &usegold);
     DSDPGetDblParam(dsdpSolver, DBL_PARAM_RHON, &rhon);
     DSDPGetDblParam(dsdpSolver, DBL_PARAM_ABS_OPTTOL, &tol); tol *= 0.1;
@@ -46,52 +45,44 @@ extern DSDP_INT DSDPPFeasPhase( HSDSolver *dsdpSolver ) {
     DSDP_INT i;
     for (i = 0; ; ++i) {
         
-        if (i > 300) { dsdpSolver->dperturb = 1e-06; }
-        if (i > 400) { dsdpSolver->dperturb = 1e-05; }
-        if (i > 450) { dsdpSolver->dperturb = 1e-04; }
+        if (i == 300) { dsdpSolver->dperturb += 1e-06; }
+        if (i == 400) { dsdpSolver->dperturb += 1e-05; }
+        if (i == 450) { dsdpSolver->dperturb += 1e-04; }
+        if (i >= 480) { dsdpSolver->dperturb += 5e-05; }
         
         // Start iteration
         DSDPStatUpdate(&dsdpSolver->dsdpStats, STAT_PHASE_B_ITER, (double) i);
         dsdpSolver->iterProgress[ITER_LOGGING] = FALSE;
-
         // Check NAN
         dsdpCheckNan(dsdpSolver);
         // Check Algorithm convergence
         DSDPCheckPhaseBConvergence(dsdpSolver, &stop);
         // Compute dual objective value
-        if (i > 0) {
-            dsdpSolver->iterProgress[ITER_DUAL_OBJ] = FALSE;
-            retcode = getDualObj(dsdpSolver); checkCode;
-        }
-        
+        dsdpSolver->iterProgress[ITER_DUAL_OBJ] = FALSE;
+        DSDPConic( COPS_GET_DOBJ )(dsdpSolver);
         // Logging
         DSDPPhaseBLogging(dsdpSolver);
-        
         // Reset monitor
         DSDPResetPhaseBMonitor(dsdpSolver);
-        
-        if (stop) {
-            break;
-        }
+        if (stop) break;
         
         // Factorize dual matrices
-        retcode = setupFactorize(dsdpSolver); checkCode;
+        dsdpSolver->iterProgress[ITER_DUAL_FACTORIZE] = TRUE;
+        // setupFactorize(dsdpSolver);
         // Set up Schur matrix and solve the system
-        retcode = setupSchur(dsdpSolver); checkCode;
-        
-        // Decrease primal objective via golden search
-        if (FALSE && (dsdpSolver->mu < 1e+07)) {
-            retcode = searchpObj(dsdpSolver, &approxpObj);
-            approxpObj = MAX(dsdpSolver->pObjVal * 0.8, approxpObj);
-            dsdpSolver->pObjVal = MIN(dsdpSolver->pObjVal, approxpObj);
+        setupSchur(dsdpSolver);
+        currentpObj = dsdpSolver->pObjVal;
+        dsdpgetPhaseBProxMeasure(dsdpSolver, &muub, &mulb); checkCode;
+        if (dsdpSolver->pObjVal != currentpObj) {
+            nopfeasIter = 0;
+        } else {
+            nopfeasIter += 1;
         }
-
-        // Get proximity and check primal feasibility
-        retcode = dsdpgetPhaseBProxMeasure(dsdpSolver, &muub, &mulb); checkCode;
+        currentpObj = dsdpSolver->pObjVal;
         
         // Select new mu
-        if (dsdpSolver->mu > 1e-10 && i <= 480) {
-            retcode = selectMu(dsdpSolver, &newmu); checkCode;
+        if (dsdpSolver->mu > 1e-10 && i <= 480 && nopfeasIter < 10) {
+            selectMu(dsdpSolver, &newmu); checkCode;
             newmu = MIN(newmu, muub); newmu = MAX(newmu, mulb);
             dsdpSolver->mu = newmu;
         } else {
@@ -103,13 +94,13 @@ extern DSDP_INT DSDPPFeasPhase( HSDSolver *dsdpSolver ) {
         
         dsdpSolver->iterProgress[ITER_PROX_POBJ] = TRUE;
         // Get step direction
-        retcode = getStepDirs(dsdpSolver); checkCode;
+        getStepDirs(dsdpSolver);
         // Verify primal infeasibility
-        retcode = dsdpCheckPrimalInfeas(dsdpSolver); checkCode;
+        dsdpCheckPrimalInfeas(dsdpSolver);
         // Potential reduction
-        retcode = dualPotentialReduction(dsdpSolver); checkCode;
+        dualPotentialReduction(dsdpSolver);
         // Corrector step
-        retcode = dualCorrectorStep(dsdpSolver); checkCode;
+        dualCorrectorStep(dsdpSolver);
         // dsdpSolver->iterProgress[ITER_CORRECTOR] = TRUE;
         dsdpSolver->iterProgress[ITER_DECREASE_MU] = TRUE;
         checkIterProgress(dsdpSolver, ITER_NEXT_ITERATION);

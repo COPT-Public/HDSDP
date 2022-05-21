@@ -1,4 +1,4 @@
-#include <heurpool.h>
+#include "heurpool.h"
 // Implement the Heuristics
 
 extern void DSDP_HEURS( adjustSolverParams )
@@ -18,10 +18,8 @@ extern void DSDP_HEURS( adjustSolverParams )
     }
     
     if (dsdpSolver->m >= 100 * largeblock && dsdpSolver->m >= 50000) {
-        dsdpSolver->pObjVal = 1e+05; dsdpSolver->ybound = 1e+05;
-        DSDPSetDblParam(dsdpSolver, DBL_PARAM_INIT_BETA, 10.0);
-        DSDPSetDblParam(dsdpSolver, DBL_PARAM_RHO, 5.0);
-        DSDPSetDblParam(dsdpSolver, DBL_PARAM_RHON, 5.0);
+        dsdpSolver->pObjVal = 1e+10; dsdpSolver->ybound = 1e+04;
+        DSDPSetDblParam(dsdpSolver, DBL_PARAM_INIT_BETA, 1000.0);
     }
     
     // prob_x_x_x problems
@@ -31,7 +29,7 @@ extern void DSDP_HEURS( adjustSolverParams )
     }
     
     // theta
-    if (zero == 0.0 && r1 == 1.0 && ds == 0.0 && sps >= 100) {
+    if (zero == 0.0 && r1 == 1.0 && ds == 0.0 && sps >= 2000) {
         DSDPSetDblParam(dsdpSolver, DBL_PARAM_INIT_BETA, 10.0);
     }
     

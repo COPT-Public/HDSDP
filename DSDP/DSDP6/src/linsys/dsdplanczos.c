@@ -212,7 +212,8 @@ extern DSDP_INT dsdpLanczosStep( DSDPLanczos *lczSolver, spsMat *S, spsMat *dS, 
                 vec_norm(z2, &res2);
                 tmp = lambda1 - lambda2 - res2;
                 gamma = (tmp > 0) ? tmp : 1e-15;
-                gamma = MIN(res1, res1 * res1 / gamma);
+                tmp = res1 * res1 / gamma;
+                gamma = MIN(res1, tmp);
                 
                 if (gamma < 1e-03 || gamma + lambda1 <= 0.8) {
                     *delta = gamma; *lbd = lambda1; break;

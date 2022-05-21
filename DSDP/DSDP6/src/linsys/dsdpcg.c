@@ -193,12 +193,12 @@ extern DSDP_INT dsdpCGprepareP( CGSolver *cgSolver ) {
     return DSDP_RETCODE_OK;
 }
 
-extern DSDP_INT dsdpCGStoreRHS( CGSolver *cgSolver, vec *bin ) {
-    return vec_copy(bin, cgSolver->aux);
+extern void dsdpCGStoreRHS( CGSolver *cgSolver, vec *bin ) {
+    vec_copy(bin, cgSolver->aux);
 }
 
-extern DSDP_INT dsdpCGRestoreRHS( CGSolver *cgSolver, vec *bout ) {
-    return vec_copy(cgSolver->aux, bout);
+extern void dsdpCGRestoreRHS( CGSolver *cgSolver, vec *bout ) {
+    vec_copy(cgSolver->aux, bout);
 }
 
 /* Implement (pre-conditioned) conjugate gradient for Schur system */

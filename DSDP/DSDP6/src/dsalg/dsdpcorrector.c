@@ -19,7 +19,7 @@ static double getCurrentLogBarrier( HSDSolver *dsdpSolver, vec *y, DSDP_INT *inC
             su = bound - y->x[i]; sl = y->x[i] + bound;
             logdet += (log(su) + log(sl));
         }
-        getPhaseBS(dsdpSolver, y->x); dsdpInCone(dsdpSolver, &psd);
+        getPhaseBS(dsdpSolver, y); dsdpInCone(dsdpSolver, &psd);
         if (!psd) { *inCone = FALSE; return 0.0; }
         *inCone = TRUE;
     } else { // No check
@@ -27,7 +27,7 @@ static double getCurrentLogBarrier( HSDSolver *dsdpSolver, vec *y, DSDP_INT *inC
             su = bound - y->x[i]; sl = y->x[i] + bound;
             logdet += (log(su) + log(sl));
         }
-        getPhaseBS(dsdpSolver, y->x);
+        getPhaseBS(dsdpSolver, y);
         for (i = 0; i < dsdpSolver->nBlock; ++i) {
             spsMatFactorize(dsdpSolver->S[i]);
         }
@@ -49,24 +49,19 @@ static double getCurrentLogdet( HSDSolver *dsdpSolver, vec *y, double tau, DSDP_
     
     if (inCone) { // Not sure if y is in the cone
         DSDP_INT psd = FALSE;
-        if (pRelax) {
-            for (i = 0; i < dsdpSolver->m; ++i) {
-                su = bound - y->x[i]; sl = y->x[i] + bound;
-                logdet += (log(su) + log(sl));
-            }
+        for (i = 0; i < dsdpSolver->m; ++i) {
+            su = bound - y->x[i]; sl = y->x[i] + bound;
+            logdet += (log(su) + log(sl));
         }
-        getPhaseAS(dsdpSolver, y->x, tau); dsdpInCone(dsdpSolver, &psd);
+        getPhaseAS(dsdpSolver, y, tau); dsdpInCone(dsdpSolver, &psd);
         if (!psd) { *inCone = FALSE; return 0.0; }
         *inCone = TRUE;
     } else { // No check
-        
-        if (pRelax) {
-            for (i = 0; i < dsdpSolver->m; ++i) {
-                su = bound - y->x[i]; sl = y->x[i] + bound;
-                logdet += (log(su) + log(sl));
-            }
+        for (i = 0; i < dsdpSolver->m; ++i) {
+            su = bound - y->x[i]; sl = y->x[i] + bound;
+            logdet += (log(su) + log(sl));
         }
-        getPhaseAS(dsdpSolver, y->x, tau);
+        getPhaseAS(dsdpSolver, y, tau);
         for (i = 0; i < dsdpSolver->nBlock; ++i) {
             spsMatFactorize(dsdpSolver->S[i]);
         }
@@ -105,83 +100,70 @@ extern DSDP_INT dInfeasCorrectorStep( HSDSolver *dsdpSolver, DSDP_INT isfinal ) 
     // Corrector step in Phase A.
     DSDP_INT retcode = DSDP_RETCODE_OK;
     CGSolver *cg = dsdpSolver->cgSolver; dsdpCGSetMaxIter(cg, 300); dsdpCGSetTol(cg, 1e-04);
-    
-    DSDP_INT prelax = (dsdpSolver->ybound != DSDP_INFINITY);
     vec *d4 = dsdpSolver->M->asinvrysinv; // asinvrysinv is directly solved using CG
     vec *d2 = dsdpSolver->M->asinv; // asinv is directly solved using CG
     vec *d1 = dsdpSolver->d1, *ynew = dsdpSolver->d4; // d4 is reused for storing ynew
-    vec *dycorr = dsdpSolver->b1, *sl = dsdpSolver->sl, *su = dsdpSolver->su, *ynow = dsdpSolver->y;
-    double oldbarrier, newbarrier = 0.0, step, tmp, tmp2, bound, rhon, dratemax, alphainf, drate;
-    
+    vec *dycorr = dsdpSolver->dy, *sl = dsdpSolver->sl, *su = dsdpSolver->su, *ynow = dsdpSolver->y;
+    double oldbarrier, newbarrier = 0.0, step, tmp, tmp2, tmp3, bound, rhon, dratemax, alphainf, drate;
     bound = dsdpSolver->ybound; DSDPGetDblParam(dsdpSolver, DBL_PARAM_RHON, &rhon);
-    DSDP_INT ncorrector, inCone = FALSE; DSDPGetIntParam(dsdpSolver, INT_PARAM_ACORRECTOR, &ncorrector);
+    DSDP_INT ncorrector, inCone = FALSE;
+    DSDPGetIntParam(dsdpSolver, INT_PARAM_ACORRECTOR, &ncorrector);
     dratemax = (isfinal) ? 0.0 : 0.8; // 0.6 37
     
     for (DSDP_INT i = 0, j; i < ncorrector && dsdpSolver->Ry; ++i) {
         
         if (i == 0) {
-            for (j = 0; j < dsdpSolver->nBlock; ++j) {
-                spsMatFactorize(dsdpSolver->S[j]);
+            if (!DSDPConic( COPS_CHECK_INCONE )(dsdpSolver, DUALVAR)) {
+                printf("| Strange behavior. Giving Up.\n");
             }
         }
         
-        if (dratemax) {
-            arysinvSetup(dsdpSolver->M); // Compute asinv and asinvrysinv
-        } else {
-            asinvSetup(dsdpSolver->M);  // Compute asinv
-        }
-        
-        // vec_print(d4);
-        
-        if (prelax) {
-            vec_lslack(ynow, sl, -bound); vec_uslack(ynow, su, bound);
-            for (j = 0; j < dsdpSolver->m; ++j) {
-                tmp = su->x[j]; d2->x[j] += 1.0 / tmp;
-                tmp = sl->x[j]; d2->x[j] -= 1.0 / tmp;
-            }
-        }
-        
-        dsdpCGSolve(cg, d2, NULL); // Compute corrector step for centrality
-        if (dratemax) {
-            dsdpCGSolve(cg, d4, NULL); // Compute corrector step for dual infeasibility
-        }
-        
+        DSDPConic( COPS_GET_SCHURVEC )(dsdpSolver, (DSDP_INT) (dratemax != 0));
+        dsdpCGSolve(cg, d2, NULL);
+        if (dratemax) { dsdpCGSolve(cg, d4, NULL); }
         vec_zaxpby(dycorr, 0.0, d1, -1.0, d2);
-        oldbarrier = (i == 0) ? getCurrentLogdet(dsdpSolver, ynow, dsdpSolver->tau, prelax, NULL) : newbarrier;
-        
-        getPhaseBdS(dsdpSolver, 1.0, dycorr->x, 0.0);
-                
-        step = DSDP_INFINITY;
-        for (j = 0; j < dsdpSolver->nBlock; ++j) {
-            dsdpGetAlpha(dsdpSolver->lczSolver[j], dsdpSolver->S[j], dsdpSolver->dS[j],
-                         dsdpSolver->spaux[j], &tmp);
-            step = MIN(step, tmp);
-        }
-        
-        if (prelax) {
-            tmp = vec_step(sl, dycorr,  1.0); step = MIN(tmp, step);
-            tmp = vec_step(su, dycorr, -1.0); step = MIN(tmp, step);
-        }
-        
-        if (isfinal) {
-            step = MIN(step, 1.0); // Update Pnrm ?
+
+        if (i == 0) {
+            oldbarrier = - dsdpSolver->mu * \
+                         DSDPConic( COPS_GET_LOGDET )(dsdpSolver, ynow, NULL);
         } else {
-            step = MIN(0.8 * step, 1.0); // Change of parameter step = MIN(0.75 * step, 1.0); // Update Pnrm ?
-            // step = MIN(step, rhon / dsdpSolver->Pnrm);
+            oldbarrier = newbarrier;
         }
+         dsdpSolver->drate = 0.0;
+         DSDPConic( COPS_STEPDIRECTION )(dsdpSolver);
+         step = DSDPConic( COPS_GET_MAXSTEP )(dsdpSolver, DUALVAR);
         
-        // Do line search
+//        getPhaseBdS(dsdpSolver, 1.0, dycorr, 0.0);
+//        step = DSDP_INFINITY;
+//        for (j = 0; j < dsdpSolver->nBlock; ++j) {
+//            dsdpGetAlpha(dsdpSolver->lczSolver[j], dsdpSolver->S[j], dsdpSolver->dS[j],
+//                         dsdpSolver->spaux[j], &tmp);
+//            step = MIN(step, tmp);
+//        }
+//
+//        if (prelax) {
+//            tmp = vec_step(sl, dycorr, 1.0); step = MIN(tmp, step);
+//            vec_zaxpby(ynew, 1.0, sl, tmp, dycorr);
+//            tmp = vec_step(su, dycorr, -1.0); step = MIN(tmp, step);
+//            vec_zaxpby(ynew, 1.0, sl, tmp, dycorr);
+//        }
+//        oldbarrier = (i == 0) ? getCurrentLogdet(dsdpSolver, ynow,
+//                                                 dsdpSolver->tau, prelax, NULL) : newbarrier;
+        
+        step = (isfinal) ? MIN(step, 1.0) : MIN(0.8 * step, 1.0); // 0.75 ?
+        // First line search
         for (j = 0; ; ++j) {
             vec_zaxpby(ynew, step, dycorr, 1.0, ynow);
             if (j == 0) {
-                newbarrier = getCurrentLogdet(dsdpSolver, ynew, dsdpSolver->tau, prelax, &inCone);
+                newbarrier = - dsdpSolver->mu * DSDPConic( COPS_GET_LOGDET )(dsdpSolver, ynew, &inCone);
+                // newbarrier = getCurrentLogdet(dsdpSolver, ynew, dsdpSolver->tau, prelax, &inCone);
                 if (!inCone) {
                     step *= 0.5; --j;
-                    if (step <= 0.005) { break; }
+                    if (step <= 0.005) break;
                     continue;
                 }
-            } else {
-                newbarrier = getCurrentLogdet(dsdpSolver, ynew, dsdpSolver->tau, prelax, NULL);
+            } else { 
+                newbarrier = - dsdpSolver->mu * DSDPConic( COPS_GET_LOGDET )(dsdpSolver, ynew, NULL); // getCurrentLogdet(dsdpSolver, ynew, dsdpSolver->tau, prelax, NULL);
                 newbarrier = -1e+100;
             }
             
@@ -192,27 +174,26 @@ extern DSDP_INT dInfeasCorrectorStep( HSDSolver *dsdpSolver, DSDP_INT isfinal ) 
             }
         }
         
-        if (step <= 0.005) {
-            break;
-        }
+        if (step <= 0.005) break;
+        
         
         if (dratemax) {
             alphainf = DSDP_INFINITY;
             // Bite off more infeasibility. Shat is now factorized
-            vec_copy(d4, dsdpSolver->d12);
-            getPhaseAdS(dsdpSolver, 1.0, dsdpSolver->d12->x, 0.0);
-            for (j = 0; j < dsdpSolver->nBlock; ++j) {
-                dsdpGetAlpha(dsdpSolver->lczSolver[j], dsdpSolver->S[j],
-                             dsdpSolver->dS[j], dsdpSolver->spaux[j], &tmp);
-                alphainf = MIN(alphainf, tmp);
-            }
+            vec_copy(d4, dycorr);
+            
+            // Refractor it
+            getPhaseAdS(dsdpSolver, 1.0, dycorr, 0.0);
+            tmp = getMaxSDPstep(dsdpSolver, DUALVAR);
+            alphainf = MIN(alphainf, tmp);
             
             // Check bound of y
             tmp = DSDP_INFINITY;
             for (j = 0; j < dsdpSolver->m; ++j) {
-                tmp2 = dsdpSolver->d12->x[j];
+                tmp2 = dycorr->x[j];
                 if (tmp2 == 0.0) { continue; }
-                tmp = (tmp2 > 0.0) ? MIN(tmp, (bound - ynew->x[j]) / tmp2) : MIN(tmp, (- bound - ynew->x[j]) / tmp2);
+                tmp3 = (tmp2 > 0.0) ? (bound - ynew->x[j]) / tmp2 : (- bound - ynew->x[j]) / tmp2;
+                tmp = MIN(tmp, tmp3);
             }
             alphainf = MIN(alphainf, tmp);
             drate = MIN(1.0, alphainf * dratemax / step); tmp = dsdpSolver->Ry;
@@ -221,26 +202,17 @@ extern DSDP_INT dInfeasCorrectorStep( HSDSolver *dsdpSolver, DSDP_INT isfinal ) 
                 vec_copy(ynow, ynew);
                 vec_zaxpby(dycorr, -1.0, d2, drate, d4);
                 vec_axpy(step, dycorr, ynew);
-                
-                if (vec_infnorm(ynew) > bound) {
-                    printf("Norm of Y: %e \n", vec_infnorm(dsdpSolver->y));
-                    assert (FALSE);
-                }
-                
-                getPhaseAS(dsdpSolver, ynew->x, dsdpSolver->tau);
+                getPhaseAS(dsdpSolver, ynew, dsdpSolver->tau);
                 dsdpInCone(dsdpSolver, &inCone);
-                if (inCone) {
-                    break;
-                } else {
-                    drate *= 0.8;
-                }
+                if (inCone) { break; }
+                else { drate *= 0.8; }
             }
             
             // printf("Reduce dual infeasibility %e \n", drate * step);
             if (drate * step < 0.1) {
                 dratemax *= 0.9;
             }
-            
+
             if (drate * step < 5e-04) {
                 dratemax *= 0.0;
                 ncorrector = MIN(ncorrector, i + 1);
@@ -252,6 +224,8 @@ extern DSDP_INT dInfeasCorrectorStep( HSDSolver *dsdpSolver, DSDP_INT isfinal ) 
             
         }
         vec_copy(ynew, ynow);
+        vec_lslack(ynow, sl, -bound);
+        vec_uslack(ynow, su, bound);
     }
 
     dsdpSolver->iterProgress[ITER_CORRECTOR] = TRUE;
@@ -304,7 +278,6 @@ extern DSDP_INT dualCorrectorStep( HSDSolver *dsdpSolver ) {
         vec_dot(b, d2, &bTd2);
         if (bTd1 > 0 && bTd2 > 0) {
             dsdpSolver->mu = MIN(dsdpSolver->mu, bTd1 / bTd2);
-//             dsdpSolver->mu = MAX(dsdpSolver->schurmu / rhon, dsdpSolver->mu);
         }
         dsdpSolver->mu *= shrink;
         
@@ -312,7 +285,7 @@ extern DSDP_INT dualCorrectorStep( HSDSolver *dsdpSolver ) {
         vec_zaxpby(dycorr, 1 / dsdpSolver->mu, d1, -1.0, d2);
         vec_dot(b, dycorr, &bTdycorr);
         oldbarrier = getCurrentLogBarrier(dsdpSolver, ynow, NULL);
-        getPhaseBdS(dsdpSolver, 1.0, dycorr->x, 0.0);
+        getPhaseBdS(dsdpSolver, 1.0, dycorr, 0.0);
                 
         step = DSDP_INFINITY;
         for (j = 0; j < dsdpSolver->nBlock; ++j) {
@@ -326,7 +299,7 @@ extern DSDP_INT dualCorrectorStep( HSDSolver *dsdpSolver ) {
         
         if (step >= 5.0) {
             vec_zaxpby(ynew, 1.0, dycorr, 1.0, ynow);
-            vec_copy(ynew, ynow); getPhaseBS(dsdpSolver, ynow->x);
+            vec_copy(ynew, ynow); getPhaseBS(dsdpSolver, ynow);
             continue;
         }
         
@@ -360,7 +333,7 @@ extern DSDP_INT dualCorrectorStep( HSDSolver *dsdpSolver ) {
         }
         
         if (step <= 1e-04) { break; }
-        vec_copy(ynew, ynow); getPhaseBS(dsdpSolver, ynow->x);
+        vec_copy(ynew, ynow); getPhaseBS(dsdpSolver, ynow);
     }
     
     dsdpSolver->iterProgress[ITER_CORRECTOR] = TRUE;

@@ -20,7 +20,7 @@ extern DSDP_INT dsdpgetPhaseAProxMeasure( HSDSolver *dsdpSolver, double newmu ) 
     dsdpSolver->Pnrm = sqrt(dsdpSolver->Pnrm);
     
     // Check feasibility
-    retcode = dsdpCheckPhaseAPfeas(dsdpSolver, 0.0, dydelta, &ispfeas);
+    dsdpCheckPhaseAPfeas(dsdpSolver, 0.0, dydelta, &ispfeas);
     
     // Update primal objective
     if (ispfeas) {
@@ -37,7 +37,7 @@ extern DSDP_INT dsdpgetPhaseAProxMeasure( HSDSolver *dsdpSolver, double newmu ) 
                 (dsdpSolver->rysinv + tmp1 + tmp2 + dsdpSolver->nall);
         pObj = pObj / dsdpSolver->tau;
         tmp1 = dsdpSolver->pObjVal;
-        if (tmp1 == 1e+10 || tmp1 == 1e+05) {
+        if (tmp1 == 1e+10 || tmp1 == 1e+05 || tmp1 == 0.0) {
             dsdpSolver->pObjVal = pObj;
         } else {
             dsdpSolver->pObjVal = MIN(pObj, dsdpSolver->pObjVal);
@@ -66,7 +66,7 @@ extern DSDP_INT dsdpgetPhaseBProxMeasure( HSDSolver *dsdpSolver, double *muub, d
     vec_zaxpby(dsdpSolver->d4, 1 / dsdpSolver->mu, dsdpSolver->dObj, -1.0, dsdpSolver->asinv);
     vec_dot(dsdpSolver->d4, dsdpSolver->dy, &dsdpSolver->Pnrm);
     dsdpSolver->Pnrm = sqrt(MAX(dsdpSolver->Pnrm, 0.0));
-    retcode = dsdpCheckBackwardNewton(dsdpSolver, &ispfeas);
+    dsdpCheckBackwardNewton(dsdpSolver, &ispfeas);
     
     if (ispfeas) {
         dsdpSolver->eventMonitor[EVENT_PFEAS_FOUND] = TRUE;
@@ -77,19 +77,6 @@ extern DSDP_INT dsdpgetPhaseBProxMeasure( HSDSolver *dsdpSolver, double *muub, d
         // Bound tightening
         double pinfeas = 0.0, tmp = 0.0, s;
         vec *sl = dsdpSolver->sl, *su = dsdpSolver->su, *dy = dsdpSolver->b1;
-
-// #define tightbound
-#ifdef tightbound
-        double xl, xu, tightsum = 0.0;
-        for (DSDP_INT i = 0; i < dsdpSolver->m; ++i) {
-            tmp = dy->x[i];
-            s = sl->x[i]; xl = 1.0 / s + tmp / (s * s);
-            s = su->x[i]; xu = 1.0 / s + tmp / (s * s);
-            tightsum += fabs(xl) + fabs(xu) - fabs(xl - xu);
-        }
-        
-        gap -= tightsum * dsdpSolver->ybound * dsdpSolver->mu;
-#endif
         
         if (usegold && dsdpSolver->mu > 1e-04) {
             double approxpObj;
@@ -115,14 +102,17 @@ extern DSDP_INT dsdpgetPhaseBProxMeasure( HSDSolver *dsdpSolver, double *muub, d
         
         // Compute the dnewtonub and dnewtonlb
         vec_lslack(dsdpSolver->b2, sl, -bound); vec_uslack(dsdpSolver->b2, su, bound);
+        double denominator = fabs(dsdpSolver->pObjVal) + fabs(dsdpSolver->dObjVal) + 1 / dsdpSolver->cScaler;
         // Save primal objective
-        if (gap < 0.1 * (fabs(dsdpSolver->pObjVal) + fabs(dsdpSolver->dObjVal) + 1) &&
-            gap >= 1e-06 * (fabs(dsdpSolver->pObjVal) + fabs(dsdpSolver->dObjVal) + 1)) {
+        if (gap >= 5e-03 * denominator) {
+            dsdpSolver->mumaker2 = dsdpSolver->mu;
+            vec_copy(dsdpSolver->y, dsdpSolver->ymaker2);
+            vec_copy(dsdpSolver->b1, dsdpSolver->dymaker2);
+        } else if (gap >= 1e-06 * denominator){
             dsdpSolver->mumaker = dsdpSolver->mu;
             vec_copy(dsdpSolver->y, dsdpSolver->ymaker);
             vec_copy(dsdpSolver->b1, dsdpSolver->dymaker);
         }
-        
     } else {
         if (usegold && dsdpSolver->mu > 1e-04) {
             double approxpObj;

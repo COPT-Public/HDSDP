@@ -28,9 +28,9 @@ static DSDP_INT getLPResidualry( HSDSolver *dsdpSolver, vec *ry ) {
     double alpha = - 1.0;
     retcode = lpMataATy(alpha, Adata, y, ydata);
     // Get - A' * y + c * tau
-    retcode = vec_axpy(tau, c, ry);
+    vec_axpy(tau, c, ry);
     // Get - A' * y + c * tau - s
-    retcode = vec_axpy(alpha, s, ry);
+    vec_axpy(alpha, s, ry);
     
     return retcode;
 }
@@ -38,10 +38,7 @@ static DSDP_INT getLPResidualry( HSDSolver *dsdpSolver, vec *ry ) {
 extern DSDP_INT setupRes( HSDSolver *dsdpSolver ) {
     // Setup residuals used for LP and SDP
     DSDP_INT retcode = DSDP_RETCODE_OK;
-    
-    checkIterProgress(dsdpSolver, ITER_RESIDUAL);
-    retcode = getRy(dsdpSolver); checkCode;
-    // retcode = getRkappaTau(dsdpSolver); checkCode;
+    getRy(dsdpSolver);
     dsdpSolver->iterProgress[ITER_RESIDUAL] = TRUE;
     
     return retcode;

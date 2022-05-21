@@ -21,7 +21,7 @@
 extern "C" {
 #endif
 
-extern DSDP_INT getStepDirs( HSDSolver *dsdpSolver );
+extern void getStepDirs( HSDSolver *dsdpSolver );
 
 #ifdef __cplusplus
 }

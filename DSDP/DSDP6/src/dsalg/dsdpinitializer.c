@@ -50,10 +50,6 @@ static DSDP_INT initresi( HSDSolver *dsdpSolver ) {
         getMatFnorm(dsdpSolver, i, m, &nrm); Cnrm = nrm * nrm + Cnrm;
     }
     dsdpSolver->Ry = (Cnrm == 0) ? (-1.0) : - MAX(sqrt(Cnrm), 100.0) * tau * beta;
-    for (DSDP_INT i = 0; i < dsdpSolver->nBlock; ++i) {
-        addMattoS(dsdpSolver, i, m, tau);
-        spsMatAdddiag(dsdpSolver->S[i], -dsdpSolver->Ry, dsdpSolver->symS[i]);
-    }
     DSDPGetStats(&dsdpSolver->dsdpStats, STAT_ONE_NORM_B, &nrm);
     dsdpSolver->pinfeas = nrm + 1.0;
     dsdpSolver->iterProgress[ITER_INITIALIZE] = TRUE;
@@ -136,7 +132,6 @@ extern DSDP_INT dsdpInitializeA( HSDSolver *dsdpSolver ) {
     initmu(dsdpSolver); initparams(dsdpSolver);
     initresi(dsdpSolver);
     
-    dsdpSolver->nall = dsdpSolver->n + dsdpSolver->m * 2;
     dsdpSolver->mu = (dsdpSolver->pObjVal - dsdpSolver->dObjVal - dsdpSolver->Ry * 1e+10) / dsdpSolver->nall;
     dsdpSolver->Pnrm = DSDP_INFINITY;
     
@@ -149,37 +144,32 @@ extern DSDP_INT dsdpInitializeB( HSDSolver *dsdpSolver ) {
     
     // Initialize the mu parameter and the initial primal objective bound
     DSDP_INT retcode = DSDP_RETCODE_OK;
-    
-    assert( dsdpSolver->eventMonitor[EVENT_IN_PHASE_B] );
-    DSDP_INT BmaxIter; double rho, initpObj, tmp, tmp2, pfeas;
+    DSDP_INT BmaxIter; double rho, initpObj, pfeas;
     DSDPGetDblParam(dsdpSolver, DBL_PARAM_RHON, &rho);
     DSDPGetDblParam(dsdpSolver, DBL_PARAM_INIT_POBJ, &initpObj);
     DSDPGetIntParam(dsdpSolver, INT_PARAM_BMAXITER, &BmaxIter);
-
-    // Reset the number of iterations taking small stepsize
     DSDPStatUpdate(&dsdpSolver->dsdpStats, STAT_NUM_SMALL_ITER, 0.0);
+    DSDPGetStats(&dsdpSolver->dsdpStats, STAT_PFEAS_PROBLEM, &pfeas);
     
     // y = y / tau;
     vec_rscale(dsdpSolver->y, dsdpSolver->tau);
+    getBslack(dsdpSolver, dsdpSolver->y, DUALVAR);
     vec_dot(dsdpSolver->dObj, dsdpSolver->y, &dsdpSolver->dObjVal);
     dsdpSolver->dPotential = DSDP_INFINITY;
-    
+
     // S = S / tau;
-    for (DSDP_INT i = 0; i < dsdpSolver->nBlock; ++i) {
-        retcode = spsMatRscale(dsdpSolver->S[i], dsdpSolver->tau);
-    }
+    DSDPConic( COPS_DO_VAR_SCALE )(dsdpSolver, dsdpSolver->tau);
     
-    // Re-initialize bound of the dual feasible solution
-    DSDPGetStats(&dsdpSolver->dsdpStats, STAT_PFEAS_PROBLEM, &pfeas);
-    if (!pfeas) {
-        DSDP_HEURS( adjPRelaxPenalty ) (dsdpSolver);
-    }
+    // Primal relaxation
+    if (!pfeas) DSDP_HEURS( adjPRelaxPenalty ) (dsdpSolver);
     printf("| Primal relaxation penalty is set to %10.3e \n", dsdpSolver->ybound);
     
+    // Dual perturb
     DSDP_HEURS( adjDualPerturb ) ( dsdpSolver );
     dsdpSolver->dperturb = MAX(-dsdpSolver->Ry, dsdpSolver->dperturb);
     printf("| Perturbing dual iterations by %10.3e \n", dsdpSolver->dperturb);
     
+    // Barrier
     switch (dsdpSolver->solStatus) {
         case DSDP_PD_FEASIBLE:
             // mu = min((pObj - dObj) / rho, muPrimal)
@@ -205,6 +195,5 @@ extern DSDP_INT dsdpInitializeB( HSDSolver *dsdpSolver ) {
            dsdpSolver->mu, dsdpSolver->pObjVal, dsdpSolver->dObjVal, "");
     
     dsdpSolver->tau = 1.0;
-    
     return retcode;
 }

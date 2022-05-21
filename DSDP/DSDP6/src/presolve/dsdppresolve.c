@@ -26,7 +26,8 @@ static DSDP_INT isDenseRank1Acc( dsMat *dataMat, DSDP_INT *isRank1 ) {
         }
     }
     
-    if (i == n - 1 && !packIdx(A, n, i, i)) {
+    if (i == n) {*isRank1 = FALSE; return retcode;}
+    if (i >= n - 1 && !packIdx(A, n, i, i)) {
         *isRank1 = FALSE;
         return retcode;
     }
@@ -415,7 +416,7 @@ static DSDP_INT preSDPMatgetPScaler( HSDSolver *dsdpSolver ) {
         }
                 
         for (DSDP_INT j = 0; j < dsdpSolver->nBlock; ++j) {
-            retcode = getMatFnorm(dsdpSolver, j, i, &nrm);
+            getMatFnorm(dsdpSolver, j, i, &nrm);
             if (nrm > 0) {
                 minnrm = MIN(minnrm, nrm);
                 maxnrm = MAX(maxnrm, nrm);
@@ -452,7 +453,7 @@ static DSDP_INT preSDPMatPScale( HSDSolver *dsdpSolver ) {
         assert( scaler > 0 );
         dsdpSolver->dObj->x[i] = dsdpSolver->dObj->x[i] / scaler;
         for (DSDP_INT j = 0; j < dsdpSolver->nBlock; ++j) {
-            retcode = matRScale(dsdpSolver, j, i, scaler);
+            matRScale(dsdpSolver, j, i, scaler);
         }
         checkCode;
     }
@@ -472,7 +473,7 @@ static DSDP_INT preSDPMatgetDScaler( HSDSolver *dsdpSolver ) {
     for (DSDP_INT i = 0; i < dsdpSolver->nBlock; ++i) {
         minnrm = 1.0;
         for (DSDP_INT j = 0; j < m; ++j) {
-            retcode = getMatFnorm(dsdpSolver, i, j, &nrm);
+            getMatFnorm(dsdpSolver, i, j, &nrm);
             if (nrm > 0.0) {
                 minnrm = MIN(minnrm, nrm);
                 maxnrm = MAX(maxnrm, nrm);
@@ -502,7 +503,7 @@ static DSDP_INT preSDPMatDScale( HSDSolver *dsdpSolver ) {
         scaler = dsdpSolver->sdpData[i]->scaler;
         assert( scaler > 0 );
         for (DSDP_INT j = 0; j < dsdpSolver->m; ++j) {
-            retcode = matRScale(dsdpSolver, i, j, scaler);
+            matRScale(dsdpSolver, i, j, scaler);
         }
         checkCode;
     }

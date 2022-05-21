@@ -1,6 +1,9 @@
 #include "dsdputils.h"
 #include "dsdpsolver.h"
+#include "sparsemat.h"
 static char etype[] = "DSDP Conic Utility";
+
+// #define CONIC
 
 /*
   Utility routines that manage the operations between
@@ -74,6 +77,439 @@ static void BConic( COPS_DO_C_SCALE )
     return;
 }
 
+static void SDPConic( COPS_DO_VAR_SCALE )
+( HSDSolver *dsdpSolver, double tau ) {
+    for (DSDP_INT i = 0; i < dsdpSolver->nBlock; ++i) {
+        spsMatRscale(dsdpSolver->S[i], tau);
+    }
+}
+
+static void LPConic( COPS_DO_VAR_SCALE )
+( HSDSolver *dsdpSolver, double tau ) {
+    // TODO: LPConic
+}
+
+static void BConic( COPS_DO_VAR_SCALE )
+( HSDSolver *dsdpSolver, double tau ) {
+    return;
+}
+
+static DSDP_INT SDPConic( COPS_CHECK_INCONE )
+( HSDSolver *dsdpSolver, DSDP_INT type ) {
+    if (type == DUALVAR) {
+        for (DSDP_INT i = 0, incone = FALSE; i < dsdpSolver->nBlock; ++i) {
+                    spsMatIspd(dsdpSolver->S[i], &incone);
+                    if (!incone) { return FALSE; }
+        }
+    } else {
+        for (DSDP_INT i = 0, incone = FALSE; i < dsdpSolver->nBlock; ++i) {
+                    spsMatIspd(dsdpSolver->Scker[i], &incone);
+                    if (!incone) { return FALSE; }
+        }
+    }
+    return TRUE;
+}
+
+static DSDP_INT LPConic( COPS_CHECK_INCONE )
+( HSDSolver *dsdpSolver, DSDP_INT type ) {
+    // TODO: LPConic
+    return TRUE;
+}
+
+static DSDP_INT BConic( COPS_CHECK_INCONE )
+( HSDSolver *dsdpSolver, DSDP_INT type ) {
+    if (type == DUALVAR) {
+        return (vec_incone(dsdpSolver->sl) && vec_incone(dsdpSolver->su));
+    } else {
+        return (vec_incone(dsdpSolver->slcker) && vec_incone(dsdpSolver->sucker));
+    }
+}
+
+static void SDPConic( COPS_SYMFAC )
+( HSDSolver *dsdpSolver ) {
+    for (DSDP_INT i = 0; i < dsdpSolver->nBlock; ++i) {
+        spsMatSymbolic(dsdpSolver->S[i]);
+        spsMatSymbolic(dsdpSolver->Scker[i]);
+    }
+}
+
+static void LPConic( COPS_SYMFAC )
+( HSDSolver *dsdpSolver ) {
+    return;
+}
+
+static void BConic ( COPS_SYMFAC )
+( HSDSolver *dsdpSolver ) {
+    return;
+}
+
+static void SDPConic ( COPS_GET_SCHUR )
+( HSDSolver *dsdpSolver ) {
+    DSDPSchurSetup(dsdpSolver->M);
+    vec_copy(dsdpSolver->asinv, dsdpSolver->d12);
+    dsdpSolver->iterProgress[ITER_SCHUR] = TRUE;
+}
+
+static void LPConic( COPS_GET_SCHUR )
+( HSDSolver *dsdpSolver ) {
+    // TODO: LP conic
+    return;
+}
+
+static void BConic( COPS_GET_SCHUR )
+( HSDSolver *dsdpSolver ) {
+    
+    DSDP_INT m = dsdpSolver->m, i;
+    double **Mdiag = dsdpSolver->Msdp->diag, *asinv = dsdpSolver->asinv->x, s = 0.0;
+    double *sl = dsdpSolver->sl->x, *su = dsdpSolver->su->x, bound = dsdpSolver->ybound;
+    
+    if (dsdpSolver->eventMonitor[EVENT_IN_PHASE_A]) {
+        double *u = dsdpSolver->u->x;
+        double sinvsqr, csinvsuml = 0.0, \
+               csinvsumu = 0.0, cscssuml = 0.0, cscssumu = 0.0;
+        
+        for (i = 0; i < m; ++i) {
+            // Upperbound
+            s = su[i]; sinvsqr = 1.0 / (s * s);
+            *Mdiag[i] += sinvsqr; asinv[i] += 1.0 / s;
+            u[i] += bound * sinvsqr; csinvsumu += 1.0 / s;
+            cscssumu += sinvsqr;
+            // Lowerbound
+            s = sl[i]; sinvsqr = 1.0 / (s * s);
+            *Mdiag[i] += sinvsqr; asinv[i] -= 1.0 / s;
+            u[i] += bound * sinvsqr; csinvsuml += 1.0 / s;
+            cscssuml += sinvsqr;
+        }
+        
+        dsdpSolver->csinv += bound * csinvsumu - bound * csinvsuml;
+        dsdpSolver->csinvcsinv += bound * bound * (cscssumu + cscssuml);
+        
+    } else {
+        for (i = 0; i < m; ++i) {
+            s = su[i]; *Mdiag[i] += 1.0 / (s * s); asinv[i] += 1.0 / s;
+            s = sl[i]; *Mdiag[i] += 1.0 / (s * s); asinv[i] -= 1.0 / s;
+        }
+    }
+}
+
+static void SDPConic( COPS_GET_SLACK )
+( HSDSolver *dsdpSolver, DSDP_INT type ) {
+    if (type == DUALVAR) {
+        if (dsdpSolver->eventMonitor[EVENT_IN_PHASE_A]) {
+            getPhaseAS(dsdpSolver, dsdpSolver->y, dsdpSolver->tau);
+        } else {
+            getPhaseBS(dsdpSolver, dsdpSolver->y);
+        }
+    } else {
+        if (dsdpSolver->eventMonitor[EVENT_IN_PHASE_A]) {
+            getPhaseACheckerS(dsdpSolver, dsdpSolver->y, dsdpSolver->tau);
+        } else {
+            getPhaseBCheckerS(dsdpSolver, dsdpSolver->y);
+        }
+    }
+}
+
+static void LPConic( COPS_GET_SLACK )
+( HSDSolver *dsdpSolver, DSDP_INT type ) {
+    // TODO: LP conic
+    return;
+}
+
+static void BConic( COPS_GET_SLACK )
+( HSDSolver *dsdpSolver, DSDP_INT type ) {
+    if (type == DUALVAR) {
+        vec_lslack(dsdpSolver->y, dsdpSolver->sl,
+                   -dsdpSolver->ybound * dsdpSolver->tau);
+        vec_uslack(dsdpSolver->y, dsdpSolver->su,
+                   dsdpSolver->ybound * dsdpSolver->tau);
+    } else {
+        vec_lslack(dsdpSolver->y, dsdpSolver->slcker,
+                   -dsdpSolver->ybound * dsdpSolver->tau);
+        vec_uslack(dsdpSolver->y, dsdpSolver->sucker,
+                   dsdpSolver->ybound * dsdpSolver->tau);
+    }
+}
+
+static void SDPConic( COPS_CONSTR_EXPR )
+( HSDSolver *dsdpSolver, DSDP_INT type,
+  double ycoef, vec *y, double tau, double r ) {
+    // r * Ry + tau * C + ycoef * ATy
+    spsMat **targets = (type == DUALVAR) ? \
+    dsdpSolver->S : dsdpSolver->Scker;
+    void (*f)(HSDSolver*, DSDP_INT, DSDP_INT, double) = \
+    (type == DUALVAR) ? addMattoS : addMattoChecker;
+    double dperturb = dsdpSolver->dperturb;
+    if (type == DELTAS) {
+        targets = dsdpSolver->dS;
+        f = addMattodS;
+        dperturb = 0.0;
+    }
+    
+    dperturb += r * dsdpSolver->Ry;
+    spsMat *target = NULL; DSDP_INT m = dsdpSolver->m, i, j;
+    
+    for (i = 0; i < dsdpSolver->nBlock; ++i) {
+        target = targets[i]; spsMatReset(target);
+        if (ycoef) {
+            for (j = 0; j < m; ++j) {
+                f(dsdpSolver, i, j, ycoef * y->x[j]);
+            }
+        }
+        if (tau) { f(dsdpSolver, i, m, tau); }
+        if (dperturb)   {spsMatAdddiag(target, dperturb, dsdpSolver->symS[i]);}
+    }
+    
+    return;
+}
+
+static void LPConic( COPS_CONSTR_EXPR )
+( HSDSolver *dsdpSolver, DSDP_INT type,
+  double ycoef, vec *y, double tau, double r ) {
+    // TODO: LPConic
+    return;
+}
+
+static void BConic( COPS_CONSTR_EXPR )
+( HSDSolver *dsdpSolver, DSDP_INT type,
+  double ycoef, vec *y, double tau, double r ) {
+    // r = 0 and S = tau * C + ycoef * ATy
+    // -I * y + sl = -l
+    //  I * y + su =  u
+    double bd = dsdpSolver->ybound;
+    if (type == DELTAS) { // Take care of this !!
+        double *dy = dsdpSolver->dy->x;
+        for (DSDP_INT i = 0; i < dsdpSolver->m; ++i) {
+            dy[i] = tau * bd - ycoef * y->x[i];
+        }
+    }
+    double *sl, *su, *ydata = y->x;
+    if (type == DUALVAR) {
+        sl = dsdpSolver->sl->x;
+        su = dsdpSolver->su->x;
+    } else {
+        sl = dsdpSolver->slcker->x;
+        su = dsdpSolver->sucker->x;
+    }
+    for (DSDP_INT i = 0; i < dsdpSolver->m; ++i) {
+        sl[i] = tau * bd - ycoef * ydata[i];
+        su[i] = tau * bd + ycoef * ydata[i];
+    }
+    return;
+}
+
+static double SDPConic( COPS_GET_MAXSTEP )
+( HSDSolver *dsdpSolver, DSDP_INT type ) {
+    double step = DSDP_INFINITY, tmp;
+    spsMat **targets = (type == DUALVAR) ? dsdpSolver->S : dsdpSolver->Scker;
+    for (DSDP_INT i = 0; i < dsdpSolver->nBlock; ++i) {
+        dsdpGetAlpha(dsdpSolver->lczSolver[i], targets[i],
+                     dsdpSolver->dS[i], NULL, &tmp);
+        step = MIN(step, tmp);
+    }
+    return step;
+}
+
+static double LPConic( COPS_GET_MAXSTEP )
+( HSDSolver *dsdpSolver, DSDP_INT type ) {
+    // TODO: LPConic
+    return DSDP_INFINITY;
+}
+
+static double BConic( COPS_GET_MAXSTEP )
+( HSDSolver *dsdpSolver, DSDP_INT type ) {
+    // dsl = dy, dsu = -dy;
+    double step = DSDP_INFINITY, tmp;
+    vec *target = (type == DUALVAR) ? dsdpSolver->sl : dsdpSolver->slcker;
+    tmp = vec_step(target, dsdpSolver->dy, 1.0);
+    step = MIN(step, tmp);
+    target = (type == DUALVAR) ? dsdpSolver->su : dsdpSolver->sucker;
+    tmp = vec_step(target, dsdpSolver->dy, -1.0);
+    step = MIN(step, tmp);
+    return step;
+}
+
+static void SDPConic( COPS_STEPDIRECTION )
+( HSDSolver *dsdpSolver ) {
+    if (dsdpSolver->eventMonitor[EVENT_IN_PHASE_A]) {
+        getPhaseAdS(dsdpSolver, dsdpSolver->drate,
+                    dsdpSolver->dy, dsdpSolver->dtau);
+    } else {
+        getPhaseBdS(dsdpSolver, 1.0, dsdpSolver->dy, 0.0);
+    }
+}
+
+static void LPConic( COPS_STEPDIRECTION )
+( HSDSolver *dsdpSolver ) {
+    // TODO: LPConic
+    return;
+}
+
+static void BConic( COPS_STEPDIRECTION )
+( HSDSolver *dsdpSolver ) {
+    return;
+}
+
+static void SDPConic( COPS_GET_SCHURVEC )
+( HSDSolver *dsdpSolver, DSDP_INT dInfeas ) {
+    if (dInfeas) {
+        arysinvSetup(dsdpSolver->M);
+    } else {
+        asinvSetup(dsdpSolver->M);
+    }
+}
+
+static void LPConic( COPS_GET_SCHURVEC )
+( HSDSolver *dsdpSolver, DSDP_INT dInfeas ) {
+    // TODO: LPConic
+    return;
+}
+
+static void BConic( COPS_GET_SCHURVEC )
+( HSDSolver *dsdpSolver, DSDP_INT dInfeas ) {
+    double *asinv = dsdpSolver->asinv->x, \
+           *sl = dsdpSolver->sl->x, *su = dsdpSolver->su->x;
+    DSDP_INT j;
+    vec_lslack(dsdpSolver->y, dsdpSolver->sl, -dsdpSolver->ybound);
+    vec_uslack(dsdpSolver->y, dsdpSolver->su,  dsdpSolver->ybound);
+    for (j = 0; j < dsdpSolver->m; ++j) {
+        asinv[j] += 1.0 / su[j]; asinv[j] -= 1.0 / sl[j];
+    }
+}
+
+static double SDPConic( COPS_GET_LOGDET )
+( HSDSolver *dsdpSolver, vec *y, DSDP_INT *inCone ) {
+    
+    double logdet = 0.0;
+    if (inCone) {
+        if (!(*inCone)) return 0.0;
+    }
+    
+    if (dsdpSolver->eventMonitor[EVENT_IN_PHASE_A]) {
+        getPhaseAS(dsdpSolver, y, dsdpSolver->tau);
+    } else {
+        getPhaseBS(dsdpSolver, y);
+    }
+    
+    if (inCone) {
+        *inCone = SDPConic( COPS_CHECK_INCONE )(dsdpSolver, DUALVAR);
+        if (!(*inCone)) return 0.0;
+    } else {
+        if (!SDPConic( COPS_CHECK_INCONE )(dsdpSolver, DUALVAR)) {
+            printf("Strange behavior. Give up. \n");
+        }
+    }
+    
+    for (DSDP_INT i = 0; i < dsdpSolver->nBlock; ++i) {
+        logdet += spsMatGetlogdet(dsdpSolver->S[i],
+                                  dsdpSolver->M->schurAux);
+    }
+    return logdet;
+}
+
+static double LPConic( COPS_GET_LOGDET )
+( HSDSolver *dsdpSolver, vec *y, DSDP_INT *inCone ) {
+    
+    // TODO: LPConic
+    return 0.0;
+}
+
+static double BConic( COPS_GET_LOGDET )
+( HSDSolver *dsdpSolver, vec *y, DSDP_INT *inCone ) {
+    
+    if (inCone) {
+        if (!(*inCone)) return 0.0;
+    }
+    double logdet = 0.0, bound = dsdpSolver->ybound;
+    for (DSDP_INT i = 0; i < dsdpSolver->m; ++i) {
+        logdet += log(bound - y->x[i]) + log(y->x[i] + bound);
+    }
+    if (logdet != logdet && inCone) {*inCone = FALSE; logdet = 0.0;}
+    return logdet;
+}
+
+extern void DSDPConic( COPS_DO_VAR_SCALE )
+( HSDSolver *dsdpSolver, double tau ) {
+    
+    SDPConic( COPS_DO_VAR_SCALE )(dsdpSolver, tau);
+    LPConic ( COPS_DO_VAR_SCALE )(dsdpSolver, tau);
+    BConic  ( COPS_DO_VAR_SCALE )(dsdpSolver, tau);
+}
+
+extern double DSDPConic( COPS_GET_LOGDET )
+( HSDSolver *dsdpSolver, vec *y, DSDP_INT *inCone ) {
+    
+    double logdet = 0.0; if (inCone) *inCone = TRUE;
+    logdet += SDPConic( COPS_GET_LOGDET )(dsdpSolver, y, inCone);
+    logdet += LPConic ( COPS_GET_LOGDET )(dsdpSolver, y, inCone);
+    logdet += BConic  ( COPS_GET_LOGDET )(dsdpSolver, y, inCone);
+    
+    return logdet;
+}
+
+extern void DSDPConic( COPS_GET_SCHURVEC )
+( HSDSolver *dsdpSolver, DSDP_INT dInfeas ) {
+    
+    SDPConic( COPS_GET_SCHURVEC ) (dsdpSolver, dInfeas);
+    LPConic ( COPS_GET_SCHURVEC ) (dsdpSolver, dInfeas);
+    BConic  ( COPS_GET_SCHURVEC ) (dsdpSolver, dInfeas);
+}
+
+extern void DSDPConic( COPS_STEPDIRECTION )
+( HSDSolver *dsdpSolver ) {
+    SDPConic( COPS_STEPDIRECTION )(dsdpSolver);
+    LPConic ( COPS_STEPDIRECTION )(dsdpSolver);
+    BConic  ( COPS_STEPDIRECTION )(dsdpSolver);
+}
+
+extern double DSDPConic( COPS_GET_MAXSTEP )
+( HSDSolver *dsdpSolver, DSDP_INT type ) {
+    double step = DSDP_INFINITY, tmp;
+    tmp = SDPConic( COPS_GET_MAXSTEP )(dsdpSolver, type);
+    step = MIN(step, tmp);
+    tmp = LPConic ( COPS_GET_MAXSTEP )(dsdpSolver, type);
+    step = MIN(step, tmp);
+    tmp = BConic( COPS_GET_MAXSTEP )(dsdpSolver, type);
+    step = MIN(step, tmp);
+    return step;
+}
+
+extern void DSDPConic( COPS_CONSTR_EXPR )
+( HSDSolver *dsdpSolver, DSDP_INT type,
+  double ycoef, vec *y, double tau, double r ) {
+    SDPConic( COPS_CONSTR_EXPR )(dsdpSolver, type, ycoef, y, tau, r);
+    LPConic ( COPS_CONSTR_EXPR )(dsdpSolver, type, ycoef, y, tau, r);
+    BConic  ( COPS_CONSTR_EXPR )(dsdpSolver, type, ycoef, y, tau, r);
+}
+
+extern void DSDPConic( COPS_SYMFAC )
+( HSDSolver *dsdpSolver ) {
+    SDPConic( COPS_SYMFAC )(dsdpSolver);
+    LPConic ( COPS_SYMFAC )(dsdpSolver);
+    BConic  ( COPS_SYMFAC )(dsdpSolver);
+}
+
+extern void DSDPConic ( COPS_GET_SLACK )
+( HSDSolver *dsdpSolver, DSDP_INT type ) {
+    SDPConic( COPS_GET_SLACK )(dsdpSolver, type);
+    LPConic ( COPS_GET_SLACK )(dsdpSolver, type);
+    BConic  ( COPS_GET_SLACK )(dsdpSolver, type);
+}
+
+extern void DSDPConic( COPS_GET_SCHUR )
+( HSDSolver *dsdpSolver ) {
+    SDPConic( COPS_GET_SCHUR )(dsdpSolver);
+    LPConic ( COPS_GET_SCHUR )(dsdpSolver);
+    BConic  ( COPS_GET_SCHUR )(dsdpSolver);
+}
+
+extern DSDP_INT DSDPConic( COPS_CHECK_INCONE )
+( HSDSolver *dsdpSolver, DSDP_INT type ) {
+    if (!BConic  ( COPS_CHECK_INCONE )(dsdpSolver, type)) { return FALSE; }
+    if (!LPConic ( COPS_CHECK_INCONE )(dsdpSolver, type)) { return FALSE; }
+    if (!SDPConic( COPS_CHECK_INCONE )(dsdpSolver, type)) { return FALSE; }
+    return TRUE;
+}
+
 extern double DSDPConic( COPS_GET_A_ONE_NORM )
 ( HSDSolver *dsdpSolver ) {
     return SDPConic( COPS_GET_A_ONE_NORM )(dsdpSolver) + \
@@ -95,6 +531,14 @@ extern void DSDPConic( COPS_DO_C_SCALE )
     BConic  ( COPS_DO_C_SCALE )(dsdpSolver);
 }
 
+extern void DSDPConic( COPS_GET_DOBJ )
+( HSDSolver *dsdpSolver ) {
+    // Compute b' * y
+    checkIterProgress(dsdpSolver, ITER_DUAL_OBJ);
+    vec_dot(dsdpSolver->dObj, dsdpSolver->y, &dsdpSolver->dObjVal);
+    dsdpSolver->iterProgress[ITER_DUAL_OBJ] = TRUE;
+}
+
 extern void invertDualVars( HSDSolver *dsdpSolver ) {
     // Compute inverse of the dual matrix when M3, M4 or M5 techniques are used
     // Also used if corrector is being computed
@@ -104,142 +548,71 @@ extern void invertDualVars( HSDSolver *dsdpSolver ) {
     }
 }
 
-/* Retrieve S = - Ry + C * tau - ATy across all the blocks */
-extern DSDP_INT getPhaseAS( HSDSolver *dsdpSolver, double *y, double tau ) {
-    
-    DSDP_INT retcode = DSDP_RETCODE_OK;
-    spsMat *S = NULL; DSDP_INT m = dsdpSolver->m;
-    for (DSDP_INT i = 0; i < dsdpSolver->nBlock; ++i) {
-        S = dsdpSolver->S[i]; retcode = spsMatReset(S);
-        for (DSDP_INT j = 0; j < m; ++j) {
-            retcode = addMattoS(dsdpSolver, i, j, - y[j]);
-        }
-        addMattoS(dsdpSolver, i, m, tau);
-        spsMatAdddiag(S, - dsdpSolver->Ry, dsdpSolver->symS[i]);
+// Special operations for Bound cone
+extern void getBslack( HSDSolver *dsdpSolver, vec *y, DSDP_INT type ) {
+    if (type == DUALVAR) {
+        vec_lslack(y, dsdpSolver->sl, -dsdpSolver->ybound);
+        vec_uslack(y, dsdpSolver->su,  dsdpSolver->ybound);
+    } else {
+        vec_lslack(y, dsdpSolver->slcker, -dsdpSolver->ybound);
+        vec_uslack(y, dsdpSolver->sucker,  dsdpSolver->ybound);
     }
-    return retcode;
+}
+
+// Special operations for SDP Cone
+/* Retrieve S = - Ry + C * tau - ATy across all the blocks */
+extern void getPhaseAS( HSDSolver *dsdpSolver, vec *y, double tau ) {
+    SDPConic( COPS_CONSTR_EXPR ) (dsdpSolver, DUALVAR, -1.0, y, tau, -1.0);
 }
 
 /* Retrieve S = C - ATy */
-extern DSDP_INT getPhaseBS( HSDSolver *dsdpSolver, double *y ) {
-    
-    DSDP_INT retcode = DSDP_RETCODE_OK;
-    spsMat *S = NULL; DSDP_INT m = dsdpSolver->m;
-    for (DSDP_INT i = 0; i < dsdpSolver->nBlock; ++i) {
-        S = dsdpSolver->S[i]; retcode = spsMatReset(S);
-        for (DSDP_INT j = 0; j < m; ++j) {
-            retcode = addMattoS(dsdpSolver, i, j, - y[j]);
-        }
-        addMattoS(dsdpSolver, i, m, 1.0);
-        spsMatAdddiag(S, dsdpSolver->dperturb, dsdpSolver->symS[i]);
-    }
-    return retcode;
+extern void getPhaseBS( HSDSolver *dsdpSolver, vec *y ) {
+    SDPConic( COPS_CONSTR_EXPR ) (dsdpSolver, DUALVAR, -1.0, y, 1.0, 0.0);
 }
 
 /* Retrieve S for verifying positive definiteness */
-extern DSDP_INT getPhaseACheckerS( HSDSolver *dsdpSolver, double *y, double tau ) {
-    
-    DSDP_INT retcode = DSDP_RETCODE_OK;
-    spsMat *checker = NULL; DSDP_INT m = dsdpSolver->m;
-    for (DSDP_INT i = 0; i < dsdpSolver->nBlock; ++i) {
-        checker = dsdpSolver->Scker[i];
-        retcode = spsMatReset(checker);
-        for (DSDP_INT j = 0; j < m; ++j) {
-            retcode = addMattoChecker(dsdpSolver, i, j, - y[j]);
-        }
-        retcode = addMattoChecker(dsdpSolver, i, m, tau);
-        retcode = spsMatAdddiag(checker, - dsdpSolver->Ry, dsdpSolver->symS[i]);
-    }
-    return retcode;
+extern void getPhaseACheckerS( HSDSolver *dsdpSolver, vec *y, double tau ) {
+    SDPConic( COPS_CONSTR_EXPR ) (dsdpSolver, CHECKER, -1.0, y, tau, -1.0);
 }
 
-extern DSDP_INT getPhaseBCheckerS( HSDSolver *dsdpSolver, double *y ) {
+extern void getPhaseBCheckerS( HSDSolver *dsdpSolver, vec *y ) {
     // C - ATy
-    DSDP_INT retcode = DSDP_RETCODE_OK;
-    spsMat *checker = NULL; DSDP_INT m = dsdpSolver->m;
-    for (DSDP_INT i = 0; i < dsdpSolver->nBlock; ++i) {
-        checker = dsdpSolver->Scker[i];
-        retcode = spsMatReset(checker);
-        for (DSDP_INT j = 0; j < m; ++j) {
-            retcode = addMattoChecker(dsdpSolver, i, j, - y[j]);
-        }
-        retcode = addMattoChecker(dsdpSolver, i, m, 1.0);
-        retcode = spsMatAdddiag(dsdpSolver->Scker[i], dsdpSolver->dperturb, dsdpSolver->symS[i]);
-    }
-    return retcode;
+    SDPConic( COPS_CONSTR_EXPR ) (dsdpSolver, CHECKER, -1.0, y, 1.0, 0.0);
 }
 
 /* Retrieve dS = drate * Ry + C * dtau - ATdy across all the blocks */
-extern DSDP_INT getPhaseAdS( HSDSolver *dsdpSolver, double drate, double *dy, double dtau ) {
-    
-    DSDP_INT retcode = DSDP_RETCODE_OK;
-    spsMat *dS = NULL; DSDP_INT m = dsdpSolver->m;
-    for (DSDP_INT i = 0; i < dsdpSolver->nBlock; ++i) {
-        dS = dsdpSolver->dS[i]; retcode = spsMatReset(dS);
-        for (DSDP_INT j = 0; j < m; ++j) {
-            retcode = addMattodS(dsdpSolver, i, j, - dy[j]);
-        }
-        addMattodS(dsdpSolver, i, m, dtau);
-        spsMatAdddiag(dS, drate * dsdpSolver->Ry, dsdpSolver->symS[i]);
-    }
-    return retcode;
+extern void getPhaseAdS( HSDSolver *dsdpSolver, double drate, vec *dy, double dtau ) {
+    SDPConic( COPS_CONSTR_EXPR ) (dsdpSolver, DELTAS, -1.0, dy, dtau, drate);
 }
 
 /* Retrieve dS = C * beta - ATdy * alpha across all the blocks */
-extern DSDP_INT getPhaseBdS( HSDSolver *dsdpSolver, double alpha,
-                             double *dy, double beta ) {
-    
-    DSDP_INT retcode = DSDP_RETCODE_OK;
-    spsMat *dS = NULL; DSDP_INT m = dsdpSolver->m;
-    for (DSDP_INT i = 0; i < dsdpSolver->nBlock; ++i) {
-        dS = dsdpSolver->dS[i]; retcode = spsMatReset(dS);
-        if (alpha) {
-            for (DSDP_INT j = 0; j < m; ++j) {
-                retcode = addMattodS(dsdpSolver, i, j, - alpha * dy[j]);
-            }
-        }
-        if (beta) { retcode = addMattodS(dsdpSolver, i, m, beta); }
-    }
-    return retcode;
+extern void getPhaseBdS( HSDSolver *dsdpSolver, double alpha, vec *dy, double beta ) {
+    SDPConic( COPS_CONSTR_EXPR ) (dsdpSolver, DELTAS, -alpha, dy, beta, 0.0);
 }
 
 /* DSDP routine for checking positive definite-ness of matrix */
-extern DSDP_INT dsdpCheckerInCone( HSDSolver *dsdpSolver, DSDP_INT *ispsd ) {
-    // Determine whether the current checking auxiliary variable lies in the cone
-    DSDP_INT retcode = DSDP_RETCODE_OK;
-    DSDP_INT incone = FALSE;
-    for (DSDP_INT i = 0; i < dsdpSolver->nBlock; ++i) {
-        spsMatIspd(dsdpSolver->Scker[i], &incone);
-        if (!incone) { break; }
-    }
-    *ispsd = incone; return retcode;
+extern void dsdpCheckerInCone( HSDSolver *dsdpSolver, DSDP_INT *ispsd ) {
+    *ispsd = SDPConic( COPS_CHECK_INCONE )(dsdpSolver, CHECKER);
 }
 
-extern DSDP_INT dsdpInCone( HSDSolver *dsdpSolver, DSDP_INT *ispsd ) {
-    // Determine whether the current dual variable lies in the cone
-    DSDP_INT retcode = DSDP_RETCODE_OK;
-    DSDP_INT incone = FALSE;
-    for (DSDP_INT i = 0; i < dsdpSolver->nBlock; ++i) {
-        spsMatIspd(dsdpSolver->S[i], &incone);
-        if (!incone) { break; }
-    }
-    *ispsd = incone; return retcode;
+extern void dsdpInCone( HSDSolver *dsdpSolver, DSDP_INT *ispsd ) {
+    *ispsd = SDPConic( COPS_CHECK_INCONE )(dsdpSolver, DUALVAR);
+}
+
+extern double getMaxSDPstep( HSDSolver *dsdpSolver, DSDP_INT type ) {
+    return SDPConic( COPS_GET_MAXSTEP )(dsdpSolver, type);
 }
 
 /* Coefficient norm computer */
-extern DSDP_INT getMatFnorm( HSDSolver *dsdpSolver, DSDP_INT blockid, DSDP_INT constrid, double *nrm ) {
-    
-    DSDP_INT retcode = DSDP_RETCODE_OK;
+extern void getMatFnorm( HSDSolver *dsdpSolver, DSDP_INT blockid, DSDP_INT constrid, double *nrm ) {
     void *data = dsdpSolver->sdpData[blockid]->sdpData[constrid];
     switch (dsdpSolver->sdpData[blockid]->types[constrid]) {
         case MAT_TYPE_ZERO  : *nrm = 0.0; break;
         case MAT_TYPE_DENSE : denseMatFnorm(data, nrm); break;
         case MAT_TYPE_SPARSE: spsMatFnorm(data, nrm); break;
         case MAT_TYPE_RANKK : rkMatFnorm(data, nrm); break;
-        default             : error(etype, "Unknown matrix type. \n"); break;
+        default             : break;
     }
-    
-    return retcode;
 }
 
 extern double getMatOneNorm( HSDSolver *dsdpSolver, DSDP_INT blockid, DSDP_INT constrid ) {
@@ -254,110 +627,64 @@ extern double getMatOneNorm( HSDSolver *dsdpSolver, DSDP_INT blockid, DSDP_INT c
 }
 
 /* Matrix Scaler */
-extern DSDP_INT matRScale( HSDSolver *dsdpSolver, DSDP_INT blockid, DSDP_INT constrid, double scaler) {
+extern void matRScale( HSDSolver *dsdpSolver, DSDP_INT blockid,
+                       DSDP_INT constrid, double scaler) {
     
-    DSDP_INT retcode = DSDP_RETCODE_OK;
-    if (scaler == 1.0) { return retcode; }
+    if (scaler == 1.0) { return; }
     void *data = dsdpSolver->sdpData[blockid]->sdpData[constrid];
     switch (dsdpSolver->sdpData[blockid]->types[constrid]) {
         case MAT_TYPE_ZERO  : break;
-        case MAT_TYPE_DENSE : retcode = denseMatRscale((dsMat *) data, scaler); break;
-        case MAT_TYPE_SPARSE: retcode = spsMatRscale((spsMat *) data, scaler); break;
-        case MAT_TYPE_RANKK : retcode = rkMatRscale((rkMat *) data, scaler); break;
-        default             : error(etype, "Unknown matrix type. \n"); break;
+        case MAT_TYPE_DENSE : denseMatRscale((dsMat *) data, scaler); break;
+        case MAT_TYPE_SPARSE: spsMatRscale((spsMat *) data, scaler); break;
+        case MAT_TYPE_RANKK : rkMatRscale((rkMat *) data, scaler); break;
+        default             : break;
     }
-    return retcode;
 }
 
 /* Compute S + alpha * some matrix */
-extern DSDP_INT addMattoIter( void *data, DSDP_INT mattype, double alpha, spsMat *iterS, DSDP_INT *sumHash ) {
+extern void addMattoIter( void *data, DSDP_INT mattype, double alpha,
+                             spsMat *iterS, DSDP_INT *sumHash ) {
     // Add a data matrix to iteration S, dS or Scker
-    DSDP_INT retcode = DSDP_RETCODE_OK;
-    if (alpha == 0.0) { return retcode; }
     switch (mattype) {
         case MAT_TYPE_SPARSE: spsMataXpbY(alpha, data, 1.0, iterS, sumHash); break;
         case MAT_TYPE_DENSE : spsMatAddds(iterS, alpha, data); break;
         case MAT_TYPE_RANKK : spsMatAddrk(iterS, alpha, data, sumHash); break;
-        default             : error(etype, "Invalid matrix type. \n"); break;
+        default             : break;
     }
-    return retcode;
 }
 
-extern DSDP_INT addMattoS( HSDSolver *dsdpSolver, DSDP_INT blockid, DSDP_INT constrid, double alpha ) {
-    
-    DSDP_INT retcode = DSDP_RETCODE_OK;
-    if (dsdpSolver->sdpData[blockid]->types[constrid] == MAT_TYPE_ZERO ||
-        alpha == 0.0) { return retcode; }
-    void *data = dsdpSolver->sdpData[blockid]->sdpData[constrid];
-    retcode = addMattoIter(data, dsdpSolver->sdpData[blockid]->types[constrid],
-                           alpha, dsdpSolver->S[blockid], dsdpSolver->symS[blockid]);
-    return retcode;
+extern void addMattoS( HSDSolver *dsdpSolver,
+                       DSDP_INT   blockid,
+                       DSDP_INT   constrid,
+                       double     alpha ) {
+    if (dsdpSolver->sdpData[blockid]->types[constrid] == MAT_TYPE_ZERO
+        || alpha == 0.0) { return; }
+    addMattoIter(dsdpSolver->sdpData[blockid]->sdpData[constrid],
+                 dsdpSolver->sdpData[blockid]->types[constrid],
+                 alpha, dsdpSolver->S[blockid], dsdpSolver->symS[blockid]);
 }
 
 /* Compute checkerS + alpha * some matrix */
-extern DSDP_INT addMattoChecker( HSDSolver *dsdpSolver, DSDP_INT blockid, DSDP_INT constrid, double alpha ) {
+extern void addMattoChecker( HSDSolver *dsdpSolver,
+                             DSDP_INT   blockid,
+                             DSDP_INT   constrid,
+                             double     alpha ) {
     
-    DSDP_INT retcode = DSDP_RETCODE_OK;
-    if (dsdpSolver->sdpData[blockid]->types[constrid] == MAT_TYPE_ZERO ||
-        alpha == 0.0) { return retcode; }
-    void *data = dsdpSolver->sdpData[blockid]->sdpData[constrid];
-    retcode = addMattoIter(data, dsdpSolver->sdpData[blockid]->types[constrid],
-                           alpha, dsdpSolver->Scker[blockid], dsdpSolver->symS[blockid]);
-    return retcode;
+    if (dsdpSolver->sdpData[blockid]->types[constrid] == MAT_TYPE_ZERO
+        || alpha == 0.0) { return; }
+    addMattoIter(dsdpSolver->sdpData[blockid]->sdpData[constrid],
+                 dsdpSolver->sdpData[blockid]->types[constrid],
+                 alpha, dsdpSolver->Scker[blockid], dsdpSolver->symS[blockid]);
 }
 
-extern DSDP_INT addMattodS( HSDSolver *dsdpSolver, DSDP_INT blockid, DSDP_INT constrid, double alpha ) {
+extern void addMattodS( HSDSolver *dsdpSolver,
+                        DSDP_INT   blockid,
+                        DSDP_INT   constrid,
+                        double     alpha ) {
     
-    DSDP_INT retcode = DSDP_RETCODE_OK;
-    if (dsdpSolver->sdpData[blockid]->types[constrid] == MAT_TYPE_ZERO ||
-        alpha == 0.0) { return retcode; }
-    void *data = dsdpSolver->sdpData[blockid]->sdpData[constrid];
-    retcode = addMattoIter(data, dsdpSolver->sdpData[blockid]->types[constrid],
-                           alpha, dsdpSolver->dS[blockid], dsdpSolver->symS[blockid]);
-    return retcode;
+    if (dsdpSolver->sdpData[blockid]->types[constrid] == MAT_TYPE_ZERO
+        || alpha == 0.0) { return; }
+    addMattoIter(dsdpSolver->sdpData[blockid]->sdpData[constrid],
+                 dsdpSolver->sdpData[blockid]->types[constrid],
+                 alpha, dsdpSolver->dS[blockid], dsdpSolver->symS[blockid]);
 }
-
-/* Free various matrices */
-extern DSDP_INT freesdpMat( HSDSolver *dsdpSolver, DSDP_INT blockid, DSDP_INT constrid ) {
-    
-    DSDP_INT retcode = DSDP_RETCODE_OK;
-    void *data = dsdpSolver->sdpData[blockid]->sdpData[constrid];
-    switch (dsdpSolver->sdpData[blockid]->types[constrid]) {
-        case MAT_TYPE_ZERO  : break;
-        case MAT_TYPE_DENSE : denseMatFree(data); break;
-        case MAT_TYPE_SPARSE: spsMatFree(data); break;
-        case MAT_TYPE_RANKK : rkMatFree(data); break;
-        default             : error(etype, "Unknown matrix type. \n"); break;
-    }
-    return retcode;
-}
-
-/* Objective value computer */
-extern DSDP_INT getDualObj( HSDSolver *dsdpSolver ) {
-    // Compute b' * y
-    DSDP_INT retcode = DSDP_RETCODE_OK;
-    checkIterProgress(dsdpSolver, ITER_DUAL_OBJ);
-    vec *ydata = dsdpSolver->y, *bdata = dsdpSolver->dObj;
-    vec_dot(bdata, ydata, &dsdpSolver->dObjVal);
-    dsdpSolver->iterProgress[ITER_DUAL_OBJ] = TRUE;
-    return retcode;
-}
-
-extern DSDP_INT getSDPPrimalObjPhaseB( HSDSolver *dsdpSolver ) {
-    // Compute primal objective given primal feasible projection
-    DSDP_INT retcode = DSDP_RETCODE_OK;
-    if (dsdpSolver->eventMonitor[EVENT_NO_RY] &&
-        dsdpSolver->eventMonitor[EVENT_PFEAS_FOUND] &&
-        dsdpSolver->eventMonitor[EVENT_IN_PHASE_B]) {
-    } else {
-        return retcode;
-    }
-    
-    DSDP_INT m = dsdpSolver->m, incx = 1;
-    vec *asinv = dsdpSolver->asinv;
-    double pObjVal = 0.0, mu = dsdpSolver->mu, *x1 = asinv->x, *d2 = dsdpSolver->d2->x;;
-    pObjVal = (double) (dsdpSolver->n + dsdpSolver->m * 2) + dot(&m, x1, &incx, d2, &incx);
-    dsdpSolver->pObjVal = pObjVal * mu + dsdpSolver->dObjVal;
-    return retcode;
-}
-

@@ -65,9 +65,9 @@ static DSDP_INT takeyStep( HSDSolver *dsdpSolver ) {
     return retcode;
 }
 
-static DSDP_INT takeSDPSStep( HSDSolver *dsdpSolver ) {
+static void takeSDPSStep( HSDSolver *dsdpSolver ) {
     // Take step in SDP S
-    return getPhaseAS(dsdpSolver, dsdpSolver->y->x, dsdpSolver->tau);;
+    getPhaseAS(dsdpSolver, dsdpSolver->y, dsdpSolver->tau);;
 }
 
 static DSDP_INT getBlockSDPSStep( HSDSolver *dsdpSolver, DSDP_INT k, double *SkStep ) {
@@ -94,9 +94,9 @@ static DSDP_INT getSDPSStep( HSDSolver *dsdpSolver, double *SStep ) {
 }
 
 static double getBoundyStep( HSDSolver *dsdpSolver ) {
-    // Compute the maimum stepsize to take for the bound cones
+    // Compute the maximum stepsize to take for the bound cones
     vec *y = dsdpSolver->y, *dy = dsdpSolver->dy;
-    double bound, yi, dyi, step = DSDP_INFINITY;
+    double bound, yi, dyi, tmp, step = DSDP_INFINITY;
     bound = dsdpSolver->ybound;
     
     if (dsdpSolver->eventMonitor[EVENT_IN_PHASE_A]) {
@@ -104,8 +104,8 @@ static double getBoundyStep( HSDSolver *dsdpSolver ) {
         double *sl = dsdpSolver->sl->x, *su = dsdpSolver->su->x;
         for (DSDP_INT i = 0; i < y->dim; ++i) {
             yi = y->x[i]; dyi = dy->x[i];
-            ds =  dyi + bound * dtau; tmpl = MIN(tmpl, ds / sl[i]);
-            ds = -dyi + bound * dtau; tmpu = MIN(tmpu, ds / su[i]);
+            ds =  dyi + bound * dtau; tmp = ds / sl[i]; tmpl = MIN(tmpl, tmp);
+            ds = -dyi + bound * dtau; tmp = ds / su[i]; tmpu = MIN(tmpu, tmp);
         }
         step = (tmpl >= 0) ? step : MIN(step, - 1.0 / tmpl);
         step = (tmpu >= 0) ? step : MIN(step, - 1.0 / tmpu);
@@ -113,7 +113,12 @@ static double getBoundyStep( HSDSolver *dsdpSolver ) {
         for (DSDP_INT i = 0; i < y->dim; ++i) {
             yi = y->x[i]; dyi = dy->x[i];
             if (dyi == 0.0) continue;
-            step = (dyi > 0.0) ? MIN(step, (bound - yi) / dyi) : MIN(step, (- bound - yi) / dyi);
+            if (dyi > 0.0) {
+                tmp = (bound - yi) / dyi;
+            } else{
+                tmp = (- bound - yi) / dyi;
+            }
+            step = MIN(step, tmp);
         }
     }
     return step;
@@ -148,7 +153,7 @@ static DSDP_INT getCurrentyPotential( HSDSolver *dsdpSolver, vec *y,
             pval -= (log(su) + log(sl));
         }
         
-        retcode = getPhaseBS(dsdpSolver, y->x); dsdpInCone(dsdpSolver, &psd);
+        getPhaseBS(dsdpSolver, y); dsdpInCone(dsdpSolver, &psd);
         
         if (psd) {
             *inCone = TRUE; vec_dot(dsdpSolver->dObj, y, &dObjVal);
@@ -165,7 +170,7 @@ static DSDP_INT getCurrentyPotential( HSDSolver *dsdpSolver, vec *y,
     
     if (y) {
         // Get potential of a new y that is in the cone
-        retcode = getPhaseBS(dsdpSolver, y->x);
+        getPhaseBS(dsdpSolver, y);
         vec_dot(dsdpSolver->dObj, y, &dObjVal);
         pval = rho * log(dsdpSolver->pObjVal - dObjVal);
         
@@ -201,43 +206,33 @@ static DSDP_INT getCurrentyPotential( HSDSolver *dsdpSolver, vec *y,
     return retcode;
 }
 
-extern DSDP_INT computeAdaptivedRate( HSDSolver *dsdpSolver ) {
+extern void computeAdaptivedRate( HSDSolver *dsdpSolver ) {
     // Use heuristic to determine the rate for eliminating dual infeasibility
-    DSDP_INT retcode = DSDP_RETCODE_OK;
-    double alphac = 0.0, alphainf = DSDP_INFINITY, tmp, alpharef;
+    double alphac = 0.0, alphainf = DSDP_INFINITY, alpharef;
     // dSd3 = A^T * d3
-    getPhaseBdS(dsdpSolver, -1.0, dsdpSolver->d3->x, 0.0);
-    getSDPSStep(dsdpSolver, &alphac);
-    
-    alpharef = alphac;
-    alphac = MIN(alphac * 0.98, 1.0);
+    DSDPConic( COPS_CONSTR_EXPR )(dsdpSolver, DELTAS, 1.0, dsdpSolver->d3, 0.0, 0.0);
+    alphac = DSDPConic( COPS_GET_MAXSTEP )(dsdpSolver, DUALVAR);
+    alpharef = alphac; alphac = MIN(alphac * 0.98, 1.0);
+    DSDP_INT incone = FALSE, j;
+    vec *aux = dsdpSolver->cgSolver->aux, *y = dsdpSolver->y;
+    for (j = 0; ; ++j) {
+        vec_zaxpby(aux, -alphac, dsdpSolver->d3, 1.0, y);
+        getPhaseACheckerS(dsdpSolver, aux, 1.0);
+        dsdpCheckerInCone(dsdpSolver, &incone);
+        if (incone) {
+            break;
+        } else {
+            alphac *= 0.8;
+        }
+        if (alphac < 1e-02) {
+            printf("| Strange behavior. Giving up.\n"); exit(0);
+        }
+    }
     dsdpSolver->alpha = alphac;
-    
-    // Shat = S + alphac * dSd3
-    for (DSDP_INT j = 0; j < dsdpSolver->nBlock; ++j) {
-        memcpy(dsdpSolver->Scker[j]->x, dsdpSolver->S[j]->x,
-               sizeof(double) * dsdpSolver->S[j]->nnz);
-        // This step sometimes fails due to inaccurate Lanczos and line-search is necessary
-        spsMataXpbY(alphac, dsdpSolver->dS[j],
-                    1.0, dsdpSolver->Scker[j], dsdpSolver->symS[j]);
-    }
-    // drate
-    DSDP_INT inCone = TRUE; dsdpCheckerInCone(dsdpSolver, &inCone);
-    if (!inCone) { error(etype, "Invalid adaptive Shat.\n"); }
-    
     vec_copy(dsdpSolver->d4, dsdpSolver->d12);
-    getPhaseAdS(dsdpSolver, 1.0, dsdpSolver->d12->x, 0.0);
-    
-    for (DSDP_INT i = 0; i < dsdpSolver->nBlock; ++i) {
-        dsdpGetAlpha(dsdpSolver->lczSolver[i], dsdpSolver->Scker[i],
-                     dsdpSolver->dS[i], dsdpSolver->spaux[i], &tmp);
-        alphainf = MIN(alphainf, tmp);
-    }
-    
+    getPhaseAdS(dsdpSolver, 1.0, dsdpSolver->d12, 0.0);
+    alphainf = getMaxSDPstep(dsdpSolver, CHECKER);
     dsdpSolver->drate = MIN(1.0, 0.98 * alphainf / alphac);
-    // double ratio = (alphac * 0.75) / (alphainf + alphac * 0.75);
-    // dsdpSolver->alpha = dsdpSolver->alpha * ratio + dsdpSolver->drate * (1 - ratio);
-//    printf("| drate %e \n", dsdpSolver->drate);
     
     if (dsdpSolver->Pnrm < 1.0) {
         dsdpSolver->drate = MAX(0.9, dsdpSolver->drate);
@@ -246,46 +241,25 @@ extern DSDP_INT computeAdaptivedRate( HSDSolver *dsdpSolver ) {
     } else if (dsdpSolver->Pnrm < 50.0) {
         dsdpSolver->drate = MAX(0.1, dsdpSolver->drate);
     }
-    
-//  dsdpSolver->drate = MAX(0.9, dsdpSolver->drate);
-    return retcode;
 }
 
-extern DSDP_INT getMaxStep( HSDSolver *dsdpSolver ) {
+extern void getMaxStep( HSDSolver *dsdpSolver ) {
     // Compute the maximum step size to take for one iteration
-    DSDP_INT retcode = DSDP_RETCODE_OK;
-    retcode = checkIterProgress(dsdpSolver, ITER_COMPUTE_STEP);
-    if (dsdpSolver->iterProgress[ITER_COMPUTE_STEP]) {
-        error(etype, "Stepsize has been computed. \n");
-    }
-    
-    double stepkappatau = 0.0, steplps = 100.0, sdpS = 0.0, stepbd, Aalpha;
-    DSDPGetDblParam(dsdpSolver, DBL_PARAM_AALPHA, &Aalpha);
-    getKappaTauStep(dsdpSolver, &stepkappatau);
-    sdpS = dsdpSolver->alpha;
-    getSDPSStep(dsdpSolver, &sdpS);
-    stepbd = (dsdpSolver->ybound == DSDP_INFINITY) ? DSDP_INFINITY : getBoundyStep(dsdpSolver);
-    sdpS = MIN(sdpS, steplps);
-    dsdpSolver->alpha = MIN(sdpS, stepkappatau);
-    dsdpSolver->alpha = MIN(dsdpSolver->alpha, stepbd);
-    
+    dsdpSolver->alpha = DSDPConic( COPS_GET_MAXSTEP )(dsdpSolver, DUALVAR);
     // MIN(dsdpSolver->alpha * XXX, 1.0): XXX is the most critical parameter
     dsdpSolver->alpha = MIN(dsdpSolver->alpha * 0.95, 1.0);
-    dsdpSolver->iterProgress[ITER_COMPUTE_STEP] = TRUE; return retcode;
+    dsdpSolver->iterProgress[ITER_COMPUTE_STEP] = TRUE;
 }
 
-extern DSDP_INT takeStep( HSDSolver *dsdpSolver ) {
+extern void takeStep( HSDSolver *dsdpSolver ) {
     // Take step towards next iterate
-    DSDP_INT retcode = DSDP_RETCODE_OK;
-    retcode = checkIterProgress(dsdpSolver, ITER_TAKE_STEP);
-    if (dsdpSolver->iterProgress[ITER_TAKE_STEP]) {
-        error(etype, "Step has been taken. \n");
-    }
-    takeKappaTauStep(dsdpSolver); takeyStep(dsdpSolver); takeSDPSStep(dsdpSolver);
-    dsdpSolver->iterProgress[ITER_TAKE_STEP] = TRUE; return retcode;
+    takeKappaTauStep(dsdpSolver);
+    takeyStep(dsdpSolver);
+    takeSDPSStep(dsdpSolver);
+    dsdpSolver->iterProgress[ITER_TAKE_STEP] = TRUE;
 }
 
-extern DSDP_INT searchpObj( HSDSolver *dsdpSolver, double *approxpObj ) {
+extern void searchpObj( HSDSolver *dsdpSolver, double *approxpObj ) {
     // Implement the golden search heuristic to decrease the primal objective
     /*
       This heuristic treats mu <S^-1> as the primal objective and computes the
@@ -295,7 +269,6 @@ extern DSDP_INT searchpObj( HSDSolver *dsdpSolver, double *approxpObj ) {
         mu * csinv + M * ||mu * asinv - b||_1
      is minimized
     */
-    DSDP_INT retcode = DSDP_RETCODE_OK;
     
     double boundy = dsdpSolver->ybound, pinfeas, csinv = dsdpSolver->csinv;
     double ub = dsdpSolver->mu, lb = 0.0, tol = MIN(1e-06 * ub, 1e-06) / Phi;
@@ -319,24 +292,21 @@ extern DSDP_INT searchpObj( HSDSolver *dsdpSolver, double *approxpObj ) {
     
     ub = (ub + lb) / 2; vec_copy(b, buffer);
     *approxpObj = getApproxpObj(ub, asinv, buffer, csinv, boundy, &pinfeas);
-    return retcode;
 }
 
-extern DSDP_INT selectMu( HSDSolver *dsdpSolver, double *newmu ) {
+extern void selectMu( HSDSolver *dsdpSolver, double *newmu ) {
     // Choose the next barrier parameter
     /*
      The backward newton step is stored in b2 and Scker, dy1 is in d1; dy is in b1
      At this stage, if a new primal feasible solution if found, then sl and su are filled by
      backward newton steps. Otherwise sl and su are untouched
     */
-    
-    DSDP_INT retcode = DSDP_RETCODE_OK;
-    
+        
     double alpha = DSDP_INFINITY, alphap = 0.0, tmp = 1000;
     
     if (dsdpSolver->eventMonitor[EVENT_PFEAS_FOUND]) {
         // IMPORTANT: Is it correct ?
-        retcode = getPhaseBdS(dsdpSolver, -1.0 / dsdpSolver->mu, dsdpSolver->d1->x, 0.0);
+        getPhaseBdS(dsdpSolver, -1.0 / dsdpSolver->mu, dsdpSolver->d1, 0.0);
         for (DSDP_INT i = 0; i < dsdpSolver->nBlock; ++i) {
             dsdpGetAlpha(dsdpSolver->lczSolver[i], dsdpSolver->Scker[i],
                          dsdpSolver->dS[i], dsdpSolver->spaux[i], &tmp);
@@ -353,7 +323,7 @@ extern DSDP_INT selectMu( HSDSolver *dsdpSolver, double *newmu ) {
     } else {
         
         // dS = dsdpgetATy(A, dy);
-        retcode = getPhaseBdS(dsdpSolver, -1.0, dsdpSolver->b1->x, 0.0);
+        getPhaseBdS(dsdpSolver, -1.0, dsdpSolver->b1, 0.0);
         // alphap = dsdpgetalpha(S, dS, 0.95 / 1.0);
         for (DSDP_INT i = 0; i < dsdpSolver->nBlock; ++i) {
             dsdpGetAlpha(dsdpSolver->lczSolver[i], dsdpSolver->S[i],
@@ -404,7 +374,7 @@ extern DSDP_INT selectMu( HSDSolver *dsdpSolver, double *newmu ) {
         }
         
         // IMPORTANT: Is it correct ?
-        getPhaseBdS(dsdpSolver, -alphap / dsdpSolver->mu, dsdpSolver->d1->x, 0.0);
+        getPhaseBdS(dsdpSolver, -alphap / dsdpSolver->mu, dsdpSolver->d1, 0.0);
         
         tmp = DSDP_INFINITY;
         for (DSDP_INT i = 0; i < dsdpSolver->nBlock; ++i) {
@@ -421,21 +391,12 @@ extern DSDP_INT selectMu( HSDSolver *dsdpSolver, double *newmu ) {
         *newmu = (alphap * dsdpSolver->mu) / (1.0 + tmp) + \
                   + (1.0 - alphap) * (dsdpSolver->pObjVal - dsdpSolver->dObjVal) / dsdpSolver->nall;
     }
-    
-    if (*newmu == 0.0) {
-        
-    }
-    
-    return retcode;
 }
 
-extern DSDP_INT dualPotentialReduction( HSDSolver *dsdpSolver ) {
+extern void dualPotentialReduction( HSDSolver *dsdpSolver ) {
     
     // Implement the dual potential reduction method
     // dy is filled
-    DSDP_INT retcode = DSDP_RETCODE_OK;
-    retcode = checkIterProgress(dsdpSolver, ITER_COMPUTE_STEP);
-    
     double rho, alpha, oldpotential = 0.0, newpotential = 0.0, maxstep = 0.0, better = 0.0;
     getDblParam(dsdpSolver->param, DBL_PARAM_RHO, &rho);
     
@@ -476,12 +437,12 @@ extern DSDP_INT dualPotentialReduction( HSDSolver *dsdpSolver ) {
     }
     
     // Take step
-    vec_axpy(alpha, dy, y); getPhaseBS(dsdpSolver, y->x);
+    vec_axpy(alpha, dy, y); getPhaseBS(dsdpSolver, y);
+    getBslack(dsdpSolver, y, DUALVAR);
+    
     dsdpSolver->alpha = alpha;
     dsdpSolver->dPotential = newpotential;
     
     dsdpSolver->iterProgress[ITER_COMPUTE_STEP] = TRUE;
     dsdpSolver->iterProgress[ITER_TAKE_STEP] = TRUE;
-    
-    return retcode;
 }

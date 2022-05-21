@@ -19,9 +19,9 @@ extern DSDP_INT computePrimalX( HSDSolver *dsdpSolver ) {
     
     // getPhaseBS(dsdpSolver, dsdpSolver->y->x);
     // Smaker = C - dsdpgetATy(A, ymaker);
-    getPhaseBCheckerS(dsdpSolver, ymaker->x);
+    getPhaseBCheckerS(dsdpSolver, ymaker);
     // bnmaker = dsdpgetATy(A, dymaker);
-    getPhaseBdS(dsdpSolver, -1.0, dymaker->x, 0.0);
+    getPhaseBdS(dsdpSolver, -1.0, dymaker, 0.0);
     
     dsMat  *dsaux = NULL;
     rkMat  *rkaux = NULL;
@@ -107,6 +107,17 @@ extern DSDP_INT computeDIMACS( HSDSolver *dsdpSolver ) {
     }
     
     pInf = sqrt(pInf);
+    
+    if (pInf / (1 + bnrm) > 1e-02 && dsdpSolver->mumaker > 0) {
+        printf("| Bad primal solution. Trying backup Newton step. \n");
+        dsdpSolver->mumaker = dsdpSolver->mumaker2;
+        vec_copy(dsdpSolver->ymaker2, dsdpSolver->ymaker);
+        vec_copy(dsdpSolver->dymaker2, dsdpSolver->dymaker);
+        retcode = computePrimalX(dsdpSolver);
+        dsdpSolver->mumaker = -1.0;
+        computeDIMACS(dsdpSolver);
+        return retcode;
+    }
     
     /*  DIMACS Error 3    */
     dInf = sqrt(dsdpSolver->n) * dsdpSolver->dperturb;

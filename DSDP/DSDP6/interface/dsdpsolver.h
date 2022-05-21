@@ -42,7 +42,6 @@ typedef struct {
     // Iterator
     double  pObjVal;      // Primal objective
     double  dObjVal;      // Dual objective
-    double  schurmu;      // Barrier when setting up the Schur matrix
     double  mu;           // Duality gap
     
     spsMat   **S;         // SDP dual iteration matrix
@@ -99,13 +98,16 @@ typedef struct {
     dsMat    **dsaux;     // Used for Schur matrix setup
     rkMat    **rkaux;     // Use for Schur matrix setup
     spsMat   **Scker;     // Used for checking positive definiteness
+    vec      *scker;      // Used as a buffer
     vec      *ds;         // LP step matrix
     vec      *dy;         // Dual step matrix
     double   dtau;        // Tau step
     double   dkappa;      // Kappa step
     
     vec      *sl;         // Dual slack y - l
+    vec      *slcker;
     vec      *su;         // Dual slack u - y
+    vec      *sucker;
     double   pinfeas;     // Primal infeasibility
     
     // Solver parameter
@@ -124,6 +126,9 @@ typedef struct {
     vec      *ymaker;     // y
     vec      *dymaker;    // dy
     double    mumaker;    // mu
+    vec      *ymaker2;
+    vec      *dymaker2;
+    double    mumaker2;
     
     // Solver statistics
     DSDPStats dsdpStats;  // Solver statistics

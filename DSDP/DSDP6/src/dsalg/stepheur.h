@@ -12,12 +12,12 @@
 extern "C" {
 #endif
 
-extern DSDP_INT computeAdaptivedRate( HSDSolver *dsdpSolver );
-extern DSDP_INT getMaxStep( HSDSolver *dsdpSolver );
-extern DSDP_INT takeStep  ( HSDSolver *dsdpSolver );
-extern DSDP_INT searchpObj( HSDSolver *dsdpSolver, double *approxpObj );
-extern DSDP_INT selectMu  ( HSDSolver *dsdpSolver, double *newmu );
-extern DSDP_INT dualPotentialReduction ( HSDSolver *dsdpSolver );
+extern void computeAdaptivedRate( HSDSolver *dsdpSolver );
+extern void getMaxStep( HSDSolver *dsdpSolver );
+extern void takeStep  ( HSDSolver *dsdpSolver );
+extern void searchpObj( HSDSolver *dsdpSolver, double *approxpObj );
+extern void selectMu  ( HSDSolver *dsdpSolver, double *newmu );
+extern void dualPotentialReduction ( HSDSolver *dsdpSolver );
 
 #ifdef __cplusplus
 }

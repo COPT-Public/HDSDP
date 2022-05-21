@@ -462,18 +462,16 @@ extern DSDP_INT spsMatScale( spsMat *sXMat, double alpha ) {
     return DSDP_RETCODE_OK;
 }
 
-extern DSDP_INT spsMatRscale( spsMat *sXMat, double r ) {
+extern void spsMatRscale( spsMat *sXMat, double r ) {
     // Scale a sparse matrix by the reciprocical of some number. No overflow or under flow
     
-    DSDP_INT retcode = DSDP_RETCODE_OK;
-    assert( sXMat->dim );
+    if (r == 1.0) return;
     if (fabs(r) < 1e-25) {
-        error(etype, "Dividing a matrix by 0. \n");
+        printf("Dividing a matrix by 0. \n");
+        assert( FALSE );
     }
     if (sXMat->factor) { rkMatRscale(sXMat->factor, r); }
     vecdiv(&sXMat->nnz, &r, sXMat->x, &one);
-    
-    return retcode;
 }
 
 extern DSDP_INT spsMatFnorm( spsMat *sMat, double *fnrm ) {
@@ -632,28 +630,21 @@ extern DSDP_INT spsMatGetX( spsMat *S, spsMat *dS, double *LinvSLTinv ) {
 }
 
 /* DSDP routine for computing the stepsize in the SDP cone */
-extern DSDP_INT dsdpGetAlpha( DSDPLanczos *lczSolver, spsMat *S, spsMat *dS, spsMat *spaux, double *alpha ) {
+extern double dsdpGetAlpha( DSDPLanczos *lczSolver, spsMat *S, spsMat *dS, spsMat *spaux, double *alpha ) {
     // Get the maximum alpha such that S + alpha * dS is PSD
-    DSDP_INT retcode = DSDP_RETCODE_OK;
-    DSDP_INT n = S->dim;
     double mineig = 0.0, lbd = 0.0, delta = 0.0;
-    
-    // Check block size of 1
-    if (n == 1) {
+    if (S->dim == 1) {
         *alpha = (dS->x[0] > 0) ? DSDP_INFINITY : -S->x[0] / dS->x[0];
-        return retcode;
+        return *alpha;
     }
-    // Lanczos iteration
-    retcode = dsdpLanczosStep(lczSolver, S, dS, &lbd, &delta);
-    
-    if (0 || lbd != lbd || delta != delta || (lbd + delta > 1e+04)) {
-        // MKL extremal routine
+    dsdpLanczosStep(lczSolver, S, dS, &lbd, &delta);
+    if ((FALSE)) {
         spsMatLspLSolve(S, dS, spaux); spsMatMinEig(spaux, &mineig);
         *alpha = (mineig >= 0) ? DSDP_INFINITY : - 1.0 / mineig;
     } else {
         *alpha = (lbd + delta <= 0) ? DSDP_INFINITY : 1.0 / (lbd + delta);
     }
-    return retcode;
+    return *alpha;
 }
 
 /* M3 Technique */

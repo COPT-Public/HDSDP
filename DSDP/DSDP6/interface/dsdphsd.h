@@ -26,7 +26,7 @@
 
 //#define superDebug
 #ifndef MAXTIME
-#define MAXTIME 3600
+#define MAXTIME 7200
 #endif
 
 #ifdef SHOWALL

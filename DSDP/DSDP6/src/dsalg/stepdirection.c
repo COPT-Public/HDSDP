@@ -78,47 +78,20 @@ static void getdyB( HSDSolver *dsdpSolver ) {
     }
 }
 
-static void getdS( HSDSolver *dsdpSolver ) {
-    double *dy = dsdpSolver->dy->x, dtau = dsdpSolver->dtau;
-    getPhaseAdS(dsdpSolver, dsdpSolver->drate, dy, dtau);
-}
-
-static void getdSB( HSDSolver *dsdpSolver ) {
-    getPhaseBdS(dsdpSolver, 1.0, dsdpSolver->dy->x, 0.0);
-}
-
-static void getdKappa( HSDSolver *dsdpSolver ) {
-#ifdef KAPPATAU
-    dsdpSolver->dkappa = - dsdpSolver->kappa
-                         + dsdpSolver->mu / dsdpSolver->tau
-                         - (dsdpSolver->kappa * dsdpSolver->dtau) / dsdpSolver->tau;
-#else
-    dsdpSolver->dkappa = 0.0;
-#endif
-}
-
 static void getSDPDirs( HSDSolver *dsdpSolver ) {
     if (dsdpSolver->eventMonitor[EVENT_IN_PHASE_A]) {
-        // The four directions must be set up in order
         getdTau(dsdpSolver); getdy(dsdpSolver);
-        getdS(dsdpSolver); getdKappa(dsdpSolver);
     } else {
-        getdyB(dsdpSolver); getdSB(dsdpSolver);
+        getdyB(dsdpSolver);
     }
+    
+    DSDPConic( COPS_STEPDIRECTION )(dsdpSolver);
 }
 
-extern DSDP_INT getStepDirs( HSDSolver *dsdpSolver ) {
-    
-    DSDP_INT retcode = DSDP_RETCODE_OK;
-    retcode = checkIterProgress(dsdpSolver, ITER_STEP_DIRECTION);
-    if (dsdpSolver->iterProgress[ITER_STEP_DIRECTION]) {
-        error(etype, "SDP directions have been set up. \n");
-    }
-    
+extern void getStepDirs( HSDSolver *dsdpSolver ) {
     if (dsdpSolver->eventMonitor[EVENT_IN_PHASE_A]) {
-        retcode = assemblePhaseAArrs(dsdpSolver);
+        assemblePhaseAArrs(dsdpSolver);
     }
     getSDPDirs(dsdpSolver);
     dsdpSolver->iterProgress[ITER_STEP_DIRECTION] = TRUE;
-    return retcode;
 }
