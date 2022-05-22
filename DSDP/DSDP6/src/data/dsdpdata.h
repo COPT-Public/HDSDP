@@ -67,7 +67,10 @@ typedef struct {
     DSDP_INT dims;       // Dimension of dual variable s
     
     // Sparse LP data in CSC format
-    cs       *lpdata;
+    DSDP_INT *Ap;
+    DSDP_INT *Ai;
+    double   *Ax;
+    DSDP_INT nnz;
     double   *xscale;    // Scaler for presolving
     
 } lpMat;
@@ -77,18 +80,18 @@ typedef struct {
 extern "C" {
 #endif
 
-extern DSDP_INT lpMatInit     ( lpMat  *lpData );
-extern DSDP_INT lpMatSetDim   ( lpMat  *lpData, DSDP_INT dimy, DSDP_INT dims );
+extern void lpMatInit     ( lpMat  *lpData );
+extern void lpMatSetDim   ( lpMat  *lpData, DSDP_INT dimy, DSDP_INT dims );
 extern DSDP_INT lpMatSetData  ( lpMat *lpData, DSDP_INT *Ap, DSDP_INT *Ai, double *Ax );
-extern DSDP_INT lpMataATy     ( double alpha, lpMat *lpData, vec *y, double *ATy );
-extern DSDP_INT lpMatFree     ( lpMat *lpData );
+extern void lpMataATy     ( double alpha, lpMat *lpData, vec *y, double *ATy );
+extern void lpMatFree     ( lpMat *lpData );
 
-extern DSDP_INT sdpMatInit    ( sdpMat *sdpData );
+extern void sdpMatInit    ( sdpMat *sdpData );
 extern DSDP_INT sdpMatAlloc   ( sdpMat *sdpData );
-extern DSDP_INT sdpMatSetDim  ( sdpMat *sdpData, DSDP_INT dimy, DSDP_INT dimS, DSDP_INT blockId );
-extern DSDP_INT sdpMatSetHint ( sdpMat *sdpData, DSDP_INT *hint );
+extern void sdpMatSetDim  ( sdpMat *sdpData, DSDP_INT dimy, DSDP_INT dimS, DSDP_INT blockId );
+extern void sdpMatSetHint ( sdpMat *sdpData, DSDP_INT *hint );
 extern DSDP_INT sdpMatSetData ( sdpMat *sdpData, DSDP_INT *Ap, DSDP_INT *Ai, double *Ax );
-extern DSDP_INT sdpMatFree    ( sdpMat *sdpData );
+extern void sdpMatFree    ( sdpMat *sdpData );
 
 #ifdef __cplusplus
 }

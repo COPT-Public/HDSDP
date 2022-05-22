@@ -26,7 +26,7 @@ static DSDP_INT getLPResidualry( HSDSolver *dsdpSolver, vec *ry ) {
     
     // Setup - A' * y
     double alpha = - 1.0;
-    retcode = lpMataATy(alpha, Adata, y, ydata);
+    lpMataATy(alpha, Adata, y, ydata);
     // Get - A' * y + c * tau
     vec_axpy(tau, c, ry);
     // Get - A' * y + c * tau - s

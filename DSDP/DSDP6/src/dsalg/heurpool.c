@@ -25,12 +25,31 @@ extern void DSDP_HEURS( adjustSolverParams )
     // prob_x_x_x problems
     if (ds > 0.7 * dsdpSolver->nBlock * dsdpSolver->m) {
         DSDPSetDblParam(dsdpSolver, DBL_PARAM_INIT_BETA, 1.0);
-        DSDPSetIntParam(dsdpSolver, INT_PARAM_ACORRECTOR, 6);
+        DSDPSetIntParam(dsdpSolver, INT_PARAM_ACORRECTOR, 4);
+        DSDPSetIntParam(dsdpSolver, INT_PARAM_GOLDSEARCH, FALSE);
     }
     
     // theta
     if (zero == 0.0 && r1 == 1.0 && ds == 0.0 && sps >= 2000) {
         DSDPSetDblParam(dsdpSolver, DBL_PARAM_INIT_BETA, 10.0);
+    }
+    
+    // inc_xxx
+    if (FALSE) {
+        DSDPSetDblParam(dsdpSolver, DBL_PARAM_INIT_BETA, 10.0);
+        dsdpSolver->ybound = 5.0;
+    }
+    
+    // swissroll
+    if (FALSE) {
+        DSDPSetDblParam(dsdpSolver, DBL_PARAM_INIT_BETA, 10.0);
+        dsdpSolver->ybound = 1e+04;
+    }
+    
+    // Gxx
+    if (zero == 0.0 && r1 == dsdpSolver->m && sps == 1.0 && (dsdpSolver->n == dsdpSolver->m - 1 || dsdpSolver->n == dsdpSolver->m)) {
+        DSDPSetDblParam(dsdpSolver, DBL_PARAM_INIT_BETA, 0.1);
+        dsdpSolver->pObjVal = 1e+05;
     }
     
 }

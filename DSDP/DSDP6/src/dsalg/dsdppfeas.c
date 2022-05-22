@@ -85,6 +85,10 @@ extern DSDP_INT DSDPPFeasPhase( HSDSolver *dsdpSolver ) {
             selectMu(dsdpSolver, &newmu); checkCode;
             newmu = MIN(newmu, muub); newmu = MAX(newmu, mulb);
             dsdpSolver->mu = newmu;
+            if (nopfeasIter >= 8) {
+                dsdpSolver->mu *= 10;
+                dsdpSolver->dperturb += 1e-08;
+            }
         } else {
             dsdpSolver->mu = MAX(dsdpSolver->mu * sigma, 1e-12);
         }

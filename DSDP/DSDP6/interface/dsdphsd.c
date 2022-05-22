@@ -319,7 +319,7 @@ static DSDP_INT DSDPIFreeLPData ( HSDSolver *dsdpSolver ) {
     DSDP_INT retcode = DSDP_RETCODE_OK;
     
     if (dsdpSolver->isLPset) {
-        retcode = lpMatFree(dsdpSolver->lpData); checkCode;
+        lpMatFree(dsdpSolver->lpData);
         dsdpSolver->isLPset = 0;
     }
     
@@ -334,7 +334,7 @@ static DSDP_INT DSDPIFreeSDPData( HSDSolver *dsdpSolver ) {
     
     for (DSDP_INT i = 0; i < dsdpSolver->nBlock; ++i) {
         if (dsdpSolver->isSDPset[i]) {
-            retcode = sdpMatFree(dsdpSolver->sdpData[i]); checkCode;
+            sdpMatFree(dsdpSolver->sdpData[i]); checkCode;
             DSDP_FREE(dsdpSolver->sdpData[i]);
         }
     }
@@ -671,8 +671,8 @@ extern DSDP_INT DSDPSetLPData( HSDSolver *dsdpSolver,
         error(etype, "Invalid number of columns. \n");
     }
     
-    retcode = lpMatInit(dsdpSolver->lpData); checkCode;
-    retcode = lpMatSetDim(dsdpSolver->lpData, dsdpSolver->m, nCol); checkCode;
+    lpMatInit(dsdpSolver->lpData);
+    lpMatSetDim(dsdpSolver->lpData, dsdpSolver->m, nCol); checkCode;
     retcode = lpMatSetData(dsdpSolver->lpData, Ap, Ai, Ax); checkCode;
     memcpy(dsdpSolver->lpObj->x, lpObj, sizeof(double) * nCol);
     
@@ -702,10 +702,10 @@ extern DSDP_INT DSDPSetSDPConeData( HSDSolver *dsdpSolver,
     }
     
     sdpMat *data = dsdpSolver->sdpData[blockid];
-    retcode = sdpMatSetDim(data, dsdpSolver->m,
-                           coneSize, blockid); checkCode;
+    sdpMatSetDim(data, dsdpSolver->m,
+                           coneSize, blockid);
     retcode = sdpMatAlloc(data); checkCode;
-    if (typehint) { retcode = sdpMatSetHint(data, typehint); checkCode; }
+    if (typehint) { sdpMatSetHint(data, typehint); }
     
     retcode = sdpMatSetData(data, Asdpp, Asdpi, Asdpx); checkCode;
     dsdpSolver->isSDPset[blockid] = TRUE;

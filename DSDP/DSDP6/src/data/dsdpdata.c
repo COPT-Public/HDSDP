@@ -31,7 +31,9 @@ static DSDP_INT lpMatIAlloc( lpMat *lpData, DSDP_INT nnz ) {
         error(etype, "Incorrect size for LP data matrix for allocation. \n");
     }
     
-    lpData->lpdata = cs_spalloc(lpData->dimy, lpData->dims, nnz, TRUE, FALSE);
+    lpData->Ap = (DSDP_INT *) calloc(lpData->dims + 1, sizeof(DSDP_INT));
+    lpData->Ai = (DSDP_INT *) calloc(nnz, sizeof(DSDP_INT));
+    lpData->Ax = (double   *) calloc(nnz, sizeof(double));
     return retcode;
 }
 
@@ -188,22 +190,17 @@ static DSDP_INT sdpMatIAllocByType( sdpMat *sdpData, DSDP_INT k, DSDP_INT *Ai,
 }
 
 /* LP public methods */
-extern DSDP_INT lpMatInit( lpMat *lpData ) {
+extern void lpMatInit( lpMat *lpData ) {
     // Initialize LP data
-    DSDP_INT retcode = DSDP_RETCODE_OK;
-    lpData->dims = 0; lpData->dimy = 0;
-    lpData->lpdata = NULL; lpData->xscale = NULL;
-    
-    return retcode;
+    lpData->dims = 0; lpData->dimy = 0; lpData->nnz = 0;
+    lpData->Ap = NULL; lpData->Ai = NULL; lpData->Ax = NULL;
+    lpData->xscale = NULL;
 }
 
-extern DSDP_INT lpMatSetDim( lpMat *lpData, DSDP_INT dimy, DSDP_INT dims ) {
+extern void lpMatSetDim( lpMat *lpData, DSDP_INT dimy, DSDP_INT dims ) {
     // Set problem dimension
     DSDP_INT retcode = DSDP_RETCODE_OK;
-    assert( (lpData->dimy > 0) && (lpData->dims > 0) );
     lpData->dimy = dimy; lpData->dims = dims;
-    
-    return retcode;
 }
 
 extern DSDP_INT lpMatSetData( lpMat *lpData, DSDP_INT *Ap, DSDP_INT *Ai, double *Ax ) {
@@ -213,23 +210,23 @@ extern DSDP_INT lpMatSetData( lpMat *lpData, DSDP_INT *Ap, DSDP_INT *Ai, double 
     retcode = lpMatIAlloc(lpData, nnz);
     
     // Set problem data
-    memcpy(lpData->lpdata->p, Ap, sizeof(DSDP_INT) * (n + 1));
-    memcpy(lpData->lpdata->i, Ai, sizeof(DSDP_INT) * nnz);
-    memcpy(lpData->lpdata->x, Ax, sizeof(double)   * nnz);
+    memcpy(lpData->Ap, Ap, sizeof(DSDP_INT) * (n + 1));
+    memcpy(lpData->Ai, Ai, sizeof(DSDP_INT) * nnz);
+    memcpy(lpData->Ax, Ax, sizeof(double)   * nnz);
     
     // Some extra parameters
-    lpData->lpdata->nz = nnz;
+    lpData->nnz = nnz;
     
     return retcode;
 }
 
-extern DSDP_INT lpMataATy( double alpha, lpMat *lpData, vec *y, double *ATy ) {
+extern void lpMataATy( double alpha, lpMat *lpData, vec *y, double *ATy ) {
     // Compute A' * y
     DSDP_INT retcode = DSDP_RETCODE_OK;
     DSDP_INT m = lpData->dimy, n = lpData->dims;
 
-    DSDP_INT *Ap = lpData->lpdata->p, *Ai = lpData->lpdata->i;
-    double *Ax = lpData->lpdata->x, *ydata = y->x;
+    DSDP_INT *Ap = lpData->Ap, *Ai = lpData->Ai;
+    double *Ax = lpData->Ax, *ydata = y->x;
     
     assert( m == y->dim );
     memset(ATy, 0, sizeof(double) * n);
@@ -239,21 +236,16 @@ extern DSDP_INT lpMataATy( double alpha, lpMat *lpData, vec *y, double *ATy ) {
             ATy[i] += alpha * Ax[Ai[j]] * ydata[Ai[j]];
         }
     }
-    
-    return retcode;
 }
 
-extern DSDP_INT lpMatFree( lpMat *lpData ) {
+extern void lpMatFree( lpMat *lpData ) {
 
     // Free the lpData structure
-    DSDP_INT retcode = DSDP_RETCODE_OK;
     lpData->dimy = 0;
     lpData->dims = 0;
     
-    cs_free(lpData->lpdata);
+    DSDP_FREE(lpData->Ap); DSDP_FREE(lpData->Ai); DSDP_FREE(lpData->Ax);
     DSDP_FREE(lpData->xscale);
-    
-    return retcode;
 }
 
 /* SDP public methods */
@@ -277,11 +269,9 @@ extern DSDP_INT sdpMatAlloc( sdpMat *sdpData ) {
     return retcode;
 }
 
-extern DSDP_INT sdpMatInit( sdpMat *sdpData ) {
+extern void sdpMatInit( sdpMat *sdpData ) {
     
     // Initialize SDP data
-    DSDP_INT retcode = DSDP_RETCODE_OK;
-    
     sdpData->blockId     = 0;
     sdpData->dimy        = 0;
     sdpData->dimS        = 0;
@@ -297,22 +287,17 @@ extern DSDP_INT sdpMatInit( sdpMat *sdpData ) {
     sdpData->types       = NULL;
     sdpData->sdpData     = NULL;
     sdpData->scaler      = 0.0;
-    
-    return retcode;
 }
 
-extern DSDP_INT sdpMatSetDim( sdpMat *sdpData, DSDP_INT dimy, DSDP_INT dimS, DSDP_INT blockId ) {
+extern void sdpMatSetDim( sdpMat *sdpData, DSDP_INT dimy, DSDP_INT dimS, DSDP_INT blockId ) {
     
     // Set dimension of the corresponding block
-    DSDP_INT retcode = DSDP_RETCODE_OK;
     sdpData->blockId = blockId; sdpData->dimy = dimy; sdpData->dimS = dimS;
-    return retcode;
 }
 
-extern DSDP_INT sdpMatSetHint( sdpMat *sdpData, DSDP_INT *hint ) {
+extern void sdpMatSetHint( sdpMat *sdpData, DSDP_INT *hint ) {
     
     // Set type hint for matrix type
-    DSDP_INT retcode = DSDP_RETCODE_OK;
     for (DSDP_INT i = 0; i < sdpData->dimy + 1; ++i) {
         switch (hint[i]) {
             case MAT_TYPE_RANKK  : sdpData->types[i] = MAT_TYPE_RANKK; break;
@@ -322,7 +307,6 @@ extern DSDP_INT sdpMatSetHint( sdpMat *sdpData, DSDP_INT *hint ) {
             default: sdpData->types[i] = MAT_TYPE_UNKNOWN; break;
         }
     }
-    return retcode;
 }
 
 extern DSDP_INT sdpMatSetData( sdpMat *sdpData, DSDP_INT *Ap, DSDP_INT *Ai, double *Ax ) {
@@ -339,11 +323,9 @@ extern DSDP_INT sdpMatSetData( sdpMat *sdpData, DSDP_INT *Ap, DSDP_INT *Ai, doub
     return retcode;
 }
 
-extern DSDP_INT sdpMatFree( sdpMat *sdpData ) {
+extern void sdpMatFree( sdpMat *sdpData ) {
     
     // Free SDP data
-    DSDP_INT retcode = DSDP_RETCODE_OK;
-    
     sdpData->nspsMat   = 0;
     sdpData->ndenseMat = 0;
     sdpData->nrkMat    = 0;
@@ -360,13 +342,11 @@ extern DSDP_INT sdpMatFree( sdpMat *sdpData ) {
             case MAT_TYPE_ZERO: break;
             case MAT_TYPE_DENSE: denseMatFree((dsMat *) data); break;
             case MAT_TYPE_SPARSE: spsMatFree((spsMat *) data); break;
-            case MAT_TYPE_RANKK: rkMatFree((rkMat *) data); checkCode; break;
-            default: error(etype, "Unknown matrix type. \n"); break;
+            case MAT_TYPE_RANKK: rkMatFree((rkMat *) data); break;
+            default: assert( FALSE );
         }
     }
         
     DSDP_FREE(sdpData->types);
     sdpData->blockId = 0; sdpData->dimy = 0; sdpData->dimS = 0;
-    
-    return retcode;
 }

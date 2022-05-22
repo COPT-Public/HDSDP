@@ -395,7 +395,7 @@ static double SDPConic( COPS_GET_LOGDET )
         if (!(*inCone)) return 0.0;
     } else {
         if (!SDPConic( COPS_CHECK_INCONE )(dsdpSolver, DUALVAR)) {
-            printf("Strange behavior. Give up. \n");
+            printf("| Strange behavior. Give up. \n");
         }
     }
     

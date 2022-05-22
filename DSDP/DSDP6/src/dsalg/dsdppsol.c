@@ -178,6 +178,10 @@ extern DSDP_INT computeDIMACS( HSDSolver *dsdpSolver ) {
         minEigS = MIN(minEigS, tmp);
     }
     
+    if (minEigS > 0) {
+        dInf -= minEigS * sqrt(dsdpSolver->n);
+    }
+    
     // Collect errors
     DSDPStatUpdate(stat, STAT_DIMACS_ERR1, pInf / (1 + bnrm));
     DSDPStatUpdate(stat, STAT_DIMACS_ERR2, MAX(0.0, -minEigX) / (1 + bnrm));

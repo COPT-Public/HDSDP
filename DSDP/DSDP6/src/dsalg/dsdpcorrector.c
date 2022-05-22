@@ -174,7 +174,14 @@ extern DSDP_INT dInfeasCorrectorStep( HSDSolver *dsdpSolver, DSDP_INT isfinal ) 
             }
         }
         
-        if (step <= 0.005) break;
+        if (step <= 0.005) {
+            DSDPConic( COPS_GET_SLACK )(dsdpSolver, DUALVAR);
+            if (!DSDPConic( COPS_CHECK_INCONE )(dsdpSolver, DUALVAR)) {
+                printf("| Strange behavior. Give up. \n");
+                assert( FALSE );
+            }
+            break;
+        }
         
         
         if (dratemax) {

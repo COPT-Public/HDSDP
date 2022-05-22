@@ -110,9 +110,7 @@ extern void dsdpLanczosFree( DSDPLanczos *lczSolver ) {
 extern DSDP_INT dsdpLanczosStep( DSDPLanczos *lczSolver, spsMat *S, spsMat *dS, double *lbd, double *delta ) {
     
     /* Lanczos algorithm that computes lambda_max(L^-1 dS L^-T) */
-    DSDP_INT retcode = DSDP_RETCODE_OK;
-    assert( lczSolver->n == S->dim );
-    
+    DSDP_INT retcode = DSDP_RETCODE_OK;    
     DSDPLanczos *l = lczSolver;
     double fnrm = 0.0; spsMatFnorm(dS, &fnrm);
     if (fnrm < 1e-13) { *lbd = 0.0; *delta = 0.0; return retcode;}

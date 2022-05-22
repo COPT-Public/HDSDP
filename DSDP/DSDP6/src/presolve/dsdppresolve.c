@@ -345,7 +345,7 @@ static DSDP_INT preRankkEvRdcBlock( sdpMat *dataMat, DSDPStats *stat, speigfac *
                 isDense = TRUE; break;
             case MAT_TYPE_SPARSE:
                 spsdata = (spsMat *) matdata[i]; isSparse = TRUE;
-                if (spsdata->nnz < 10) break;
+                if (spsdata->nnz < 10 || spsdata->nnz >= 15000) break;
                 speigSfac(eigfactor, spsdata, eigvals, eigvecs);
                 preGetRank(n, eigvals, 1e-10, &rank); break;
             case MAT_TYPE_RANKK: break;
@@ -804,61 +804,6 @@ extern DSDP_INT preSDPDual( HSDSolver *dsdpSolver ) {
     DSDP_INT retcode = DSDP_RETCODE_OK;
     retcode = preSDPMatgetDScaler(dsdpSolver); checkCode;
     retcode = preSDPMatDScale(dsdpSolver); checkCode;
-    return retcode;
-}
-
-extern DSDP_INT preLPMatScale( lpMat *lpData, vec *lpObj, vec *pScaler ) {
-    
-    // Do matrix coefficient scaling for LP
-    DSDP_INT retcode = DSDP_RETCODE_OK;
-    
-    DSDP_INT m = lpData->dimy;
-    DSDP_INT n = lpData->dims;
-    
-    assert( m == pScaler->dim );
-    assert( n == lpObj->dim );
-    
-    if ( (m != pScaler->dim) || (n != pScaler->dim) ) {
-        error(etype, "Presolver and problem dimension mismatch. \n");
-    }
-    
-    DSDP_INT *Ap = lpData->lpdata->p;
-    DSDP_INT *Ai = lpData->lpdata->i;
-    double   *Ax = lpData->lpdata->x;
-    double *scal = pScaler->x;
-    
-    // Dual coefficient scaling
-    assert ( !lpData->xscale );
-    lpData->xscale = (double *) calloc(n, sizeof(double));
-    double *dscal  = lpData->xscale;
-    
-    double maxNrm = 0.0;
-    double minNrm = 0.0;
-    double tmp    = 0.0;
-    
-    // Primal scaling w.r.t. pScaler
-    for (DSDP_INT i = 0; i < n; ++i) {
-        
-        for (DSDP_INT j = Ap[i]; j < Ap[i + 1]; ++j) {
-            tmp = Ax[j] / scal[Ai[j]];
-            Ax[j] = tmp;
-            maxNrm = MAX(maxNrm, tmp);
-            minNrm = MIN(minNrm, tmp);
-        }
-        
-        tmp = maxNrm * minNrm;
-        if ((tmp < 1.1) && (tmp > 0.9)) {
-            dscal[i] = 1.0;
-            break;
-        }
-        
-        dscal[i] = sqrt(tmp);
-        
-        for (DSDP_INT j = Ap[i]; j < Ap[i + 1]; ++j) {
-            Ax[j] = Ax[j] / dscal[i];
-        }
-    }
-
     return retcode;
 }
 
