@@ -143,7 +143,7 @@ extern DSDP_INT DSDPPhaseALogging( HSDSolver *dsdpSolver ) {
     retcode = checkIterProgress(dsdpSolver, ITER_LOGGING);
     
     char event[3] = " ";
-    double nRy = fabs(dsdpSolver->Ry) * sqrt(dsdpSolver->n);
+    double nRy = fabs(dsdpSolver->Ry) * sqrt(dsdpSolver->n + dsdpSolver->lpDim);
     double tau = dsdpSolver->tau, kovert = dsdpSolver->kappa / tau;
     double statval, pobj;
     

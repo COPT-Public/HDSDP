@@ -87,12 +87,12 @@ extern DSDP_INT DSDPDInfeasEliminator( HSDSolver *dsdpSolver ) {
             muprimal = trymu;
         }
         trymu = (dsdpSolver->pObjVal - dsdpSolver->dObjVal -
-                 dsdpSolver->Ry * 1e+10) / (5.0 * dsdpSolver->nall);
+                 dsdpSolver->Ry * 1e+08) / (5.0 * dsdpSolver->nall);
         
         if (dsdpSolver->Pnrm < 5) {
-            dsdpSolver->mu = MAX(dsdpSolver->mu * 0.01, trymu);
+            dsdpSolver->mu = MAX(dsdpSolver->mu * 0.01, trymu * 0.1);
         } else if (dsdpSolver->mu < 10) {
-            dsdpSolver->mu = MAX(dsdpSolver->mu * 0.1, trymu);
+            dsdpSolver->mu = MAX(dsdpSolver->mu * 0.1, trymu * 0.8);
         } else {
             dsdpSolver->mu = MAX(dsdpSolver->mu * 0.95, trymu);
         }

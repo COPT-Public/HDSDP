@@ -57,7 +57,7 @@ static DSDP_INT defaultIntParam[NUM_INT_PARAM] = {
            // INT_PARAM_INITMETHOD
     AATEMT_CONSERVATIVE,
            // INT_PARAM_AATTEMPT
-    8,    // INT_PARAM_CG_REUSE
+    10,    // INT_PARAM_CG_REUSE
     PRESOLVE_AGGRESSIVE,
            // INT_PARAM_PRESOLVE
     500,   // INT_PARAM_AMAXITER
@@ -74,7 +74,7 @@ static double defaultDblParam[NUM_DBL_PARAM] = {
     4.0,   // DBL_PARAM_RHON
     1e+10, // DBL_PARAM_INIT_POBJ
     
-    1.0, // DBL_PARAM_INIT_BETA
+    1e+05, // DBL_PARAM_INIT_BETA
     1e+15, // DBL_PARAM_INIT_MU
     1.0, // DBL_PARAM_INIT_TAU
     
@@ -86,7 +86,7 @@ static double defaultDblParam[NUM_DBL_PARAM] = {
     1e-06, // DBL_PARAM_REL_OPTTOL
     1e-07, // DBL_PARAM_ABS_FEASTOL
     1e-03, // DBL_PARAM_REL_FEASTOL
-    1e+2, // DBL_PARAM_PRLX_PENTALTY
+    1e+07, // DBL_PARAM_PRLX_PENTALTY
     0.0    // DBL_PARAM_OBJ_WEIGHT
 };
 

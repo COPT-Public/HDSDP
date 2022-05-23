@@ -183,7 +183,7 @@ extern void vec_norm( vec *x, double *nrm ) {
 }
 
 extern double vec_onenorm( vec *x ) {
-    return dasum(&x->dim, x->x, &one);;
+    return dasum(&x->dim, x->x, &one);
 }
 
 extern double vec_infnorm( vec *x ) {

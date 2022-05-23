@@ -20,8 +20,10 @@ extern DSDP_INT computePrimalX( HSDSolver *dsdpSolver ) {
     // getPhaseBS(dsdpSolver, dsdpSolver->y->x);
     // Smaker = C - dsdpgetATy(A, ymaker);
     getPhaseBCheckerS(dsdpSolver, ymaker);
+    getPhaseBLpCheckers(dsdpSolver, ymaker);
     // bnmaker = dsdpgetATy(A, dymaker);
     getPhaseBdS(dsdpSolver, -1.0, dymaker, 0.0);
+    getPhaseBLpds(dsdpSolver, -1.0, dymaker, 0.0);
     
     dsMat  *dsaux = NULL;
     rkMat  *rkaux = NULL;
@@ -53,6 +55,16 @@ extern DSDP_INT computePrimalX( HSDSolver *dsdpSolver ) {
         DSDP_FREE(Xtmp);
     }
     
+    // LP Cone
+    double *lpbnmaker = dsdpSolver->ds->x;
+    double *lps = dsdpSolver->scker->x, tmp = 0.0;
+    vec_reset(dsdpSolver->x);
+    for (DSDP_INT i = 0; i < dsdpSolver->lpDim; ++i) {
+        tmp = 1 / lps[i];
+        dsdpSolver->x->x[i] = tmp + tmp * tmp * lpbnmaker[i];
+    }
+    vec_scale(dsdpSolver->x, mumaker);
+    
     DSDPStatUpdate(&dsdpSolver->dsdpStats, STAT_GET_X_TIME,
                    my_clock() - start);
     
@@ -77,8 +89,18 @@ extern DSDP_INT computeDIMACS( HSDSolver *dsdpSolver ) {
     
     /*  DIMACS Error 1    */
     pInf = 0.0;
+    double *x = dsdpSolver->x->x;
+    DSDP_INT *Ap = dsdpSolver->lpData->Ap;
+    DSDP_INT *Ai = dsdpSolver->lpData->Ai;
+    double *Ax = dsdpSolver->lpData->Ax;
+    
     for (DSDP_INT i = 0; i < m; ++i) {
         trace = 0.0;
+        if (dsdpSolver->isLPset) {
+            for (DSDP_INT j = Ap[i]; j < Ap[i + 1]; ++j) {
+                trace += x[Ai[j]] * Ax[j];
+            }
+        }
         for (DSDP_INT j = 0; j < nblock; ++j) {
             switch (dsdpSolver->sdpData[j]->types[i]) {
                 case MAT_TYPE_ZERO: tmp = 0.0; break;
@@ -102,6 +124,7 @@ extern DSDP_INT computeDIMACS( HSDSolver *dsdpSolver ) {
             }
             trace += tmp;
         }
+        
         tmp = dsdpSolver->dObj->x[i] - trace;
         pInf += tmp * tmp;
     }
@@ -158,6 +181,16 @@ extern DSDP_INT computeDIMACS( HSDSolver *dsdpSolver ) {
 
     /*  DIMACS Error 5    */
     gap = pObj - dObj;
+    if ((fabs(gap) / (1 + fabs(pObj) + fabs(dObj)) > 1e-02) && dsdpSolver->mumaker > 0) {
+        printf("| Bad gap. Trying backup Newton step. \n");
+        dsdpSolver->mumaker = dsdpSolver->mumaker2;
+        vec_copy(dsdpSolver->ymaker2, dsdpSolver->ymaker);
+        vec_copy(dsdpSolver->dymaker2, dsdpSolver->dymaker);
+        retcode = computePrimalX(dsdpSolver);
+        dsdpSolver->mumaker = -1.0;
+        computeDIMACS(dsdpSolver);
+        return retcode;
+    }
     
     /*  DIMACS Error 6    */
     compslack = 0.0;
@@ -180,6 +213,7 @@ extern DSDP_INT computeDIMACS( HSDSolver *dsdpSolver ) {
     
     if (minEigS > 0) {
         dInf -= minEigS * sqrt(dsdpSolver->n);
+        dInf = MAX(dInf, 0.0);
     }
     
     // Collect errors

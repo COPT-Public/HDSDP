@@ -28,9 +28,12 @@ extern void dsdpCheckBackwardNewton( HSDSolver *dsdpSolver, DSDP_INT *ispfeas ) 
             *ispfeas = FALSE; return;
         }
     }
-    
     getPhaseBCheckerS(dsdpSolver, dsdpSolver->b2);
+    getPhaseBLpCheckers(dsdpSolver, dsdpSolver->b2);
     dsdpCheckerInCone(dsdpSolver, ispfeas);
+    if (*ispfeas) {
+        dsdpLpCheckerInCone(dsdpSolver, ispfeas);
+    }
 }
 
 extern void dsdpCheckPrimalInfeas( HSDSolver *dsdpSolver ) {

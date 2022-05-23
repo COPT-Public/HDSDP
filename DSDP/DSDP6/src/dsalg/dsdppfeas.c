@@ -34,7 +34,7 @@ extern DSDP_INT DSDPPFeasPhase( HSDSolver *dsdpSolver ) {
     DSDP_INT stop = FALSE, usegold = FALSE, nopfeasIter = 0;
     double start = my_clock();
     double newmu = 0.0, muub = 0.0, mulb = 0.0, time = 0.0;
-    double rhon, tol, sigma, approxpObj, currentpObj = dsdpSolver->pObjVal;
+    double rhon, tol, sigma, currentpObj = dsdpSolver->pObjVal;
 
     DSDPStats *stat = &dsdpSolver->dsdpStats;
     DSDPGetIntParam(dsdpSolver, INT_PARAM_GOLDSEARCH, &usegold);
@@ -86,8 +86,7 @@ extern DSDP_INT DSDPPFeasPhase( HSDSolver *dsdpSolver ) {
             newmu = MIN(newmu, muub); newmu = MAX(newmu, mulb);
             dsdpSolver->mu = newmu;
             if (nopfeasIter >= 8) {
-                dsdpSolver->mu *= 10;
-                dsdpSolver->dperturb += 1e-08;
+                dsdpSolver->mu *= 100;
             }
         } else {
             dsdpSolver->mu = MAX(dsdpSolver->mu * sigma, 1e-12);

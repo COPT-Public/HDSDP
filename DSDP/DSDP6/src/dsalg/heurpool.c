@@ -8,9 +8,13 @@ extern void DSDP_HEURS( adjustSolverParams )
     double sps;  DSDPGetStats(&dsdpSolver->dsdpStats, STAT_NUM_SPARSE_MAT, &sps);
     double zero; DSDPGetStats(&dsdpSolver->dsdpStats, STAT_NUM_ZERO_MAT, &zero);
     double r1;   DSDPGetStats(&dsdpSolver->dsdpStats, STAT_NUM_RANKONE_MAT, &r1);
+    double nlp =  dsdpSolver->lpDim;
+    
+    DSDP_INT hit = FALSE;
     
     // hamming problems
-    if (dsdpSolver->m >= 50 * largeblock && dsdpSolver->m >= 15000) {
+    if (dsdpSolver->m >= 50 * largeblock && dsdpSolver->m >= 15000 && !hit) {
+        printf("| Hit hamming \n"); hit = TRUE;
         dsdpSolver->pObjVal = 1e+05; dsdpSolver->ybound = 1e+07;
         DSDPSetDblParam(dsdpSolver, DBL_PARAM_INIT_BETA, 1.0);
         DSDPSetDblParam(dsdpSolver, DBL_PARAM_RHO, 5.0);
@@ -23,35 +27,59 @@ extern void DSDP_HEURS( adjustSolverParams )
     }
     
     // prob_x_x_x problems
-    if (ds > 0.7 * dsdpSolver->nBlock * dsdpSolver->m) {
+    if (ds > 0.7 * dsdpSolver->nBlock * dsdpSolver->m && !hit) {
+        printf("| Hit prob \n"); hit = TRUE;
         DSDPSetDblParam(dsdpSolver, DBL_PARAM_INIT_BETA, 1.0);
         DSDPSetIntParam(dsdpSolver, INT_PARAM_ACORRECTOR, 4);
         DSDPSetIntParam(dsdpSolver, INT_PARAM_GOLDSEARCH, FALSE);
     }
     
     // theta
-    if (zero == 0.0 && r1 == 1.0 && ds == 0.0 && sps >= 2000) {
+    if (zero == 0.0 && r1 == 1.0 && ds == 0.0 && sps >= 2000 && !hit) {
+        printf("| Hit theta \n"); hit = TRUE;
         DSDPSetDblParam(dsdpSolver, DBL_PARAM_INIT_BETA, 10.0);
     }
     
     // inc_xxx
-    if (FALSE) {
+    if (zero == 0.0 && sps == 1.0 && ds == 0.0 &&
+        (fabs(nlp / dsdpSolver->n - 4.0) < 0.5) && !hit) {
+        printf("| Hit Inc \n"); hit = TRUE;
         DSDPSetDblParam(dsdpSolver, DBL_PARAM_INIT_BETA, 10.0);
+        DSDPSetIntParam(dsdpSolver, INT_PARAM_ACORRECTOR, 6);
+        DSDPSetIntParam(dsdpSolver, INT_PARAM_BCORRECTOR, 0);
         dsdpSolver->ybound = 5.0;
     }
     
     // swissroll
-    if (FALSE) {
+    if ((fabs((double) dsdpSolver->m / dsdpSolver->n - 4) < 0.5)
+        && zero == 0.0 && ds ==0.0 && r1 == dsdpSolver->m && !hit) {
+        printf("| Hit Swiss \n"); hit = TRUE;
         DSDPSetDblParam(dsdpSolver, DBL_PARAM_INIT_BETA, 10.0);
+        DSDPSetIntParam(dsdpSolver, INT_PARAM_BCORRECTOR, 1);
         dsdpSolver->ybound = 1e+04;
     }
     
     // Gxx
-    if (zero == 0.0 && r1 == dsdpSolver->m && sps == 1.0 && (dsdpSolver->n == dsdpSolver->m - 1 || dsdpSolver->n == dsdpSolver->m)) {
-        DSDPSetDblParam(dsdpSolver, DBL_PARAM_INIT_BETA, 0.1);
+    if (zero == 0.0 && r1 == dsdpSolver->m && sps == 1.0 && !hit &&
+        (dsdpSolver->n == dsdpSolver->m - 1 || dsdpSolver->n == dsdpSolver->m)) {
+        printf("| Hit Gxx \n"); hit = TRUE;
+        DSDPSetDblParam(dsdpSolver, DBL_PARAM_INIT_BETA, 1);
         dsdpSolver->pObjVal = 1e+05;
     }
     
+    if (nlp == dsdpSolver->m && dsdpSolver->n != dsdpSolver->m) {
+        printf("| Hit ViBu \n"); hit = TRUE;
+        DSDPSetDblParam(dsdpSolver, DBL_PARAM_RHO, 3.0);
+        DSDPSetDblParam(dsdpSolver, DBL_PARAM_RHON, 3.0);
+        if (zero == 0.0) {
+            DSDPSetDblParam(dsdpSolver, DBL_PARAM_INIT_BETA, 1e+06);
+            DSDPSetIntParam(dsdpSolver, INT_PARAM_ACORRECTOR, 12);
+        } else {
+            DSDPSetDblParam(dsdpSolver, DBL_PARAM_INIT_BETA, 1e+02);
+            DSDPSetIntParam(dsdpSolver, INT_PARAM_ACORRECTOR, 12);
+        }
+        // dsdpSolver->ybound = 1e+05;
+    }
 }
 
 extern void DSDP_HEURS( adjustCScaler )

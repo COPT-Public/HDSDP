@@ -44,12 +44,9 @@ static DSDP_INT initresi( HSDSolver *dsdpSolver ) {
     
     DSDP_INT retcode = DSDP_RETCODE_OK;
     double beta, Cnrm = 0.0, nrm  = 0.0, tau = dsdpSolver->tau;
-    DSDP_INT m  = dsdpSolver->m;
     DSDPGetDblParam(dsdpSolver, DBL_PARAM_INIT_BETA, &beta);
-    for (DSDP_INT i = 0; i < dsdpSolver->nBlock; ++i) {
-        getMatFnorm(dsdpSolver, i, m, &nrm); Cnrm = nrm * nrm + Cnrm;
-    }
-    dsdpSolver->Ry = (Cnrm == 0) ? (-1.0) : - MAX(sqrt(Cnrm), 100.0) * tau * beta;
+    Cnrm = DSDPConic( COPS_GET_C_FNORM )(dsdpSolver);
+    dsdpSolver->Ry = (Cnrm == 0) ? (-1.0) : - MAX(Cnrm, 100.0) * tau * beta;
     DSDPGetStats(&dsdpSolver->dsdpStats, STAT_ONE_NORM_B, &nrm);
     dsdpSolver->pinfeas = nrm + 1.0;
     dsdpSolver->iterProgress[ITER_INITIALIZE] = TRUE;
@@ -78,7 +75,7 @@ static void initparams( HSDSolver *dsdpSolver ) {
     
     // If not using primal relaxation in Phase A
     DSDPGetIntParam(dsdpSolver, INT_PARAM_PRELAX, &intparam);
-    dsdpSolver->nall = dsdpSolver->n + dsdpSolver->m * 2;
+    dsdpSolver->nall = dsdpSolver->n + dsdpSolver->lpDim + dsdpSolver->m * 2;
     dsdpSolver->ybound = dblparam;
     
     // Corrector
@@ -115,12 +112,13 @@ static void initparams( HSDSolver *dsdpSolver ) {
         nusercorr = MIN(nusercorr, 12);
     }
     ncorrA = MAX(ncorrA, 2);
+    
     DSDPSetIntParam(dsdpSolver, INT_PARAM_ACORRECTOR, ncorrA);
     DSDPSetIntParam(dsdpSolver, INT_PARAM_BCORRECTOR, nusercorr);
     
     // Some other heuristics
     DSDP_HEURS( adjustSolverParams )(dsdpSolver, largeblock);
-    printf("| Corrector A: %d  Corrector B: %d \n", ncorrA, nusercorr);
+    printf("| Fixed Corrector A: %d  Corrector B: %d \n", ncorrA, nusercorr);
 }
 
 extern DSDP_INT dsdpInitializeA( HSDSolver *dsdpSolver ) {
@@ -132,7 +130,7 @@ extern DSDP_INT dsdpInitializeA( HSDSolver *dsdpSolver ) {
     initmu(dsdpSolver); initparams(dsdpSolver);
     initresi(dsdpSolver);
     
-    dsdpSolver->mu = (dsdpSolver->pObjVal - dsdpSolver->dObjVal - dsdpSolver->Ry * 1e+10) / dsdpSolver->nall;
+    dsdpSolver->mu = (dsdpSolver->pObjVal - dsdpSolver->dObjVal - dsdpSolver->Ry * 1e+08) / dsdpSolver->nall;
     dsdpSolver->Pnrm = DSDP_INFINITY;
     
     printf("| DSDP is initialized with Ry = %3.3e * I %52s\n", dsdpSolver->Ry, "");

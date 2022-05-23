@@ -23,6 +23,7 @@ extern "C" {
 
 #define COPS_GET_A_ONE_NORM GetDataOneNorm
 #define COPS_GET_C_ONE_NORM GetObjOneNorm
+#define COPS_GET_C_FNORM    GetObjFnorm
 #define COPS_DO_C_SCALE     DoObjScale
 #define COPS_DO_VAR_SCALE   DoVariableScale
 #define COPS_GET_DOBJ       GetDualObjective
@@ -48,7 +49,17 @@ extern DSDP_INT getSinvASinv       ( HSDSolver *dsdpSolver, DSDP_INT blockid, DS
 extern DSDP_INT getTraceASinvASinv ( HSDSolver *dsdpSolver, DSDP_INT blockid, DSDP_INT constrid,
                                      DSDP_INT mattype, DSDP_INT constrid2, void *SinvASinv );
 
-extern void getBslack           ( HSDSolver *dsdpSolver, vec *y, DSDP_INT type );
+
+extern void getPhaseALps         ( HSDSolver *dsdpSolver, vec *y, double tau );
+extern void getPhaseBLpCheckers  ( HSDSolver *dsdpSolver, vec *y );
+extern void getPhaseBLps         ( HSDSolver *dsdpSolver, vec *y );
+extern void getPhaseBLpds        ( HSDSolver *dsdpSolver, double alpha, vec *dy, double beta );
+extern void getPhaseALpCheckers  ( HSDSolver *dsdpSolver, vec *y, double tau );
+extern void getPhaseALpds        ( HSDSolver *dsdpSolver, double drate, vec *dy, double dtau );
+extern void dsdpLpCheckerInCone  ( HSDSolver *dsdpSolver, DSDP_INT *ispsd );
+extern void dsdpLpInCone       ( HSDSolver *dsdpSolver, DSDP_INT *ispsd );
+extern double getMaxLpstep     ( HSDSolver *dsdpSolver, DSDP_INT type );
+extern void getBslack          ( HSDSolver *dsdpSolver, vec *y, DSDP_INT type );
 extern void getPhaseAS         ( HSDSolver *dsdpSolver, vec *y,  double tau );
 extern void getPhaseACheckerS  ( HSDSolver *dsdpSolver, vec *y,  double tau );
 extern void getPhaseAdS        ( HSDSolver *dsdpSolver, double drate, vec *dy, double dtau );
@@ -72,6 +83,7 @@ extern void   addMattodS         ( HSDSolver *dsdpSolver, DSDP_INT blockid, DSDP
 
 // Conic operations
 extern double   DSDPConic( COPS_GET_A_ONE_NORM ) ( HSDSolver *dsdpSolver );
+extern double   DSDPConic( COPS_GET_C_FNORM    ) ( HSDSolver *dsdpSolver );
 extern double   DSDPConic( COPS_GET_C_ONE_NORM ) ( HSDSolver *dsdpSolver );
 extern void     DSDPConic( COPS_DO_C_SCALE     ) ( HSDSolver *dsdpSolver );
 extern void     DSDPConic( COPS_DO_VAR_SCALE   ) ( HSDSolver *dsdpSolver, double tau );

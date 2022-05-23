@@ -10,12 +10,17 @@ static char etype[] = "SDPA File Reader";
 #define BFSIZE 4096 // 4 * 1024
 
 static DSDP_INT DSDPPrepareSDPData( char     *filename,    // 'xxx.dat-s'
-                                    double   **dObjVec,    // SDP dual objective
+                                    double   **dObjVec,    // DSDP dual objective
                                     DSDP_INT ***sdpAp,     // SDP Ap data
                                     DSDP_INT ***sdpAi,     // SDP Ai data
                                     double   ***sdpAx,     // SDP Ax data
+                                    DSDP_INT **lpAp,       // LP  Ap data
+                                    DSDP_INT **lpAi,       // LP  Ai data
+                                    double   **lpAx,       // LP  Ax data
+                                    double   **lpObj,      // LP  coefficient data
                                     DSDP_INT *nBlock,      // Number of SDP blocks
                                     DSDP_INT **nBlockVars, // Number of variables in each block
+                                    DSDP_INT *nLPVars,     // Number of LP variables
                                     DSDP_INT *nVars,       // Total number of variables
                                     DSDP_INT *nConstr,     // Total number of constraints
                                     DSDP_INT *nNzs ) {     // Number of nonzero elements
@@ -25,11 +30,12 @@ static DSDP_INT DSDPPrepareSDPData( char     *filename,    // 'xxx.dat-s'
     
     FILE *file;
     char chartmp, thisline[BFSIZE] = "*";
-    DSDP_INT i, j, ngot, blockid, constrid, m, n, line = 0, tline = 0;
-    DSDP_INT nblock = 0, nvars = 0, nconstr = 0, nnz = 0;
+    DSDP_INT i, j, ngot, blockid, constrid, m, n, line = 0, tline = 0, lpidx = -1;
+    DSDP_INT nblock = 0, nvars = 0, nlpvars = 0, nconstr = 0, nnz = 0, lpexist, idx;
     DSDP_INT *blocksizes = NULL;
     double *dObj = NULL, val = 0.0;
-    cs **sdpAs = NULL;
+    cs **sdpAs = NULL, *lpA = NULL;
+    double *c = NULL;
     
     file = fopen(filename, "r");
     
@@ -59,7 +65,8 @@ static DSDP_INT DSDPPrepareSDPData( char     *filename,    // 'xxx.dat-s'
     }
     
     // Allocate blocksize vector and read block sizes
-    blocksizes = (DSDP_INT *) calloc(nblock, sizeof(DSDP_INT)); ++line;
+    DSDP_INT *tmpblocksize = (DSDP_INT *) calloc(nblock, sizeof(DSDP_INT)); ++line;
+    
     for (i = 0; i < nblock; ++i) {
         if (fscanf(file, "{") == 1 ||
             fscanf(file, "(") == 1 ||
@@ -68,16 +75,36 @@ static DSDP_INT DSDPPrepareSDPData( char     *filename,    // 'xxx.dat-s'
         } else if (fscanf(file, ID, &n) == 1) {
             if (n > 0) {
                 nvars += n;
-                blocksizes[i] = n;
+                tmpblocksize[i] = n;
             } else if (n < 0) {
-                nvars -= n;
-                blocksizes[i] = - n;
+                if (lpidx != -1) {
+                    error_clean(etype, "Invalid LP data. \n");
+                }
+                lpidx = i;
+                nlpvars = -n;
+//                nvars -= n;
+                tmpblocksize[i] = -n;
             } else {
                 error_clean(etype, "Empty block detected. \n");
             }
         } else {
             error_clean(etype, "Failed to read blocksize vector. \n");
         }
+    }
+//    lpidx = -1;
+//    nlpvars = 0;
+    lpexist = (lpidx == -1) ? 0 : 1;
+    
+    if (lpexist) {
+        nblock -= 1;
+        blocksizes = (DSDP_INT *) calloc(nblock, sizeof(DSDP_INT));
+        memcpy(blocksizes, tmpblocksize, sizeof(DSDP_INT) * lpidx);
+        for (i = lpidx; i < nblock; ++i) {
+            blocksizes[i] = tmpblocksize[i + 1];
+        }
+        DSDP_FREE(tmpblocksize);
+    } else {
+        blocksizes = tmpblocksize;
     }
     
     // Read objective
@@ -108,6 +135,11 @@ static DSDP_INT DSDPPrepareSDPData( char     *filename,    // 'xxx.dat-s'
         sdpAs[i] = cs_di_spalloc(m, n + 1, 1000, TRUE, TRUE);
     }
     
+    if (lpexist) {
+        lpA = cs_di_spalloc(nlpvars, nconstr, 1000, TRUE, TRUE);
+        c = (double *) calloc(nlpvars, sizeof(double) * nlpvars);
+    }
+    
     fgets(thisline, BFSIZE, file);
     tline = line;
     fseek(file, 0, SEEK_SET);
@@ -121,35 +153,69 @@ static DSDP_INT DSDPPrepareSDPData( char     *filename,    // 'xxx.dat-s'
         ++line;
     }
     
-    while (!feof(file)) {
-        thisline[0] = '\0';
-        blockid = constrid = -1;
-        i = j = -1;
-        val = 0.0;
-        
-        fgets(thisline, BFSIZE, file); ++line;
-        ngot = sscanf(thisline, "%d %d %d %d %lg",
-                      &constrid, &blockid, &i, &j, &val);
-        
-        if (ngot != 5) {
-            if (feof(file)) {
-                break;
-            } else {
-                printf("Line %d is invalid \n", line);
-                error_clean(etype, "Failed to extract data. \n");
+    if (lpexist) {
+        while (!feof(file)) {
+            thisline[0] = '\0'; blockid = constrid = -1;
+            i = j = -1; val = 0.0;
+            fgets(thisline, BFSIZE, file); ++line;
+            ngot = sscanf(thisline, "%d %d %d %d %lg",
+                          &constrid, &blockid, &i, &j, &val);
+            if (ngot != 5) {
+                if (feof(file))
+                { break;
+                } else {
+                    printf("Line %d is invalid \n", line);
+                    error_clean(etype, "Failed to extract data. \n");
+                }
+            } else if (val != 0.0) {
+                // Insert data
+                if (blockid == lpidx + 1) {
+                    assert( i == j );
+                    if (constrid == 0) {
+                        c[i - 1] = -val;
+                    } else {
+                        cs_di_entry(lpA, i - 1, constrid - 1, val);
+                    }
+                } else {
+                    if (blockid > lpidx + 1) {
+                        blockid -= 1;
+                    }
+                    n = blocksizes[blockid - 1];
+                    i = (DSDP_INT) ((2 * n - i) * (i - 1) / 2) + (j - 1); // Transform upper into lower
+                    if (constrid == 0) {
+                        cs_di_entry(sdpAs[blockid - 1], i, nconstr, -val);
+                    } else {
+                        cs_di_entry(sdpAs[blockid - 1], i, constrid - 1, val);
+                    }
+                }
+                nnz += 1;
             }
-        } else if (val != 0) {
-            // Insert data
-            n = blocksizes[blockid - 1];
-            // Transform upper into lower
-            i = (DSDP_INT) ((2 * n - i) * (i - 1) / 2) + (j - 1);
-            
-            if (constrid == 0) {
-                cs_di_entry(sdpAs[blockid - 1], i, nconstr, -val);
-            } else {
-                cs_di_entry(sdpAs[blockid - 1], i, constrid - 1, val);
+        }
+    } else {
+        while (!feof(file)) {
+            thisline[0] = '\0'; blockid = constrid = -1;
+            i = j = -1; val = 0.0;
+            fgets(thisline, BFSIZE, file); ++line;
+            ngot = sscanf(thisline, "%d %d %d %d %lg",
+                          &constrid, &blockid, &i, &j, &val);
+            if (ngot != 5) {
+                if (feof(file))
+                { break;
+                } else {
+                    printf("Line %d is invalid \n", line);
+                    error_clean(etype, "Failed to extract data. \n");
+                }
+            } else if (val != 0.0) {
+                // Insert data
+                n = blocksizes[blockid - 1];
+                i = (DSDP_INT) ((2 * n - i) * (i - 1) / 2) + (j - 1); // Transform upper into lower
+                if (constrid == 0) {
+                    cs_di_entry(sdpAs[blockid - 1], i, nconstr, -val);
+                } else {
+                    cs_di_entry(sdpAs[blockid - 1], i, constrid - 1, val);
+                }
+                nnz += 1;
             }
-            nnz += 1;
         }
     }
     
@@ -161,18 +227,26 @@ static DSDP_INT DSDPPrepareSDPData( char     *filename,    // 'xxx.dat-s'
     cs *tmp = NULL;
     
     for (i = 0; i < nblock; ++i) {
-        tmp = cs_compress(sdpAs[i]);
-        cs_spfree(sdpAs[i]);
-        
-        sdpAs[i] = tmp;
+        tmp = cs_compress(sdpAs[i]); cs_spfree(sdpAs[i]); sdpAs[i] = tmp;
         (*sdpAp)[i] = (DSDP_INT *) calloc(tmp->n + 1, sizeof(DSDP_INT));
         (*sdpAi)[i] = (DSDP_INT *) calloc(tmp->p[tmp->n], sizeof(DSDP_INT));
         (*sdpAx)[i] = (double   *) calloc(tmp->p[tmp->n], sizeof(double));
-        
         memcpy((*sdpAp)[i], tmp->p, sizeof(DSDP_INT) * (tmp->n + 1));
         memcpy((*sdpAi)[i], tmp->i, sizeof(DSDP_INT) * tmp->p[tmp->n]);
         memcpy((*sdpAx)[i], tmp->x, sizeof(double)   * tmp->p[tmp->n]);
-        
+        cs_spfree(tmp);
+    }
+    
+    if (lpexist) {
+        tmp = cs_compress(lpA); cs_spfree(lpA);
+        *lpAp = (DSDP_INT *) calloc(tmp->n + 1, sizeof(DSDP_INT));
+        *lpAi = (DSDP_INT *) calloc(tmp->p[tmp->n], sizeof(DSDP_INT));
+        *lpAx = (double   *) calloc(tmp->p[tmp->n], sizeof(double));
+        *lpObj = (double   *) calloc(tmp->m, sizeof(double));
+        memcpy(*lpAp, tmp->p, sizeof(DSDP_INT) * (tmp->n + 1));
+        memcpy(*lpAi, tmp->i, sizeof(DSDP_INT) * tmp->p[tmp->n]);
+        memcpy(*lpAx, tmp->x, sizeof(double) * tmp->p[tmp->n]);
+        memcpy(*lpObj, c, sizeof(double) * tmp->m);
         cs_spfree(tmp);
     }
     
@@ -182,13 +256,10 @@ static DSDP_INT DSDPPrepareSDPData( char     *filename,    // 'xxx.dat-s'
     *nBlock = nblock; 
     *nBlockVars = (DSDP_INT *) calloc(nblock, sizeof(DSDP_INT));
     memcpy(*nBlockVars, blocksizes, sizeof(DSDP_INT) * nblock);
-    *nVars = nvars;
-    *nConstr = nconstr;
-    *nNzs = nnz;
+    *nVars = nvars; *nConstr = nconstr; *nNzs = nnz; *nLPVars = nlpvars;
     
     DSDP_FREE(blocksizes);
-    DSDP_FREE(dObj);
-    
+    DSDP_FREE(dObj); DSDP_FREE(c);
     DSDP_FREE(sdpAs);
     return retcode;
     
@@ -230,20 +301,36 @@ extern DSDP_INT DSDPSolveSDPA(int argc, char *argv[]) {
     DSDP_INT **coneAp = NULL;
     DSDP_INT **coneAi = NULL;
     double   **coneAx = NULL;
+    
+    DSDP_INT *lpAp  = NULL;
+    DSDP_INT *lpAi  = NULL;
+    double   *lpAx  = NULL;
+    double   *lpObj = NULL;
+    
     double   *dObj    = NULL;
     DSDP_INT *blocksizes = NULL;
-    DSDP_INT nConstrs = 0, nBlocks = 0, nSDPVars = 0, nNz = 0;
+    DSDP_INT nConstrs = 0, nBlocks = 0, nSDPVars = 0, nLPVars = 0, nNz = 0;
     
     DSDPPrintVersion();
     double start = my_clock();
-    DSDPPrepareSDPData(filename, &dObj, &coneAp, &coneAi, &coneAx,
-                       &nBlocks, &blocksizes, &nSDPVars, &nConstrs, &nNz);
-    retcode = DSDPSetDim(hsdSolver, nSDPVars, nBlocks, nConstrs, 0, &nNz);
+    
+    DSDPPrepareSDPData(filename, &dObj,
+                       &coneAp, &coneAi, &coneAx,
+                       &lpAp, &lpAi, &lpAx, &lpObj,
+                       &nBlocks, &blocksizes, &nLPVars,
+                       &nSDPVars, &nConstrs, &nNz);
+    
+    retcode = DSDPSetDim(hsdSolver, nSDPVars, nBlocks, nConstrs, nLPVars, &nNz);
     
     for (DSDP_INT i = 0; i < nBlocks; ++i) {
         retcode = DSDPSetSDPConeData(hsdSolver, i, blocksizes[i], NULL,
                                      coneAp[i], coneAi[i], coneAx[i]);
     }
+    
+    if (nLPVars > 0) {
+        retcode = DSDPSetLPData(hsdSolver, nLPVars, lpAp, lpAi, lpAx, lpObj);
+    }
+    
     printf("| Data read into solver."
            " Elapsed Time: %3.3f. \n", my_clock() - start);
     
