@@ -107,7 +107,7 @@ extern DSDP_INT DSDPDInfeasEliminator( HSDSolver *dsdpSolver ) {
         // Compute residual
         setupRes(dsdpSolver);
         if (i == 3 && fabs(dsdpSolver->pObjVal - initpObj) < 1e-10) {
-            dsdpSolver->Ry = - MIN(fabs(dsdpSolver->Ry) * 1e+08, 1e+15);
+            dsdpSolver->Ry = - MIN(fabs(dsdpSolver->Ry) * 1e+10, 1e+15);
         }
         // Take step
         takeStep(dsdpSolver);

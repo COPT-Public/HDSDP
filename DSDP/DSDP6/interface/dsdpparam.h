@@ -85,7 +85,7 @@ static double defaultDblParam[NUM_DBL_PARAM] = {
     1e-06, // DBL_PARAM_ABS_OPTTOL
     1e-06, // DBL_PARAM_REL_OPTTOL
     1e-07, // DBL_PARAM_ABS_FEASTOL
-    1e-03, // DBL_PARAM_REL_FEASTOL
+    1e-07, // DBL_PARAM_REL_FEASTOL
     1e+07, // DBL_PARAM_PRLX_PENTALTY
     0.0    // DBL_PARAM_OBJ_WEIGHT
 };

@@ -194,7 +194,6 @@ extern void computeAdaptivedRate( HSDSolver *dsdpSolver ) {
             printf("| Strange behavior. Giving up.\n"); exit(0);
         }
     }
-    
     dsdpSolver->alpha = alphac;
     vec_copy(dsdpSolver->d4, dsdpSolver->d12);
     getPhaseAdS(dsdpSolver, 1.0, dsdpSolver->d12, 0.0);
@@ -433,7 +432,7 @@ extern void dualPotentialReduction( HSDSolver *dsdpSolver ) {
                     continue;
                 }
             } else {
-                getCurrentyPotential(dsdpSolver, ytarget, rho, &newpotential, NULL);
+                getCurrentyPotential(dsdpSolver, ytarget, rho, &newpotential, &inCone);
             }
             
             if (alpha <= 1e-04 || (newpotential <= oldpotential - better)

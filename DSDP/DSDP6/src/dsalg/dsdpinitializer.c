@@ -1,6 +1,7 @@
 #include "dsdpinitializer.h"
 #include "dsdpcorrector.h"
 #include "dsdputils.h"
+#include "dsdplog.h"
 #include "heurpool.h"
 /* Implement the initialization procedure of DSDP */
 static char etype[] = "DSDP Initialization";
@@ -116,9 +117,15 @@ static void initparams( HSDSolver *dsdpSolver ) {
     DSDPSetIntParam(dsdpSolver, INT_PARAM_ACORRECTOR, ncorrA);
     DSDPSetIntParam(dsdpSolver, INT_PARAM_BCORRECTOR, nusercorr);
     
+    DSDPParamPrint(dsdpSolver->param);
+    
     // Some other heuristics
     DSDP_HEURS( adjustSolverParams )(dsdpSolver, largeblock);
+    
+    DSDPGetIntParam(dsdpSolver, INT_PARAM_ACORRECTOR, &ncorrA);
+    DSDPGetIntParam(dsdpSolver, INT_PARAM_BCORRECTOR, &nusercorr);
     printf("| Fixed Corrector A: %d  Corrector B: %d \n", ncorrA, nusercorr);
+    dsdpshowdash();
 }
 
 extern DSDP_INT dsdpInitializeA( HSDSolver *dsdpSolver ) {
@@ -130,11 +137,10 @@ extern DSDP_INT dsdpInitializeA( HSDSolver *dsdpSolver ) {
     initmu(dsdpSolver); initparams(dsdpSolver);
     initresi(dsdpSolver);
     
-    dsdpSolver->mu = (dsdpSolver->pObjVal - dsdpSolver->dObjVal - dsdpSolver->Ry * 1e+08) / dsdpSolver->nall;
+    dsdpSolver->mu = (dsdpSolver->pObjVal - dsdpSolver->dObjVal - \
+                      dsdpSolver->Ry * 1e+08) / dsdpSolver->nall;
     dsdpSolver->Pnrm = DSDP_INFINITY;
-    
     printf("| DSDP is initialized with Ry = %3.3e * I %52s\n", dsdpSolver->Ry, "");
-    
     return retcode;
 }
 

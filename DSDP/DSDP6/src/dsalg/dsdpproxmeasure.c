@@ -78,7 +78,7 @@ extern DSDP_INT dsdpgetPhaseBProxMeasure( HSDSolver *dsdpSolver, double *muub, d
         double pinfeas = 0.0, tmp = 0.0, s;
         vec *sl = dsdpSolver->sl, *su = dsdpSolver->su, *dy = dsdpSolver->b1;
         
-        if (usegold && dsdpSolver->mu > 1e-05 && dsdpSolver->pObjVal != 1e+10) {
+        if (usegold && dsdpSolver->mu > 1e-04 && dsdpSolver->pObjVal != 1e+10 && dsdpSolver->pObjVal != 1e+05) {
             double approxpObj;
             searchpObj(dsdpSolver, &approxpObj);
             dsdpSolver->pObjVal = MIN(dsdpSolver->pObjVal, \

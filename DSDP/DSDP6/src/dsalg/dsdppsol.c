@@ -170,6 +170,9 @@ extern DSDP_INT computeDIMACS( HSDSolver *dsdpSolver ) {
         pObj += tmp;
     }
     
+    vec_dot(dsdpSolver->x, dsdpSolver->lpObj, &tmp);
+    pObj += tmp;
+    
     pObj *= dsdpSolver->cScaler;
     
     /* DIMACS Error 4     */
@@ -223,6 +226,9 @@ extern DSDP_INT computeDIMACS( HSDSolver *dsdpSolver ) {
     DSDPStatUpdate(stat, STAT_DIMACS_ERR4, MAX(0.0, -minEigS) * dsdpSolver->cScaler / (1 + Cnrm));
     DSDPStatUpdate(stat, STAT_DIMACS_ERR5, gap / (1 + fabs(pObj) + fabs(dObj)));
     DSDPStatUpdate(stat, STAT_DIMACS_ERR6, compslack / (1 + fabs(pObj) + fabs(dObj)));
+    
+    printf("| Final pObj: %10.5e   dObj: %10.5e \n", pObj, dObj);
+    dsdpshowdash();
                    
     return retcode;
 }

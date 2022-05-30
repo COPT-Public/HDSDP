@@ -85,6 +85,7 @@ extern void lpMatSetDim   ( lpMat  *lpData, DSDP_INT dimy, DSDP_INT dims );
 extern DSDP_INT lpMatSetData  ( lpMat *lpData, DSDP_INT *Ap, DSDP_INT *Ai, double *Ax );
 extern void lpMataATy     ( double alpha, lpMat *lpData, vec *y, double *ATy );
 extern void lpMatFree     ( lpMat *lpData );
+extern void lpMatView     ( lpMat *lpData );
 
 extern void sdpMatInit    ( sdpMat *sdpData );
 extern DSDP_INT sdpMatAlloc   ( sdpMat *sdpData );

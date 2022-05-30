@@ -247,7 +247,7 @@ extern void printParams( hsdParam *param ) {
 extern void DSDPParamPrint( hsdParam *param ) {
     // Print DSDP Parameters at the beginning. Invoked before solution
     
-    dsdpshowdash();
+    // dsdpshowdash();
     printf("| Parameter Summary: \n");
     dsdpshowdash();
     printDblParam(param->dblParams, DBL_PARAM_RHO);

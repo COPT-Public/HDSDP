@@ -345,7 +345,7 @@ static DSDP_INT preRankkEvRdcBlock( sdpMat *dataMat, DSDPStats *stat, speigfac *
                 isDense = TRUE; break;
             case MAT_TYPE_SPARSE:
                 spsdata = (spsMat *) matdata[i]; isSparse = TRUE;
-                if (spsdata->nnz < 10 || spsdata->nnz >= 15000) break;
+                if (spsdata->nnz < 10 || spsdata->nnz >= spsdata->dim * 3 || spsdata->nnz >= 15000) break;
                 speigSfac(eigfactor, spsdata, eigvals, eigvecs);
                 preGetRank(n, eigvals, 1e-10, &rank); break;
             case MAT_TYPE_RANKK: break;

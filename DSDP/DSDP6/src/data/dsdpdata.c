@@ -31,7 +31,7 @@ static DSDP_INT lpMatIAlloc( lpMat *lpData, DSDP_INT nnz ) {
         error(etype, "Incorrect size for LP data matrix for allocation. \n");
     }
     
-    lpData->Ap = (DSDP_INT *) calloc(lpData->dims + 1, sizeof(DSDP_INT));
+    lpData->Ap = (DSDP_INT *) calloc(lpData->dimy + 1, sizeof(DSDP_INT));
     lpData->Ai = (DSDP_INT *) calloc(nnz, sizeof(DSDP_INT));
     lpData->Ax = (double   *) calloc(nnz, sizeof(double));
     return retcode;
@@ -199,18 +199,17 @@ extern void lpMatInit( lpMat *lpData ) {
 
 extern void lpMatSetDim( lpMat *lpData, DSDP_INT dimy, DSDP_INT dims ) {
     // Set problem dimension
-    DSDP_INT retcode = DSDP_RETCODE_OK;
     lpData->dimy = dimy; lpData->dims = dims;
 }
 
 extern DSDP_INT lpMatSetData( lpMat *lpData, DSDP_INT *Ap, DSDP_INT *Ai, double *Ax ) {
     // Set LP data
     DSDP_INT retcode = DSDP_RETCODE_OK;
-    DSDP_INT n = lpData->dims, nnz = Ap[n];
+    DSDP_INT m = lpData->dimy, nnz = Ap[m];
     retcode = lpMatIAlloc(lpData, nnz);
     
     // Set problem data
-    memcpy(lpData->Ap, Ap, sizeof(DSDP_INT) * (n + 1));
+    memcpy(lpData->Ap, Ap, sizeof(DSDP_INT) * (m + 1));
     memcpy(lpData->Ai, Ai, sizeof(DSDP_INT) * nnz);
     memcpy(lpData->Ax, Ax, sizeof(double)   * nnz);
     
@@ -222,15 +221,10 @@ extern DSDP_INT lpMatSetData( lpMat *lpData, DSDP_INT *Ap, DSDP_INT *Ai, double 
 
 extern void lpMataATy( double alpha, lpMat *lpData, vec *y, double *ATy ) {
     // Compute A' * y
-    DSDP_INT retcode = DSDP_RETCODE_OK;
-    DSDP_INT m = lpData->dimy, n = lpData->dims;
-
+    DSDP_INT n = lpData->dims;
     DSDP_INT *Ap = lpData->Ap, *Ai = lpData->Ai;
     double *Ax = lpData->Ax, *ydata = y->x;
-    
-    assert( m == y->dim );
-    memset(ATy, 0, sizeof(double) * n);
-    
+        memset(ATy, 0, sizeof(double) * n);
     for (DSDP_INT i = 0; i < n; ++i) {
         for (DSDP_INT j = Ap[i]; j < Ap[i + 1]; ++i) {
             ATy[i] += alpha * Ax[Ai[j]] * ydata[Ai[j]];
@@ -243,9 +237,15 @@ extern void lpMatFree( lpMat *lpData ) {
     // Free the lpData structure
     lpData->dimy = 0;
     lpData->dims = 0;
-    
     DSDP_FREE(lpData->Ap); DSDP_FREE(lpData->Ai); DSDP_FREE(lpData->Ax);
     DSDP_FREE(lpData->xscale);
+}
+
+extern void lpMatView( lpMat *lpData ) {
+    
+    cs mat; mat.p = lpData->Ap; mat.i = lpData->Ai; mat.x = lpData->Ax;
+    mat.nz = -1; mat.nzmax = lpData->nnz; mat.n = lpData->dimy;
+    mat.m = lpData->dims; cs_print(&mat, FALSE);
 }
 
 /* SDP public methods */

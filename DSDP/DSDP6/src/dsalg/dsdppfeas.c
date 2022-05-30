@@ -70,6 +70,8 @@ extern DSDP_INT DSDPPFeasPhase( HSDSolver *dsdpSolver ) {
         dsdpSolver->iterProgress[ITER_DUAL_FACTORIZE] = TRUE;
         // setupFactorize(dsdpSolver);
         // Set up Schur matrix and solve the system
+        
+        getBslack(dsdpSolver, dsdpSolver->y, DUALVAR);
         setupSchur(dsdpSolver);
         currentpObj = dsdpSolver->pObjVal;
         dsdpgetPhaseBProxMeasure(dsdpSolver, &muub, &mulb); checkCode;

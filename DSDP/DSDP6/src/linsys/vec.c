@@ -15,7 +15,7 @@ extern void vec_init( vec *x ) {
 extern DSDP_INT vec_alloc( vec *x, const DSDP_INT n ) {
     // Allocate memory for vec
     assert( x->dim == 0 );
-    x->dim = n; x->x = (double *) calloc(n, sizeof(double));
+    x->dim = n; x->x = (n == 0) ? NULL : (double *) calloc(n, sizeof(double));
     return DSDP_RETCODE_OK;
 }
 

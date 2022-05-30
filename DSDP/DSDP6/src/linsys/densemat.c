@@ -18,9 +18,6 @@ static char uplolow = DSDP_MAT_LOW;
 static DSDP_INT fullFactorize( dsMat *S ) {
     // Factorize the dense Schur matrix
     DSDP_INT retcode = DSDP_RETCODE_OK;
-    if (S->isFactorized) {
-        error(etype, "Matrix is already factorized. \n");
-    }
     
     DSDP_INT n = S->dim, info = 0; char uplo = DSDP_MAT_LOW;
     memcpy(S->lfactor, S->array, sizeof(double) * n * n);

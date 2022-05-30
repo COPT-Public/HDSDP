@@ -212,8 +212,9 @@ static DSDP_INT DSDPIAllocIter( HSDSolver *dsdpSolver ) {
     // Allocate symbolic structure
     dsdpSolver->symS = (DSDP_INT **) calloc(nblock, sizeof(DSDP_INT *));
 
-    // Allocate s
+    // Allocate s and scker
     vec_init_alloc(dsdpSolver->s, lpdim);
+    vec_init_alloc(dsdpSolver->scker, lpdim);
     
     // Allocate x
     vec_init_alloc(dsdpSolver->x, lpdim);
@@ -259,7 +260,6 @@ static DSDP_INT DSDPIAllocIter( HSDSolver *dsdpSolver ) {
     // sl, su, scker, slcker, sucker
     vec_init_alloc(dsdpSolver->sl, dsdpSolver->m);
     vec_init_alloc(dsdpSolver->su, dsdpSolver->m);
-    vec_init_alloc(dsdpSolver->scker, dsdpSolver->m);
     vec_init_alloc(dsdpSolver->slcker, dsdpSolver->m);
     vec_init_alloc(dsdpSolver->sucker, dsdpSolver->m);
     
@@ -734,7 +734,6 @@ extern DSDP_INT DSDPOptimize( HSDSolver *dsdpSolver ) {
     retcode = DSDPIPresolve(dsdpSolver); checkCode;
     
     DSDPDataStatPrint(stat);
-    DSDPParamPrint(dsdpSolver->param);
     
     assert( dsdpSolver->insStatus == DSDP_STATUS_PRESOLVED );
     retcode = DSDPDInfeasEliminator(dsdpSolver); checkCode;
@@ -750,7 +749,6 @@ extern DSDP_INT DSDPOptimize( HSDSolver *dsdpSolver ) {
     computePrimalX(dsdpSolver);
     printf("| Primal solution is extracted.                      "
            "                                              \n");
-    dsdpshowdash();
     computeDIMACS(dsdpSolver);
     
     // Post-solving

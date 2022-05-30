@@ -15,7 +15,8 @@ static DSDP_INT schurMatPerturb( HSDSolver *dsdpSolver ) {
     DSDPGetStats(&dsdpSolver->dsdpStats, STAT_PHASE_B_ITER, &iterB);
     
     if (!dsdpSolver->eventMonitor[EVENT_INVALID_GAP]) {
-        if (dsdpSolver->mu < 1e-05) { perturb += 1e-10; }
+        
+        if (dsdpSolver->mu < 1e-05) { perturb += 1e-12; }
         maxdiag = vec_infnorm(dsdpSolver->Mdiag);
         dsdpSolver->Mscaler = maxdiag;
         
@@ -26,6 +27,8 @@ static DSDP_INT schurMatPerturb( HSDSolver *dsdpSolver ) {
         } else {
             perturb += MIN(maxdiag * 1e-08, 1e-12);
         }
+        
+        // if (dsdpSolver->mu < 1e-05) { perturb += maxdiag * 1e-05; }
         
         double invalid;
         DSDPGetStats(&dsdpSolver->dsdpStats, STAT_GAP_BROKEN, &invalid);
@@ -61,7 +64,7 @@ static DSDP_INT schurCGSetup( HSDSolver *dsdpSolver ) {
 #ifdef compareMode
     cgsolver->status = CG_STATUS_INDEFINITE;
 #endif
-    
+
     if (dsdpSolver->m > 20000) {
         cgiter = 500; tol *= 10.0;
     } else if (dsdpSolver->m > 15000) {
