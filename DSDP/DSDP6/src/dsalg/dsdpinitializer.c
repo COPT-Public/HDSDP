@@ -117,6 +117,12 @@ static void initparams( HSDSolver *dsdpSolver ) {
     DSDPSetIntParam(dsdpSolver, INT_PARAM_ACORRECTOR, ncorrA);
     DSDPSetIntParam(dsdpSolver, INT_PARAM_BCORRECTOR, nusercorr);
     
+    // Golden line search
+    DSDPGetStats(&dsdpSolver->dsdpStats, STAT_NNZ_OBJ, &stats);
+    if (stats <= 0.01 * dsdpSolver->n * dsdpSolver->n) {
+        DSDPSetIntParam(dsdpSolver, INT_PARAM_GOLDSEARCH, TRUE);
+    }
+    
     DSDPParamPrint(dsdpSolver->param);
     
     // Some other heuristics
@@ -137,8 +143,6 @@ extern DSDP_INT dsdpInitializeA( HSDSolver *dsdpSolver ) {
     initmu(dsdpSolver); initparams(dsdpSolver);
     initresi(dsdpSolver);
     
-    dsdpSolver->mu = (dsdpSolver->pObjVal - dsdpSolver->dObjVal - \
-                      dsdpSolver->Ry * 1e+08) / dsdpSolver->nall;
     dsdpSolver->Pnrm = DSDP_INFINITY;
     printf("| DSDP is initialized with Ry = %3.3e * I %52s\n", dsdpSolver->Ry, "");
     return retcode;

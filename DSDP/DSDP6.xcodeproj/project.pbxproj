@@ -65,15 +65,10 @@
 		19118E232737B72800D51D03 /* main.c in Sources */ = {isa = PBXBuildFile; fileRef = 19118DE22737B72800D51D03 /* main.c */; };
 		19118E242737B72800D51D03 /* dsdphsd.c in Sources */ = {isa = PBXBuildFile; fileRef = 19118DE42737B72800D51D03 /* dsdphsd.c */; };
 		1924445D27E9E07300C99F42 /* dsdpcorrector.c in Sources */ = {isa = PBXBuildFile; fileRef = 1924445C27E9E07200C99F42 /* dsdpcorrector.c */; };
-		1929CF162795B40400981C20 /* test_feast.c in Sources */ = {isa = PBXBuildFile; fileRef = 1929CF152795B40400981C20 /* test_feast.c */; };
-		192B24B22768D1A900F5C7C0 /* test_data.c in Sources */ = {isa = PBXBuildFile; fileRef = 192B24B12768D1A900F5C7C0 /* test_data.c */; };
 		1934771327B7E1A00048A772 /* dsdpreadsdpa.c in Sources */ = {isa = PBXBuildFile; fileRef = 1934771227B7E1A00048A772 /* dsdpreadsdpa.c */; };
-		1946B0AD27E8BF2A00C3A3BC /* test_lanczos.c in Sources */ = {isa = PBXBuildFile; fileRef = 1946B0AC27E8BF2A00C3A3BC /* test_lanczos.c */; };
-		1947DC1D2799B64B004065D8 /* test_dsdp.c in Sources */ = {isa = PBXBuildFile; fileRef = 1947DC1C2799B64B004065D8 /* test_dsdp.c */; };
 		1950371627B625C400C723FC /* dsdppsol.c in Sources */ = {isa = PBXBuildFile; fileRef = 1950371527B625C400C723FC /* dsdppsol.c */; };
 		195EE4C727B92AD400065A4B /* dsdpsort.c in Sources */ = {isa = PBXBuildFile; fileRef = 195EE4C627B92AD400065A4B /* dsdpsort.c */; };
 		197A770627C7889A00D3A50B /* symschur.c in Sources */ = {isa = PBXBuildFile; fileRef = 197A770527C7889A00D3A50B /* symschur.c */; };
-		19808F382737EEA60014086F /* test_vec.c in Sources */ = {isa = PBXBuildFile; fileRef = 19808F372737EEA60014086F /* test_vec.c */; };
 		19808F3F273807770014086F /* dsdpdata.c in Sources */ = {isa = PBXBuildFile; fileRef = 19808F3E273807770014086F /* dsdpdata.c */; };
 		19808F4327380A990014086F /* dsdppresolve.c in Sources */ = {isa = PBXBuildFile; fileRef = 19808F4227380A990014086F /* dsdppresolve.c */; };
 		19808F46273817510014086F /* rankonemat.c in Sources */ = {isa = PBXBuildFile; fileRef = 19808F45273817510014086F /* rankonemat.c */; };
@@ -86,13 +81,7 @@
 		1997805327CF6426006B7E6A /* libmkl_intel_lp64.1.dylib in Frameworks */ = {isa = PBXBuildFile; fileRef = 1997805127CF6426006B7E6A /* libmkl_intel_lp64.1.dylib */; };
 		1997805427CF6426006B7E6A /* libmkl_core.1.dylib in Frameworks */ = {isa = PBXBuildFile; fileRef = 1997805227CF6426006B7E6A /* libmkl_core.1.dylib */; };
 		199F256F2826377600D6B778 /* heurpool.c in Sources */ = {isa = PBXBuildFile; fileRef = 199F256E2826377600D6B778 /* heurpool.c */; };
-		199FC14127AD061A0072897D /* dsdpeigfact.c in Sources */ = {isa = PBXBuildFile; fileRef = 199FC14027AD061A0072897D /* dsdpeigfact.c */; };
 		19ABC01227C09F6B00105887 /* dsdpparam.c in Sources */ = {isa = PBXBuildFile; fileRef = 19ABC01127C09F6B00105887 /* dsdpparam.c */; };
-		19BACAF3274EBC1900E987FD /* test_sparse.c in Sources */ = {isa = PBXBuildFile; fileRef = 19BACAF2274EBC1900E987FD /* test_sparse.c */; };
-		19BACAF5274EBC2D00E987FD /* test_dense.c in Sources */ = {isa = PBXBuildFile; fileRef = 19BACAF4274EBC2D00E987FD /* test_dense.c */; };
-		19BACAF727521A7800E987FD /* test_pardiso.c in Sources */ = {isa = PBXBuildFile; fileRef = 19BACAF627521A7800E987FD /* test_pardiso.c */; };
-		19BACAFA2753C0D600E987FD /* test_presolve.c in Sources */ = {isa = PBXBuildFile; fileRef = 19BACAF92753C0D600E987FD /* test_presolve.c */; };
-		19BACAFD2753C17500E987FD /* gen_test_data.c in Sources */ = {isa = PBXBuildFile; fileRef = 19BACAFC2753C17500E987FD /* gen_test_data.c */; };
 		19BCF811282179D3000B6AC5 /* speigs.c in Sources */ = {isa = PBXBuildFile; fileRef = 19BCF810282179D3000B6AC5 /* speigs.c */; };
 		19BEEC212756065600C36C9E /* cs_entry.c in Sources */ = {isa = PBXBuildFile; fileRef = 19BEEC1B2756065600C36C9E /* cs_entry.c */; };
 		19BEEC222756065600C36C9E /* cs_load.c in Sources */ = {isa = PBXBuildFile; fileRef = 19BEEC1C2756065600C36C9E /* cs_load.c */; };
@@ -211,12 +200,8 @@
 		19118DE52737B72800D51D03 /* dsdphsd.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = dsdphsd.h; sourceTree = "<group>"; };
 		1924445B27E9E07200C99F42 /* dsdpcorrector.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = dsdpcorrector.h; sourceTree = "<group>"; };
 		1924445C27E9E07200C99F42 /* dsdpcorrector.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = dsdpcorrector.c; sourceTree = "<group>"; };
-		1929CF152795B40400981C20 /* test_feast.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = test_feast.c; sourceTree = "<group>"; };
-		192B24B12768D1A900F5C7C0 /* test_data.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = test_data.c; sourceTree = "<group>"; };
 		1934771127B7E1A00048A772 /* dsdpreadsdpa.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = dsdpreadsdpa.h; sourceTree = "<group>"; };
 		1934771227B7E1A00048A772 /* dsdpreadsdpa.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = dsdpreadsdpa.c; sourceTree = "<group>"; };
-		1946B0AC27E8BF2A00C3A3BC /* test_lanczos.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = test_lanczos.c; sourceTree = "<group>"; };
-		1947DC1C2799B64B004065D8 /* test_dsdp.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = test_dsdp.c; sourceTree = "<group>"; };
 		1947DC1E2799B66B004065D8 /* data.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = data.h; sourceTree = "<group>"; };
 		1950371427B625C400C723FC /* dsdppsol.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = dsdppsol.h; sourceTree = "<group>"; };
 		1950371527B625C400C723FC /* dsdppsol.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = dsdppsol.c; sourceTree = "<group>"; };
@@ -224,7 +209,6 @@
 		195EE4C627B92AD400065A4B /* dsdpsort.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = dsdpsort.c; sourceTree = "<group>"; };
 		197A770427C7889A00D3A50B /* symschur.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = symschur.h; sourceTree = "<group>"; };
 		197A770527C7889A00D3A50B /* symschur.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = symschur.c; sourceTree = "<group>"; };
-		19808F372737EEA60014086F /* test_vec.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = test_vec.c; sourceTree = "<group>"; };
 		19808F392737FEDA0014086F /* test.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = test.h; sourceTree = "<group>"; };
 		19808F3D273807770014086F /* dsdpdata.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = dsdpdata.h; sourceTree = "<group>"; };
 		19808F3E273807770014086F /* dsdpdata.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = dsdpdata.c; sourceTree = "<group>"; };
@@ -250,18 +234,12 @@
 		1997805227CF6426006B7E6A /* libmkl_core.1.dylib */ = {isa = PBXFileReference; lastKnownFileType = "compiled.mach-o.dylib"; name = libmkl_core.1.dylib; path = ../../../../../usr/local/lib/libmkl_core.1.dylib; sourceTree = "<group>"; };
 		199F256D2824AA4300D6B778 /* heurpool.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = heurpool.h; sourceTree = "<group>"; };
 		199F256E2826377600D6B778 /* heurpool.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = heurpool.c; sourceTree = "<group>"; };
-		199FC14027AD061A0072897D /* dsdpeigfact.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = dsdpeigfact.c; sourceTree = "<group>"; };
 		199FC14227AD82680072897D /* dsdpeigfact.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = dsdpeigfact.h; sourceTree = "<group>"; };
 		19ABC01127C09F6B00105887 /* dsdpparam.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = dsdpparam.c; sourceTree = "<group>"; };
 		19B423A3279E845E00E35E0B /* libmkl_sequential.a */ = {isa = PBXFileReference; lastKnownFileType = archive.ar; name = libmkl_sequential.a; path = ../../../../../opt/intel/oneapi/mkl/2021.2.0/lib/libmkl_sequential.a; sourceTree = "<group>"; };
 		19B423A5279E849200E35E0B /* libmkl_core.a */ = {isa = PBXFileReference; lastKnownFileType = archive.ar; name = libmkl_core.a; path = ../../../../../opt/intel/oneapi/mkl/2021.2.0/lib/libmkl_core.a; sourceTree = "<group>"; };
 		19B423A6279E849200E35E0B /* libmkl_intel_lp64.a */ = {isa = PBXFileReference; lastKnownFileType = archive.ar; name = libmkl_intel_lp64.a; path = ../../../../../opt/intel/oneapi/mkl/2021.2.0/lib/libmkl_intel_lp64.a; sourceTree = "<group>"; };
 		19BACAF1274EAE4500E987FD /* structs.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = structs.h; sourceTree = "<group>"; };
-		19BACAF2274EBC1900E987FD /* test_sparse.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = test_sparse.c; sourceTree = "<group>"; };
-		19BACAF4274EBC2D00E987FD /* test_dense.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = test_dense.c; sourceTree = "<group>"; };
-		19BACAF627521A7800E987FD /* test_pardiso.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = test_pardiso.c; sourceTree = "<group>"; };
-		19BACAF92753C0D600E987FD /* test_presolve.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = test_presolve.c; sourceTree = "<group>"; };
-		19BACAFC2753C17500E987FD /* gen_test_data.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = gen_test_data.c; sourceTree = "<group>"; };
 		19BCF80F282179D3000B6AC5 /* speigs.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = speigs.h; sourceTree = "<group>"; };
 		19BCF810282179D3000B6AC5 /* speigs.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = speigs.c; sourceTree = "<group>"; };
 		19BEEC1B2756065600C36C9E /* cs_entry.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = cs_entry.c; sourceTree = "<group>"; };
@@ -408,7 +386,6 @@
 				19C3732627A7F2DA0021A708 /* rankkmat.c */,
 				198237602802B966005F85B4 /* schurmat.c */,
 				19C3732A27A98B0D0021A708 /* dsdplanczos.c */,
-				199FC14027AD061A0072897D /* dsdpeigfact.c */,
 				1901C7F127B15FB30046EFB2 /* dsdpcg.c */,
 				19BCF80F282179D3000B6AC5 /* speigs.h */,
 				19BCF810282179D3000B6AC5 /* speigs.c */,
@@ -507,17 +484,7 @@
 				19C3732827A9063E0021A708 /* data2.h */,
 				1947DC1E2799B66B004065D8 /* data.h */,
 				19C1E9D42768E707000FCBF9 /* SDPdata.h */,
-				19808F372737EEA60014086F /* test_vec.c */,
 				19808F392737FEDA0014086F /* test.h */,
-				19BACAF2274EBC1900E987FD /* test_sparse.c */,
-				19BACAF4274EBC2D00E987FD /* test_dense.c */,
-				19BACAF627521A7800E987FD /* test_pardiso.c */,
-				19BACAF92753C0D600E987FD /* test_presolve.c */,
-				19BACAFC2753C17500E987FD /* gen_test_data.c */,
-				192B24B12768D1A900F5C7C0 /* test_data.c */,
-				1929CF152795B40400981C20 /* test_feast.c */,
-				1947DC1C2799B64B004065D8 /* test_dsdp.c */,
-				1946B0AC27E8BF2A00C3A3BC /* test_lanczos.c */,
 			);
 			path = test;
 			sourceTree = "<group>";
@@ -641,7 +608,6 @@
 			files = (
 				19808F4327380A990014086F /* dsdppresolve.c in Sources */,
 				19118E002737B72800D51D03 /* cs_dupl.c in Sources */,
-				19BACAFA2753C0D600E987FD /* test_presolve.c in Sources */,
 				19118DEC2737B72800D51D03 /* densemat.c in Sources */,
 				1924445D27E9E07300C99F42 /* dsdpcorrector.c in Sources */,
 				19118DEB2737B72800D51D03 /* vec.c in Sources */,
@@ -651,13 +617,11 @@
 				199F256F2826377600D6B778 /* heurpool.c in Sources */,
 				19C3BBDA2794032000F0331B /* dsdplog.c in Sources */,
 				19118E022737B72800D51D03 /* cs_dfs.c in Sources */,
-				19BACAF727521A7800E987FD /* test_pardiso.c in Sources */,
 				19118E1F2737B72800D51D03 /* cs_norm.c in Sources */,
 				19808F46273817510014086F /* rankonemat.c in Sources */,
 				19118DE62737B72800D51D03 /* schurmatops.c in Sources */,
 				19C3732B27A98B0D0021A708 /* dsdplanczos.c in Sources */,
 				19C3BBE62795054900F0331B /* dsdpproxmeasure.c in Sources */,
-				19BACAF5274EBC2D00E987FD /* test_dense.c in Sources */,
 				1905E06327C4AD240020D1B2 /* dsdpstats.c in Sources */,
 				1934771327B7E1A00048A772 /* dsdpreadsdpa.c in Sources */,
 				19BEEC262756065600C36C9E /* cs_lusol.c in Sources */,
@@ -667,7 +631,6 @@
 				19BEEC242756065600C36C9E /* cs_qrsol.c in Sources */,
 				19118E232737B72800D51D03 /* main.c in Sources */,
 				19118E1B2737B72800D51D03 /* cs_etree.c in Sources */,
-				19BACAF3274EBC1900E987FD /* test_sparse.c in Sources */,
 				19118E222737B72800D51D03 /* cs_util.c in Sources */,
 				19118DF82737B72800D51D03 /* cs_symperm.c in Sources */,
 				19F1195B275A627B0051D808 /* stepdirection.c in Sources */,
@@ -689,16 +652,13 @@
 				19808F3F273807770014086F /* dsdpdata.c in Sources */,
 				19118E062737B72800D51D03 /* cs_utsolve.c in Sources */,
 				1901C7F227B15FB30046EFB2 /* dsdpcg.c in Sources */,
-				1946B0AD27E8BF2A00C3A3BC /* test_lanczos.c in Sources */,
 				19118E052737B72800D51D03 /* cs_updown.c in Sources */,
-				1947DC1D2799B64B004065D8 /* test_dsdp.c in Sources */,
 				19118E182737B72800D51D03 /* cs_dropzeros.c in Sources */,
 				19118DEE2737B72800D51D03 /* SuiteSparse_config.c in Sources */,
 				19118DF52737B72800D51D03 /* cs_dmperm.c in Sources */,
 				19118DE82737B72800D51D03 /* residualsetup.c in Sources */,
 				1985AC3D279B9DB400B7B8EB /* dsdppfeas.c in Sources */,
 				19118DF12737B72800D51D03 /* cs_ipvec.c in Sources */,
-				199FC14127AD061A0072897D /* dsdpeigfact.c in Sources */,
 				197A770627C7889A00D3A50B /* symschur.c in Sources */,
 				19BEEC252756065600C36C9E /* cs_schol.c in Sources */,
 				19118DFF2737B72800D51D03 /* cs_post.c in Sources */,
@@ -711,18 +671,15 @@
 				19BCF811282179D3000B6AC5 /* speigs.c in Sources */,
 				19118E132737B72800D51D03 /* cs_happly.c in Sources */,
 				19118E0A2737B72800D51D03 /* cs_maxtrans.c in Sources */,
-				192B24B22768D1A900F5C7C0 /* test_data.c in Sources */,
 				19C3BBDD2794539600F0331B /* dsdpdinfeas.c in Sources */,
 				19118DE72737B72800D51D03 /* hsd.c in Sources */,
 				1950371627B625C400C723FC /* dsdppsol.c in Sources */,
 				19BEEC232756065600C36C9E /* cs_chol.c in Sources */,
 				19118E112737B72800D51D03 /* cs_fkeep.c in Sources */,
-				19BACAFD2753C17500E987FD /* gen_test_data.c in Sources */,
 				19118E1A2737B72800D51D03 /* cs_house.c in Sources */,
 				19118DFE2737B72800D51D03 /* cs_leaf.c in Sources */,
 				19118E192737B72800D51D03 /* cs_permute.c in Sources */,
 				195EE4C727B92AD400065A4B /* dsdpsort.c in Sources */,
-				19808F382737EEA60014086F /* test_vec.c in Sources */,
 				19C3BBE3279454D600F0331B /* dsdputils.c in Sources */,
 				19BEEC212756065600C36C9E /* cs_entry.c in Sources */,
 				19118DF42737B72800D51D03 /* cs_pvec.c in Sources */,
@@ -734,7 +691,6 @@
 				19118E1C2737B72800D51D03 /* cs_pinv.c in Sources */,
 				19118E072737B72800D51D03 /* cs_cholsol.c in Sources */,
 				19118E1D2737B72800D51D03 /* cs_scc.c in Sources */,
-				1929CF162795B40400981C20 /* test_feast.c in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -874,7 +830,7 @@
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				CODE_SIGN_STYLE = Automatic;
-				DEBUG_INFORMATION_FORMAT = dwarf;
+				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
 				GCC_OPTIMIZATION_LEVEL = fast;
 				HEADER_SEARCH_PATHS = "./DSDP6/**";
 				LIBRARY_SEARCH_PATHS = (

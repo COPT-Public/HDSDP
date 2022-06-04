@@ -92,9 +92,7 @@ typedef struct {
     // Step matrix
     spsMat   **dS;        // SDP step matrix
     
-    /* TODO: Remove spaux by applying Lanczos iterations */
     DSDPLanczos **lczSolver; // Lanczos solver
-    spsMat   **spaux;     // Used for maximum step computation
     dsMat    **dsaux;     // Used for Schur matrix setup
     rkMat    **rkaux;     // Use for Schur matrix setup
     spsMat   **Scker;     // Used for checking positive definiteness

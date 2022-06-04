@@ -246,6 +246,13 @@ extern double fnorm(  const char      *nrm,
                       const double    *ap,
                       double          *work );
 
+double dlansy( const char     *nrm,
+               const char     *uplo,
+               const DSDP_INT *n,
+               const double   *a,
+               const DSDP_INT *lda,
+               double         *work );
+
 /*
  DNRM2 returns the euclidean norm of a vector via the function
  name, so that
@@ -261,6 +268,18 @@ extern void solve( const char     *uplo,
                    const DSDP_INT *lda,
                    double         *x,
                    const DSDP_INT *incx );
+
+void dtrsm( const char     *side,
+            const char     *uplo,
+            const char     *transa,
+            const char     *diag,
+            const DSDP_INT *m,
+            const DSDP_INT *n,
+            const double   *alpha,
+            const double   *a,
+            const DSDP_INT *lda,
+            double         *b,
+            const DSDP_INT *ldb );
 
 /*
  DTRSV  solves one of the systems of equations
@@ -537,6 +556,12 @@ void fullchol ( const char     *uplo,
                 const DSDP_INT *lda,
                 DSDP_INT       *info );
 
+void dpotri( const char     *uplo,
+             const DSDP_INT *n,
+             double         *a,
+             const DSDP_INT *lda,
+             DSDP_INT       *info );
+
 void dpotrs( const char     *uplo,
              const DSDP_INT *n,
              const DSDP_INT *nrhs,
@@ -583,6 +608,14 @@ void ldlsolve( const char      *uplo,
                double          *b,
                const DSDP_INT  *ldb,
                DSDP_INT        *info );
+
+void dsyr( const char     *uplo,
+           const DSDP_INT *n,
+           const double   *alpha,
+           const double   *x,
+           const DSDP_INT *incx,
+           double         *a,
+           const DSDP_INT *lda );
 
 void packr1update( const char *uplo,
            const DSDP_INT *n,

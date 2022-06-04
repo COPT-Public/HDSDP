@@ -124,8 +124,10 @@ static DSDP_INT sdpMatIAllocByType( sdpMat *sdpData, DSDP_INT k, DSDP_INT *Ai,
         if (n > 10000) {
             DSDP_INT i;
             for (i = 0; i < n - n % 4; i+=4) {
-                data->p[i + 1] = nnz; data->p[i + 2] = nnz;
-                data->p[i + 3] = nnz; data->p[i + 4] = nnz;
+                data->p[i + 1] = nnz;
+                data->p[i + 2] = nnz;
+                data->p[i + 3] = nnz;
+                data->p[i + 4] = nnz;
             }
             for (i = n - n % 4; i < n; ++i) {
                 data->p[i + 1] = nnz;
@@ -148,7 +150,7 @@ static DSDP_INT sdpMatIAllocByType( sdpMat *sdpData, DSDP_INT k, DSDP_INT *Ai,
                 idxthresh += n - where;
             }
             colnnz += 1; data->i[i] = rowidx - idxthresh + n;
-            data->nzHash[i] = where; // Record column index
+            data->cidx[i] = where; // Record column index
         }
         
 #ifdef SHOWALL
@@ -309,7 +311,7 @@ extern void sdpMatSetHint( sdpMat *sdpData, DSDP_INT *hint ) {
     }
 }
 
-extern DSDP_INT sdpMatSetData( sdpMat *sdpData, DSDP_INT *Ap, DSDP_INT *Ai, double *Ax ) {
+extern DSDP_INT sdpMatSetData( sdpMat *sdpData, DSDP_INT *Ap, DSDP_INT *Ai, double *Ax, double *cnnz ) {
     
     // Set SDP data
     DSDP_INT retcode = DSDP_RETCODE_OK;
@@ -319,6 +321,8 @@ extern DSDP_INT sdpMatSetData( sdpMat *sdpData, DSDP_INT *Ap, DSDP_INT *Ai, doub
                                      &Ax[Ap[i]], Ap[i + 1] - Ap[i]);
         checkCode;
     }
+    
+    *cnnz = Ap[sdpData->dimy + 1] - Ap[sdpData->dimy];
         
     return retcode;
 }

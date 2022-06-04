@@ -48,6 +48,7 @@ extern double   denseDiagTrace   ( dsMat *dAMat, double diag                    
 extern double   denseFullTrace   ( dsMat *dMat, double *S                                   );
 extern double   SinvDsSinv       ( const double *Sinv, double *aux, dsMat  *A, dsMat *SinvASinv );
 extern double   denseSinvSolve   ( const double *Sinv, dsMat *A, double *ASinv, double *asinv, double Ry );
+extern double   denseSinvSolve2  ( double *Sinv, dsMat *A, double *asinv, double Ry );
 
 /* Utilities */
 extern DSDP_INT denseMatScatter  ( dsMat *dMat, vec *b, DSDP_INT k                          );

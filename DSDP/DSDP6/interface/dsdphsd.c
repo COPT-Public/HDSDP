@@ -106,7 +106,6 @@ static DSDP_INT DSDPIInit( HSDSolver *dsdpSolver ) {
     dsdpSolver->scker  = NULL;
     
     dsdpSolver->lczSolver = NULL;
-    dsdpSolver->spaux  = NULL;
     dsdpSolver->dsaux  = NULL;
     dsdpSolver->rkaux  = NULL;
     dsdpSolver->ds     = NULL;
@@ -263,21 +262,17 @@ static DSDP_INT DSDPIAllocIter( HSDSolver *dsdpSolver ) {
     vec_init_alloc(dsdpSolver->slcker, dsdpSolver->m);
     vec_init_alloc(dsdpSolver->sucker, dsdpSolver->m);
     
-    // Allocate Scker and spaux
+    // Allocate Scker
     dsdpSolver->Scker = (spsMat **) calloc(nblock, sizeof(spsMat *));
-    dsdpSolver->spaux = (spsMat **) calloc(nblock, sizeof(spsMat *));
     dsdpSolver->dsaux = (dsMat  **) calloc(nblock, sizeof(dsMat *));
     dsdpSolver->rkaux = (rkMat  **) calloc(nblock, sizeof(rkMat *));
     
     for (DSDP_INT i = 0; i < nblock; ++i) {
         dim = dsdpSolver->sdpData[i]->dimS;
         retcode = dsdpLanczosAlloc(dsdpSolver->lczSolver[i], dim); checkCode;
-        dsdpSolver->spaux[i] = (spsMat *) calloc(1, sizeof(spsMat));
         dsdpSolver->Scker[i] = (spsMat *) calloc(1, sizeof(spsMat));
         dsdpSolver->dsaux[i] = (dsMat  *) calloc(1, sizeof(dsMat));
         dsdpSolver->rkaux[i] = (rkMat  *) calloc(1, sizeof(rkMat));
-        retcode = spsMatInit(dsdpSolver->spaux[i]); checkCode;
-        retcode = spsMatAlloc(dsdpSolver->spaux[i], dim); checkCode;
         retcode = denseMatInit(dsdpSolver->dsaux[i]); checkCode;
         retcode = denseMatAlloc(dsdpSolver->dsaux[i], dim, -1); checkCode;
         retcode = rkMatInit(dsdpSolver->rkaux[i]); checkCode;
@@ -325,7 +320,7 @@ static DSDP_INT DSDPIFreeSDPData( HSDSolver *dsdpSolver ) {
     
     for (DSDP_INT i = 0; i < dsdpSolver->nBlock; ++i) {
         if (dsdpSolver->isSDPset[i]) {
-            sdpMatFree(dsdpSolver->sdpData[i]); checkCode;
+            sdpMatFree(dsdpSolver->sdpData[i]);
             DSDP_FREE(dsdpSolver->sdpData[i]);
         }
     }
@@ -354,7 +349,7 @@ static DSDP_INT DSDPIFreeAlgIter( HSDSolver *dsdpSolver ) {
     DSDP_INT nblock = dsdpSolver->nBlock;
     // S
     for (DSDP_INT i = 0; i < nblock; ++i) {
-        retcode = spsMatFree(dsdpSolver->S[i]);
+        spsMatFree(dsdpSolver->S[i]);
         DSDP_FREE(dsdpSolver->S[i]);
     }
     DSDP_FREE(dsdpSolver->S);
@@ -384,25 +379,17 @@ static DSDP_INT DSDPIFreeAlgIter( HSDSolver *dsdpSolver ) {
 
     // dS
     for (DSDP_INT i = 0; i < nblock; ++i) {
-        retcode = spsMatFree(dsdpSolver->dS[i]);
+        spsMatFree(dsdpSolver->dS[i]);
         DSDP_FREE(dsdpSolver->dS[i]);
     }
     DSDP_FREE(dsdpSolver->dS);
     
     // Scker
     for (DSDP_INT i = 0; i < nblock; ++i) {
-        retcode = spsMatFree(dsdpSolver->Scker[i]);
+        spsMatFree(dsdpSolver->Scker[i]);
         DSDP_FREE(dsdpSolver->Scker[i]);
     }
     DSDP_FREE(dsdpSolver->Scker);
-    
-    // spaux
-    for (DSDP_INT i = 0; i < nblock; ++i) {
-        spsMatFree(dsdpSolver->spaux[i]);
-        DSDP_FREE(dsdpSolver->spaux[i]);
-    }
-    DSDP_FREE(dsdpSolver->spaux);
-    
     // dsaux
     for (DSDP_INT i = 0; i < nblock; ++i) {
         retcode = denseMatFree(dsdpSolver->dsaux[i]);
@@ -517,18 +504,18 @@ static DSDP_INT DSDPIPresolve( HSDSolver *dsdpSolver ) {
     DSDPStatUpdate(stat, STAT_MATSTAT_TIME, t);
     
     center = my_clock();
-    retcode = preSymbolic(dsdpSolver); checkCode;
-    t = my_clock() - center;
-    printf("| - Dual symbolic check completes in %3.3f seconds \n", t);
-    DSDPStatUpdate(stat, STAT_SYMBOLIC_TIME, t);
-    
-    center = my_clock();
     retcode = DSDPPrepareMAssembler(dsdpSolver); checkCode;
     retcode = DSDPCheckSchurType(dsdpSolver->M); checkCode;
     retcode = DSDPSchurReorder(dsdpSolver->M); checkCode;
     t = my_clock() - center;
     printf("| - Schur matrix re-ordering completes in %3.3f seconds \n", t);
     DSDPStatUpdate(stat, STAT_SCHURORD_TIME, t);
+    
+    center = my_clock();
+    retcode = preSymbolic(dsdpSolver); checkCode;
+    t = my_clock() - center;
+    printf("| - Dual symbolic check completes in %3.3f seconds \n", t);
+    DSDPStatUpdate(stat, STAT_SYMBOLIC_TIME, t);
     
     dsdpSolver->insStatus = DSDP_STATUS_PRESOLVED;
     t = my_clock() - start;
@@ -676,9 +663,7 @@ extern DSDP_INT DSDPSetSDPConeData( HSDSolver *dsdpSolver,
                                     double    *Asdpx ) {
     
     DSDP_INT retcode = DSDP_RETCODE_OK;
-    assert( blockid < dsdpSolver->nBlock );
-    assert( coneSize > 0 );
-    
+    double cnnz = 0, tmp;
     if (dsdpSolver->insStatus != DSDP_STATUS_INIT_UNSET) {
         error(etype, "The solver instance is either not initialized or "
               "already set. \n");
@@ -687,14 +672,15 @@ extern DSDP_INT DSDPSetSDPConeData( HSDSolver *dsdpSolver,
     } else if (dsdpSolver->isSDPset[blockid]) {
         error(etype, "SDP block is already set. \n");
     }
-    
     sdpMat *data = dsdpSolver->sdpData[blockid];
-    sdpMatSetDim(data, dsdpSolver->m,
-                           coneSize, blockid);
+    sdpMatSetDim(data, dsdpSolver->m, coneSize, blockid);
     retcode = sdpMatAlloc(data); checkCode;
     if (typehint) { sdpMatSetHint(data, typehint); }
     
-    retcode = sdpMatSetData(data, Asdpp, Asdpi, Asdpx); checkCode;
+    DSDPGetStats(&dsdpSolver->dsdpStats, STAT_NNZ_OBJ, &cnnz);
+    retcode = sdpMatSetData(data, Asdpp, Asdpi, Asdpx, &tmp); checkCode;
+    cnnz += tmp; DSDPStatUpdate(&dsdpSolver->dsdpStats, STAT_NNZ_OBJ, cnnz);
+    
     dsdpSolver->isSDPset[blockid] = TRUE;
     
     return retcode;

@@ -17,10 +17,10 @@ extern DSDP_INT rkMatAllocAndSetData    ( rkMat  *R,  DSDP_INT n, DSDP_INT rank,
 extern DSDP_INT rkMatAllocAndSelectData ( rkMat  *R,  DSDP_INT n, DSDP_INT rank,
                                           double thresh, double *eigvals,
                                           double *eigvecs                          );
-extern DSDP_INT rkMatrkTrace            ( rkMat  *R1, rkMat *R2, double *trace     );
-extern DSDP_INT rkMatdenseTrace         ( rkMat  *R,  dsMat  *A, double *trace     );
-extern DSDP_INT rkMatdenseUpdate        ( dsMat  *dAMat, rkMat *rkBMat             );
-extern DSDP_INT rkMatdiagTrace          ( rkMat  *R,  double diag, double *trace   );
+extern void rkMatrkTrace            ( rkMat  *R1, rkMat *R2, double *trace     );
+extern void rkMatdenseTrace         ( rkMat  *R,  dsMat  *A, double *trace     );
+extern void rkMatdenseUpdate        ( dsMat  *dAMat, rkMat *rkBMat             );
+extern void rkMatdiagTrace          ( rkMat  *R,  double diag, double *trace   );
 extern DSDP_INT rkMatCountNnz           ( rkMat  *R                                );
 extern DSDP_INT rkMatFree               ( rkMat  *R                                );
 extern DSDP_INT rkMatFnorm              ( rkMat  *R,  double *fnrm                 );

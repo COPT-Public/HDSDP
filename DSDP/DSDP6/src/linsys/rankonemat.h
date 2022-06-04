@@ -28,7 +28,7 @@ extern double   r1MatSinvASinv   ( const double *Sinv, r1Mat *x, const double *A
 
 /* M5 Technique*/
 extern double   r1Sinvr1         ( r1Mat *A, r1Mat  *B, double *Sinv );
-extern double   r1RySinv         ( r1Mat *B, double *Sinv, double *asinv, double Ry );
+extern double   r1RySinv         ( r1Mat *B, double *Sinv, double *asinv, double Ry, double *aux );
 extern double   r1Sinvsps        ( spsMat *A, r1Mat *B, double *Sinv );
 
 extern DSDP_INT r1MatdiagTrace   ( r1Mat *x, double diag, double *trace );

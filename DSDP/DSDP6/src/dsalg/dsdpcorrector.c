@@ -23,39 +23,6 @@ static double getCurrentLogBarrier( HSDSolver *dsdpSolver, vec *y, DSDP_INT *inC
     return (-logbarrier);
 }
 
-static double getCurrentLogdet( HSDSolver *dsdpSolver, vec *y, double tau, DSDP_INT pRelax, DSDP_INT *inCone ) {
-    
-    double logbarrier = 0.0, logdet = 0.0, *aux = dsdpSolver->M->schurAux, sl, su, bound = dsdpSolver->ybound;
-    DSDP_INT i;
-    
-    if (inCone) { // Not sure if y is in the cone
-        DSDP_INT psd = FALSE;
-        for (i = 0; i < dsdpSolver->m; ++i) {
-            su = bound - y->x[i]; sl = y->x[i] + bound;
-            logdet += (log(su) + log(sl));
-        }
-        getPhaseAS(dsdpSolver, y, tau); dsdpInCone(dsdpSolver, &psd);
-        if (!psd) { *inCone = FALSE; return 0.0; }
-        *inCone = TRUE;
-    } else { // No check
-        for (i = 0; i < dsdpSolver->m; ++i) {
-            su = bound - y->x[i]; sl = y->x[i] + bound;
-            logdet += (log(su) + log(sl));
-        }
-        getPhaseAS(dsdpSolver, y, tau);
-        for (i = 0; i < dsdpSolver->nBlock; ++i) {
-            spsMatFactorize(dsdpSolver->S[i]);
-        }
-    }
-    
-    for (DSDP_INT i = 0; i < dsdpSolver->nBlock; ++i) {
-        logdet += spsMatGetlogdet(dsdpSolver->S[i], aux);
-    }
-    
-    logbarrier = dsdpSolver->mu * logdet;
-    return (-logbarrier);
-}
-
 static DSDP_INT adjCorrectorStep( HSDSolver *dsdpSolver ) {
     // Automatically adjust the number of currector steps by problem structure
     
@@ -119,23 +86,6 @@ extern DSDP_INT dInfeasCorrectorStep( HSDSolver *dsdpSolver, DSDP_INT isfinal ) 
          dsdpSolver->drate = 0.0;
          DSDPConic( COPS_STEPDIRECTION )(dsdpSolver);
          step = DSDPConic( COPS_GET_MAXSTEP )(dsdpSolver, DUALVAR);
-        
-//        getPhaseBdS(dsdpSolver, 1.0, dycorr, 0.0);
-//        step = DSDP_INFINITY;
-//        for (j = 0; j < dsdpSolver->nBlock; ++j) {
-//            dsdpGetAlpha(dsdpSolver->lczSolver[j], dsdpSolver->S[j], dsdpSolver->dS[j],
-//                         dsdpSolver->spaux[j], &tmp);
-//            step = MIN(step, tmp);
-//        }
-//
-//        if (prelax) {
-//            tmp = vec_step(sl, dycorr, 1.0); step = MIN(tmp, step);
-//            vec_zaxpby(ynew, 1.0, sl, tmp, dycorr);
-//            tmp = vec_step(su, dycorr, -1.0); step = MIN(tmp, step);
-//            vec_zaxpby(ynew, 1.0, sl, tmp, dycorr);
-//        }
-//        oldbarrier = (i == 0) ? getCurrentLogdet(dsdpSolver, ynow,
-//                                                 dsdpSolver->tau, prelax, NULL) : newbarrier;
         
         step = (isfinal) ? MIN(step, 1.0) : MIN(0.8 * step, 1.0); // 0.75 ? 0.8 ?
         // First line search
@@ -267,11 +217,11 @@ extern DSDP_INT dualCorrectorStep( HSDSolver *dsdpSolver ) {
             break;
         }
         
-        if (i == 0) {
-            if (!DSDPConic( COPS_CHECK_INCONE )(dsdpSolver, DUALVAR)) {
-                printf("| Strange behavior. Give up. \n");
-            }
-        }
+//        if (i == 0) {
+//            if (!DSDPConic( COPS_CHECK_INCONE )(dsdpSolver, DUALVAR)) {
+//                printf("| Strange behavior. Give up. \n");
+//            }
+//        }
         
         DSDPConic( COPS_GET_SCHURVEC )(dsdpSolver, FALSE);
         dsdpCGSolve(cg, d2, NULL); // Compute corrector step
@@ -320,7 +270,9 @@ extern DSDP_INT dualCorrectorStep( HSDSolver *dsdpSolver ) {
                 newbarrier = getCurrentLogBarrier(dsdpSolver, ynew, &inCone);
                 if (!inCone) {
                     step *= 0.5; --j;
-                    if (step <= 1e-04) { break; }
+                    if (step <= 1e-04) {
+                        break;
+                    }
                     continue;
                 }
             } else {
@@ -340,17 +292,23 @@ extern DSDP_INT dualCorrectorStep( HSDSolver *dsdpSolver ) {
         }
         
         if (step <= 1e-04) {
+            // infeasible or not sufficient descent
+            if (inCone) {
+                vec_copy(ynew, ynow);
+            }
             getBslack(dsdpSolver, ynow, DUALVAR);
             getPhaseBS(dsdpSolver, ynow);
+            dsdpInCone(dsdpSolver, &inCone);
+            assert( inCone );
             getPhaseBLps(dsdpSolver, ynow);
             break;
         } else {
+            // Feasible and sufficient descent
             vec_copy(ynew, ynow);
             getBslack(dsdpSolver, ynow, DUALVAR);
-            getPhaseBS(dsdpSolver, ynow);
             getPhaseBLps(dsdpSolver, ynow);
+            // getPhaseBS(dsdpSolver, ynow);
         }
-        
     }
     
     dsdpSolver->iterProgress[ITER_CORRECTOR] = TRUE;

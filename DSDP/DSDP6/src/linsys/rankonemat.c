@@ -32,37 +32,6 @@ extern DSDP_INT r1MatSetData( r1Mat *x, double eigval, double *array ) {
     return DSDP_RETCODE_OK;
 }
 
-extern DSDP_INT r1denseSpsUpdate( spsMat *sAMat, double alpha, r1Mat *r1BMat ) {
-    // Compute A = A + alpha * B where B is a rank-one matrix.
-    DSDP_INT retcode = DSDP_RETCODE_OK;
-    DSDP_INT n = sAMat->dim;
-    
-    assert( sAMat->nnz == nsym(n) );
-    
-    if (fabs(alpha) < 1e-15) {
-        return retcode;
-    }
-    
-    double sign = r1BMat->sign;
-    alpha = alpha * sign;
-    
-    double *array = sAMat->x;
-    if (r1BMat->nnz >= 0.8 * n) {
-        char uplo = DSDP_MAT_LOW;
-        packr1update(&uplo, &n, &alpha, r1BMat->x, &one, array);
-    } else {
-        double *r1x = r1BMat->x;
-        DSDP_INT *nzIdx = r1BMat->nzIdx;
-        for (DSDP_INT i = 0; i < r1BMat->nnz; ++i) {
-            for (DSDP_INT j = 0; j <= i; ++j) {
-                packIdx(array, n, nzIdx[i], nzIdx[j]) += sign * r1x[nzIdx[i]] * r1x[nzIdx[j]];
-            }
-        }
-    }
-    
-    return retcode;
-}
-
 /* M2 Technique */
 extern double r1Matr1Trace( r1Mat *x, r1Mat *y ) {
     // Compute the inner product of two rank one matrices
@@ -188,8 +157,33 @@ extern double r1MatSinvASinv( const double *Sinv, r1Mat *x, const double *ASinv 
     return res;
 }
 
-extern double r1RySinv( r1Mat *B, double *Sinv, double *asinv, double Ry ) {
+extern double r1RySinv2( r1Mat *B, double *aux, double *Sinv, double *asinv, double Ry ) {
+    // Auxiliary routine for dense rank one matrix from r1RySinv
+    // trace( a * a' * S^-1 ) = (S^-1 * a)' * a and trace( S^-1 * a * a' * S^-1 * Ry )
+    DSDP_INT n = B->dim; double *a = B->x, tmp1 = 0.0;
+    if (B->nnz <= n / 2) {
+        memset(aux, 0, sizeof(double) * n);
+        for (DSDP_INT i = 0; i < B->nnz; ++i) {
+            daxpy(&n, &a[B->nzIdx[i]],
+                  &Sinv[n * B->nzIdx[i]], &one, aux, &one);
+        }
+    } else {
+        // aux = S^-1 * a
+        dsymv(&uplolow, &n, &done, Sinv, &n,
+              a, &one, &dzero, aux, &one);
+    }
+    // ||S^-1 * a||
+    tmp1 = dnrm2(&n, aux, &one);
+    // asinv = a' * S^-1 * a
+    *asinv = ddot(&n, aux, &one, a, &one) * B->sign;
+    return (tmp1 * tmp1 * Ry * B->sign);
+}
+
+extern double r1RySinv( r1Mat *B, double *Sinv, double *asinv, double Ry, double *aux ) {
     // Compute trace( a * a' * S^-1 ) and trace( S^-1 * a * a' * S^-1 * Ry )
+    if (B->nnz >= B->dim / 4) {
+        return r1RySinv2(B, aux, Sinv, asinv, Ry);
+    }
     double res = 0.0, res2 = 0.0, tmp, *Bx = B->x;
     DSDP_INT i, p, q, in, n = B->dim, *Bi = B->nzIdx;
     
@@ -229,7 +223,7 @@ extern double r1Sinvsps( spsMat *A, r1Mat *B, double *Sinv ) {
     // For convenience A is sparse and B is rank-one.
     double res = 0.0, tmp, bij, *Ax = A->x, *Bx = B->x;
     DSDP_INT k, p, q, in, jn, n = A->dim;
-    DSDP_INT *Ai = A->i, *Aj = A->nzHash, *Bi = B->nzIdx;
+    DSDP_INT *Ai = A->i, *Aj = A->cidx, *Bi = B->nzIdx;
     
     for (p = 0; p < B->nnz; ++p) {
         for (q = 0; q < p; ++q) {
@@ -271,8 +265,8 @@ extern DSDP_INT r1MatdiagTrace( r1Mat *x, double diag, double *trace ) {
 
 extern double r1MatFullTrace( r1Mat *x, double *S, double *aux ) {
     register double res = 0.0, *xdata = x->x;
-    if (x->nnz < 0.6 * x->dim) {
-        DSDP_INT i, j, n = x->dim, *xi = x->nzIdx;
+    DSDP_INT i, j, n = x->dim, *xi = x->nzIdx;
+    if (x->nnz <= n / 4) {
         for (i = 0; i < x->nnz; ++i) {
             for (j = 0; j < i; ++j) {
                 res += xdata[xi[i]] * xdata[xi[j]] * S[n * xi[i] + xi[j]];
@@ -326,6 +320,7 @@ extern DSDP_INT r1MatCountNnz( r1Mat *x ) {
     }
     
     x->nnz = nnz;
+    assert( nnz >= 1 );
     return DSDP_RETCODE_OK;
 }
 

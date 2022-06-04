@@ -81,7 +81,7 @@ extern void dsdpprintPhaseAheader( void ) {
     
     printf("| DSDP Phase A starts. Eliminating dual infeasibility %45s\n", "");
     dsdpshowdash();
-    printf("\nPhase A Log: \n");
+    printf("\nPhase A Log: 'P': Primal solution found. '*': Phase A ends. 'F': Error happens. 'M': Max iteration\n");
     dsdpshowdash();
     printf("| %4s | %12s | %12s | %9s | %8s | %8s | %8s | %8s | %3s |\n",
             "Iter", "pObj", "dObj", "dInf", "k/t", "mu", "alpha", "Pnorm", "E");
@@ -91,7 +91,7 @@ extern void dsdpprintPhaseAheader( void ) {
 extern void dsdpprintPhaseBheader( void ) {
     
     dsdpshowdash();
-    printf("\nPhase B Log:\n");
+    printf("\nPhase B Log: 'P': Primal solution found. '*': Optimal. 'F': Error happens. 'M': Max iteration\n");
     dsdpshowdash();
     printf("| %4s | %17s | %17s | %10s | %8s | %8s | %8s | %3s |\n",
             "Iter", "pObj", "dObj", "pInf", "mu", "alpha", "Pnorm", "E");
@@ -328,7 +328,7 @@ extern DSDP_INT DSDPCheckPhaseAConvergence( HSDSolver *dsdpSolver, DSDP_INT *isO
     DSDPGetStats(stat, STAT_PHASE_A_ITER, &statval1);
     DSDPGetStats(stat, STAT_NUM_SMALL_ITER, &statval2);
     
-    if (statval1 > 0 && dsdpSolver->alpha < 1e-02 && fabs(dsdpSolver->Ry) < 1e-06 ) {
+    if (statval1 > 0 && dsdpSolver->alpha < 3e-02 && fabs(dsdpSolver->Ry) < 1e-06 ) {
         monitor[EVENT_SMALL_STEP] = TRUE;
         statval2 += 1.0;
         DSDPStatUpdate(stat, STAT_NUM_SMALL_ITER, statval2);
@@ -458,7 +458,7 @@ extern DSDP_INT DSDPCheckPhaseBConvergence( HSDSolver *dsdpSolver, DSDP_INT *isO
     
     // Small step
     DSDPGetStats(stat, STAT_NUM_SMALL_ITER, &statval2);
-    if (statval1 > 0 && dsdpSolver->alpha < 2e-02 && gap < 1e-02) {
+    if (statval1 > 0 && dsdpSolver->alpha < 3e-02 && gap < 1e-02) {
         statval2 += 1; DSDPStatUpdate(stat, STAT_NUM_SMALL_ITER, statval2);
         monitor[EVENT_SMALL_STEP] = TRUE;
     }

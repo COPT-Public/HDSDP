@@ -34,33 +34,33 @@ extern "C" {
 extern DSDP_INT spsMatInit         ( spsMat *sMat );
 extern DSDP_INT spsMatAlloc        ( spsMat *sMat, DSDP_INT dim );
 extern DSDP_INT spsMatAllocData    ( spsMat *sMat, DSDP_INT dim, DSDP_INT nnz );
-extern DSDP_INT spsMatFree         ( spsMat *sMat );
+extern void     spsNominalLinkSinv ( spsMat *sMat, double *Sinv );
+extern void spsMatFree         ( spsMat *sMat );
 
 /* Basic operations */
-extern DSDP_INT spsMatAx           ( spsMat *A, vec *x, vec *Ax );
+extern void spsMatAx           ( spsMat *A, vec *x, vec *Ax );
 extern void     spsMatAx2          ( spsMat *A, vec *x, vec *Ax );
 extern double   spsMatxTAx         ( spsMat *A, double *x       );
-extern DSDP_INT spsMataXpbY        ( double alpha,  spsMat *sXMat, double beta,
+extern void spsMataXpbY        ( double alpha,  spsMat *sXMat, double beta,
                                     spsMat *sYMat,  DSDP_INT *sumHash );
-extern DSDP_INT spsMatAdddiag      ( spsMat *sMat,  double d, DSDP_INT *sumHash );
-extern DSDP_INT spsMatAddds        ( spsMat *sXMat, double alpha, dsMat *sYMat );
-extern DSDP_INT spsMatAddr1        ( spsMat *sXMat, double alpha, r1Mat *r1YMat, DSDP_INT *sumHash );
-extern DSDP_INT spsMatAddrk        ( spsMat *sXMat, double alpha, rkMat *rkYMat, DSDP_INT *sumHash );
-extern DSDP_INT spsMatFnorm        ( spsMat *sMat,  double *fnrm );
+extern void spsMatAdddiag      ( spsMat *sMat,  double d, DSDP_INT *sumHash );
+extern void spsMatAddds        ( spsMat *sXMat, double alpha, dsMat *sYMat );
+extern void spsMatAddr1        ( spsMat *sXMat, double alpha, r1Mat *r1YMat, DSDP_INT *sumHash );
+extern void spsMatAddrk        ( spsMat *sXMat, double alpha, rkMat *rkYMat, DSDP_INT *sumHash );
+extern void spsMatFnorm        ( spsMat *sMat,  double *fnrm );
 extern double   spsMatOneNorm      ( spsMat *sMat );
-extern DSDP_INT spsMatScale        ( spsMat *sXMat, double alpha );
+extern void spsMatScale        ( spsMat *sXMat, double alpha );
 extern void spsMatRscale       ( spsMat *sXMat, double r );
 
 /* Factorization and linear system solver */
-extern DSDP_INT spsMatSymbolic     ( spsMat *sAMat );
-extern DSDP_INT spsMatFactorize    ( spsMat *sAMat );
-extern DSDP_INT spsArrSolveInp     ( spsMat *sAMat, DSDP_INT nrhs, double *B, double *aux );
-extern DSDP_INT spsMatVecSolve     ( spsMat *sAMat, vec    *sbVec, double *Ainvb );
-extern DSDP_INT spsMatVecFSolve    ( spsMat *sAmat, vec *sbVec, vec *Ainvb );
-extern DSDP_INT spsMatVecBSolve    ( spsMat *sAmat, vec *sbVec, vec *Ainvb );
-extern DSDP_INT spsMatLspLSolve    ( spsMat *S,     spsMat *dS,    spsMat *spaux );
-extern DSDP_INT spsMatGetX         ( spsMat *S, spsMat *dS, double *LinvSLTinv   );
-extern double   dsdpGetAlpha       ( DSDPLanczos *lczSolver, spsMat *S, spsMat *dS, spsMat *spaux, double *alpha );
+extern void spsMatSymbolic     ( spsMat *sAMat );
+extern void spsMatFactorize    ( spsMat *sAMat );
+extern void spsArrSolveInp     ( spsMat *sAMat, DSDP_INT nrhs, double *B, double *aux );
+extern void spsMatVecSolve     ( spsMat *sAMat, vec    *sbVec, double *Ainvb );
+extern void spsMatVecFSolve    ( spsMat *sAmat, vec *sbVec, vec *Ainvb );
+extern void spsMatVecBSolve    ( spsMat *sAmat, vec *sbVec, vec *Ainvb );
+extern void spsMatGetX         ( spsMat *S, spsMat *dS, double *LinvSLTinv   );
+extern double   dsdpGetAlpha       ( DSDPLanczos *lczSolver, spsMat *S, spsMat *dS, double *alpha );
 
 /* Schur matrix assembly */
 extern double SinvSpSinv   ( const double *Sinv, double *aux, spsMat *A, dsMat *SinvASinv );
@@ -76,24 +76,24 @@ extern double spsSinvr1Sinv        ( spsMat *A, r1Mat  *B, double *Sinv );
 extern double spsFullTrace         ( spsMat *A, double *S               );
 
 /* Eigen value routines */
-extern DSDP_INT spsMatMaxEig       ( spsMat *sMat, double *maxEig );
-extern DSDP_INT spsMatMinEig       ( spsMat *sMat, double *minEig );
+extern void spsMatMaxEig       ( spsMat *sMat, double *maxEig );
+extern void spsMatMinEig       ( spsMat *sMat, double *minEig );
 
 /* Utilities */
-extern DSDP_INT spsMatIspd         ( spsMat *sMat, DSDP_INT *ispd );
-extern DSDP_INT dsdpGetAlphaLS     ( spsMat *S, spsMat *dS, spsMat *Scker, double alphamax,
+extern void spsMatIspd         ( spsMat *sMat, DSDP_INT *ispd );
+extern void dsdpGetAlphaLS     ( spsMat *S, spsMat *dS, spsMat *Scker, double alphamax,
                                      double *alpha, DSDP_INT *sumHash );
 extern double   spsMatGetlogdet    ( spsMat *sMat, double *aux );
-extern DSDP_INT spsMatScatter      ( spsMat *sMat, vec *b, DSDP_INT k );
+extern void spsMatScatter      ( spsMat *sMat, vec *b, DSDP_INT k );
 extern void     spsMatInverse      ( spsMat *sMat, double *Sinv, double *aux );
-extern DSDP_INT spsMatStoreFactor  ( spsMat *sMat, rkMat *factor );
+extern void spsMatStoreFactor  ( spsMat *sMat, rkMat *factor );
 extern rkMat*   spsMatGetFactor    ( spsMat *sMat );
 extern DSDP_INT spsMatGetRank      ( spsMat *sMat );
-extern DSDP_INT spsMatFillLower    ( spsMat *sMat, double *lowFullMat );
-extern DSDP_INT spsMatFillLower2   ( spsMat *sMat, dsMat *lowMat    );
-extern DSDP_INT spsMatFill         ( spsMat *sMat, double *fulldMat );
-extern DSDP_INT spsMatReset        ( spsMat *sMat );
-extern DSDP_INT spsMatView         ( spsMat *sMat );
+extern void spsMatFillLower    ( spsMat *sMat, double *lowFullMat );
+extern void spsMatFillLower2   ( spsMat *sMat, dsMat *lowMat    );
+extern void spsMatFill         ( spsMat *sMat, double *fulldMat );
+extern void spsMatReset        ( spsMat *sMat );
+extern void spsMatView         ( spsMat *sMat );
 extern void     spsMatLinvView     ( spsMat *S );
 extern void     spsMatInvView      ( spsMat *S );
 extern void     spsMatExport       ( spsMat *A );

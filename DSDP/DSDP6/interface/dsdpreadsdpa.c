@@ -31,7 +31,7 @@ static DSDP_INT DSDPPrepareSDPData( char     *filename,    // 'xxx.dat-s'
     FILE *file;
     char chartmp, thisline[BFSIZE] = "*";
     DSDP_INT i, j, ngot, blockid, constrid, m, n, line = 0, tline = 0, lpidx = -1;
-    DSDP_INT nblock = 0, nvars = 0, nlpvars = 0, nconstr = 0, nnz = 0, lpexist, idx;
+    DSDP_INT nblock = 0, nvars = 0, nlpvars = 0, nconstr = 0, nnz = 0, lpexist;
     DSDP_INT *blocksizes = NULL;
     double *dObj = NULL, val = 0.0;
     cs **sdpAs = NULL, *lpA = NULL;
@@ -332,7 +332,7 @@ extern DSDP_INT DSDPSolveSDPA(int argc, char *argv[]) {
     }
     
     printf("| Data read into solver."
-           " Elapsed Time: %3.3f. \n", my_clock() - start);
+           " Elapsed Time: %3.3f seconds. \n", my_clock() - start);
     
     retcode = DSDPSetObj(hsdSolver, dObj);
     retcode = DSDPOptimize(hsdSolver);

@@ -18,6 +18,7 @@ static char etype[] = "DSDP Dual infeasibility elimination";
  solution to start the second phase
 
  */
+
 extern DSDP_INT DSDPDInfeasEliminator( HSDSolver *dsdpSolver ) {
     
     DSDP_INT retcode = DSDP_RETCODE_OK;
@@ -26,9 +27,10 @@ extern DSDP_INT DSDPDInfeasEliminator( HSDSolver *dsdpSolver ) {
     dsdpSolver->pObjVal = DSDP_INFINITY;
     
     // Initialize
-    double muprimal, tol, sigma, initpObj;
+    double muprimal, tol, sigma, initpObj, boundx;
     double trymu = 0.0, time = 0.0, start = my_clock();
     DSDP_INT attempt;
+    
     
     DSDPGetDblParam(dsdpSolver, DBL_PARAM_INIT_MU,    &muprimal);
     DSDPGetDblParam(dsdpSolver, DBL_PARAM_ABS_OPTTOL, &tol     );
@@ -41,6 +43,10 @@ extern DSDP_INT DSDPDInfeasEliminator( HSDSolver *dsdpSolver ) {
     dsdpshowdash();
     dsdpInitializeA(dsdpSolver);
     initpObj = dsdpSolver->pObjVal;
+    
+    DSDPGetDblParam(dsdpSolver, DBL_PARAM_BOUND_X, &boundx);
+    dsdpSolver->mu = (dsdpSolver->pObjVal - dsdpSolver->dObjVal - \
+                      dsdpSolver->Ry * boundx) / dsdpSolver->nall;
     
     /* Print algorithm header */
     dsdpprintPhaseAheader();
@@ -87,7 +93,7 @@ extern DSDP_INT DSDPDInfeasEliminator( HSDSolver *dsdpSolver ) {
             muprimal = trymu;
         }
         trymu = (dsdpSolver->pObjVal - dsdpSolver->dObjVal -
-                 dsdpSolver->Ry * 1e+08) / (5.0 * dsdpSolver->nall);
+                 dsdpSolver->Ry * boundx) / (5.0 * dsdpSolver->nall);
         
         if (dsdpSolver->Pnrm < 5) {
             dsdpSolver->mu = MAX(dsdpSolver->mu * 0.01, trymu * 0.1);
@@ -116,7 +122,7 @@ extern DSDP_INT DSDPDInfeasEliminator( HSDSolver *dsdpSolver ) {
         dInfeasCorrectorStep(dsdpSolver, FALSE);
         // Decrease mu with sufficient proximity
         checkIterProgress(dsdpSolver, ITER_DECREASE_MU);
-        if (dsdpSolver->Pnrm < 0.1 &&
+        if (dsdpSolver->Pnrm < 0.1 && dsdpSolver->Pnrm > 0 &&
             !dsdpSolver->eventMonitor[EVENT_MU_QUALIFIES]) {
             dsdpSolver->mu *= 0.1;
         }

@@ -197,7 +197,7 @@ static void LPConic( COPS_GET_SCHUR )
     double *Ax = dsdpSolver->lpData->Ax, *s = dsdpSolver->s->x;
     double Ry = dsdpSolver->Ry, *lpObj = dsdpSolver->lpObj->x;
     DSDP_INT i, j, k, m = dsdpSolver->m, n = dsdpSolver->lpDim;
-    double Mij = 0.0, *a = dsdpSolver->M->schurAux, tmp;
+    double Mij = 0.0, *a = dsdpSolver->x->x, tmp;
     
     if (Ry) {
         for (i = 0; i < m; ++i) {
@@ -414,8 +414,7 @@ static double SDPConic( COPS_GET_MAXSTEP )
     double step = DSDP_INFINITY, tmp;
     spsMat **targets = (type == DUALVAR) ? dsdpSolver->S : dsdpSolver->Scker;
     for (DSDP_INT i = 0; i < dsdpSolver->nBlock; ++i) {
-        dsdpGetAlpha(dsdpSolver->lczSolver[i], targets[i],
-                     dsdpSolver->dS[i], NULL, &tmp);
+        dsdpGetAlpha(dsdpSolver->lczSolver[i], targets[i], dsdpSolver->dS[i], &tmp);
         step = MIN(step, tmp);
     }
     return step;
@@ -481,7 +480,7 @@ static void LPConic( COPS_GET_SCHURVEC )
     
     if (!dsdpSolver->isLPset) { return; }
     
-    double *a = dsdpSolver->M->schurAux, tmp;
+    double *a = dsdpSolver->x->x, tmp;
     double *s = dsdpSolver->s->x;
     DSDP_INT i, k, m = dsdpSolver->m, n = dsdpSolver->lpDim;
     DSDP_INT *Ap = dsdpSolver->lpData->Ap;

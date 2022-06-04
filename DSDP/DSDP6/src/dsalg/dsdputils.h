@@ -11,6 +11,10 @@
 extern "C" {
 #endif
 
+#define DBGTime(X) clock_t debug_start_time = clock(); (X); \
+                   printf("| Time: %f \n", ((double) (clock() - debug_start_time) / CLOCKS_PER_SEC));
+
+
 #ifndef DSDPConic
 #define SDPConic(x)  SDPCone##x
 #define LPConic(x)   LPCone##x

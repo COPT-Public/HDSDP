@@ -37,7 +37,7 @@ extern "C" {
 
 extern void     speigInit ( speigfac *eigfac );
 extern DSDP_INT speigAlloc( speigfac *eigfac, DSDP_INT nmax );
-extern void     speigSfac ( speigfac *eigfac, spsMat *A, double *eigvals, double *eigvecs );
+extern DSDP_INT speigSfac ( speigfac *eigfac, spsMat *A, double *eigvals, double *eigvecs );
 extern void     speigDfac ( speigfac *eigfac, dsMat  *A, double *eigvals, double *eigvecs );
 extern void     speigFree ( speigfac *eigfac );
 

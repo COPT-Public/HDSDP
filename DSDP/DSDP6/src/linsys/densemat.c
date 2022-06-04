@@ -99,6 +99,11 @@ extern DSDP_INT denseMatAlloc( dsMat *dMat, DSDP_INT dim, DSDP_INT doFactor ) {
         dMat->ipiv  = (DSDP_INT *) calloc(dim, sizeof(DSDP_INT));
         dMat->lwork = NB * dim;
         dMat->work  = (double *) calloc(dMat->lwork, sizeof(double));
+        
+        if (!dMat->array || !dMat->lfactor || !dMat->ipiv || !dMat->lwork || !dMat->work) {
+            printf("| Memory allocation failed. Giving up. \n");
+            retcode = DSDP_RETCODE_FAILED;
+        }
     } else {
         dMat->array = (double *) calloc((DSDP_INT) nsym(dim), sizeof(double));
         dMat->lwork = 0;
@@ -237,27 +242,25 @@ extern DSDP_INT denseArrSolveInp( dsMat *S, DSDP_INT nrhs, double *B ) {
 extern DSDP_INT denseSpsTrace( dsMat *dAMat, spsMat *sBMat, double *trace ) {
     // Compute trace (A * B) for dense A and sparse B.
     DSDP_INT retcode = DSDP_RETCODE_OK;
-    assert( dAMat->dim == sBMat->dim );
-    
     DSDP_INT n = dAMat->dim;
     double *A = dAMat->array, *Bx = sBMat->x, tmp = 0.0;
-    DSDP_INT i, j, k, nnz = sBMat->nnz, *Bp = sBMat->p, *Bi = sBMat->i;
+    DSDP_INT i, j, k, nnz = sBMat->nnz, *Bi = sBMat->i;
     *trace = 0.0;
     
-    if (nnz == nsym(n)) {
-        *trace = ddot(&nnz, A, &one, Bx, &one);
-        for (DSDP_INT i = 0; i < n; ++i) {
-            if (Bi[Bp[i]] == i) {
-                *trace -= 0.5 * packIdx(A, n, i, i) * Bx[Bp[i]];
+    if (sBMat->nominalsps) {
+        for (i = 0; i < n; ++i) {
+            tmp += 0.5 * packIdx(A, n, i, i) * Bx[i * n + i];
+            for (j = 0; j < i; ++j) {
+                tmp += packIdx(A, n, i, j) * Bx[j * n + i];
             }
         }
-        *trace *= 2;
+        *trace = tmp * 2;
         return retcode;
     }
     
-    if (sBMat->nzHash) {
+    if (sBMat->cidx) {
         for (i = 0; i < nnz; ++i) {
-            j = sBMat->nzHash[i]; k = Bi[i];
+            j = sBMat->cidx[i]; k = Bi[i];
             tmp = Bx[i] * packIdx(A, n, k, j);
             *trace += (k == j) ? 0.5 * tmp : tmp;
         }
@@ -342,6 +345,27 @@ extern double denseSinvSolve( const double *Sinv, dsMat *A, double *ASinv, doubl
     }
     
     return (res2 * Ry);
+}
+
+extern double denseSinvSolve2( double *Sinv, dsMat *A, double *asinv, double Ry ) {
+    // Routine for more efficiently setting up asinvrysinv in corrector step ASinv is not set up
+    DSDP_INT n = A->dim, i, j;
+    double asinvasinv = 0.0, tmp1, aij = 0.0, *Sinvi, *Sinvj, *Adata = A->array, asinvres = 0.0;
+    for (i = 0; i < n; ++i) {
+        Sinvi = Sinv + n * i; Sinvj = Sinv;
+        for (j = 0; j < i; ++j) {
+            aij = packIdx(Adata, n, i, j); asinvres += aij * Sinvi[j];
+            tmp1 = ddot(&n, Sinvi, &one, Sinvj, &one);
+            asinvasinv += aij * tmp1; Sinvj += n;
+        }
+        tmp1 = ddot(&n, Sinvi, &one, Sinvj, &one);
+        aij = packIdx(Adata, n, i, i); asinvres += 0.5 * aij * Sinvi[i];
+        asinvasinv += 0.5 * aij * tmp1;
+    }
+    
+    *asinv = asinvres * 2.0; // denseFullTrace(A, Sinv);
+    // assert( fabs(*asinv - asinvres * 2.0) < 1e-06 );
+    return (2.0 * asinvasinv * Ry);
 }
 
 extern double denseSinvASinv( const double *Sinv, dsMat *A, const double *ASinv ) {

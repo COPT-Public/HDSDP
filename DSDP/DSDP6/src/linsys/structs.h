@@ -35,10 +35,13 @@ typedef struct {
     DSDP_INT *i;                        // Row index
     double   *x;                        // Sparse data
     DSDP_INT nnz;                       // Nonzeros entries
-    DSDP_INT *nzHash;                   // Position of non-zero entry in packed format
+    DSDP_INT *cidx;                   // Position of non-zero entry in packed format
     
     rkMat    *factor;                   // Eigenvalue decomposition
     void     *pdsWorker[PARDISOINDEX];  // Pardiso working array
+    
+    DSDP_INT nominalsps;                // Is matrix actually dense
+    double   *Sinv;                     // Pointer towards Sinv
     
 } spsMat;
 

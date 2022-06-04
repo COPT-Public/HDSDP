@@ -13,7 +13,7 @@ static void cholPrecond( schurMat *P, vec *x, vec *aux ) {
     assert( P->m == x->dim );
     if (!P->isFactorized) {
         schurMatFactorize(P);
-    }
+    }   
     schurMatSolve(P, 1, x->x, aux->x);
     return;
 }
@@ -146,7 +146,6 @@ extern DSDP_INT dsdpCGGetSolStatistic( CGSolver *cgSolver, DSDP_INT *iter, doubl
 }
 
 extern DSDP_INT dsdpCGSetPreReuse( CGSolver *cgSolver, DSDP_INT reuse ) {
-    assert( reuse >= 0 );
     cgSolver->reuse = reuse;
     return DSDP_RETCODE_OK;
 }

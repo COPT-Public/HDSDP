@@ -17,7 +17,8 @@ extern DSDP_INT computePrimalX( HSDSolver *dsdpSolver ) {
     
     double start = my_clock();
     
-    // getPhaseBS(dsdpSolver, dsdpSolver->y->x);
+    getPhaseBS(dsdpSolver, dsdpSolver->y);
+    getPhaseBLps(dsdpSolver, dsdpSolver->y);
     // Smaker = C - dsdpgetATy(A, ymaker);
     getPhaseBCheckerS(dsdpSolver, ymaker);
     getPhaseBLpCheckers(dsdpSolver, ymaker);
@@ -27,13 +28,11 @@ extern DSDP_INT computePrimalX( HSDSolver *dsdpSolver ) {
     
     dsMat  *dsaux = NULL;
     rkMat  *rkaux = NULL;
-    spsMat *spaux = NULL;
     
     for (DSDP_INT blockid = 0; blockid < nblock; ++blockid) {
     
         dsaux   = dsdpSolver->dsaux[blockid];
         rkaux   = dsdpSolver->rkaux[blockid];
-        spaux   = dsdpSolver->spaux[blockid];
         Smaker  = dsdpSolver->Scker[blockid];
         bnmaker = dsdpSolver->dS[blockid];
         dim     = bnmaker->dim;

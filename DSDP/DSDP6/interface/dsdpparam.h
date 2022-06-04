@@ -21,7 +21,8 @@
 #define DBL_PARAM_ABS_FEASTOL   14
 #define DBL_PARAM_REL_FEASTOL   15
 #define DBL_PARAM_PRLX_PENTALTY 16
-#define DBL_PARAM_OBJ_WEIGHT    17
+#define DBL_PARAM_BOUND_X       17
+#define DBL_PARAM_OBJ_WEIGHT    18
 
 #define INT_PARAM_ACORRECTOR     0
 #define INT_PARAM_BCORRECTOR     1
@@ -57,12 +58,12 @@ static DSDP_INT defaultIntParam[NUM_INT_PARAM] = {
            // INT_PARAM_INITMETHOD
     AATEMT_CONSERVATIVE,
            // INT_PARAM_AATTEMPT
-    10,    // INT_PARAM_CG_REUSE
+    100,    // INT_PARAM_CG_REUSE
     PRESOLVE_AGGRESSIVE,
            // INT_PARAM_PRESOLVE
     500,   // INT_PARAM_AMAXITER
     500,   // INT_PARAM_BMAXITER
-    TRUE,  // INT_PARAM_GOLDSEARCH
+    FALSE,  // INT_PARAM_GOLDSEARCH
     TRUE  // INT_PARAM_PRELAX
 };
 
@@ -87,7 +88,8 @@ static double defaultDblParam[NUM_DBL_PARAM] = {
     1e-07, // DBL_PARAM_ABS_FEASTOL
     1e-07, // DBL_PARAM_REL_FEASTOL
     1e+07, // DBL_PARAM_PRLX_PENTALTY
-    0.0    // DBL_PARAM_OBJ_WEIGHT
+    1e+08, // DBL_PARAM_BOUND_X
+    0.0   // DBL_PARAM_OBJ_WEIGHT
 };
 
 static hsdParam defaultParam =

@@ -69,7 +69,7 @@ static void getdyB( HSDSolver *dsdpSolver ) {
     vec_zaxpby(dsdpSolver->d4, 1 / dsdpSolver->mu, dsdpSolver->dObj, -1.0, dsdpSolver->asinv);
     vec_dot(dsdpSolver->d4, dsdpSolver->dy, &dsdpSolver->Pnrm);
     dsdpSolver->Pnrm = sqrt(MAX(dsdpSolver->Pnrm, 0.0));
-    if (dsdpSolver->Pnrm < 0.1) {
+    if (dsdpSolver->Pnrm < 0.1 && dsdpSolver->Pnrm > 0) {
         dsdpSolver->mu *= 0.1;
         vec_zaxpby(dsdpSolver->dy, 1 / dsdpSolver->mu, dsdpSolver->d1, -1.0, dsdpSolver->d2);
         vec_zaxpby(dsdpSolver->d4, 1 / dsdpSolver->mu, dsdpSolver->dObj, -1.0, dsdpSolver->asinv);

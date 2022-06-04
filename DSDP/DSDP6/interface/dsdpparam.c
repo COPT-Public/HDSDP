@@ -129,6 +129,9 @@ static void printIntParam( const DSDP_INT *intParams, DSDP_INT pName ) {
         case INT_PARAM_PRELAX:
             printf("Integer Parameter Primal Relaxation: ");
             break;
+        case INT_PARAM_GOLDSEARCH:
+            printf("Integer Parameter Golden linesearch: ");
+            break;
         default:
             printf("Invalid Parameter Code %d \n", pName);
             return; break;
@@ -251,17 +254,15 @@ extern void DSDPParamPrint( hsdParam *param ) {
     printf("| Parameter Summary: \n");
     dsdpshowdash();
     printDblParam(param->dblParams, DBL_PARAM_RHO);
-    printIntParam(param->intParams, INT_PARAM_PRESOLVE);
     
     DSDP_INT prelax;
     getIntParam(param, INT_PARAM_PRELAX, &prelax);
     printIntParam(param->intParams, INT_PARAM_PRELAX);
+    printIntParam(param->intParams, INT_PARAM_GOLDSEARCH);
     
     if (prelax) {
         printDblParam(param->dblParams, DBL_PARAM_PRLX_PENTALTY);
     }
-    
-    printIntParam(param->intParams, INT_PARAM_AATTEMPT);
-    
+        
     return;
 }

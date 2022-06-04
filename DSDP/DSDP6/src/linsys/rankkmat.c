@@ -70,7 +70,7 @@ extern DSDP_INT rkMatAllocAndSelectData( rkMat *R, DSDP_INT n, DSDP_INT rank, do
     return retcode;
 }
 
-extern DSDP_INT rkMatrkTrace( rkMat *R1, rkMat *R2, double *trace ) {
+extern void rkMatrkTrace( rkMat *R1, rkMat *R2, double *trace ) {
     
     // Compute the inner product between two rank-k matrices
     /*
@@ -83,7 +83,6 @@ extern DSDP_INT rkMatrkTrace( rkMat *R1, rkMat *R2, double *trace ) {
      When this routine is called, R1 is an iterator (SinvASinv) and R2 is data (A)
     */
     
-    DSDP_INT retcode = DSDP_RETCODE_OK;
     double res = 0.0; DSDP_INT i, j;
     for (i = 0; i < R1->rank; ++i) {
         for (j = 0; j < R2->rank; ++j) {
@@ -91,58 +90,48 @@ extern DSDP_INT rkMatrkTrace( rkMat *R1, rkMat *R2, double *trace ) {
         }
     }
     *trace = res;
-    return retcode;
 }
 
-extern DSDP_INT rkMatdenseUpdate( dsMat *dAMat, rkMat *rkBMat ) {
+extern void rkMatdenseUpdate( dsMat *dAMat, rkMat *rkBMat ) {
     // Compute rank-1 update A = A + \sum_i alpha_i * b_i * b_i'
-    DSDP_INT retcode = DSDP_RETCODE_OK;
     DSDP_INT dim = rkBMat->dim; r1Mat *r1data = NULL;
     for (DSDP_INT i = 0; i < rkBMat->rank; ++i) {
         r1data = rkBMat->data[i];
-        dspr(&uplolow, &dim, &r1data->sign, r1data->x, &one, dAMat->array);
+        if (r1data->nnz > dim / 4) {
+            dspr(&uplolow, &dim, &r1data->sign, r1data->x, &one, dAMat->array);
+        } else {
+            double sign = r1data->sign, *rx = r1data->x;
+            DSDP_INT *nzIdx, j, k;
+            nzIdx = r1data->nzIdx;
+            for (j = 0; j < r1data->nnz; ++j) {
+                for (k = 0; k <= j; ++k) {
+                    packIdx(dAMat->array, dim, nzIdx[i], nzIdx[j]) += \
+                    sign * rx[nzIdx[i]] * rx[nzIdx[j]];
+                }
+            }
+        }
     }
-    /*
-     if (r1data->nnz > 0.5 * dim) {
-         dspr(&uplolow, &dim, &r1data->sign, r1data->x, &one, dAMat->array);
-     } else {
-         double sign = r1data->sign, *rx = r1data->x;
-         nzIdx = r1data->nzIdx;
-         for (j = 0; j < r1data->nnz; ++j) {
-             for (k = 0; k <= j; ++k) {
-                 packIdx(dAMat->array, dim, nzIdx[i], nzIdx[j]) += \
-                 sign * rx[nzIdx[i]] * rx[nzIdx[j]];
-             }
-         }
-     }
-     
-    */
-    return retcode;
 }
 
-extern DSDP_INT rkMatdenseTrace( rkMat *R, dsMat *A, double *trace ) {
+extern void rkMatdenseTrace( rkMat *R, dsMat *A, double *trace ) {
     // Compute the innter product between rank-k and dense matrices
-    DSDP_INT retcode = DSDP_RETCODE_OK;
-    assert( R->dim == A->dim ); double res = 0.0, tmp;
+    double res = 0.0, tmp;
     for (DSDP_INT i = 0; i < R->rank; ++i) {
         r1MatdenseTrace(R->data[i], A, &tmp); res += tmp;
     }
     *trace = res;
-    return retcode;
 }
 
-extern DSDP_INT rkMatdiagTrace( rkMat *R, double diag, double *trace ) {
+extern void rkMatdiagTrace( rkMat *R, double diag, double *trace ) {
     // Compute trace( \sum_i d_i * a_i * a_i' diag ) = \sum_i diag * d_i * norm(a_i)^2
-    DSDP_INT retcode = DSDP_RETCODE_OK;
     if (diag == 0.0) {
-        *trace = 0.0; return retcode;
+        *trace = 0.0;
     }
     double res = 0.0, tmp; DSDP_INT rank = R->rank;
     for (DSDP_INT i = 0; i < rank; ++i) {
         r1MatdiagTrace(R->data[i], diag, &tmp); res += tmp;
     }
     *trace = res;
-    return retcode;
 }
 
 extern DSDP_INT rkMatCountNnz( rkMat *R ) {

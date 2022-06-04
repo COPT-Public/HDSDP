@@ -10,6 +10,7 @@ static char range = 'A';
 static char uplolow = 'L';
 static double abstol = 0.0;
 static double eps = 1e-10;
+
 /*
  Implement a highly-efficient eigen-decomposition interface using LAPACK or Intel FEAST
  as the backend. The routine is derived from DSDP5.8 by Steve J. Benson.
@@ -108,6 +109,7 @@ static DSDP_INT denser1check( speigfac *eigfac, DSDP_INT n, double *A ) {
     return FALSE;
 }
 
+#define ROOT 7.0710678118654757273731092936941422522068e-01
 static void speigGetSpecialFactor( speigfac *eigfac, DSDP_INT nnz, DSDP_INT n,
                                    DSDP_INT special, DSDP_INT *Ai, DSDP_INT *Aj,
                                    double *Ax, double *eigvals, double *eigvecs ) {
@@ -120,12 +122,13 @@ static void speigGetSpecialFactor( speigfac *eigfac, DSDP_INT nnz, DSDP_INT n,
             eigvec[Ai[k]] = 1.0; eigvals[k] = Ax[k];
         }
     } else {
-        DSDP_INT i, j, idx; double tmp = sqrt(2.0) / 2;
+        DSDP_INT i, j, idx; double tmp = ROOT;
         for (k = idx = 0; k < nnz; ++k) {
             i = Ai[k]; j = Aj[k];
             eigvec = eigvecs + idx * n;
             if (i == j) {
                 eigvals[idx] = Ax[k]; idx += 1;
+                eigvec[i] = 1.0; eigvec += n;
             } else {
                 eigvec[j] = eigvec[i] = tmp;
                 eigvals[idx] = Ax[k]; idx += 1;
@@ -251,20 +254,25 @@ extern DSDP_INT speigAlloc( speigfac *eigfac, DSDP_INT nmax ) {
     return retcode;
 }
 
-extern void speigSfac( speigfac *eigfac, spsMat *A,
+extern DSDP_INT speigSfac( speigfac *eigfac, spsMat *A,
                        double *eigvals, double *eigvecs ) {
+    if (A->nnz < 5 || A->nnz >= A->dim * 3 || A->nnz >= 15000) {
+        return FALSE;
+    }
+    DSDP_INT special = 0, nsub = 0; speigReset(eigfac);
+    special = speigGetCStats(eigfac, A->dim, A->nnz, A->i, A->cidx);
     
     memset(eigvals, 0, sizeof(double) * A->dim);
     memset(eigvecs, 0, sizeof(double) * A->dim * A->dim);
-    DSDP_INT special = 0, nsub = 0; speigReset(eigfac);
-    special = speigGetCStats(eigfac, A->dim, A->nnz, A->i, A->nzHash);
+    
     if (special) {
         speigGetSpecialFactor(eigfac, A->nnz, A->dim, special,
-                              A->i, A->nzHash, A->x, eigvals, eigvecs);
+                              A->i, A->cidx, A->x, eigvals, eigvecs);
     } else {
-        nsub = speigGetSMat(eigfac, A->dim, A->nnz, A->i, A->nzHash, A->x);
+        nsub = speigGetSMat(eigfac, A->dim, A->nnz, A->i, A->cidx, A->x);
         speigFactor(eigfac, A->dim, nsub, eigvals, eigvecs);
     }
+    return TRUE;
 }
 
 extern void speigDfac( speigfac *eigfac, dsMat *A,

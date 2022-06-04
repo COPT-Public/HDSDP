@@ -39,6 +39,8 @@
 #define STAT_DFEAS_PROBLEM   24
 
 #define STAT_LARGEST_BLOCK   25
+#define STAT_NNZ_OBJ         26
+#define STAT_NNZ_SCHUR       27
 
 // 20 ~ 50 left for event profiling
 #define STAT_PHASE_A_ITER    51

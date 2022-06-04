@@ -17,16 +17,17 @@ static DSDP_INT getScore( DSDP_INT *ranks, DSDP_INT *nnzs, DSDP_INT *perm,
     
     DSDP_INT i, j, k = perm[idx]; //, npack = nsym(n);
     double d1, d2, d3, d4, d5, nsqr = n * n, ncbe = n * nsqr,\
-           sumnnz = 0.0, rsigma = ranks[k], best = SCHUR_M1, npack = nsym(n);
+           sumnnz = 0.0, rsigma = ranks[k], best = SCHUR_M1;
     double m1m5 = 0.0, m1m2 = 0.0;
+    
     // On exit, MX is set 10 * MX12 + M12345
-
     for (i = idx; i < m + 1; ++i) {
         sumnnz += nnzs[i];
     }
   
     d1 = rsigma * (2 * nsqr) + KAPPA * sumnnz;
-    d2 = rsigma * (nsqr + 2 * KAPPA * sumnnz);
+    // d2 = rsigma * (nsqr + 2 * KAPPA * sumnnz);
+    d2 = rsigma * (nnzs[idx] * n + 3 * KAPPA * sumnnz);
     // d1 = rsigma * (nsqr + 3 * npack) + 2 * KAPPA * sumnnz;
     // d2 = rsigma * (nsqr + 3 * KAPPA * sumnnz);
     d3 = n * KAPPA * nnzs[idx] + ncbe + KAPPA * sumnnz + ncbe / m;
@@ -177,7 +178,7 @@ static DSDP_INT schurM1rowSetup( DSDPSymSchur *M, DSDP_INT blockid, DSDP_INT row
     */
     
     DSDP_INT retcode = DSDP_RETCODE_OK;
-    DSDP_INT i, j, k, m = M->m, *perm = M->perms[blockid], computeC = FALSE;
+    DSDP_INT i, j, k, m = M->m, *perm = M->perms[blockid], computeC = FALSE, gold = *M->gold;
     dsMat *B = M->B[blockid]; rkMat *factor, *rkaux = M->rkaux[blockid];
     double *val, res, Ry = *M->Ry; k = perm[row];
     
@@ -192,7 +193,8 @@ static DSDP_INT schurM1rowSetup( DSDPSymSchur *M, DSDP_INT blockid, DSDP_INT row
     if (LIKELY(k < m)) {
         val = &M->asinv->x[k];
     } else {
-        val = M->csinv; computeC = TRUE;
+        val = M->csinv; if (!gold) { return retcode; }
+        computeC = TRUE;
     }
     
     res = SinvRkSinv(M->S[blockid], factor, rkaux);
@@ -262,7 +264,7 @@ static DSDP_INT schurM2rowSetup( DSDPSymSchur *M, DSDP_INT blockid, DSDP_INT row
     
     DSDP_INT retcode = DSDP_RETCODE_OK;
     
-    DSDP_INT i, j, k, r, m = M->m, *perm = M->perms[blockid], computeC = FALSE, rank;
+    DSDP_INT i, j, k, r, m = M->m, *perm = M->perms[blockid], computeC = FALSE, rank, gold = *M->gold;
     rkMat *factor, *rkaux = M->rkaux[blockid]; r1Mat *r1aux = NULL;
     double *val, res, coeff, Ry = *M->Ry; k = perm[row];
     
@@ -277,8 +279,10 @@ static DSDP_INT schurM2rowSetup( DSDPSymSchur *M, DSDP_INT blockid, DSDP_INT row
     if (k < m) {
         val = &M->asinv->x[k];
     } else {
-        val = M->csinv; computeC = TRUE;
+        val = M->csinv; if (!gold) { return retcode; }
+        computeC = TRUE;
     }
+    
     res = SinvRkSinv(M->S[blockid], factor, rkaux);
     *val += res; return_if_not_in_A_or_not_building_hsd
     rank = rkMatGetRank(factor);
@@ -357,14 +361,15 @@ static DSDP_INT schurM3rowSetup( DSDPSymSchur *M, DSDP_INT blockid, DSDP_INT row
      when available
     */
     DSDP_INT retcode = DSDP_RETCODE_OK;
-    DSDP_INT i, j, k, m = M->m, *perm = M->perms[blockid], computeC = FALSE;
+    DSDP_INT i, j, k, m = M->m, *perm = M->perms[blockid], computeC = FALSE, gold = *M->gold;
     dsMat *B = M->B[blockid]; spsMat *S; rkMat *rkaux;
     double *val, res, Ry = *M->Ry, *aux = M->schurAux, *Sinv = M->Sinv[blockid]; k = perm[row];
     
     if (k < m) {
         val = &M->asinv->x[k];
     } else {
-        val = M->csinv; computeC = TRUE;
+        val = M->csinv; if (!gold) { return retcode; }
+        computeC = TRUE;
     }
     
     // Get B through direct matrix multiplication
@@ -434,14 +439,15 @@ static DSDP_INT schurM4rowSetup( DSDPSymSchur *M, DSDP_INT blockid, DSDP_INT row
     // Apply M4 technique to setup a row of the Schur complement matrix
     DSDP_INT retcode = DSDP_RETCODE_OK;
     
-    DSDP_INT i, j, k, m = M->m, *perm = M->perms[blockid], computeC = FALSE;
+    DSDP_INT i, j, k, m = M->m, *perm = M->perms[blockid], computeC = FALSE, gold = *M->gold;
     double *val, res, tmp, Ry = *M->Ry, *ASinv = M->schurAux, *Sinv = M->Sinv[blockid]; k = perm[row];
     double *aux = M->rkaux[blockid]->data[0]->x;
     
     if (k < m) {
         val = &M->asinv->x[k];
     } else {
-        val = M->csinv; computeC = TRUE;
+        val = M->csinv; if (!gold) { return retcode; }
+        computeC = TRUE;
     }
     
     // Prepare ASinv for later computation. asinv and asinvrysinv will also be ready
@@ -520,7 +526,7 @@ static double schurM5MatAux( DSDP_INT type1, void *A1, DSDP_INT type2, void *A2,
             case MAT_TYPE_ZERO  : return 0.0;
             default: assert( FALSE ); break;
         }
-    } else if (type1 == MAT_TYPE_RANKK) {
+    } else {
         switch (type2) {
             case MAT_TYPE_SPARSE: return r1Sinvsps(A2, ((rkMat *) A1)->data[0], Sinv);
             case MAT_TYPE_RANKK : return r1Sinvr1(((rkMat *) A1)->data[0], ((rkMat *) A2)->data[0], Sinv);
@@ -537,7 +543,7 @@ static DSDP_INT schurM5rowSetup( DSDPSymSchur *M, DSDP_INT blockid, DSDP_INT row
      M5 Technique directly computes elements of the Schur matrix without any intermediate variables
     */
     DSDP_INT retcode = DSDP_RETCODE_OK;
-    DSDP_INT i, j, k, m = M->m, *perm = M->perms[blockid], computeC = FALSE;
+    DSDP_INT i, j, k, m = M->m, *perm = M->perms[blockid], computeC = FALSE, gold = *M->gold;
     DSDP_INT *types = M->Adata[blockid]->types;
     double *Sinv = M->Sinv[blockid];
     double *val, res, tmp, Ry = *M->Ry; k = perm[row];
@@ -547,7 +553,8 @@ static DSDP_INT schurM5rowSetup( DSDPSymSchur *M, DSDP_INT blockid, DSDP_INT row
     if (k < m) {
         val = &M->asinv->x[k];
     } else {
-        val = M->csinv; computeC = TRUE;
+        val = M->csinv; if (!gold) { return retcode; }
+        computeC = TRUE;
     }
     
     switch (types[k]) {
@@ -555,7 +562,7 @@ static DSDP_INT schurM5rowSetup( DSDPSymSchur *M, DSDP_INT blockid, DSDP_INT row
         case MAT_TYPE_SPARSE:
             res = spsRySinv(data[k], Sinv, &tmp, Ry); break;
         case MAT_TYPE_RANKK:
-            res = r1RySinv(((rkMat *) data[k])->data[0], Sinv, &tmp, Ry); break;
+            res = r1RySinv(((rkMat *) data[k])->data[0], Sinv, &tmp, Ry, M->schurAux); break;
         default:
             error(etype, "Invalid matrix type. Dense matrix should not appear in M5. \n");
             break;
@@ -593,11 +600,34 @@ static DSDP_INT schurM5rowSetup( DSDPSymSchur *M, DSDP_INT blockid, DSDP_INT row
     return retcode;
 }
 
+// #define SCHUR_PROFILER
+#ifdef SCHUR_PROFILER
+static double schurTime[5] = {0.0};
+#endif
+
 static DSDP_INT schurMatSetupBlock( DSDPSymSchur *M, DSDP_INT blockid ) {
     // Set up a block of the Schur matrix
     DSDP_INT retcode = DSDP_RETCODE_OK;
-    
+#ifdef SCHUR_PROFILER
+    clock_t start;
+    memset(schurTime, 0, sizeof(double) * 5);
+#endif
     for (DSDP_INT i = 0; i < M->m + 1; ++i) {
+#ifdef SCHUR_PROFILER
+        start = clock();
+        switch (M->MX[blockid][i]) {
+            case SCHUR_M1: schurM1rowSetup(M, blockid, i);
+                schurTime[0] += (double) (clock() - start) / CLOCKS_PER_SEC; break;
+            case SCHUR_M2: schurM2rowSetup(M, blockid, i);
+                schurTime[1] += (double) (clock() - start) / CLOCKS_PER_SEC; break;
+            case SCHUR_M3: schurM3rowSetup(M, blockid, i);
+                schurTime[2] += (double) (clock() - start) / CLOCKS_PER_SEC; break;
+            case SCHUR_M4: schurM4rowSetup(M, blockid, i);
+                schurTime[3] += (double) (clock() - start) / CLOCKS_PER_SEC; break;
+            case SCHUR_M5: schurM5rowSetup(M, blockid, i);
+                schurTime[4] += (double) (clock() - start) / CLOCKS_PER_SEC; break;
+            default: error(etype, "Invalid technique type. \n"); break;
+#else
         switch (M->MX[blockid][i]) {
             case SCHUR_M1: schurM1rowSetup(M, blockid, i); break;
             case SCHUR_M2: schurM2rowSetup(M, blockid, i); break;
@@ -605,8 +635,12 @@ static DSDP_INT schurMatSetupBlock( DSDPSymSchur *M, DSDP_INT blockid ) {
             case SCHUR_M4: schurM4rowSetup(M, blockid, i); break;
             case SCHUR_M5: schurM5rowSetup(M, blockid, i); break;
             default: error(etype, "Invalid technique type. \n"); break;
+#endif
         }
     }
+#ifdef SCHUR_PROFILER
+        printf("|1: %f 2: %f 3: %f 4: %f 5: %f \n", schurTime[0], schurTime[1], schurTime[2], schurTime[3], schurTime[4]);
+#endif
     return retcode;
 }
 
@@ -627,7 +661,7 @@ extern DSDP_INT symSchurMatInit( DSDPSymSchur *M ) {
     M->Adata = NULL; M->M = NULL; M->asinv = NULL; M->Ry = NULL;
     M->asinvrysinv = NULL; M->asinvcsinv = NULL; M->csinvrysinv = NULL;
     M->csinv = NULL; M->csinvcsinv = NULL; M->Sinv = NULL; M->rkaux = NULL;
-    M->scaler = 0.0; M->buildhsd = NULL; M->rysinv = NULL;
+    M->scaler = 0.0; M->buildhsd = NULL; M->rysinv = NULL; M->gold = NULL;
     
     return retcode;
 }
@@ -660,7 +694,7 @@ extern DSDP_INT symSchurMatAlloc( DSDPSymSchur *M ) {
 extern DSDP_INT symSchurMatRegister( DSDPSymSchur *M, spsMat **S, dsMat **B, sdpMat **Adata, schurMat *Msdp,
                                   vec *asinv, vec *asinvrysinv, vec *asinvcsinv, double *csinvrysinv,
                                   double *csinv, double *csinvcsinv, double *rysinv, double *Ry,
-                                  rkMat **rkaux, DSDP_INT *phaseA, DSDP_INT *buildHSD ) {
+                                  rkMat **rkaux, DSDP_INT *phaseA, DSDP_INT *buildHSD, DSDP_INT *gold ) {
     // Register information into M
     DSDP_INT retcode = DSDP_RETCODE_OK;
     assert( S && B && Adata && Msdp && !M->Mready);
@@ -671,6 +705,7 @@ extern DSDP_INT symSchurMatRegister( DSDPSymSchur *M, spsMat **S, dsMat **B, sdp
     M->asinvcsinv = asinvcsinv; M->csinvrysinv = csinvrysinv;
     M->csinv = csinv; M->csinvcsinv = csinvcsinv; M->rkaux = rkaux;
     M->phaseA = phaseA; M->buildhsd = buildHSD; M->rysinv = rysinv;
+    M->gold = gold;
     
     return retcode;
 }
@@ -688,7 +723,7 @@ extern DSDP_INT symSchurMatFree( DSDPSymSchur *M ) {
     M->M          = NULL;  M->asinv       = NULL; M->asinvrysinv = NULL;
     M->asinvcsinv = NULL;  M->csinvrysinv = NULL; M->useTwo = FALSE;
     M->csinv      = NULL;  M->csinvcsinv  = NULL; M->scaler = 0.0;
-    M->buildhsd   = NULL;  M->rysinv      = NULL;
+    M->buildhsd   = NULL;  M->rysinv      = NULL; M->gold = NULL;
     
     return retcode;
 }
@@ -696,6 +731,7 @@ extern DSDP_INT symSchurMatFree( DSDPSymSchur *M ) {
 // Schur matrix re-ordering heuristic
 extern DSDP_INT DSDPSchurReorder( DSDPSymSchur *M ) {
     // Invoke the re-ordering heuristic for dense Schur matrix setup
+    
     DSDP_INT retcode = DSDP_RETCODE_OK;
     if (M->M->stype == SCHUR_TYPE_SPARSE) {
         return retcode;
@@ -743,6 +779,8 @@ extern DSDP_INT DSDPCheckSchurType( DSDPSymSchur *M ) {
     }
     return retcode;
 }
+
+// static double schurtime = 0.0;
 
 extern DSDP_INT DSDPSchurSetup( DSDPSymSchur *M ) {
     // Routine for setting up the Schur complement matrix M
@@ -894,6 +932,7 @@ extern DSDP_INT DSDPSchurSetup( DSDPSymSchur *M ) {
     DSDP_FREE(MM1); DSDP_FREE(MM2); DSDP_FREE(MM3); DSDP_FREE(MM4); DSDP_FREE(MM5);
     
 #else
+    
     // Clean up current values and invert blocks
     schurMatCleanup(M);
     schurMatGetSinv(M);
@@ -907,6 +946,9 @@ extern DSDP_INT DSDPSchurSetup( DSDPSymSchur *M ) {
             schurMatspsSetupBlock(M, i);
         }
     }
+    
+    // schurtime += (double) (clock() - t_start) / CLOCKS_PER_SEC;
+    // printf("| Schur time: %f \n", schurtime);
     
 #endif
     return retcode;
@@ -951,9 +993,11 @@ extern DSDP_INT arysinvSetup( DSDPSymSchur *M ) {
                 case MAT_TYPE_SPARSE:
                     res2 = spsRySinv((spsMat *) data, Sinv, &res1, Ry); break;
                 case MAT_TYPE_DENSE:
-                    res2 = denseSinvSolve(Sinv, (dsMat *) data, M->schurAux, &res1, Ry); break;
+                    res2 = denseSinvSolve2(Sinv, (dsMat *) data, &res1, Ry);
+                    // denseSinvSolve(Sinv, (dsMat *) data, M->schurAux, &res1, Ry);
+                    break;
                 case MAT_TYPE_RANKK:
-                    res2 = r1RySinv(((rkMat *) data)->data[0], Sinv, &res1, Ry); break;
+                    res2 = r1RySinv(((rkMat *) data)->data[0], Sinv, &res1, Ry, M->schurAux); break;
                 default:
                     assert( FALSE ); break;
             }
