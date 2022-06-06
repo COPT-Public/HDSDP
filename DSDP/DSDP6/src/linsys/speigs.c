@@ -256,7 +256,7 @@ extern DSDP_INT speigAlloc( speigfac *eigfac, DSDP_INT nmax ) {
 
 extern DSDP_INT speigSfac( speigfac *eigfac, spsMat *A,
                        double *eigvals, double *eigvecs ) {
-    if (A->nnz < 5 || A->nnz >= A->dim * 3 || A->nnz >= 15000) {
+    if (A->nnz < 10 || A->nnz >= A->dim * 3 || A->nnz >= 15000) {
         return FALSE;
     }
     DSDP_INT special = 0, nsub = 0; speigReset(eigfac);

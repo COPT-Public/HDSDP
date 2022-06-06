@@ -109,27 +109,27 @@ static void cgSolveCheck( CGSolver *cgSolver, vec *b, DSDP_INT firstInRound ) {
             cgSolver->nfailed += 1;
         }
         cgSolver->nused = 1000;
-        if (cgSolver->nfailed == 2) {
+        
+        if (cgSolver->nfailed == 10) {
             if (cgSolver->reuse != 50) {
                 printf("| Switch to CG Mode 1. \n");
             }
             dsdpCGSetPreReuse(cgSolver, 50);
         }
-        if (cgSolver->nfailed == 5) {
+        
+        if (cgSolver->nfailed == 20) {
             if (cgSolver->reuse != 20) {
                 printf("| Switch to CG Mode 2. \n");
             }
-            dsdpCGSetPreReuse(cgSolver, 20);
+            dsdpCGSetPreReuse(cgSolver, 10);
         }
-        if (cgSolver->nfailed == 6) {
+        
+        if (cgSolver->nfailed == 25) {
             printf("| CG is turned off due to ill-conditioning. Schur matrix might be indefinite. \n");
             cgSolver->M->isillCond = TRUE;
         }
         
-        if (firstInRound) {
-            dsdpCGprepareP(cgSolver);
-        }
-        
+        dsdpCGprepareP(cgSolver);
         dsdpCGRestoreRHS(cgSolver, b);
         dsdpCGSolve(cgSolver, b, cgSolver->x);
     }

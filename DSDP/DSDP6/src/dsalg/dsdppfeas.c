@@ -45,7 +45,7 @@ extern DSDP_INT DSDPPFeasPhase( HSDSolver *dsdpSolver ) {
     DSDP_INT i;
     for (i = 0; ; ++i) {
         
-        if (i == 300) { dsdpSolver->dperturb += 1e-06; }
+        if (i == 350) { dsdpSolver->dperturb += 1e-06; }
         if (i == 400) { dsdpSolver->dperturb += 1e-05; }
         if (i == 450) { dsdpSolver->dperturb += 1e-04; }
         if (i >= 480) { dsdpSolver->dperturb += 5e-05; }

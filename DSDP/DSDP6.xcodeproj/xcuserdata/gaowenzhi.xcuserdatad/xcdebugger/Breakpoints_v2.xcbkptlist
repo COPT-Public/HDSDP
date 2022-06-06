@@ -843,7 +843,7 @@
          BreakpointExtensionID = "Xcode.Breakpoint.FileBreakpoint">
          <BreakpointContent
             uuid = "27F8164B-2B46-4482-BE32-8F2B13E18D5D"
-            shouldBeEnabled = "Yes"
+            shouldBeEnabled = "No"
             condition = "i == 327"
             ignoreCount = "0"
             continueAfterRunningActions = "No"
@@ -854,38 +854,6 @@
             endingLineNumber = "417"
             landmarkName = "unknown"
             landmarkType = "0">
-            <Locations>
-               <Location
-                  uuid = "27F8164B-2B46-4482-BE32-8F2B13E18D5D - 36abe603cce00f6b"
-                  shouldBeEnabled = "Yes"
-                  ignoreCount = "0"
-                  continueAfterRunningActions = "No"
-                  symbolName = "DSDPConeCOPS_GET_MAXSTEP"
-                  moduleName = "DSDP6"
-                  usesParentBreakpointCondition = "Yes"
-                  urlString = "file:///Users/gaowenzhi/Desktop/gwz/DSDP/DSDP6/src/dsalg/dsdputils.c"
-                  startingColumnNumber = "9223372036854775807"
-                  endingColumnNumber = "9223372036854775807"
-                  startingLineNumber = "417"
-                  endingLineNumber = "417"
-                  offsetFromSymbolStart = "85">
-               </Location>
-               <Location
-                  uuid = "27F8164B-2B46-4482-BE32-8F2B13E18D5D - 437b698a263896c0"
-                  shouldBeEnabled = "Yes"
-                  ignoreCount = "0"
-                  continueAfterRunningActions = "No"
-                  symbolName = "getMaxSDPstep"
-                  moduleName = "DSDP6"
-                  usesParentBreakpointCondition = "Yes"
-                  urlString = "file:///Users/gaowenzhi/Desktop/gwz/DSDP/DSDP6/src/dsalg/dsdputils.c"
-                  startingColumnNumber = "9223372036854775807"
-                  endingColumnNumber = "9223372036854775807"
-                  startingLineNumber = "417"
-                  endingLineNumber = "417"
-                  offsetFromSymbolStart = "69">
-               </Location>
-            </Locations>
          </BreakpointContent>
       </BreakpointProxy>
       <BreakpointProxy
@@ -981,6 +949,22 @@
             startingLineNumber = "60"
             endingLineNumber = "60"
             landmarkName = "computePrimalX(dsdpSolver)"
+            landmarkType = "9">
+         </BreakpointContent>
+      </BreakpointProxy>
+      <BreakpointProxy
+         BreakpointExtensionID = "Xcode.Breakpoint.FileBreakpoint">
+         <BreakpointContent
+            uuid = "D532FA40-C039-4B30-9049-85632CF9FD4F"
+            shouldBeEnabled = "No"
+            ignoreCount = "0"
+            continueAfterRunningActions = "No"
+            filePath = "DSDP6/src/linsys/rankkmat.c"
+            startingColumnNumber = "9223372036854775807"
+            endingColumnNumber = "9223372036854775807"
+            startingLineNumber = "101"
+            endingLineNumber = "101"
+            landmarkName = "rkMatdenseUpdate(dAMat, rkBMat)"
             landmarkType = "9">
          </BreakpointContent>
       </BreakpointProxy>
