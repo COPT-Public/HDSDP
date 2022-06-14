@@ -37,7 +37,7 @@ static void pardisoNumFactorize( spsMat *S ) {
     // Invoke pardiso to do symbolic analysis and Cholesky factorization
     pardiso(S->pdsWorker, &maxfct, &mnum, &mtype, &phase, &S->dim,
             S->x, S->p, S->i, &idummy, &idummy, PARDISO_PARAMS_CHOLESKY,
-            &msglvl, NULL, NULL, &errorSolve);
+            &msglvl, NULL, NULL, &errorSolve) ;
     if (errorSolve) {
         printf("| [Pardiso Error]: Matrix factorization failed with"
                " code: "ID". Going without current factorization  |\n", errorSolve);
@@ -991,6 +991,17 @@ extern void spsMatFill( spsMat *sMat, double *fulldMat ) {
 extern void spsMatReset( spsMat *sMat ) {
     assert( sMat->dim > 0 && !sMat->factor ); // Never reset an (eigen) factorized sparse matrix
     memset(sMat->x, 0, sizeof(double) * sMat->nnz);
+}
+
+extern void spsMatGetSymbolic( spsMat *sMat, DSDP_INT *hash, DSDP_INT *firstNnz, DSDP_INT *nnzs ) {
+    DSDP_INT i, j, k, n = sMat->dim;
+    if (sMat->i[0] == 0 && sMat->p[1] > 0) { *firstNnz = TRUE; }
+    for (k = 0; k < sMat->nnz; ++k) {
+        i = sMat->i[k]; j = sMat->cidx[k];
+        if (packIdx(hash, n, i, j) == 0) {
+            packIdx(hash, n, i, j) = 1; *nnzs = *nnzs + 1;
+        }
+    }
 }
 
 // Debugging

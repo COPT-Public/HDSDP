@@ -113,8 +113,8 @@
             filePath = "DSDP6/src/dsalg/symschur.c"
             startingColumnNumber = "9223372036854775807"
             endingColumnNumber = "9223372036854775807"
-            startingLineNumber = "228"
-            endingLineNumber = "228"
+            startingLineNumber = "218"
+            endingLineNumber = "218"
             landmarkName = "schurM1rowSetup(M, blockid, row)"
             landmarkType = "9">
          </BreakpointContent>
@@ -129,8 +129,8 @@
             filePath = "DSDP6/src/dsalg/symschur.c"
             startingColumnNumber = "9223372036854775807"
             endingColumnNumber = "9223372036854775807"
-            startingLineNumber = "253"
-            endingLineNumber = "253"
+            startingLineNumber = "243"
+            endingLineNumber = "243"
             landmarkName = "schurM1rowSetup(M, blockid, row)"
             landmarkType = "9">
          </BreakpointContent>
@@ -145,8 +145,8 @@
             filePath = "DSDP6/src/dsalg/symschur.c"
             startingColumnNumber = "9223372036854775807"
             endingColumnNumber = "9223372036854775807"
-            startingLineNumber = "252"
-            endingLineNumber = "252"
+            startingLineNumber = "242"
+            endingLineNumber = "242"
             landmarkName = "schurM1rowSetup(M, blockid, row)"
             landmarkType = "9">
          </BreakpointContent>
@@ -161,8 +161,8 @@
             filePath = "DSDP6/src/dsalg/symschur.c"
             startingColumnNumber = "9223372036854775807"
             endingColumnNumber = "9223372036854775807"
-            startingLineNumber = "231"
-            endingLineNumber = "231"
+            startingLineNumber = "221"
+            endingLineNumber = "221"
             landmarkName = "schurM1rowSetup(M, blockid, row)"
             landmarkType = "9">
          </BreakpointContent>
@@ -177,8 +177,8 @@
             filePath = "DSDP6/src/dsalg/symschur.c"
             startingColumnNumber = "9223372036854775807"
             endingColumnNumber = "9223372036854775807"
-            startingLineNumber = "235"
-            endingLineNumber = "235"
+            startingLineNumber = "225"
+            endingLineNumber = "225"
             landmarkName = "schurM1rowSetup(M, blockid, row)"
             landmarkType = "9">
          </BreakpointContent>
@@ -209,8 +209,8 @@
             filePath = "DSDP6/src/dsalg/symschur.c"
             startingColumnNumber = "9223372036854775807"
             endingColumnNumber = "9223372036854775807"
-            startingLineNumber = "597"
-            endingLineNumber = "597"
+            startingLineNumber = "587"
+            endingLineNumber = "587"
             landmarkName = "schurM5rowSetup(M, blockid, row)"
             landmarkType = "9">
          </BreakpointContent>
@@ -225,8 +225,8 @@
             filePath = "DSDP6/src/dsalg/symschur.c"
             startingColumnNumber = "9223372036854775807"
             endingColumnNumber = "9223372036854775807"
-            startingLineNumber = "998"
-            endingLineNumber = "998"
+            startingLineNumber = "1000"
+            endingLineNumber = "1000"
             landmarkName = "DSDPSchurSetup(M)"
             landmarkType = "9">
          </BreakpointContent>
@@ -273,8 +273,8 @@
             filePath = "DSDP6/src/dsalg/symschur.c"
             startingColumnNumber = "9223372036854775807"
             endingColumnNumber = "9223372036854775807"
-            startingLineNumber = "614"
-            endingLineNumber = "614"
+            startingLineNumber = "604"
+            endingLineNumber = "604"
             landmarkName = "schurM5rowSetup(M, blockid, row)"
             landmarkType = "9">
          </BreakpointContent>
@@ -289,8 +289,8 @@
             filePath = "DSDP6/src/dsalg/symschur.c"
             startingColumnNumber = "9223372036854775807"
             endingColumnNumber = "9223372036854775807"
-            startingLineNumber = "616"
-            endingLineNumber = "616"
+            startingLineNumber = "606"
+            endingLineNumber = "606"
             landmarkName = "schurM5rowSetup(M, blockid, row)"
             landmarkType = "9">
          </BreakpointContent>
@@ -385,8 +385,8 @@
             filePath = "DSDP6/src/dsalg/symschur.c"
             startingColumnNumber = "9223372036854775807"
             endingColumnNumber = "9223372036854775807"
-            startingLineNumber = "208"
-            endingLineNumber = "208"
+            startingLineNumber = "198"
+            endingLineNumber = "198"
             landmarkName = "schurM1rowSetup(M, blockid, row)"
             landmarkType = "9">
          </BreakpointContent>
@@ -834,8 +834,8 @@
             filePath = "DSDP6/src/linsys/rankkmat.c"
             startingColumnNumber = "9223372036854775807"
             endingColumnNumber = "9223372036854775807"
-            startingLineNumber = "108"
-            endingLineNumber = "108"
+            startingLineNumber = "105"
+            endingLineNumber = "105"
             landmarkName = "rkMatdenseUpdate(dAMat, rkBMat)"
             landmarkType = "9">
          </BreakpointContent>
@@ -914,25 +914,9 @@
             filePath = "DSDP6/src/linsys/rankkmat.c"
             startingColumnNumber = "9223372036854775807"
             endingColumnNumber = "9223372036854775807"
-            startingLineNumber = "101"
-            endingLineNumber = "101"
+            startingLineNumber = "98"
+            endingLineNumber = "98"
             landmarkName = "rkMatdenseUpdate(dAMat, rkBMat)"
-            landmarkType = "9">
-         </BreakpointContent>
-      </BreakpointProxy>
-      <BreakpointProxy
-         BreakpointExtensionID = "Xcode.Breakpoint.FileBreakpoint">
-         <BreakpointContent
-            uuid = "7CD0E9E8-0A28-411D-96C6-ADAB692391D0"
-            shouldBeEnabled = "Yes"
-            ignoreCount = "0"
-            continueAfterRunningActions = "No"
-            filePath = "DSDP6/src/presolve/dsdppresolve.c"
-            startingColumnNumber = "9223372036854775807"
-            endingColumnNumber = "9223372036854775807"
-            startingLineNumber = "382"
-            endingLineNumber = "382"
-            landmarkName = "getBlockStatistic(sdpData)"
             landmarkType = "9">
          </BreakpointContent>
       </BreakpointProxy>
@@ -965,6 +949,38 @@
             startingLineNumber = "623"
             endingLineNumber = "623"
             landmarkName = "spsMatGetX(S, dS, LinvSLTinv)"
+            landmarkType = "9">
+         </BreakpointContent>
+      </BreakpointProxy>
+      <BreakpointProxy
+         BreakpointExtensionID = "Xcode.Breakpoint.FileBreakpoint">
+         <BreakpointContent
+            uuid = "89494BBF-59EC-4935-82F5-53AA80DA8453"
+            shouldBeEnabled = "No"
+            ignoreCount = "0"
+            continueAfterRunningActions = "No"
+            filePath = "DSDP6/src/dsalg/symschur.c"
+            startingColumnNumber = "9223372036854775807"
+            endingColumnNumber = "9223372036854775807"
+            startingLineNumber = "736"
+            endingLineNumber = "736"
+            landmarkName = "schurMatSpsReorder(M)"
+            landmarkType = "9">
+         </BreakpointContent>
+      </BreakpointProxy>
+      <BreakpointProxy
+         BreakpointExtensionID = "Xcode.Breakpoint.FileBreakpoint">
+         <BreakpointContent
+            uuid = "491FB650-C9B3-4C7B-86E9-A9A0C41ED0E5"
+            shouldBeEnabled = "Yes"
+            ignoreCount = "0"
+            continueAfterRunningActions = "No"
+            filePath = "DSDP6/src/presolve/dsdppresolve.c"
+            startingColumnNumber = "9223372036854775807"
+            endingColumnNumber = "9223372036854775807"
+            startingLineNumber = "503"
+            endingLineNumber = "503"
+            landmarkName = "preSDPgetSymbolic(dsdpSolver, blockid)"
             landmarkType = "9">
          </BreakpointContent>
       </BreakpointProxy>

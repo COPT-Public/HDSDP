@@ -93,6 +93,7 @@ extern void spsMatFillLower    ( spsMat *sMat, double *lowFullMat );
 extern void spsMatFillLower2   ( spsMat *sMat, dsMat *lowMat    );
 extern void spsMatFill         ( spsMat *sMat, double *fulldMat );
 extern void spsMatReset        ( spsMat *sMat );
+extern void spsMatGetSymbolic  ( spsMat *sMat, DSDP_INT *hash, DSDP_INT *firstNnz, DSDP_INT *nnzs );
 extern void spsMatView         ( spsMat *sMat );
 extern void     spsMatLinvView     ( spsMat *S );
 extern void     spsMatInvView      ( spsMat *S );

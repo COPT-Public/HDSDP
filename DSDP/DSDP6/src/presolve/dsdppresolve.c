@@ -522,12 +522,13 @@ static DSDP_INT preSDPgetSymbolic( HSDSolver *dsdpSolver, DSDP_INT blockid ) {
     } else {
         for (i = 0; i < sdpBlock->nrkMat; ++i) {
             rkdata = (rkMat *) sdpBlock->sdpData[matIdx[i]];
-            for (j = 0; j < rkdata->rank; ++j) {
-                r1data = rkdata->data[j];
-                if (r1data->nnz > denseThresh * dim) {
-                    useDenseS = TRUE; break;
-                }
-            }
+            rkMatCheckSparsity(rkdata, &useDenseS, denseThresh);
+//            for (j = 0; j < rkdata->rank; ++j) {
+//                r1data = rkdata->data[j];
+//                if (r1data->nnz > denseThresh * dim) {
+//                    useDenseS = TRUE; break;
+//                }
+//            }
             if (useDenseS) { break; }
         }
     }
@@ -538,14 +539,15 @@ static DSDP_INT preSDPgetSymbolic( HSDSolver *dsdpSolver, DSDP_INT blockid ) {
         matIdx = sdpBlock->spsMatIdx;
         for (i = 0; i < sdpBlock->nspsMat; ++i) {
             spsdata = (spsMat *) sdpBlock->sdpData[matIdx[i]];
-            if ((spsdata->i[0] == 0) && (spsdata->p[1] > 0)) { isfirstNz = TRUE; }
-            for (j = 0; j < dim; ++j) {
-                for (k = spsdata->p[j]; k < spsdata->p[j + 1]; ++k) {
-                    if (packIdx(hash, dim, spsdata->i[k], j) == 0) {
-                        packIdx(hash, dim, spsdata->i[k], j) = 1; nnz += 1;
-                    }
-                }
-            }
+            spsMatGetSymbolic(spsdata, hash, &isfirstNz, &nnz);
+//            if ((spsdata->i[0] == 0) && (spsdata->p[1] > 0)) { isfirstNz = TRUE; }
+//            for (j = 0; j < dim; ++j) {
+//                for (k = spsdata->p[j]; k < spsdata->p[j + 1]; ++k) {
+//                    if (packIdx(hash, dim, spsdata->i[k], j) == 0) {
+//                        packIdx(hash, dim, spsdata->i[k], j) = 1; nnz += 1;
+//                    }
+//                }
+//            }
             if (nnz > denseThresh * nhash) { useDenseS = TRUE; break; }
         }
         
@@ -554,23 +556,27 @@ static DSDP_INT preSDPgetSymbolic( HSDSolver *dsdpSolver, DSDP_INT blockid ) {
             matIdx = sdpBlock->rkMatIdx;
             for (i = 0; i < sdpBlock->nrkMat; ++i) {
                 rkdata = (rkMat *) sdpBlock->sdpData[matIdx[i]];
-                for (r = 0; r < rkdata->rank; ++r) {
-                    r1data = rkdata->data[r];
-                    if (r1data->nzIdx[0] == 0) { isfirstNz = TRUE; }
-                    for (j = 0; j < r1data->nnz; ++j) {
-                        for (k = 0; k <= j; ++k) {
-                            if (packIdx(hash, dim, r1data->nzIdx[j],
-                                        r1data->nzIdx[k]) == 0) {
-                                packIdx(hash, dim, r1data->nzIdx[j],
-                                        r1data->nzIdx[k]) = 1;
-                                nnz += 1;
-                            }
-                        }
-                        if (nnz > denseThresh * nhash) {
-                            useDenseS = TRUE; break;
-                        }
-                    }
+                rkMatGetSymbolic(rkdata, hash, &nnz);
+                if (nnz > denseThresh * nhash) {
+                    useDenseS = TRUE; break;
                 }
+//                for (r = 0; r < rkdata->rank; ++r) {
+//                    r1data = rkdata->data[r];
+//                    if (r1data->nzIdx[0] == 0) { isfirstNz = TRUE; }
+//                    for (j = 0; j < r1data->nnz; ++j) {
+//                        for (k = 0; k <= j; ++k) {
+//                            if (packIdx(hash, dim, r1data->nzIdx[j],
+//                                        r1data->nzIdx[k]) == 0) {
+//                                packIdx(hash, dim, r1data->nzIdx[j],
+//                                        r1data->nzIdx[k]) = 1;
+//                                nnz += 1;
+//                            }
+//                        }
+//                        if (nnz > denseThresh * nhash) {
+//                            useDenseS = TRUE; break;
+//                        }
+//                    }
+//                }
             }
         }
     }

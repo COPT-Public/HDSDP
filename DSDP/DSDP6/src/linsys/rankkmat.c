@@ -16,16 +16,13 @@ extern DSDP_INT rkMatInit( rkMat *R ) {
 
 extern DSDP_INT rkMatAllocIter( rkMat *R, DSDP_INT n ) {
     
-    assert( n > 0 );
     R->dim = n; R->isdata = FALSE; R->rank = n;
     R->data = (r1Mat **) calloc(n, sizeof(r1Mat *));
     if (!R->data) return DSDP_RETCODE_FAILED;
     r1Mat *r1data = NULL;
     for (DSDP_INT i = 0; i < n; ++i) {
         r1data = (r1Mat *) calloc(1, sizeof(r1Mat));
-        R->data[i] = r1data;
-        r1MatInit(r1data);
-        r1MatAlloc(r1data, n);
+        R->data[i] = r1data; r1MatInit(r1data); r1MatAlloc(r1data, n);
     }
     
     return DSDP_RETCODE_OK;
@@ -124,9 +121,7 @@ extern void rkMatdenseTrace( rkMat *R, dsMat *A, double *trace ) {
 
 extern void rkMatdiagTrace( rkMat *R, double diag, double *trace ) {
     // Compute trace( \sum_i d_i * a_i * a_i' diag ) = \sum_i diag * d_i * norm(a_i)^2
-    if (diag == 0.0) {
-        *trace = 0.0;
-    }
+    if (diag == 0.0) { *trace = 0.0; }
     double res = 0.0, tmp; DSDP_INT rank = R->rank;
     for (DSDP_INT i = 0; i < rank; ++i) {
         r1MatdiagTrace(R->data[i], diag, &tmp); res += tmp;
@@ -175,30 +170,17 @@ extern DSDP_INT rkMatFnorm( rkMat *R, double *fnrm ) {
 }
 
 extern DSDP_INT rkMatScale( rkMat *R, double a ) {
-    
-    for (DSDP_INT i = 0; i < R->rank; ++i) {
-        r1MatScale(R->data[i], a);
-    }
+    for (DSDP_INT i = 0; i < R->rank; ++i) { r1MatScale(R->data[i], a); }
     return DSDP_RETCODE_OK;
 }
 
 extern DSDP_INT rkMatRscale( rkMat *R, double r ) {
-    
-    for (DSDP_INT i = 0; i < R->rank; ++i) {
-        r1MatRscale(R->data[i], r);
-    }
-    
+    for (DSDP_INT i = 0; i < R->rank; ++i) { r1MatRscale(R->data[i], r); }
     return DSDP_RETCODE_OK;
 }
 
 extern DSDP_INT rkMatisRank1( rkMat *R, DSDP_INT *isRank1 ) {
-    
-    if (R->rank == 1) {
-        *isRank1 = TRUE;
-    } else {
-        *isRank1 = FALSE;
-    }
-    
+    *isRank1 = (R->rank == 1) ? TRUE : FALSE;
     return DSDP_RETCODE_OK;
 }
 
@@ -207,13 +189,23 @@ extern DSDP_INT rkMatGetRank( rkMat *R ) {
 }
 
 extern r1Mat *rkMatGetBase( rkMat *R, DSDP_INT i) {
-    assert( i < R->rank );
     return R->data[i];
 }
 
+extern void rkMatCheckSparsity( rkMat *R, DSDP_INT *isdense, double thresh ) {
+    for (DSDP_INT i = 0; i < R->rank; ++i) {
+        r1MatCheckSparsity(R->data[i], isdense, thresh);
+        if (isdense) { break; }
+    }
+}
+
+extern void rkMatGetSymbolic( rkMat *R, DSDP_INT *hash, DSDP_INT *nnzs ) {
+    for (DSDP_INT i = 0; i < R->rank; ++i) {
+        r1MatGetSymbolic(R->data[i], hash, nnzs);
+    }
+}
+
 extern DSDP_INT rkMatView( rkMat *R ) {
-    
-    assert( R->dim );
     
     printf("Matrix View: \n");
     printf("Matrix rank "ID" : \n", R->rank);

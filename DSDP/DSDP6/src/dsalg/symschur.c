@@ -13,8 +13,9 @@ static char etype[] = "Advanced Schur matrix setup";
 static DSDP_INT schurBlockContract( sdpMat *sdpData ) {
     // Contract a SDP block if it only contains few entries for the Schur matrix
     DSDP_INT retcode = DSDP_RETCODE_OK;
-    DSDP_INT nzero = sdpData->nzeroMat, m = sdpData->dimy, nnzmats = m + 1 - nzero, i, j;
-    assert( nzero >= 0.8 * m);
+    DSDP_INT nzero = sdpData->nzeroMat, m = sdpData->dimy, nnzmats, i, j;
+    nnzmats = (sdpData->types[m] == MAT_TYPE_ZERO ) ? m + 1 - nzero : m - nzero;
+    assert( nzero >= 0.8 * m );
     DSDP_INT *types = sdpData->types; void **data = sdpData->sdpData;
     void **newdata = (void **) calloc(nnzmats, sizeof(void *));
     
@@ -34,7 +35,7 @@ static DSDP_INT schurBlockContract( sdpMat *sdpData ) {
     DSDP_FREE(sdpData->types); DSDP_FREE(sdpData->sdpData);
     sdpData->types = newtypes; sdpData->sdpData = newdata;
     sdpData->nzIdx = nzidx; sdpData->nzeroMat = nnzmats; // nzero now stands for nnz
-    sdpData->schurspIdx = (DSDP_INT *) calloc(nnzmats, sizeof(DSDP_INT));
+    sdpData->schurspIdx = (DSDP_INT *) calloc(nsym(nnzmats), sizeof(DSDP_INT));
     return retcode;
 }
 
@@ -47,12 +48,8 @@ static DSDP_INT getScore( DSDP_INT *ranks, DSDP_INT *nnzs, DSDP_INT *perm,
     double d1, d2, d3, d4, d5, nsqr = n * n, ncbe = n * nsqr,\
            sumnnz = 0.0, rsigma = ranks[k], best = SCHUR_M1;
     double m1m5 = 0.0, m1m2 = 0.0;
-    
     // On exit, MX is set 10 * MX12 + M12345
-    for (i = idx; i < m + 1; ++i) {
-        sumnnz += nnzs[i];
-    }
-  
+    for (i = idx; i < m + 1; ++i) { sumnnz += nnzs[i]; }
     // TODO: Change the way to compute d1
     d1 = rsigma * (2 * nsqr) + KAPPA * sumnnz;
     // d2 = rsigma * (nsqr + 2 * KAPPA * sumnnz);
@@ -62,8 +59,6 @@ static DSDP_INT getScore( DSDP_INT *ranks, DSDP_INT *nnzs, DSDP_INT *perm,
     d3 = n * KAPPA * nnzs[idx] + ncbe + KAPPA * sumnnz + ncbe / m;
     d4 = n * KAPPA * nnzs[idx] + KAPPA * (n + 1) * sumnnz + ncbe / m;
     d5 = KAPPA * (2 * KAPPA * nnzs[idx] + 1) * sumnnz + ncbe / m;
-        
-    // printf("d1: %f   d2: %f \n", d1, d2);
     // Get better of d1 and d2
     j = 0;
     if (d1 < d2) {
@@ -71,13 +66,10 @@ static DSDP_INT getScore( DSDP_INT *ranks, DSDP_INT *nnzs, DSDP_INT *perm,
     } else {
         best = SCHUR_M2; m1m2 = d2; m1m5 = d2;
     }
-    
     j += best * 10;
-    
     if (d3 < m1m5) { best = SCHUR_M3; m1m5 = d3; }
     if (d4 < m1m5) { best = SCHUR_M4; m1m5 = d4; }
     if (d5 < m1m5) { best = SCHUR_M5; m1m5 = d5; }
-    
     *M1M2 = m1m2; *M1M5 = m1m5; j += best; *MX = j;
 
     return DSDP_RETCODE_OK;
@@ -146,9 +138,7 @@ static DSDP_INT schurBlockAnalysis( sdpMat *Adata, DSDP_INT *permk, DSDP_INT *MX
     }
     
     *useM1M2 = M1M2;
-    DSDP_FREE(scoreM1M2); DSDP_FREE(scoreM1M5);
-    DSDP_FREE(ranks); DSDP_FREE(nnzs);
-    
+    DSDP_FREE(scoreM1M2); DSDP_FREE(scoreM1M5); DSDP_FREE(ranks); DSDP_FREE(nnzs);
     return retcode;
 }
 
@@ -714,18 +704,19 @@ static DSDP_INT schurMatReorder( DSDPSymSchur *M ) {
     return retcode;
 }
 
-#define SCHUR_BUFFER 100000
+#define SCHUR_BUFFER 10000
 static DSDP_INT schurMatSpsReorder( DSDPSymSchur *M ) {
     // Implement the sparse Schur matrix re-ordering technique
     DSDP_INT retcode = DSDP_RETCODE_OK;
     
     assert( M->M->stype == SCHUR_TYPE_SPARSE );
     DSDP_INT m = M->m, nblock = M->nblock;
-    DSDP_INT *colNnz = M->MX[0], *start = M->useTwo, i, j, k;
+    DSDP_INT *start = M->useTwo, i, j, k;
     sdpMat **Adata = M->Adata;
     memset(start, 0, sizeof(DSDP_INT) * nblock);
-    DSDP_INT *Mp, *Mi, schurNnz = 0, memNnz = MAX(2 * m, SCHUR_BUFFER);
-    double *Mx;
+    DSDP_INT *Mp, *Mi, *colNnz, schurNnz = 0, memNnz = MAX(2 * m, SCHUR_BUFFER);
+    
+    colNnz = (DSDP_INT *) calloc(m + 1, sizeof(DSDP_INT));
     Mp = (DSDP_INT *) calloc(m + 1, sizeof(DSDP_INT));
     Mi = (DSDP_INT *) calloc(memNnz, sizeof(DSDP_INT));
     
@@ -736,9 +727,9 @@ static DSDP_INT schurMatSpsReorder( DSDPSymSchur *M ) {
             start[k] = sdpMatScatterNnz(Adata[k], start[k], i, colNnz);
         }
         // Accumulate the index
-        j = 0; if (colNnz[j]) { Mi[schurNnz + j] = j; }
+        j = k = 0; if (colNnz[j]) { Mi[schurNnz + k] = j; k += 1;}
         for (j = 1; j < m; ++j) {
-            if (colNnz[j]) { Mi[schurNnz + j] = j; }
+            if (colNnz[j]) { Mi[schurNnz + k] = j; k += 1;}
             colNnz[j] = colNnz[j] + colNnz[j - 1];
         }
         // Associate the index
@@ -748,15 +739,23 @@ static DSDP_INT schurMatSpsReorder( DSDPSymSchur *M ) {
         // Count nnzs
         schurNnz += colNnz[m - 1];
         if (memNnz <= schurNnz + m) {
-            memNnz += m;
-            Mi = (DSDP_INT *) realloc(Mi, sizeof(DSDP_INT) * memNnz);
+            memNnz += m; Mi = (DSDP_INT *) realloc(Mi, sizeof(DSDP_INT) * memNnz);
         }
+        Mp[i + 1] = schurNnz;
+    }
+    
+    for (i = 0; i < m; ++i) {
+        assert( Mi[Mp[i]] == i );
     }
     // Finish setup
+    printf("| - Schur sparsity: %d out of %d. \n", schurNnz, nsym(m));
     Mi = (DSDP_INT *) realloc(Mi, sizeof(DSDP_INT) * schurNnz);
-    Mx = (double   *) calloc(schurNnz, sizeof(double));
-    M->M->spsM->p = Mp; M->M->spsM->i = Mi; M->M->spsM->x = Mx;
+    retcode = spsMatAllocData(M->M->spsM, m, schurNnz);
+    memcpy(M->M->spsM->p, Mp, sizeof(DSDP_INT) * (m + 1));
+    memcpy(M->M->spsM->i, Mi, sizeof(DSDP_INT) * schurNnz);
+    spsMatSymbolic(M->M->spsM);
     
+    DSDP_FREE(colNnz); DSDP_FREE(Mp); DSDP_FREE(Mi);
     return retcode;
 }
 
@@ -792,9 +791,7 @@ extern DSDP_INT symSchurMatAlloc( DSDPSymSchur *M ) {
     M->scaler = 0.0;
     
     for (DSDP_INT i = 0; i < M->nblock; ++i) {
-        M->perms[i] = (DSDP_INT *) calloc(M->m + 1, sizeof(DSDP_INT));
-        M->MX[i] = (DSDP_INT *) calloc(M->m + 1, sizeof(DSDP_INT));
-        M->Sinv[i] = NULL;
+        M->perms[i] = NULL; M->MX[i] = NULL; M->Sinv[i] = NULL;
     }
 
     return retcode;
@@ -850,16 +847,21 @@ extern DSDP_INT DSDPCheckSchurType( DSDPSymSchur *M ) {
     DSDP_INT retcode = DSDP_RETCODE_OK;
     
     if (M->nblock <= 100 || *M->lpSet) {
+        for (DSDP_INT i = 0; i < M->nblock; ++i) {
+            M->perms[i] = (DSDP_INT *) calloc(M->m + 1, sizeof(DSDP_INT));
+            M->MX[i] = (DSDP_INT *) calloc(M->m + 1, sizeof(DSDP_INT));
+            M->Sinv[i] = NULL;
+        }
         retcode = schurMatselectType(M->M, SCHUR_TYPE_DENSE);
     } else {
-        printf("| Found many blocks. Trying sparse Schur Matrix \n");
+        printf("| - Found many blocks. Trying sparse Schur Matrix \n");
         DSDP_INT minblknnz = M->m, i; sdpMat *data;
         for (i = 0; i < M->nblock; ++i) {
             data = (sdpMat *) M->Adata[i];
             minblknnz = MIN(minblknnz, data->nzeroMat);
         }
         if (minblknnz >= M->m * 0.8) {
-            printf("| Maximum block density %3.2f%%."
+            printf("| - Maximum block density %3.2f%%."
                    " Using sparse Schur matrix \n",
                    100.0 - (double) 100 * minblknnz / M->m);
         }

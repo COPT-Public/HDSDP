@@ -311,13 +311,11 @@ extern DSDP_INT sdpMatSetData( sdpMat *sdpData, DSDP_INT *Ap, DSDP_INT *Ai, doub
 extern DSDP_INT sdpMatScatterNnz( sdpMat *sdpData, DSDP_INT start, DSDP_INT col, DSDP_INT *colNnz ) {
     // Scatter nonzero pattern of a block
     DSDP_INT i, j, *nzIdx = sdpData->nzIdx;
-    
-    DSDP_INT counter = 0;
     for (i = start; i < sdpData->nzeroMat; ++i) {
         if (nzIdx[i] >= col) break;
-        counter += 1;
     }
-    assert( counter <= 1 );
+    
+    if (i >= sdpData->nzeroMat) { return i; }
     if (sdpData->nzIdx[i] == col) {
         for (j = i; j < sdpData->nzeroMat; ++j) {
             colNnz[nzIdx[j]] = 1;
@@ -328,6 +326,7 @@ extern DSDP_INT sdpMatScatterNnz( sdpMat *sdpData, DSDP_INT start, DSDP_INT col,
 
 extern void sdpMatSetSchurIndex( sdpMat *sdpData, DSDP_INT start, DSDP_INT col, DSDP_INT *csum, DSDP_INT ishift ) {
     // Associate the index for a block
+    if (start >= sdpData->nzeroMat ) return;
     if (col != sdpData->nzIdx[start]) return;
     DSDP_INT i, nnzmat = sdpData->nzeroMat;
     DSDP_INT *schurIdx = sdpData->schurspIdx;

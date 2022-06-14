@@ -40,6 +40,9 @@ extern DSDP_INT r1MatFnorm       ( r1Mat *x, double *fnrm     );
 extern double   r1MatOneNorm     ( r1Mat *x                   );
 extern DSDP_INT r1MatScale       ( r1Mat *x, double a         );
 extern DSDP_INT r1MatRscale      ( r1Mat *x, double r         );
+extern void     r1MatGetNnzs     ( r1Mat *x                   );
+extern void     r1MatCheckSparsity ( r1Mat *x, DSDP_INT *isdense, double thresh );
+extern void     r1MatGetSymbolic ( r1Mat *x, DSDP_INT *hash, DSDP_INT *nnzs );
 extern DSDP_INT r1MatView        ( r1Mat *x );
 
 #ifdef __cplusplus

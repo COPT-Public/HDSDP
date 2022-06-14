@@ -398,6 +398,22 @@ extern DSDP_INT r1MatRscale( r1Mat *x, double r ) {
     return DSDP_RETCODE_OK;
 }
 
+extern void r1MatCheckSparsity( r1Mat *x, DSDP_INT *isdense, double thresh ) {
+    if (x->nnz > thresh * x->dim) { *isdense = TRUE; }
+}
+
+extern void r1MatGetSymbolic( r1Mat *x, DSDP_INT *hash, DSDP_INT *nnzs ) {
+    
+    DSDP_INT i, j, n = x->dim;
+    for (i = 0; i < x->nnz; ++i) {
+        for (j = 0; j <= i; ++j) {
+            if (packIdx(hash, n, x->nzIdx[i], x->nzIdx[j]) == 0) {
+                packIdx(hash, n, x->nzIdx[i], x->nzIdx[j]) = 1; *nnzs = *nnzs + 1;
+            }
+        }
+    }
+}
+
 extern DSDP_INT r1MatView( r1Mat *x ) {
     
     printf("Matrix View: \n");
