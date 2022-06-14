@@ -20,12 +20,17 @@ static DSDP_INT schurMatselectTypeDense( schurMat *sMat ) {
     return retcode;
 }
 
-static DSDP_INT schurMatselectTypeSparse( schurMat *sMat, DSDP_INT *nnzIdx ) {
+static DSDP_INT schurMatselectTypeSparse( schurMat *sMat ) {
     // Transform the index array into CSC format
     DSDP_INT retcode = DSDP_RETCODE_OK;
     
     sMat->spsM = (spsMat *) calloc(1, sizeof(spsMat));
     spsMatInit(sMat->spsM);
+    if (!sMat->spsM) {
+        retcode = DSDP_RETCODE_FAILED;
+    }
+    
+    /*
     // Count total number of nonzeros
     DSDP_INT nnzs = 0, m = sMat->m, i, j;
     for (i = 0; i < nsym(m); ++i) {
@@ -45,6 +50,7 @@ static DSDP_INT schurMatselectTypeSparse( schurMat *sMat, DSDP_INT *nnzIdx ) {
     assert(nnzs == sMat->spsM->nnz);
     // Symbolic factorization for the Schur matrix
     spsMatSymbolic(sMat->spsM);
+     */
     return retcode;
 }
 
@@ -64,7 +70,7 @@ extern DSDP_INT schurMatAlloc( schurMat *sMat, DSDP_INT dim ) {
     return retcode;
 }
 
-extern DSDP_INT schurMatselectType( schurMat *sMat, DSDP_INT stype, DSDP_INT *nnzIdx ) {
+extern DSDP_INT schurMatselectType( schurMat *sMat, DSDP_INT stype ) {
     // Allocate data dependent type for the schur matrix
     // Also filling in the diag vector by the addresses
     DSDP_INT retcode = DSDP_RETCODE_OK;
@@ -72,7 +78,7 @@ extern DSDP_INT schurMatselectType( schurMat *sMat, DSDP_INT stype, DSDP_INT *nn
     if (stype == SCHUR_TYPE_DENSE) {
         retcode = schurMatselectTypeDense(sMat);
     } else {
-        retcode = schurMatselectTypeSparse(sMat, nnzIdx);
+        retcode = schurMatselectTypeSparse(sMat);
     }
     return retcode;
 }

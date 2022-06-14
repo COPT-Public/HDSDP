@@ -710,7 +710,6 @@ extern DSDP_INT DSDPOptimize( HSDSolver *dsdpSolver ) {
     DSDP_INT gotoB = FALSE;
     
     DSDPStats *stat = &dsdpSolver->dsdpStats;
-//    lpMatView(dsdpSolver->lpData);
     if (!dsdpSolver->dObj) {
         retcode = DSDPSetObj(dsdpSolver, NULL);
         checkCode;

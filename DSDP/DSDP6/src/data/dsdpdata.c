@@ -51,17 +51,11 @@ static DSDP_INT sdpMatIAllocByType( sdpMat *sdpData, DSDP_INT k, DSDP_INT *Ai,
     assert( k < m + 1 );
     void *userdata = NULL;
     
-#ifdef SHOWALL
-        printf("Constraint "ID" \n", k);
-#endif
-    
     // Check sparsity
     if (nnz == 0) {
         sdpData->nzeroMat += 1;
         sdpData->types[k] = MAT_TYPE_ZERO;
-#ifdef SHOWALL
-        printf("Zero Matrix \n");
-#endif
+        
     } else if (sdpData->types[k] == MAT_TYPE_RANKK) {
         // Rank 1
         sdpData->nrkMat += 1;
@@ -103,12 +97,8 @@ static DSDP_INT sdpMatIAllocByType( sdpMat *sdpData, DSDP_INT k, DSDP_INT *Ai,
         rkMatAllocAndSetData(data, n, 1, &r1data->sign, r1data->x);
         r1MatFree(r1data);
         DSDP_FREE(r1data);
-#ifdef SHOWALL
-        rkMatView(data);
-#endif
         userdata = (void *) data;
         
-    // TODO: Change the threshold
     } else if (((nnz <= denseThresh * nsym(n)) && (sdpData->types[k] == MAT_TYPE_UNKNOWN)) ||
                (sdpData->types[k] == MAT_TYPE_SPARSE)) {
         
@@ -124,10 +114,8 @@ static DSDP_INT sdpMatIAllocByType( sdpMat *sdpData, DSDP_INT k, DSDP_INT *Ai,
         if (n > 10000) {
             DSDP_INT i;
             for (i = 0; i < n - n % 4; i+=4) {
-                data->p[i + 1] = nnz;
-                data->p[i + 2] = nnz;
-                data->p[i + 3] = nnz;
-                data->p[i + 4] = nnz;
+                data->p[i + 1] = nnz; data->p[i + 2] = nnz;
+                data->p[i + 3] = nnz; data->p[i + 4] = nnz;
             }
             for (i = n - n % 4; i < n; ++i) {
                 data->p[i + 1] = nnz;
@@ -139,7 +127,6 @@ static DSDP_INT sdpMatIAllocByType( sdpMat *sdpData, DSDP_INT k, DSDP_INT *Ai,
         }
         
         memcpy(data->x, Ax, sizeof(double) * nnz);
-        
         DSDP_INT rowidx = 0, where = 0, colnnz = 0, idxthresh = n;
         data->p[0] = 0;
         
@@ -152,10 +139,6 @@ static DSDP_INT sdpMatIAllocByType( sdpMat *sdpData, DSDP_INT k, DSDP_INT *Ai,
             colnnz += 1; data->i[i] = rowidx - idxthresh + n;
             data->cidx[i] = where; // Record column index
         }
-        
-#ifdef SHOWALL
-        spsMatView(data);
-#endif
         userdata = (void *) data;
         
     } else {
@@ -178,11 +161,6 @@ static DSDP_INT sdpMatIAllocByType( sdpMat *sdpData, DSDP_INT k, DSDP_INT *Ai,
         for (DSDP_INT i = nnz - nnz % 4; i < nnz; ++i) {
             data->array[Ai[i]] = Ax[i];
         }
-        
-#ifdef SHOWALL
-        denseMatView(data);
-#endif
-        
         userdata = (void *) data;
     }
     
@@ -289,6 +267,9 @@ extern void sdpMatInit( sdpMat *sdpData ) {
     sdpData->types       = NULL;
     sdpData->sdpData     = NULL;
     sdpData->scaler      = 0.0;
+    
+    sdpData->nzIdx       = NULL;
+    sdpData->schurspIdx  = NULL;
 }
 
 extern void sdpMatSetDim( sdpMat *sdpData, DSDP_INT dimy, DSDP_INT dimS, DSDP_INT blockId ) {
@@ -327,20 +308,43 @@ extern DSDP_INT sdpMatSetData( sdpMat *sdpData, DSDP_INT *Ap, DSDP_INT *Ai, doub
     return retcode;
 }
 
+extern DSDP_INT sdpMatScatterNnz( sdpMat *sdpData, DSDP_INT start, DSDP_INT col, DSDP_INT *colNnz ) {
+    // Scatter nonzero pattern of a block
+    DSDP_INT i, j, *nzIdx = sdpData->nzIdx;
+    
+    DSDP_INT counter = 0;
+    for (i = start; i < sdpData->nzeroMat; ++i) {
+        if (nzIdx[i] >= col) break;
+        counter += 1;
+    }
+    assert( counter <= 1 );
+    if (sdpData->nzIdx[i] == col) {
+        for (j = i; j < sdpData->nzeroMat; ++j) {
+            colNnz[nzIdx[j]] = 1;
+        }
+    }
+    return i;
+}
+
+extern void sdpMatSetSchurIndex( sdpMat *sdpData, DSDP_INT start, DSDP_INT col, DSDP_INT *csum, DSDP_INT ishift ) {
+    // Associate the index for a block
+    if (col != sdpData->nzIdx[start]) return;
+    DSDP_INT i, nnzmat = sdpData->nzeroMat;
+    DSDP_INT *schurIdx = sdpData->schurspIdx;
+    DSDP_INT idxshift = (2 * nnzmat - start + 1) * start / 2;
+    for (i = start; i < nnzmat; ++i) {
+        schurIdx[idxshift + i - start] = ishift + csum[sdpData->nzIdx[i]];
+    }
+}
+
 extern void sdpMatFree( sdpMat *sdpData ) {
     
     // Free SDP data
-    sdpData->nspsMat   = 0;
-    sdpData->ndenseMat = 0;
-    sdpData->nrkMat    = 0;
-    sdpData->nzeroMat  = 0;
-    
-    DSDP_FREE(sdpData->spsMatIdx); DSDP_FREE(sdpData->denseMatIdx);
-    DSDP_FREE(sdpData->rkMatIdx);
-    
     void *data = NULL;
     
-    for (DSDP_INT i = 0; i < sdpData->dimy + 1; ++i) {
+    DSDP_INT ndatatofree = (sdpData->schurspIdx) ? sdpData->nzeroMat : sdpData->dimy + 1;
+    
+    for (DSDP_INT i = 0; i < ndatatofree; ++i) {
         data = sdpData->sdpData[i];
         switch (sdpData->types[i]) {
             case MAT_TYPE_ZERO: break;
@@ -351,6 +355,10 @@ extern void sdpMatFree( sdpMat *sdpData ) {
         }
     }
         
-    DSDP_FREE(sdpData->types);
+    DSDP_FREE(sdpData->types); DSDP_FREE(sdpData->schurspIdx);
+    DSDP_FREE(sdpData->spsMatIdx); DSDP_FREE(sdpData->denseMatIdx);
+    DSDP_FREE(sdpData->rkMatIdx); DSDP_FREE(sdpData->nzIdx);
+    sdpData->nspsMat   = 0; sdpData->ndenseMat = 0;
+    sdpData->nrkMat    = 0; sdpData->nzeroMat  = 0;
     sdpData->blockId = 0; sdpData->dimy = 0; sdpData->dimS = 0;
 }

@@ -17,6 +17,10 @@
 #define MAT_TYPE_RANKK   3
 #define MAT_TYPE_ZERO    4
 
+#define SCHUR_BLK_UNKNOWN 5
+#define SCHUR_BLK_SPARSE  6
+#define SCHUR_BLK_DENSE   7
+
 #ifdef superDebug
 #define denseThresh      (1.0)
 #else
@@ -52,7 +56,8 @@ typedef struct {
     void      **sdpData;     // Data of different types
     double    scaler;        // Scaler for presolving
     
-    // DSDP_INT  schurblkType;  // Way to assemble the schur matrix
+    DSDP_INT  *nzIdx;        // Position of nonzero matrices
+    DSDP_INT  *schurspIdx;   // Assembling order in the schur matrix if the block is sparse
     
 } sdpMat;
 
@@ -85,7 +90,6 @@ extern "C" {
 extern void lpMatInit     ( lpMat  *lpData );
 extern void lpMatSetDim   ( lpMat  *lpData, DSDP_INT dimy, DSDP_INT dims );
 extern DSDP_INT lpMatSetData  ( lpMat *lpData, DSDP_INT *Ap, DSDP_INT *Ai, double *Ax );
-extern void lpMataATy     ( double alpha, lpMat *lpData, vec *y, double *ATy );
 extern void lpMatFree     ( lpMat *lpData );
 extern void lpMatView     ( lpMat *lpData );
 
@@ -94,6 +98,8 @@ extern DSDP_INT sdpMatAlloc   ( sdpMat *sdpData );
 extern void sdpMatSetDim  ( sdpMat *sdpData, DSDP_INT dimy, DSDP_INT dimS, DSDP_INT blockId );
 extern void sdpMatSetHint ( sdpMat *sdpData, DSDP_INT *hint );
 extern DSDP_INT sdpMatSetData ( sdpMat *sdpData, DSDP_INT *Ap, DSDP_INT *Ai, double *Ax, double *cnnz );
+extern DSDP_INT sdpMatScatterNnz( sdpMat *sdpData, DSDP_INT start, DSDP_INT col, DSDP_INT *colNnz );
+extern void sdpMatSetSchurIndex( sdpMat *sdpData, DSDP_INT start, DSDP_INT col, DSDP_INT *csum, DSDP_INT ishift );
 extern void sdpMatFree    ( sdpMat *sdpData );
 
 #ifdef __cplusplus

@@ -287,7 +287,7 @@ extern DSDP_INT r1MatCountNnz( r1Mat *x ) {
     DSDP_INT nnz = 0, n = x->dim, i;
     
     if (!x->nzIdx) {
-        x->nzIdx = (DSDP_INT *) calloc(sizeof(DSDP_INT), n);
+        x->nzIdx = (DSDP_INT *) calloc(n, sizeof(DSDP_INT));
     } else {
         memset(x->nzIdx, 0, sizeof(DSDP_INT) * n);
     }

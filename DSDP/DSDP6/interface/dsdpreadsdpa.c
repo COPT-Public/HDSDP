@@ -137,7 +137,7 @@ static DSDP_INT DSDPPrepareSDPData( char     *filename,    // 'xxx.dat-s'
     
     if (lpexist) {
         lpA = cs_di_spalloc(nlpvars, nconstr, 1000, TRUE, TRUE);
-        c = (double *) calloc(nlpvars, sizeof(double) * nlpvars);
+        c = (double *) calloc(nlpvars, sizeof(double));
     }
     
     fgets(thisline, BFSIZE, file);

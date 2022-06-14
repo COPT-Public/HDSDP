@@ -18,7 +18,7 @@ extern "C" {
 
 extern void     schurMatInit       ( schurMat *sMat );
 extern DSDP_INT schurMatAlloc      ( schurMat *sMat, DSDP_INT dim );
-extern DSDP_INT schurMatselectType ( schurMat *sMat, DSDP_INT stype, DSDP_INT *nnzIdx );
+extern DSDP_INT schurMatselectType ( schurMat *sMat, DSDP_INT stype );
 extern void     schurMatFree       ( schurMat *sMat );
 extern void     schurMatGetdiag    ( schurMat *sMat, vec *diag );
 extern void     schurMatAdddiag    ( schurMat *sMat, double d );

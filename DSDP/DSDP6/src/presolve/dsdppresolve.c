@@ -629,13 +629,8 @@ static DSDP_INT preSDPgetSymbolic( HSDSolver *dsdpSolver, DSDP_INT blockid ) {
         memcpy(dsdpSolver->Scker[blockid]->cidx,
                dsdpSolver->S[blockid]->cidx,
                sizeof(DSDP_INT) * nnz);
-//        memcpy(dsdpSolver->dS[blockid]->x,
-//               dsdpSolver->S[blockid]->x,
-//               sizeof(double) * tmp);
-//        memcpy(dsdpSolver->Scker[blockid]->x,
-//               dsdpSolver->S[blockid]->x,
-//               sizeof(double) * tmp);
     }
+    
     return retcode;
     
 clean_up:
@@ -666,7 +661,8 @@ extern DSDP_INT DSDPPrepareMAssembler( HSDSolver *dsdpSolver ) {
                                dsdpSolver->rkaux,
                                &dsdpSolver->eventMonitor[EVENT_IN_PHASE_A],
                                &dsdpSolver->eventMonitor[EVENT_HSD_UPDATE],
-                               &dsdpSolver->param->intParams[INT_PARAM_GOLDSEARCH]);
+                               &dsdpSolver->param->intParams[INT_PARAM_GOLDSEARCH],
+                               &dsdpSolver->isLPset);
     return retcode;
 }
 
