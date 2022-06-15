@@ -30,7 +30,7 @@ extern DSDP_INT rkMatisRank1            ( rkMat  *R,  DSDP_INT *isRank1         
 extern DSDP_INT rkMatGetRank            ( rkMat  *R                                );
 extern r1Mat*   rkMatGetBase            ( rkMat  *R,  DSDP_INT i                   );
 extern void rkMatCheckSparsity          ( rkMat *R, DSDP_INT *isdense, double thresh );
-extern void rkMatGetSymbolic            ( rkMat *R, DSDP_INT *hash, DSDP_INT *nnzs );
+extern void rkMatGetSymbolic            ( rkMat *R, DSDP_INT *hash, DSDP_INT *firstNnz, DSDP_INT *nnzs );
 extern DSDP_INT rkMatView               ( rkMat  *R                                );
 
 #ifdef __cplusplus

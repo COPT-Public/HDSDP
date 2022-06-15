@@ -257,6 +257,7 @@ extern void sdpMatInit( sdpMat *sdpData ) {
     sdpData->dimS        = 0;
     
     sdpData->nzeroMat    = 0;
+    sdpData->nnzAmat     = 0;
     sdpData->nspsMat     = 0;
     sdpData->spsMatIdx   = NULL;
     sdpData->ndenseMat   = 0;
@@ -317,10 +318,11 @@ extern DSDP_INT sdpMatScatterNnz( sdpMat *sdpData, DSDP_INT start, DSDP_INT col,
     
     if (i >= sdpData->nzeroMat) { return i; }
     if (sdpData->nzIdx[i] == col) {
-        for (j = i; j < sdpData->nzeroMat; ++j) {
+        for (j = i; j < sdpData->nnzAmat; ++j) {
             colNnz[nzIdx[j]] = 1;
         }
     }
+    
     return i;
 }
 
@@ -328,11 +330,230 @@ extern void sdpMatSetSchurIndex( sdpMat *sdpData, DSDP_INT start, DSDP_INT col, 
     // Associate the index for a block
     if (start >= sdpData->nzeroMat ) return;
     if (col != sdpData->nzIdx[start]) return;
-    DSDP_INT i, nnzmat = sdpData->nzeroMat;
+    DSDP_INT i, nnzAmats = sdpData->nnzAmat;
     DSDP_INT *schurIdx = sdpData->schurspIdx;
-    DSDP_INT idxshift = (2 * nnzmat - start + 1) * start / 2;
-    for (i = start; i < nnzmat; ++i) {
+    DSDP_INT idxshift = (2 * nnzAmats - start + 1) * start / 2;
+    for (i = start; i < nnzAmats; ++i) {
         schurIdx[idxshift + i - start] = ishift + csum[sdpData->nzIdx[i]];
+    }
+}
+
+extern double sdpMatGetCFnorm( sdpMat *sdpData ) {
+    double fnrm = 0.0;
+    if (sdpData->schurspIdx) {
+        if (sdpData->nnzAmat == sdpData->nzeroMat) {
+            fnrm = 0.0;
+        } else {
+            switch (sdpData->types[sdpData->nzeroMat - 1]) {
+                case MAT_TYPE_SPARSE: spsMatFnorm(sdpData->sdpData[sdpData->nzeroMat - 1], &fnrm); break;
+                case MAT_TYPE_DENSE : denseMatFnorm(sdpData->sdpData[sdpData->nzeroMat - 1], &fnrm); break;
+                case MAT_TYPE_RANKK : rkMatFnorm(sdpData->sdpData[sdpData->nzeroMat - 1], &fnrm); break;
+                default: assert(FALSE); break;
+            }
+        }
+    } else {
+        switch (sdpData->types[sdpData->dimy]) {
+            case MAT_TYPE_ZERO  : fnrm = 0.0; break;
+            case MAT_TYPE_SPARSE: spsMatFnorm(sdpData->sdpData[sdpData->dimy], &fnrm); break;
+            case MAT_TYPE_DENSE : denseMatFnorm(sdpData->sdpData[sdpData->dimy], &fnrm); break;
+            case MAT_TYPE_RANKK : rkMatFnorm(sdpData->sdpData[sdpData->dimy], &fnrm); break;
+            default: assert(FALSE); break;
+        }
+    }
+    return fnrm;
+}
+
+extern double sdpMatGetAOneNorm( sdpMat *sdpData ) {
+    // TODO: Refractor the garbage code.
+    double onenorm = 0.0; DSDP_INT i, j, m = sdpData->dimy;
+    if (sdpData->schurspIdx) {
+        if (sdpData->nspsMat) {
+            for (i = 0; i < sdpData->nspsMat - 1; ++i) {
+                j = sdpData->spsMatIdx[i];
+                onenorm += spsMatOneNorm(sdpData->sdpData[j]);
+            }
+            j = sdpData->spsMatIdx[sdpData->nspsMat - 1];
+            if (sdpData->nzIdx[j] < m) onenorm += spsMatOneNorm(sdpData->sdpData[j]);
+        }
+        if (sdpData->ndenseMat) {
+            for (i = 0; i < sdpData->ndenseMat - 1; ++i) {
+                j = sdpData->denseMatIdx[i];
+                onenorm += denseMatOneNorm(sdpData->sdpData[j]);
+            }
+            j = sdpData->denseMatIdx[sdpData->ndenseMat - 1];
+            if (sdpData->nzIdx[j] < m) onenorm += denseMatOneNorm(sdpData->sdpData[j]);
+        }
+        if (sdpData->nrkMat) {
+            for (i = 0; i < sdpData->nrkMat - 1; ++i) {
+                j = sdpData->rkMatIdx[i];
+                onenorm += r1MatOneNorm(((rkMat *) sdpData->sdpData[j])->data[0]);
+            }
+            j = sdpData->rkMatIdx[sdpData->nrkMat - 1];
+            if (sdpData->nzIdx[j] < m) onenorm += \
+                r1MatOneNorm(((rkMat *) sdpData->sdpData[j])->data[0]);
+        }
+        
+    } else {
+        if (sdpData->nspsMat) {
+            for (i = 0; i < sdpData->nspsMat - 1; ++i) {
+                j = sdpData->spsMatIdx[i];
+                onenorm += spsMatOneNorm(sdpData->sdpData[j]);
+            }
+            j = sdpData->spsMatIdx[sdpData->nspsMat - 1];
+            if (j < m) onenorm += spsMatOneNorm(sdpData->sdpData[j]);
+        }
+        if (sdpData->ndenseMat) {
+            for (i = 0; i < sdpData->ndenseMat - 1; ++i) {
+                j = sdpData->denseMatIdx[i];
+                onenorm += denseMatOneNorm(sdpData->sdpData[j]);
+            }
+            j = sdpData->denseMatIdx[sdpData->ndenseMat - 1];
+            if (j < m) onenorm += denseMatOneNorm(sdpData->sdpData[j]);
+        }
+        if (sdpData->nrkMat) {
+            for (i = 0; i < sdpData->nrkMat - 1; ++i) {
+                j = sdpData->rkMatIdx[i];
+                onenorm += r1MatOneNorm(((rkMat *) sdpData->sdpData[j])->data[0]);
+            }
+            j = sdpData->rkMatIdx[sdpData->nrkMat - 1];
+            if (j < m) onenorm += \
+                r1MatOneNorm(((rkMat *) sdpData->sdpData[j])->data[0]);
+        }
+    }
+    return onenorm;
+}
+
+extern double sdpMatGetCOneNorm( sdpMat *sdpData ) {
+    if (sdpData->schurspIdx) {
+        if (sdpData->nnzAmat == sdpData->nzeroMat) {
+            return 0.0;
+        } else {
+            switch (sdpData->types[sdpData->nzeroMat - 1]) {
+                case MAT_TYPE_SPARSE: return spsMatOneNorm(sdpData->sdpData[sdpData->nzeroMat - 1]); break;
+                case MAT_TYPE_DENSE : return denseMatOneNorm(sdpData->sdpData[sdpData->nzeroMat - 1]); break;
+                case MAT_TYPE_RANKK : return r1MatOneNorm(((rkMat *) sdpData->sdpData[sdpData->nzeroMat - 1])->data[0]); break;
+                default: assert(FALSE); break;
+            }
+        }
+    } else {
+        switch (sdpData->types[sdpData->dimy]) {
+            case MAT_TYPE_ZERO  : return 0.0;
+            case MAT_TYPE_SPARSE: return spsMatOneNorm(sdpData->sdpData[sdpData->dimy]); break;
+            case MAT_TYPE_DENSE : return denseMatOneNorm(sdpData->sdpData[sdpData->dimy]); break;
+            case MAT_TYPE_RANKK : return r1MatOneNorm(((rkMat *) sdpData->sdpData[sdpData->dimy])->data[0]); break;
+            default: assert(FALSE); break;
+        }
+    }
+    return 0.0;
+}
+
+extern void sdpMatRScaleC( sdpMat *sdpData, double r ) {
+    if (sdpData->schurspIdx) {
+        if (sdpData->nnzAmat == sdpData->nzeroMat) {
+            return;
+        } else {
+            switch (sdpData->types[sdpData->nzeroMat - 1]) {
+                case MAT_TYPE_SPARSE: spsMatRscale(sdpData->sdpData[sdpData->nzeroMat - 1], r); break;
+                case MAT_TYPE_DENSE : denseMatRscale(sdpData->sdpData[sdpData->nzeroMat - 1], r); break;
+                case MAT_TYPE_RANKK : rkMatRscale(sdpData->sdpData[sdpData->nzeroMat - 1], r); break;
+                default: assert(FALSE); break;
+            }
+        }
+    } else {
+        switch (sdpData->types[sdpData->dimy]) {
+            case MAT_TYPE_ZERO  : return; break;
+            case MAT_TYPE_SPARSE: spsMatRscale(sdpData->sdpData[sdpData->dimy], r); break;
+            case MAT_TYPE_DENSE : denseMatRscale(sdpData->sdpData[sdpData->dimy], r); break;
+            case MAT_TYPE_RANKK : rkMatRscale(sdpData->sdpData[sdpData->dimy], r); break;
+            default: assert(FALSE); break;
+        }
+    }
+}
+
+extern void sdpMatATy( sdpMat *sdpData, double ycoef, vec *y, double tau, spsMat *S, DSDP_INT *sumHash ) {
+    // Compute conic combination S = tau * C + S + ycoef * ATy
+    DSDP_INT i, j, m = sdpData->dimy, *nzidx = sdpData->nzIdx; double coef = 0.0;
+    DSDP_INT nsps = sdpData->nspsMat, nds = sdpData->ndenseMat, nr1 = sdpData->nrkMat;
+    
+    if (sdpData->schurspIdx) {
+        // Add sparse
+        if (nsps) {
+            for (i = 0; i < nsps - 1; ++i) {
+                j = sdpData->spsMatIdx[i]; coef = ycoef * y->x[nzidx[j]];
+                spsMataXpbY(coef, sdpData->sdpData[j], 1.0, S, sumHash);
+            }
+            j = sdpData->spsMatIdx[nsps - 1];
+            coef = (nzidx[j] == m) ? tau : ycoef * y->x[nzidx[j]];
+            spsMataXpbY(coef, sdpData->sdpData[j], 1.0, S, sumHash);
+        }
+        // Add dense
+        if (nds) {
+            for (i = 0; i < nds - 1; ++i) {
+                j = sdpData->denseMatIdx[i]; coef = ycoef * y->x[nzidx[j]];
+                spsMatAddds(S, coef, sdpData->sdpData[j]);
+            }
+            j = sdpData->denseMatIdx[nds - 1];
+            coef = (nzidx[j] == m) ? tau : ycoef * y->x[nzidx[j]];
+            spsMatAddds(S, coef, sdpData->sdpData[j]);
+        }
+        // Add rank-1
+        if (nr1) {
+            for (i = 0; i < nr1 - 1; ++i) {
+                j = sdpData->rkMatIdx[i]; coef = ycoef * y->x[nzidx[j]];
+                spsMatAddrk(S, coef, sdpData->sdpData[j], sumHash);
+            }
+            j = sdpData->rkMatIdx[nr1 - 1];
+            coef = (nzidx[j] == m) ? tau : ycoef * y->x[nzidx[j]];
+            spsMatAddrk(S, coef, sdpData->sdpData[j], sumHash);
+        }
+    } else {
+        /*
+        for (i = 0; i < m; ++i) {
+            coef = ycoef * y->x[i];
+            switch (sdpData->types[i]) {
+                case MAT_TYPE_SPARSE: spsMataXpbY(coef, sdpData->sdpData[i], 1.0, S, sumHash); break;
+                case MAT_TYPE_DENSE : spsMatAddds(S, coef, sdpData->sdpData[i]); break;
+                case MAT_TYPE_RANKK : spsMatAddrk(S, coef, sdpData->sdpData[i], sumHash); break;
+                default: assert( FALSE );
+            }
+        }
+        switch (sdpData->types[m]) {
+            case MAT_TYPE_SPARSE: spsMataXpbY(tau, sdpData->sdpData[m], 1.0, S, sumHash); break;
+            case MAT_TYPE_DENSE : spsMatAddds(S, tau, sdpData->sdpData[m]); break;
+            case MAT_TYPE_RANKK : spsMatAddrk(S, tau, sdpData->sdpData[m], sumHash); break;
+            default: assert( FALSE );
+        }
+         */
+        // Add sparse
+        if (nsps) {
+            for (i = 0; i < nsps - 1; ++i) {
+                j = sdpData->spsMatIdx[i]; coef = ycoef * y->x[j];
+                spsMataXpbY(coef, sdpData->sdpData[j], 1.0, S, sumHash);
+            }
+            j = sdpData->spsMatIdx[nsps - 1];
+            coef = (j == m) ? tau : ycoef * y->x[j];
+            spsMataXpbY(coef, sdpData->sdpData[j], 1.0, S, sumHash);
+        }
+        // Add dense
+        if (nds) {
+            for (i = 0; i < nds - 1; ++i) {
+                j = sdpData->denseMatIdx[i]; coef = ycoef * y->x[j];
+                spsMatAddds(S, coef, sdpData->sdpData[j]);
+            }
+            j = sdpData->denseMatIdx[nds - 1];
+            coef = (j == m) ? tau : ycoef * y->x[j];
+            spsMatAddds(S, coef, sdpData->sdpData[j]);
+        }
+        // Add rank-1
+        if (nr1) {
+            for (i = 0; i < nr1 - 1; ++i) {
+                j = sdpData->rkMatIdx[i]; coef = ycoef * y->x[j];
+                spsMatAddrk(S, coef, sdpData->sdpData[j], sumHash);
+            }
+            j = sdpData->rkMatIdx[nr1 - 1];
+            coef = (j == m) ? tau : ycoef * y->x[j];
+            spsMatAddrk(S, coef, sdpData->sdpData[j], sumHash);
+        }
     }
 }
 
@@ -357,7 +578,7 @@ extern void sdpMatFree( sdpMat *sdpData ) {
     DSDP_FREE(sdpData->types); DSDP_FREE(sdpData->schurspIdx);
     DSDP_FREE(sdpData->spsMatIdx); DSDP_FREE(sdpData->denseMatIdx);
     DSDP_FREE(sdpData->rkMatIdx); DSDP_FREE(sdpData->nzIdx);
-    sdpData->nspsMat   = 0; sdpData->ndenseMat = 0;
-    sdpData->nrkMat    = 0; sdpData->nzeroMat  = 0;
+    sdpData->nnzAmat = 0; sdpData->nspsMat = 0; sdpData->ndenseMat = 0;
+    sdpData->nrkMat  = 0; sdpData->nzeroMat = 0;
     sdpData->blockId = 0; sdpData->dimy = 0; sdpData->dimS = 0;
 }

@@ -257,7 +257,7 @@ extern void DSDPParamPrint( hsdParam *param ) {
     
     DSDP_INT prelax;
     getIntParam(param, INT_PARAM_PRELAX, &prelax);
-    printIntParam(param->intParams, INT_PARAM_PRELAX);
+    // printIntParam(param->intParams, INT_PARAM_PRELAX);
     printIntParam(param->intParams, INT_PARAM_GOLDSEARCH);
     
     if (prelax) {

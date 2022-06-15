@@ -45,6 +45,7 @@ typedef struct {
     DSDP_INT  dimS;          // Dimension of dual variable S
     
     DSDP_INT  nzeroMat;      // Number of zero matrices
+    DSDP_INT  nnzAmat;       // Number of nonzero A matrices
     DSDP_INT  nspsMat;       // Number of sparse matrices
     DSDP_INT  *spsMatIdx;    // Index of the sparse matrices
     DSDP_INT  ndenseMat;     // Number of dense matrices
@@ -97,9 +98,16 @@ extern void sdpMatInit    ( sdpMat *sdpData );
 extern DSDP_INT sdpMatAlloc   ( sdpMat *sdpData );
 extern void sdpMatSetDim  ( sdpMat *sdpData, DSDP_INT dimy, DSDP_INT dimS, DSDP_INT blockId );
 extern void sdpMatSetHint ( sdpMat *sdpData, DSDP_INT *hint );
-extern DSDP_INT sdpMatSetData ( sdpMat *sdpData, DSDP_INT *Ap, DSDP_INT *Ai, double *Ax, double *cnnz );
+extern DSDP_INT sdpMatSetData   ( sdpMat *sdpData, DSDP_INT *Ap, DSDP_INT *Ai, double *Ax, double *cnnz );
 extern DSDP_INT sdpMatScatterNnz( sdpMat *sdpData, DSDP_INT start, DSDP_INT col, DSDP_INT *colNnz );
-extern void sdpMatSetSchurIndex( sdpMat *sdpData, DSDP_INT start, DSDP_INT col, DSDP_INT *csum, DSDP_INT ishift );
+extern void sdpMatSetSchurIndex ( sdpMat *sdpData, DSDP_INT start, DSDP_INT col, DSDP_INT *csum, DSDP_INT ishift );
+
+extern double sdpMatGetCFnorm  ( sdpMat *sdpData );
+extern double sdpMatGetAOneNorm( sdpMat *sdpData );
+extern double sdpMatGetCOneNorm( sdpMat *sdpData );
+extern void   sdpMatRScaleC    ( sdpMat *sdpData, double r );
+extern void   sdpMatATy        ( sdpMat *sdpData, double ycoef, vec *y, double tau, spsMat *S, DSDP_INT *sumHash );
+
 extern void sdpMatFree    ( sdpMat *sdpData );
 
 #ifdef __cplusplus

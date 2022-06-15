@@ -145,14 +145,17 @@ extern void DSDPDataStatPrint( DSDPStats *stat ) {
     DSDPGetStats(stat, STAT_ONE_NORM_C, &c);
     
     dsdpshowdash();
-    printf("| Data statistics: \n");
+    printf("| Matrix statistics (including C): \n");
     dsdpshowdash();
-    printf("| %8s | %8s | %8s | %8s | \n", "Zero", "Sparse", "Dense", "Rank-1");
-    printf("| %8d | %8d | %8d | %8d | \n",
-           (DSDP_INT) zero, (DSDP_INT) sps, (DSDP_INT) ds, (DSDP_INT) r1);
-    dsdpshowdash();
-    printf("| |A|: %10.6e  |b|: %10.6e  |C|: %10.6e "
-           "                                    \n", a, b, c);
+    printf("| %10s | %10s | %10s | %10s | %8s     | %8s     | %8s     \n",
+           "Zero", "Sparse", "Dense", "Rank-1", "|A|", "|b|", "|C|");
+    printf("----------------------------------------------------|"
+           "---------------------------------------------\n");
+    printf("| %10d | %10d | %10d | %10d |  %10.5e |  %10.5e |  %10.5e \n",
+           (DSDP_INT) zero, (DSDP_INT) sps, (DSDP_INT) ds, (DSDP_INT) r1, a, b, c);
+//    dsdpshowdash();
+//    printf("| |A|: %10.6e  |b|: %10.6e  |C|: %10.6e "
+//           "                                    \n", a, b, c);
     
     return;
 }
@@ -175,7 +178,7 @@ extern void DSDPDIMACErrorPrint( DSDPStats *stat ) {
     err = MAX(err, fabs(err5));
     err = MAX(err, fabs(err6));
     
-    printf("| Scaled DIMACS Error:                                  "
+    printf("| DIMACS Error:                                  "
            "                                            \n");
     dsdpshowdash();
     printf("| Err1: %-6.2e | Err2: %-6.1e | Err3: %-6.1e | Err4: %-6.1e | Err5: %-8.1e | Err6: %-8.1e \n",
@@ -211,12 +214,12 @@ extern void DSDPBProfilerPrint( DSDPStats *stat ) {
     dsdpshowdash();
     printf("| %15s | %10s | \n", "Event", "Time(s)");
     dsdpshowdash();
-    printf("| %15s | %10.5f | \n", "Presolve", tpresolve);
-    printf("| %15s | %10.5f | (%d) \n", "Phase A (iter)", tphaseA, (DSDP_INT) iterA);
-    printf("| %15s | %10.5f | (%d) \n", "Phase B (iter)", tphaseB, (DSDP_INT) iterB);
-    printf("| %15s | %10.5f | \n", "Get X", tgetX);
-    printf("| %15s | %10.5f | \n", "Postsolve", tpostsolve);
-    printf("| %15s | %10.5f | (%d) \n", "All",
+    printf("| %15s | %10.3f | \n", "Presolve", tpresolve);
+    printf("| %15s | %10.3f | (%d) \n", "Phase A (iter)", tphaseA, (DSDP_INT) iterA);
+    printf("| %15s | %10.3f | (%d) \n", "Phase B (iter)", tphaseB, (DSDP_INT) iterB);
+    printf("| %15s | %10.3f | \n", "Get X", tgetX);
+    printf("| %15s | %10.3f | \n", "Postsolve", tpostsolve);
+    printf("| %15s | %10.3f | (%d) \n", "All",
            tpresolve + tphaseA + tphaseB + tgetX + tpostsolve, (DSDP_INT) (iterA + iterB));
     
     return;

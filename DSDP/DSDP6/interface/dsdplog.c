@@ -59,7 +59,7 @@ static void dsdpstatus( DSDP_INT code, char *word ) {
 extern void dsdpshowdash( void ) {
     printf("---------------------------------------"
            "---------------------------------------"
-           "----------------------\n");
+           "--------------------\n");
 }
 
 extern void dsdpCheckNan( HSDSolver *dsdpSolver ) {
@@ -83,8 +83,8 @@ extern void dsdpprintPhaseAheader( void ) {
     dsdpshowdash();
     printf("\nPhase A Log: 'P': Primal solution found. '*': Phase A ends. 'F': Error happens. 'M': Max iteration\n");
     dsdpshowdash();
-    printf("| %4s | %12s | %12s | %9s | %8s | %8s | %8s | %8s | %3s |\n",
-            "Iter", "pObj", "dObj", "dInf", "k/t", "mu", "alpha", "Pnorm", "E");
+    printf("| %4s | %12s | %12s | %9s | %8s | %8s | %6s | %8s | %3s |\n",
+            "Iter", "pObj", "dObj", "dInf", "k/t", "mu", "step", "Pnorm", "E");
     dsdpshowdash();
 }
 
@@ -93,8 +93,8 @@ extern void dsdpprintPhaseBheader( void ) {
     dsdpshowdash();
     printf("\nPhase B Log: 'P': Primal solution found. '*': Optimal. 'F': Error happens. 'M': Max iteration\n");
     dsdpshowdash();
-    printf("| %4s | %17s | %17s | %10s | %8s | %8s | %8s | %3s |\n",
-            "Iter", "pObj", "dObj", "pInf", "mu", "alpha", "Pnorm", "E");
+    printf("| %4s | %17s | %17s | %10s | %8s | %6s | %8s | %3s |\n",
+            "Iter", "pObj", "dObj", "pInf", "mu", "step", "Pnorm", "E");
     dsdpshowdash();
 }
 
@@ -188,7 +188,7 @@ print_log:
     DSDPGetStats(&dsdpSolver->dsdpStats, STAT_PHASE_A_ITER, &statval);
     
     if ((DSDP_INT) statval % 1 == 0) {
-        printf("| %4d | %12.5e | %12.5e | %9.2e | %8.2e | %8.2e | %8.2f | %8.1e | %3s |\n",
+        printf("| %4d | %12.5e | %12.5e | %9.2e | %8.2e | %8.2e | %6.2f | %8.1e | %3s |\n",
                 (DSDP_INT) statval + 1, pobj,
                 dsdpSolver->dObjVal / tau * dsdpSolver->cScaler,
                 nRy / tau, kovert, dsdpSolver->mu, dsdpSolver->alpha, dsdpSolver->Pnrm,
@@ -256,7 +256,7 @@ extern DSDP_INT DSDPPhaseBLogging( HSDSolver *dsdpSolver ) {
 print_log:
     DSDPGetStats(&dsdpSolver->dsdpStats, STAT_PHASE_B_ITER, &statval);
     if ((DSDP_INT) statval % 1 == 0) {
-        printf("| %4d | %17.10e | %17.10e | %10.3e | %8.2e | %8.2f | %8.1e | %3s |\n",
+        printf("| %4d | %17.10e | %17.10e | %10.3e | %8.2e | %6.2f | %8.1e | %3s |\n",
                 (DSDP_INT) statval + 1, dsdpSolver->pObjVal * dsdpSolver->cScaler,
                 dsdpSolver->dObjVal * dsdpSolver->cScaler,
                 dsdpSolver->pinfeas, dsdpSolver->mu, dsdpSolver->alpha, dsdpSolver->Pnrm, event);

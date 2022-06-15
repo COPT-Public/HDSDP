@@ -29,7 +29,6 @@ static DSDP_INT schurMatPerturb( HSDSolver *dsdpSolver ) {
         }
         
         // if (dsdpSolver->mu < 1e-05) { perturb += maxdiag * 1e-05; }
-        
         double invalid;
         DSDPGetStats(&dsdpSolver->dsdpStats, STAT_GAP_BROKEN, &invalid);
         if (dsdpSolver->eventMonitor[EVENT_IN_PHASE_B] && !invalid) {
@@ -116,7 +115,7 @@ static void cgSolveCheck( CGSolver *cgSolver, vec *b, DSDP_INT firstInRound ) {
             }
             dsdpCGSetPreReuse(cgSolver, 50);
         }
-        
+
         if (cgSolver->nfailed == 20) {
             if (cgSolver->reuse != 20) {
                 printf("| Switch to CG Mode 2. \n");
@@ -129,8 +128,7 @@ static void cgSolveCheck( CGSolver *cgSolver, vec *b, DSDP_INT firstInRound ) {
             cgSolver->M->isillCond = TRUE;
         }
         
-        dsdpCGprepareP(cgSolver);
-        dsdpCGRestoreRHS(cgSolver, b);
+        dsdpCGprepareP(cgSolver); dsdpCGRestoreRHS(cgSolver, b);
         dsdpCGSolve(cgSolver, b, cgSolver->x);
     }
 }

@@ -402,9 +402,10 @@ extern void r1MatCheckSparsity( r1Mat *x, DSDP_INT *isdense, double thresh ) {
     if (x->nnz > thresh * x->dim) { *isdense = TRUE; }
 }
 
-extern void r1MatGetSymbolic( r1Mat *x, DSDP_INT *hash, DSDP_INT *nnzs ) {
+extern void r1MatGetSymbolic( r1Mat *x, DSDP_INT *hash, DSDP_INT *firstNnz, DSDP_INT *nnzs ) {
     
     DSDP_INT i, j, n = x->dim;
+    if (x->nzIdx[0] == 0) *firstNnz = TRUE;
     for (i = 0; i < x->nnz; ++i) {
         for (j = 0; j <= i; ++j) {
             if (packIdx(hash, n, x->nzIdx[i], x->nzIdx[j]) == 0) {

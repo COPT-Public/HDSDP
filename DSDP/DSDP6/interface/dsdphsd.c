@@ -486,18 +486,6 @@ static DSDP_INT DSDPIPresolve( HSDSolver *dsdpSolver ) {
     DSDPStatUpdate(stat, STAT_EIG_TIME, t);
     
     center = my_clock();
-#ifndef compareMode
-    retcode = preSDPPrimal(dsdpSolver); checkCode;
-    retcode = preSDPMatCScale(dsdpSolver);
-    // retcode = preSDPDual(dsdpSolver); checkCode;
-#else
-    dsdpSolver->cScaler = 1.0;
-#endif
-    t = my_clock() - center;
-    printf("| - Scaling completes in %3.3f seconds \n", t);
-    DSDPStatUpdate(stat, STAT_SCAL_TIME, t);
-    
-    center = my_clock();
     retcode = getMatIdx(dsdpSolver); checkCode;
     t = my_clock() - center;
     printf("| - Matrix statistics ready in %3.3f seconds \n", t);
@@ -510,6 +498,17 @@ static DSDP_INT DSDPIPresolve( HSDSolver *dsdpSolver ) {
     t = my_clock() - center;
     printf("| - Schur matrix re-ordering completes in %3.3f seconds \n", t);
     DSDPStatUpdate(stat, STAT_SCHURORD_TIME, t);
+    
+    center = my_clock();
+#ifndef compareMode
+    retcode = preSDPPrimal(dsdpSolver);
+    retcode = preSDPMatCScale(dsdpSolver);
+#else
+    dsdpSolver->cScaler = 1.0;
+#endif
+    t = my_clock() - center;
+    printf("| - Scaling completes in %3.3f seconds \n", t);
+    DSDPStatUpdate(stat, STAT_SCAL_TIME, t);
     
     center = my_clock();
     retcode = preSymbolic(dsdpSolver); checkCode;
@@ -603,11 +602,11 @@ extern DSDP_INT DSDPSetDim( HSDSolver *dsdpSolver,
     if (dsdpSolver->verbosity) {
         // printf("Dimension is successfully set. \n");
         dsdpshowdash();
-        printf("| nBlock: "ID" "
+        printf("| nSDPBlock: "ID" "
                "| nConstrs: "ID" "
-               "| nLPVars: "ID" "
-               "| nSDPVars: "ID" "
-               "| nNonzeros: "ID" \n", nBlock, nConstrs, lpDim, sdpDim, nnz);
+               "| nLP Vars: "ID" "
+               "| SDP Dimension: "ID" "
+               "| Nonzeros: "ID" \n", nBlock, nConstrs, lpDim, sdpDim, nnz);
     }
     
     dsdpSolver->nBlock = nBlock; dsdpSolver->m = nConstrs;

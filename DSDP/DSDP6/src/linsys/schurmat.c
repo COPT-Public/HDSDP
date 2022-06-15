@@ -29,28 +29,6 @@ static DSDP_INT schurMatselectTypeSparse( schurMat *sMat ) {
     if (!sMat->spsM) {
         retcode = DSDP_RETCODE_FAILED;
     }
-    
-    /*
-    // Count total number of nonzeros
-    DSDP_INT nnzs = 0, m = sMat->m, i, j;
-    for (i = 0; i < nsym(m); ++i) {
-        if (nnzIdx[i] > 0) { nnzs += 1; }
-    }
-    spsMatAllocData(sMat->spsM, sMat->m, nnzs);
-    DSDP_INT *Mp = sMat->spsM->p, *Mi = sMat->spsM->i;
-    double *Mx = sMat->spsM->x; Mp[0] = 0;
-    for (i = 0, nnzs = 0; i < m; ++i) {
-        assert(nnzIdx[nnzs] > 0);
-        sMat->diag[i] = &Mx[nnzs];
-        for (j = 1; j < m - i; ++j) {
-            if (nnzIdx[nnzs] > 0) { nnzs += 1; Mi[nnzs] = j; }
-        }
-        Mp[i] = nnzs;
-    }
-    assert(nnzs == sMat->spsM->nnz);
-    // Symbolic factorization for the Schur matrix
-    spsMatSymbolic(sMat->spsM);
-     */
     return retcode;
 }
 

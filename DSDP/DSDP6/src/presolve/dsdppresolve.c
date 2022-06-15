@@ -394,9 +394,8 @@ static DSDP_INT preSDPMatgetPScaler( HSDSolver *dsdpSolver ) {
     // Compute the primal scaler for DSDP
     DSDP_INT retcode = DSDP_RETCODE_OK;
     DSDP_INT m = dsdpSolver->m;
-    
-    
-    DSDPStatUpdate(&dsdpSolver->dsdpStats, STAT_ONE_NORM_B, vec_onenorm(dsdpSolver->dObj));
+    DSDPStatUpdate(&dsdpSolver->dsdpStats, STAT_ONE_NORM_B,
+                   vec_onenorm(dsdpSolver->dObj));
     return retcode;
     
     dsdpSolver->pScaler = (vec *) calloc(1, sizeof(vec));
@@ -501,15 +500,12 @@ static DSDP_INT preSDPgetSymbolic( HSDSolver *dsdpSolver, DSDP_INT blockid ) {
     // through presolving reduction
     
     DSDP_INT retcode = DSDP_RETCODE_OK;
-    
     sdpMat *sdpBlock = dsdpSolver->sdpData[blockid];
-    DSDP_INT dim = sdpBlock->dimS, nhash = nsym(dim), nnz = 0, i, j, k, r;
-    
+    DSDP_INT dim = sdpBlock->dimS, nhash = nsym(dim), nnz = 0, i, j, k;
     dsdpSolver->S[blockid]  = (spsMat *) calloc(1, sizeof(spsMat));
     dsdpSolver->dS[blockid] = (spsMat *) calloc(1, sizeof(spsMat));
-    retcode = spsMatInit(dsdpSolver->S[blockid]); checkCode;
-    retcode = spsMatInit(dsdpSolver->dS[blockid]); checkCode;
-    spsMat *spsdata = NULL; rkMat *rkdata = NULL; r1Mat *r1data = NULL;
+    spsMatInit(dsdpSolver->S[blockid]); spsMatInit(dsdpSolver->dS[blockid]);
+    spsMat *spsdata = NULL; rkMat *rkdata = NULL;
     
     // Get hash table
     DSDP_INT *hash = NULL;
@@ -523,12 +519,6 @@ static DSDP_INT preSDPgetSymbolic( HSDSolver *dsdpSolver, DSDP_INT blockid ) {
         for (i = 0; i < sdpBlock->nrkMat; ++i) {
             rkdata = (rkMat *) sdpBlock->sdpData[matIdx[i]];
             rkMatCheckSparsity(rkdata, &useDenseS, denseThresh);
-//            for (j = 0; j < rkdata->rank; ++j) {
-//                r1data = rkdata->data[j];
-//                if (r1data->nnz > denseThresh * dim) {
-//                    useDenseS = TRUE; break;
-//                }
-//            }
             if (useDenseS) { break; }
         }
     }
@@ -540,43 +530,17 @@ static DSDP_INT preSDPgetSymbolic( HSDSolver *dsdpSolver, DSDP_INT blockid ) {
         for (i = 0; i < sdpBlock->nspsMat; ++i) {
             spsdata = (spsMat *) sdpBlock->sdpData[matIdx[i]];
             spsMatGetSymbolic(spsdata, hash, &isfirstNz, &nnz);
-//            if ((spsdata->i[0] == 0) && (spsdata->p[1] > 0)) { isfirstNz = TRUE; }
-//            for (j = 0; j < dim; ++j) {
-//                for (k = spsdata->p[j]; k < spsdata->p[j + 1]; ++k) {
-//                    if (packIdx(hash, dim, spsdata->i[k], j) == 0) {
-//                        packIdx(hash, dim, spsdata->i[k], j) = 1; nnz += 1;
-//                    }
-//                }
-//            }
             if (nnz > denseThresh * nhash) { useDenseS = TRUE; break; }
         }
         
         if (!useDenseS) {
-            // Rank 1 matrix
             matIdx = sdpBlock->rkMatIdx;
             for (i = 0; i < sdpBlock->nrkMat; ++i) {
                 rkdata = (rkMat *) sdpBlock->sdpData[matIdx[i]];
-                rkMatGetSymbolic(rkdata, hash, &nnz);
+                rkMatGetSymbolic(rkdata, hash, &isfirstNz, &nnz);
                 if (nnz > denseThresh * nhash) {
                     useDenseS = TRUE; break;
                 }
-//                for (r = 0; r < rkdata->rank; ++r) {
-//                    r1data = rkdata->data[r];
-//                    if (r1data->nzIdx[0] == 0) { isfirstNz = TRUE; }
-//                    for (j = 0; j < r1data->nnz; ++j) {
-//                        for (k = 0; k <= j; ++k) {
-//                            if (packIdx(hash, dim, r1data->nzIdx[j],
-//                                        r1data->nzIdx[k]) == 0) {
-//                                packIdx(hash, dim, r1data->nzIdx[j],
-//                                        r1data->nzIdx[k]) = 1;
-//                                nnz += 1;
-//                            }
-//                        }
-//                        if (nnz > denseThresh * nhash) {
-//                            useDenseS = TRUE; break;
-//                        }
-//                    }
-//                }
             }
         }
     }
@@ -766,8 +730,7 @@ extern DSDP_INT preSymbolic( HSDSolver *dsdpSolver ) {
     DSDP_INT nblock = dsdpSolver->nBlock;
     
     for (DSDP_INT i = 0; i < nblock; ++i) {
-        retcode = preSDPgetSymbolic(dsdpSolver, i);
-        checkCode;
+        preSDPgetSymbolic(dsdpSolver, i);
     }
  
     return retcode;

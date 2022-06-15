@@ -199,9 +199,9 @@ extern void rkMatCheckSparsity( rkMat *R, DSDP_INT *isdense, double thresh ) {
     }
 }
 
-extern void rkMatGetSymbolic( rkMat *R, DSDP_INT *hash, DSDP_INT *nnzs ) {
+extern void rkMatGetSymbolic( rkMat *R, DSDP_INT *hash, DSDP_INT *firstNnz, DSDP_INT *nnzs ) {
     for (DSDP_INT i = 0; i < R->rank; ++i) {
-        r1MatGetSymbolic(R->data[i], hash, nnzs);
+        r1MatGetSymbolic(R->data[i], hash, firstNnz, nnzs);
     }
 }
 

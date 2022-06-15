@@ -47,13 +47,6 @@ extern "C" {
 
 
 /* Schur matrix set up */
-extern void     invertDualVars     ( HSDSolver *dsdpSolver );
-extern DSDP_INT getSinvASinv       ( HSDSolver *dsdpSolver, DSDP_INT blockid, DSDP_INT constrid,
-                                     void *SinvASinv );
-extern DSDP_INT getTraceASinvASinv ( HSDSolver *dsdpSolver, DSDP_INT blockid, DSDP_INT constrid,
-                                     DSDP_INT mattype, DSDP_INT constrid2, void *SinvASinv );
-
-
 extern void getPhaseALps         ( HSDSolver *dsdpSolver, vec *y, double tau );
 extern void getPhaseBLpCheckers  ( HSDSolver *dsdpSolver, vec *y );
 extern void getPhaseBLps         ( HSDSolver *dsdpSolver, vec *y );

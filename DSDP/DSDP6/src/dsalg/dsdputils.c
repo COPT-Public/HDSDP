@@ -18,12 +18,10 @@ static char etype[] = "DSDP Conic Utility";
 
 static double SDPConic( COPS_GET_A_ONE_NORM )
 ( HSDSolver *dsdpSolver ) {
-    DSDP_INT k = dsdpSolver->nBlock, m = dsdpSolver->m, i, j;
+    DSDP_INT k = dsdpSolver->nBlock, i;
     double onenorm = 0.0;
     for (i = 0; i < k; ++i) {
-        for (j = 0; j < m; ++j) {
-            onenorm += getMatOneNorm(dsdpSolver, i, j);
-        }
+        onenorm += sdpMatGetAOneNorm(dsdpSolver->sdpData[i]);
     }
     return onenorm;
 }
@@ -44,10 +42,10 @@ static double BConic( COPS_GET_A_ONE_NORM )
 
 static double SDPConic( COPS_GET_C_FNORM )
 ( HSDSolver *dsdpSolver ) {
-    DSDP_INT k = dsdpSolver->nBlock, m = dsdpSolver->m, i;
+    DSDP_INT k = dsdpSolver->nBlock, i;
     double fnrm = 0.0, tmp = 0.0;
     for (i = 0; i < k; ++i) {
-        getMatFnorm(dsdpSolver, i, m, &tmp);
+        tmp = sdpMatGetCFnorm(dsdpSolver->sdpData[i]);
         fnrm += tmp * tmp;
     }
     return sqrt(fnrm);
@@ -68,10 +66,10 @@ static double BConic( COPS_GET_C_FNORM )
 
 static double SDPConic( COPS_GET_C_ONE_NORM )
 ( HSDSolver *dsdpSolver ) {
-    DSDP_INT k = dsdpSolver->nBlock, m = dsdpSolver->m, i;
+    DSDP_INT k = dsdpSolver->nBlock, i;
     double onenorm = 0.0;
     for (i = 0; i < k; ++i) {
-        onenorm += getMatOneNorm(dsdpSolver, i, m);
+        onenorm += sdpMatGetCOneNorm(dsdpSolver->sdpData[i]);
     }
     return onenorm;
 }
@@ -90,7 +88,7 @@ static double BConic( COPS_GET_C_ONE_NORM )
 static void SDPConic( COPS_DO_C_SCALE )
 ( HSDSolver *dsdpSolver ) {
     for (DSDP_INT k = 0; k < dsdpSolver->nBlock; ++k) {
-        matRScale(dsdpSolver, k, dsdpSolver->m, dsdpSolver->cScaler);
+        sdpMatRScaleC(dsdpSolver->sdpData[k], dsdpSolver->cScaler);
     }
     return;
 }
@@ -280,7 +278,7 @@ static void BConic( COPS_GET_SCHUR )
     }
 }
 
-static void SDPConic( COPS_CONSTR_EXPR )
+static void SDPConic( COPS_CONSTR_EXPR_OLD )
 ( HSDSolver *dsdpSolver, DSDP_INT type,
   double ycoef, vec *y, double tau, double r ) {
     // r * Ry + tau * C + ycoef * ATy
@@ -309,6 +307,29 @@ static void SDPConic( COPS_CONSTR_EXPR )
         if (dperturb)   {spsMatAdddiag(target, dperturb, dsdpSolver->symS[i]);}
     }
     
+    return;
+}
+
+static void SDPConic( COPS_CONSTR_EXPR )
+( HSDSolver *dsdpSolver, DSDP_INT type,
+  double ycoef, vec *y, double tau, double r ) {
+    // r * Ry + tau * C + ycoef * ATy
+    spsMat **targets = (type == DUALVAR) ? \
+    dsdpSolver->S : dsdpSolver->Scker;
+    void (*f)(HSDSolver*, DSDP_INT, DSDP_INT, double) = \
+    (type == DUALVAR) ? addMattoS : addMattoChecker;
+    double dperturb = dsdpSolver->dperturb;
+    if (type == DELTAS) {
+        targets = dsdpSolver->dS; f = addMattodS; dperturb = 0.0;
+    }
+    dperturb += r * dsdpSolver->Ry;
+    spsMat *target = NULL;
+    for (DSDP_INT i = 0; i < dsdpSolver->nBlock; ++i) {
+        target = targets[i]; spsMatReset(target);
+        if (ycoef) { sdpMatATy(dsdpSolver->sdpData[i], ycoef, y,
+                               tau, target, dsdpSolver->symS[i]); }
+        if (dperturb) { spsMatAdddiag(target, dperturb, dsdpSolver->symS[i]); }
+    }
     return;
 }
 
@@ -719,15 +740,6 @@ extern void DSDPConic( COPS_GET_DOBJ )
     checkIterProgress(dsdpSolver, ITER_DUAL_OBJ);
     vec_dot(dsdpSolver->dObj, dsdpSolver->y, &dsdpSolver->dObjVal);
     dsdpSolver->iterProgress[ITER_DUAL_OBJ] = TRUE;
-}
-
-extern void invertDualVars( HSDSolver *dsdpSolver ) {
-    // Compute inverse of the dual matrix when M3, M4 or M5 techniques are used
-    // Also used if corrector is being computed
-    DSDPSymSchur *M = dsdpSolver->M;
-    for (DSDP_INT i = 0; i < M->nblock; ++i) {
-        spsMatInverse(M->S[i], M->Sinv[i], M->schurAux);
-    }
 }
 
 // Special operations for Bound cone
