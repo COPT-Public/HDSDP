@@ -44,6 +44,18 @@ static void pardisoNumFactorize( spsMat *S ) {
     }
 }
 
+static void pardisoIndefiniteNumFactorize( spsMat *S ) {
+    DSDP_INT phase = PARDISO_FAC;
+    // Invoke pardiso to do symbolic analysis and Cholesky factorization
+    pardiso(S->pdsWorker, &maxfct, &mnum, &mtype, &phase, &S->dim,
+            S->x, S->p, S->i, &idummy, &idummy, PARDISO_PARAMS_LDL,
+            &msglvl, NULL, NULL, &errorSolve) ;
+    if (errorSolve) {
+        printf("| [Pardiso Error]: Matrix factorization failed with"
+               " code: "ID". Going without current factorization  |\n", errorSolve);
+    }
+}
+
 static void pardisoForwardSolve( spsMat *S, DSDP_INT nrhs, double *B, double *aux, DSDP_INT overwrite ) {
     // pardiso forward solve
     DSDP_INT phase = PARDISO_FORWARD, *param;
@@ -532,6 +544,12 @@ extern void spsMatFactorize( spsMat *sAMat ) {
     } else {
         pardisoNumFactorize(sAMat);
     }
+}
+
+extern void spsMatIndefiniteFactorize( spsMat *sAMat ) {
+    // Sparse matrix Cholesky decomposition
+    assert( !sAMat->nominalsps );
+    pardisoIndefiniteNumFactorize(sAMat);
 }
 
 extern void spsArrSolveInp( spsMat *sAMat, DSDP_INT nrhs, double *B, double *aux ) {

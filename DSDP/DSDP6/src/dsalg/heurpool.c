@@ -12,6 +12,12 @@ extern void DSDP_HEURS( adjustSolverParams )
     
     DSDP_INT hit = FALSE;
     
+    if (dsdpSolver->nBlock > 100) {
+        DSDPSetIntParam(dsdpSolver, INT_PARAM_ACORRECTOR, 6);
+        DSDPSetIntParam(dsdpSolver, INT_PARAM_BCORRECTOR, 0);
+        DSDPSetDblParam(dsdpSolver, DBL_PARAM_INIT_BETA, 1.0);
+    }
+    
     // hamming problems
     if (zero == 0.0 && dsdpSolver->m >= 50 * largeblock && dsdpSolver->m >= 15000 && !hit) {
         printf("| Hit hamming \n"); hit = TRUE;

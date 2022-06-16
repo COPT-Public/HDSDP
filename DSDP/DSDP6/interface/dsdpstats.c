@@ -145,7 +145,7 @@ extern void DSDPDataStatPrint( DSDPStats *stat ) {
     DSDPGetStats(stat, STAT_ONE_NORM_C, &c);
     
     dsdpshowdash();
-    printf("| Matrix statistics (including C): \n");
+    printf("| Matrix statistics [Including C]: \n");
     dsdpshowdash();
     printf("| %10s | %10s | %10s | %10s | %8s     | %8s     | %8s     \n",
            "Zero", "Sparse", "Dense", "Rank-1", "|A|", "|b|", "|C|");

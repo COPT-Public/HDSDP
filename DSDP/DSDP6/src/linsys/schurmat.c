@@ -95,19 +95,18 @@ extern void schurMatFactorize( schurMat *sMat ) {
         denseMatFactorize(sMat->denseM);
     } else if (sMat->stype == SCHUR_TYPE_SPARSE) {
         DSDP_INT ispsd = FALSE;
-        
         if (!sMat->isillCond) {
             spsMatIspd(sMat->spsM, &ispsd);
             if (!ispsd) {
-                // TODO: Add an alternative to factorize the matrix when it is not positive definite
+                spsMatIndefiniteFactorize(sMat->spsM);
+                sMat->isillCond = TRUE;
             }
         } else {
-            // TODO: Add an alternative to factorize the matrix when it is not positive definite
+            spsMatIndefiniteFactorize(sMat->spsM);
         }
     } else {
         assert( FALSE );
     }
-    
     sMat->isFactorized = TRUE;
 }
 

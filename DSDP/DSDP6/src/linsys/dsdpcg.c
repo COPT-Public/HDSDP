@@ -207,6 +207,14 @@ extern DSDP_INT dsdpCGSolve( CGSolver *cgSolver, vec *b, vec *x0 ) {
      */
     DSDP_INT retcode = DSDP_RETCODE_OK;
     
+    if (cgSolver->M->stype == SCHUR_TYPE_SPARSE) {
+        schurMatFactorize(cgSolver->M);
+        schurMatSolve(cgSolver->M, 1, b->x, cgSolver->r->x);
+        cgSolver->status = CG_STATUS_SOLVED;
+        return retcode;
+    }
+    
+    
     if (cgSolver->status == CG_STATUS_INDEFINITE) {
         schurMatSolve(cgSolver->M, 1, b->x, cgSolver->r->x);
         return retcode;

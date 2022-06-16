@@ -24,7 +24,8 @@ static DSDP_INT idummy = 0; // Dummy variable for taking up space
 // Pardiso cholesky solver
 #define SYMBOLIC 3
 #define PIVOTING 1
-// TODO: Disable matrix checker iparam[26] when the debugging is done
+#define FACTORIZE 0
+
 static DSDP_INT PARDISO_PARAMS_CHOLESKY[PARDISOINDEX] = {
     
     1, /* Non-default value */ SYMBOLIC, /* P Nested dissection */ 0, /* Reserved          */
@@ -34,7 +35,7 @@ static DSDP_INT PARDISO_PARAMS_CHOLESKY[PARDISOINDEX] = {
     0, /* Disable matching  */ 0, /* Report on pivots    */ 0, /* Output            */
     0, /* Output            */ 0, /* Output              */-1, /* No report         */
     0, /* No report         */ 0, /* Output              */ PIVOTING, /* Pivoting          */
-    0, /* nPosEigVals       */ 0, /* nNegEigVals         */ 0, /* Classic factorize */
+    0, /* nPosEigVals       */ 0, /* nNegEigVals         */ FACTORIZE, /* Classic factorize */
     0,                         0,                           0, /* Matrix checker    */
     0,                         0,                           0,
     0,                         0,                           0,
@@ -51,6 +52,32 @@ static DSDP_INT PARDISO_PARAMS_CHOLESKY[PARDISOINDEX] = {
     0
 };
 
+static DSDP_INT PARDISO_PARAMS_LDL[PARDISOINDEX] = {
+    
+    1, /* Non-default value */ SYMBOLIC, /* P Nested dissection */ 0, /* Reserved          */
+    0, /* No CG             */ 0, /* No user permutation */ 0, /* No overwriting    */
+    0, /* Refinement report */ 0, /* Auto ItRef step     */ 0, /* Reserved          */
+   13, /* Perturb           */ 0, /* Disable scaling     */ 0, /* No transpose      */
+    0, /* Disable matching  */ 0, /* Report on pivots    */ 0, /* Output            */
+    0, /* Output            */ 0, /* Output              */-1, /* No report         */
+    0, /* No report         */ 0, /* Output              */ PIVOTING, /* Pivoting          */
+    0, /* nPosEigVals       */ 0, /* nNegEigVals         */ FACTORIZE, /* Classic factorize */
+    0,                         0,                           0, /* Matrix checker    */
+    0,                         0,                           0,
+    0,                         0,                           0,
+    0,                         1, /* 0-based solve       */ 0,
+    0,                         0,                           0,
+    0,                         0,                           0,
+    0,                         0,                           0,
+    0,                         0,                           0,
+    0,                         0,                           0,
+    0,                         0,                           0,
+    0,                         0, /* No diagonal         */ 0,
+    0,                         0,                           0,
+    0,                         0,                           0,
+    0
+};
+
 static DSDP_INT PARDISO_PARAMS_CHOLESKY_INPLACE[PARDISOINDEX] = {
     
     1, /* Non-default value */ SYMBOLIC, /* P Nested dissection */ 0, /* Reserved          */
@@ -60,7 +87,7 @@ static DSDP_INT PARDISO_PARAMS_CHOLESKY_INPLACE[PARDISOINDEX] = {
     0, /* Disable matching  */ 0, /* Report on pivots    */ 0, /* Output            */
     0, /* Output            */ 0, /* Output              */-1, /* No report         */
     0, /* No report         */ 0, /* Output              */ PIVOTING, /* Pivoting          */
-    0, /* nPosEigVals       */ 0, /* nNegEigVals         */ 0, /* Classic factorize */
+    0, /* nPosEigVals       */ 0, /* nNegEigVals         */ FACTORIZE, /* Classic factorize */
     0,                         0,                           0, /* Matrix checker    */
     0,                         0,                           0,
     0,                         0,                           0,
@@ -86,7 +113,7 @@ static DSDP_INT PARDISO_PARAMS_PSD_CHECK[PARDISOINDEX] = {
     0, /* Disable matching  */ 0, /* Report on pivots    */ 0, /* Output            */
     0, /* Output            */ 0, /* Output              */-1, /* No report         */
     0, /* No report         */ 0, /* Output              */ PIVOTING, /* Pivoting          */
-    0, /* nPosEigVals       */ 0, /* nNegEigVals         */ 0, /* Classic factorize */
+    0, /* nPosEigVals       */ 0, /* nNegEigVals         */ FACTORIZE, /* Classic factorize */
     0,                         0,                           0, /* Matrix checker    */
     0,                         0,                           0,
     0, /* Partial solve     */ 0,                           0,
@@ -112,7 +139,7 @@ static DSDP_INT PARDISO_PARAMS_FORWARD_BACKWORD[PARDISOINDEX] = {
     0, /* Disable matching  */ 0, /* Report on pivots    */ 0, /* Output            */
     0, /* Output            */ 0, /* Output              */-1, /* No report         */
     0, /* No report         */ 0, /* Output              */ PIVOTING, /* Pivoting          */
-    0, /* nPosEigVals       */ 0, /* nNegEigVals         */ 0, /* Classic factorize */
+    0, /* nPosEigVals       */ 0, /* nNegEigVals         */ FACTORIZE, /* Classic factorize */
     0,                         0,                           0, /* Matrix checker    */
     0,                         0,                           0,
     0,                         0,                           0,
@@ -139,7 +166,7 @@ static DSDP_INT PARDISO_PARAMS_FORWARD_BACKWORD_LANCZOS[PARDISOINDEX] = {
     0, /* Disable matching  */ 0, /* Report on pivots    */ 0, /* Output            */
     0, /* Output            */ 0, /* Output              */-1, /* No report         */
     0, /* No report         */ 0, /* Output              */ PIVOTING, /* Pivoting          */
-    0, /* nPosEigVals       */ 0, /* nNegEigVals         */ 0, /* Classic factorize */
+    0, /* nPosEigVals       */ 0, /* nNegEigVals         */ FACTORIZE, /* Classic factorize */
     0,                         0,                           0, /* Matrix checker    */
     0,                         0,                           0,
     0,                         0,                           0,

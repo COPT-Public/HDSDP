@@ -55,6 +55,7 @@ extern void spsMatRscale       ( spsMat *sXMat, double r );
 /* Factorization and linear system solver */
 extern void spsMatSymbolic     ( spsMat *sAMat );
 extern void spsMatFactorize    ( spsMat *sAMat );
+extern void spsMatIndefiniteFactorize ( spsMat *sAMat );
 extern void spsArrSolveInp     ( spsMat *sAMat, DSDP_INT nrhs, double *B, double *aux );
 extern void spsMatVecSolve     ( spsMat *sAMat, vec    *sbVec, double *Ainvb );
 extern void spsMatVecFSolve    ( spsMat *sAmat, vec *sbVec, vec *Ainvb );

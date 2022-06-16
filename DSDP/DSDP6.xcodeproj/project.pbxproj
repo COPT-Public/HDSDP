@@ -68,6 +68,10 @@
 		1934771327B7E1A00048A772 /* dsdpreadsdpa.c in Sources */ = {isa = PBXBuildFile; fileRef = 1934771227B7E1A00048A772 /* dsdpreadsdpa.c */; };
 		1950371627B625C400C723FC /* dsdppsol.c in Sources */ = {isa = PBXBuildFile; fileRef = 1950371527B625C400C723FC /* dsdppsol.c */; };
 		195EE4C727B92AD400065A4B /* dsdpsort.c in Sources */ = {isa = PBXBuildFile; fileRef = 195EE4C627B92AD400065A4B /* dsdpsort.c */; };
+		1971D5F7285B091500690C39 /* libmkl_intel_thread.1.dylib in Frameworks */ = {isa = PBXBuildFile; fileRef = 199220772737D8A400DD975D /* libmkl_intel_thread.1.dylib */; };
+		1971D5F8285B091500690C39 /* libmkl_intel_thread.1.dylib in Embed Libraries */ = {isa = PBXBuildFile; fileRef = 199220772737D8A400DD975D /* libmkl_intel_thread.1.dylib */; settings = {ATTRIBUTES = (CodeSignOnCopy, ); }; };
+		1971D5FE285B182600690C39 /* libiomp5.dylib in Frameworks */ = {isa = PBXBuildFile; fileRef = 199220842737D8C500DD975D /* libiomp5.dylib */; };
+		1971D5FF285B182600690C39 /* libiomp5.dylib in Embed Libraries */ = {isa = PBXBuildFile; fileRef = 199220842737D8C500DD975D /* libiomp5.dylib */; settings = {ATTRIBUTES = (CodeSignOnCopy, ); }; };
 		197A770627C7889A00D3A50B /* symschur.c in Sources */ = {isa = PBXBuildFile; fileRef = 197A770527C7889A00D3A50B /* symschur.c */; };
 		19808F3F273807770014086F /* dsdpdata.c in Sources */ = {isa = PBXBuildFile; fileRef = 19808F3E273807770014086F /* dsdpdata.c */; };
 		19808F4327380A990014086F /* dsdppresolve.c in Sources */ = {isa = PBXBuildFile; fileRef = 19808F4227380A990014086F /* dsdppresolve.c */; };
@@ -76,8 +80,6 @@
 		1985AC3D279B9DB400B7B8EB /* dsdppfeas.c in Sources */ = {isa = PBXBuildFile; fileRef = 1985AC3C279B9DB400B7B8EB /* dsdppfeas.c */; };
 		1997804A27CF5DA6006B7E6A /* libmkl_core.1.dylib in Embed Libraries */ = {isa = PBXBuildFile; fileRef = 199220782737D8A400DD975D /* libmkl_core.1.dylib */; settings = {ATTRIBUTES = (CodeSignOnCopy, ); }; };
 		1997804B27CF5DA6006B7E6A /* libmkl_intel_lp64.1.dylib in Embed Libraries */ = {isa = PBXBuildFile; fileRef = 199220792737D8A400DD975D /* libmkl_intel_lp64.1.dylib */; settings = {ATTRIBUTES = (CodeSignOnCopy, ); }; };
-		1997804F27CF6399006B7E6A /* libmkl_sequential.1.dylib in Embed Libraries */ = {isa = PBXBuildFile; fileRef = 1997804227CF5CFB006B7E6A /* libmkl_sequential.1.dylib */; settings = {ATTRIBUTES = (CodeSignOnCopy, ); }; };
-		1997805027CF6426006B7E6A /* libmkl_sequential.1.dylib in Frameworks */ = {isa = PBXBuildFile; fileRef = 1997804227CF5CFB006B7E6A /* libmkl_sequential.1.dylib */; };
 		1997805327CF6426006B7E6A /* libmkl_intel_lp64.1.dylib in Frameworks */ = {isa = PBXBuildFile; fileRef = 1997805127CF6426006B7E6A /* libmkl_intel_lp64.1.dylib */; };
 		1997805427CF6426006B7E6A /* libmkl_core.1.dylib in Frameworks */ = {isa = PBXBuildFile; fileRef = 1997805227CF6426006B7E6A /* libmkl_core.1.dylib */; };
 		199F256F2826377600D6B778 /* heurpool.c in Sources */ = {isa = PBXBuildFile; fileRef = 199F256E2826377600D6B778 /* heurpool.c */; };
@@ -117,8 +119,9 @@
 			dstSubfolderSpec = 10;
 			files = (
 				1997804A27CF5DA6006B7E6A /* libmkl_core.1.dylib in Embed Libraries */,
+				1971D5FF285B182600690C39 /* libiomp5.dylib in Embed Libraries */,
+				1971D5F8285B091500690C39 /* libmkl_intel_thread.1.dylib in Embed Libraries */,
 				1997804B27CF5DA6006B7E6A /* libmkl_intel_lp64.1.dylib in Embed Libraries */,
-				1997804F27CF6399006B7E6A /* libmkl_sequential.1.dylib in Embed Libraries */,
 			);
 			name = "Embed Libraries";
 			runOnlyForDeploymentPostprocessing = 0;
@@ -207,6 +210,8 @@
 		1950371527B625C400C723FC /* dsdppsol.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = dsdppsol.c; sourceTree = "<group>"; };
 		195EE4C527B92AD400065A4B /* dsdpsort.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = dsdpsort.h; sourceTree = "<group>"; };
 		195EE4C627B92AD400065A4B /* dsdpsort.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = dsdpsort.c; sourceTree = "<group>"; };
+		1971D5F5285B08E100690C39 /* libmkl_intel_thread.a */ = {isa = PBXFileReference; lastKnownFileType = archive.ar; name = libmkl_intel_thread.a; path = ../../../../../opt/intel/oneapi/mkl/2021.2.0/lib/libmkl_intel_thread.a; sourceTree = "<group>"; };
+		1971D5F9285B093000690C39 /* libiomp5.dylib */ = {isa = PBXFileReference; lastKnownFileType = "compiled.mach-o.dylib"; name = libiomp5.dylib; path = ../../../../../opt/intel/oneapi/compiler/2022.0.0/mac/compiler/lib/libiomp5.dylib; sourceTree = "<group>"; };
 		197A770427C7889A00D3A50B /* symschur.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = symschur.h; sourceTree = "<group>"; };
 		197A770527C7889A00D3A50B /* symschur.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = symschur.c; sourceTree = "<group>"; };
 		19808F392737FEDA0014086F /* test.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = test.h; sourceTree = "<group>"; };
@@ -278,8 +283,9 @@
 			buildActionMask = 2147483647;
 			files = (
 				1997805327CF6426006B7E6A /* libmkl_intel_lp64.1.dylib in Frameworks */,
+				1971D5FE285B182600690C39 /* libiomp5.dylib in Frameworks */,
+				1971D5F7285B091500690C39 /* libmkl_intel_thread.1.dylib in Frameworks */,
 				1997805427CF6426006B7E6A /* libmkl_core.1.dylib in Frameworks */,
-				1997805027CF6426006B7E6A /* libmkl_sequential.1.dylib in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -530,6 +536,8 @@
 		199220742737D86C00DD975D /* Frameworks */ = {
 			isa = PBXGroup;
 			children = (
+				1971D5F9285B093000690C39 /* libiomp5.dylib */,
+				1971D5F5285B08E100690C39 /* libmkl_intel_thread.a */,
 				1997805227CF6426006B7E6A /* libmkl_core.1.dylib */,
 				1997805127CF6426006B7E6A /* libmkl_intel_lp64.1.dylib */,
 				1997804727CF5D68006B7E6A /* libiomp5.dylib */,
@@ -821,6 +829,7 @@
 					"$(inherited)",
 					/opt/intel/oneapi/mkl/2021.2.0/lib,
 					/opt/intel/oneapi/compiler/2021.2.0/mac/compiler/lib,
+					/opt/intel/oneapi/compiler/2022.0.0/mac/compiler/lib,
 				);
 				PRODUCT_NAME = "$(TARGET_NAME)";
 			};
@@ -837,6 +846,7 @@
 					"$(inherited)",
 					/opt/intel/oneapi/mkl/2021.2.0/lib,
 					/opt/intel/oneapi/compiler/2021.2.0/mac/compiler/lib,
+					/opt/intel/oneapi/compiler/2022.0.0/mac/compiler/lib,
 				);
 				PRODUCT_NAME = "$(TARGET_NAME)";
 			};

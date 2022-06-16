@@ -70,8 +70,8 @@ extern DSDP_INT symSchurMatFree    ( DSDPSymSchur *M );
 extern DSDP_INT DSDPSchurReorder   ( DSDPSymSchur *M );
 extern DSDP_INT DSDPCheckSchurType ( DSDPSymSchur *M );
 extern DSDP_INT DSDPSchurSetup     ( DSDPSymSchur *M );
-extern DSDP_INT asinvSetup         ( DSDPSymSchur *M );
-extern DSDP_INT arysinvSetup       ( DSDPSymSchur *M );
+extern void asinvSetup         ( DSDPSymSchur *M );
+extern void arysinvSetup       ( DSDPSymSchur *M );
 
 #ifdef __cplusplus
 }

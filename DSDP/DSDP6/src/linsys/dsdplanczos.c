@@ -117,7 +117,7 @@ extern DSDP_INT dsdpLanczosStep( DSDPLanczos *lczSolver, spsMat *S, spsMat *dS, 
     
     /* Prepare working array */
     DSDP_INT n = S->dim, maxiter = MAXITER, one = 1, mH = maxiter + 1,
-            il, iu, lwork = lczSolver->lwork, iwork = lczSolver->iwork,
+             il, iu, lwork = lczSolver->lwork, iwork = lczSolver->iwork, failed = FALSE, \
             idx, neigs, info, *eigintaux = lczSolver->eigintaux, *isuppz = lczSolver->isuppz;
     
     vec *v = l->v, *w = l->w, *z1 = l->z1, *z2 = l->z2, *vecaux = l->vecaux;
@@ -185,7 +185,8 @@ extern DSDP_INT dsdpLanczosStep( DSDPLanczos *lczSolver, spsMat *S, spsMat *dS, 
                    Y, &kp1, isuppz, eigaux, &lwork, eigintaux,
                    &iwork, &info);
             
-            if (info) { error(etype, "Lanczos Eigenvalue decomposition failed. \n"); }
+            if (info) { failed = TRUE; }
+            
             res = fabs(H[k * mH + k + 1] * Y[kp1 + k]);
             if (res <= 1e-04 || k >= maxiter - 1 || nrm == 0.0) {
                 //lambda = eigH(idx(k)); lambda2 = eigH(idx(k - 1));
@@ -213,7 +214,8 @@ extern DSDP_INT dsdpLanczosStep( DSDPLanczos *lczSolver, spsMat *S, spsMat *dS, 
                 tmp = res1 * res1 / gamma;
                 gamma = MIN(res1, tmp);
                 
-                if (gamma < 1e-03 || gamma + lambda1 <= 0.8) {
+                if (gamma < 1e-03 || gamma + lambda1 <= 0.8 || failed) {
+                    if (failed) { lambda1 = MAX(1000.0, lambda1); }
                     *delta = gamma; *lbd = lambda1; break;
                 } else {
                     if (nrm2 == 0.0) {

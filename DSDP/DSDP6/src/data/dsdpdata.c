@@ -334,7 +334,7 @@ extern void sdpMatSetSchurIndex( sdpMat *sdpData, DSDP_INT start, DSDP_INT col, 
     DSDP_INT *schurIdx = sdpData->schurspIdx;
     DSDP_INT idxshift = (2 * nnzAmats - start + 1) * start / 2;
     for (i = start; i < nnzAmats; ++i) {
-        schurIdx[idxshift + i - start] = ishift + csum[sdpData->nzIdx[i]];
+        schurIdx[idxshift + i - start] = ishift + csum[sdpData->nzIdx[i]] - 1;
     }
 }
 
