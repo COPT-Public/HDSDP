@@ -904,5 +904,21 @@
             landmarkType = "9">
          </BreakpointContent>
       </BreakpointProxy>
+      <BreakpointProxy
+         BreakpointExtensionID = "Xcode.Breakpoint.FileBreakpoint">
+         <BreakpointContent
+            uuid = "5DE483E4-3889-4E6F-8295-09A16BE282B5"
+            shouldBeEnabled = "Yes"
+            ignoreCount = "0"
+            continueAfterRunningActions = "No"
+            filePath = "DSDP6/interface/dsdpreadsdpa.c"
+            startingColumnNumber = "9223372036854775807"
+            endingColumnNumber = "9223372036854775807"
+            startingLineNumber = "167"
+            endingLineNumber = "167"
+            landmarkName = "DSDPPrepareSDPData(filename, dObjVec, sdpAp, sdpAi, sdpAx, lpAp, lpAi, lpAx, lpObj, nBlock, nBlockVars, nLPVars, nVars, nConstr, nNzs)"
+            landmarkType = "9">
+         </BreakpointContent>
+      </BreakpointProxy>
    </Breakpoints>
 </Bucket>

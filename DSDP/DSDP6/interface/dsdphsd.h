@@ -24,9 +24,6 @@
 #endif
 
 //#define superDebug
-#ifndef MAXTIME
-#define MAXTIME 7200
-#endif
 
 #ifdef SHOWALL
 #undef SHOWALL
@@ -81,6 +78,7 @@ typedef int DSDP_INT;
 #define DSDP_PUNKNOWN_DFEAS     105
 #define DSDP_PFEAS_DINFEAS      106
 #define DSDP_PUNKNOWN_DINFEAS   107
+#define DSDP_TIMELIMIT          108
 
 // Solver status
 #define DSDP_STATUS_UNINIT      0

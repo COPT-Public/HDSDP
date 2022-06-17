@@ -519,7 +519,7 @@ extern double sdpMatCX( sdpMat *sdpData, dsMat *X ) {
     } else {
         data = sdpData->sdpData[sdpData->dimy];
         switch (sdpData->types[sdpData->dimy]) {
-            case MAT_TYPE_ZERO : tmp = 0.0;
+            case MAT_TYPE_ZERO  : tmp = 0.0; break;
             case MAT_TYPE_SPARSE: denseSpsTrace(X, data, &tmp); break;
             case MAT_TYPE_DENSE : denseDsTrace(X, data, &tmp); break;
             case MAT_TYPE_RANKK : rkMatdenseTrace(data, X, &tmp); break;

@@ -88,7 +88,6 @@ extern void DSDP_HEURS( adjustSolverParams )
             dsdpSolver->pObjVal = 1e+08;
             dsdpSolver->ybound = 1e+04;
         }
-        
     }
     
     if (nlp == dsdpSolver->m && dsdpSolver->n != dsdpSolver->m) {
@@ -111,7 +110,7 @@ extern void DSDP_HEURS( adjustSolverParams )
         DSDPSetDblParam(dsdpSolver, DBL_PARAM_INIT_BETA, 1.0);
     }
     
-    if (zero == 1.0 && nlp == 2 * dsdpSolver->m && !hit) {
+    if (nlp >= dsdpSolver->m && ds == 0.0 && r1 == 0.0 && !hit) {
         printf("| Hit shmup \n"); hit = TRUE;
         DSDPSetDblParam(dsdpSolver, DBL_PARAM_INIT_BETA, 100.0);
         DSDPSetIntParam(dsdpSolver, INT_PARAM_BCORRECTOR, 4);

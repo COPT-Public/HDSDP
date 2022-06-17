@@ -161,8 +161,8 @@ static DSDP_INT DSDPPrepareSDPData( char     *filename,    // 'xxx.dat-s'
             ngot = sscanf(thisline, "%d %d %d %d %lg",
                           &constrid, &blockid, &i, &j, &val);
             if (ngot != 5) {
-                if (feof(file))
-                { break;
+                if (feof(file)) {
+                    break;
                 } else {
                     printf("Line %d is invalid \n", line);
                     error_clean(etype, "Failed to extract data. \n");
@@ -199,11 +199,13 @@ static DSDP_INT DSDPPrepareSDPData( char     *filename,    // 'xxx.dat-s'
             ngot = sscanf(thisline, "%d %d %d %d %lg",
                           &constrid, &blockid, &i, &j, &val);
             if (ngot != 5) {
-                if (feof(file))
-                { break;
+                if (feof(file)) {
+                    break;
                 } else {
-                    printf("Line %d is invalid \n", line);
-                    error_clean(etype, "Failed to extract data. \n");
+                    if (ngot > 0) {
+                        printf("Line %d is invalid \n", line);
+                        error_clean(etype, "Failed to extract data. \n");
+                    }
                 }
             } else if (val != 0.0) {
                 // Insert data
@@ -281,15 +283,18 @@ extern DSDP_INT DSDPSolveSDPA(int argc, char *argv[]) {
     DSDP_INT retcode = DSDP_RETCODE_OK;
     
     FILE *file;
-    char filename[100], thisline[100];
-    
+    char filename[100], thisline[100], maxtime[100];
+    double tmax = 0.0;
     if (argc < 2) {
-        DSDPPrintVersion();
-        return retcode;
+        DSDPPrintVersion(); return retcode;
     } else {
-        strncpy(thisline, argv[1], 90);
-        file = fopen(thisline, "r");
+        strncpy(thisline, argv[1], 90); file = fopen(thisline, "r");
+        if (argc == 4 && strcmp(argv[2], "-timelimit") == 0) {
+            strncpy(maxtime, argv[3], 20); tmax = atof(maxtime);
+        }
     }
+    
+    if (tmax <= 0.0) { tmax = 15000.0; }
     
     Solver *hsdSolver = NULL;
     Solver **phsdSolver = &hsdSolver;
@@ -335,6 +340,7 @@ extern DSDP_INT DSDPSolveSDPA(int argc, char *argv[]) {
            " Elapsed Time: %3.3f seconds. \n", my_clock() - start);
     
     retcode = DSDPSetObj(hsdSolver, dObj);
+    DSDPSetDblParam(hsdSolver, DBL_PARAM_TIMELIMIT, tmax);
     retcode = DSDPOptimize(hsdSolver);
     
     // mwTrace("End Profiling. \n");

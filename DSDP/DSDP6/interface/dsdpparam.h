@@ -22,7 +22,8 @@
 #define DBL_PARAM_REL_FEASTOL   15
 #define DBL_PARAM_PRLX_PENTALTY 16
 #define DBL_PARAM_BOUND_X       17
-#define DBL_PARAM_OBJ_WEIGHT    18
+#define DBL_PARAM_TIMELIMIT     18
+#define DBL_PARAM_OBJ_WEIGHT    19
 
 #define INT_PARAM_ACORRECTOR     0
 #define INT_PARAM_BCORRECTOR     1
@@ -75,12 +76,12 @@ static double defaultDblParam[NUM_DBL_PARAM] = {
     4.0,   // DBL_PARAM_RHON
     1e+10, // DBL_PARAM_INIT_POBJ
     
-    1e+06, // DBL_PARAM_INIT_BETA
+    1e+04, // DBL_PARAM_INIT_BETA
     1e+15, // DBL_PARAM_INIT_MU
     1.0, // DBL_PARAM_INIT_TAU
     
     1.0,   // DBL_PARAM_INIT_KAPPA
-    0.9,  // DBL_PARAM_AALPHA // 0.99995 is good
+    0.9,   // DBL_PARAM_AALPHA // 0.99995 is good
     1e+08, // DBL_PARAM_NRM_THRESH
     1e+08, // DBL_PARAM_INFEAS_THRESH
     1e-06, // DBL_PARAM_ABS_OPTTOL
@@ -89,7 +90,8 @@ static double defaultDblParam[NUM_DBL_PARAM] = {
     1e-07, // DBL_PARAM_REL_FEASTOL
     1e+07, // DBL_PARAM_PRLX_PENTALTY
     1e+08, // DBL_PARAM_BOUND_X
-    0.0   // DBL_PARAM_OBJ_WEIGHT
+    15000, // DBL_PARAM_TIME_LIMIT
+    0.0,   // DBL_PARAM_OBJ_WEIGHT
 };
 
 static hsdParam defaultParam =

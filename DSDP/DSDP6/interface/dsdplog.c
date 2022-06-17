@@ -51,6 +51,9 @@ static void dsdpstatus( DSDP_INT code, char *word ) {
         case DSDP_PINFEAS_DFEAS:
             strcpy(word, "DSDP_PINFEASIBLE_DFEASIBLE");
             break;
+        case DSDP_TIMELIMIT:
+            strcpy(word, "DSDP_TIMELIMIT");
+            break;
         default:
             break;
     }
@@ -273,11 +276,12 @@ extern DSDP_INT DSDPCheckPhaseAConvergence( HSDSolver *dsdpSolver, DSDP_INT *isO
     DSDP_INT *monitor = dsdpSolver->eventMonitor;
     
     DSDP_INT AmaxIter; *isOK = FALSE;
-    double absOptTol, absFeasTol, statval1, statval2, initpObj;
+    double absOptTol, absFeasTol, statval1, statval2, initpObj, tmax;
     DSDPStats *stat = &dsdpSolver->dsdpStats;
     DSDPGetDblParam(dsdpSolver, DBL_PARAM_ABS_OPTTOL, &absOptTol);
     DSDPGetDblParam(dsdpSolver, DBL_PARAM_ABS_FEASTOL, &absFeasTol);
     DSDPGetDblParam(dsdpSolver, DBL_PARAM_INIT_POBJ, &initpObj);
+    DSDPGetDblParam(dsdpSolver, DBL_PARAM_INIT_POBJ, &tmax);
     DSDPGetIntParam(dsdpSolver, INT_PARAM_AMAXITER, &AmaxIter);
     
     // Dual infeasibility eliminated
@@ -350,8 +354,8 @@ extern DSDP_INT DSDPCheckPhaseAConvergence( HSDSolver *dsdpSolver, DSDP_INT *isO
         return retcode;
     }
     
-    if (my_clock() - dsdpSolver->startTime > MAXTIME) {
-        printf("| Time out. \n"); exit(0);
+    if (my_clock() - dsdpSolver->startTime > tmax) {
+        printf("| Time out. Force exit \n");
         *isOK = TRUE;
     }
 
@@ -397,8 +401,10 @@ extern DSDP_INT DSDPCheckPhaseBConvergence( HSDSolver *dsdpSolver, DSDP_INT *isO
     /* Check convergence of DSDP */
     DSDP_INT retcode = DSDP_RETCODE_OK;
     DSDP_INT *monitor = dsdpSolver->eventMonitor, BmaxIter;
+    double tmax;
     
-    retcode = DSDPGetIntParam(dsdpSolver, INT_PARAM_BMAXITER, &BmaxIter);
+    DSDPGetIntParam(dsdpSolver, INT_PARAM_BMAXITER, &BmaxIter);
+    DSDPGetDblParam(dsdpSolver, DBL_PARAM_TIMELIMIT, &tmax);
     assert( dsdpSolver->eventMonitor[EVENT_IN_PHASE_B] );
     *isOK = FALSE;
     
@@ -479,8 +485,8 @@ extern DSDP_INT DSDPCheckPhaseBConvergence( HSDSolver *dsdpSolver, DSDP_INT *isO
         *isOK = TRUE; return retcode;
     }
     
-    if (my_clock() - dsdpSolver->startTime > MAXTIME) {
-        dsdpSolver->solStatus = DSDP_MAXITER;
+    if (my_clock() - dsdpSolver->startTime > tmax) {
+        dsdpSolver->solStatus = DSDP_TIMELIMIT;
         *isOK = TRUE;
     }
 

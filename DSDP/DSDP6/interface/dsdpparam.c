@@ -63,6 +63,9 @@ static void printDblParam( const double *dblParams, DSDP_INT pName ) {
         case DBL_PARAM_PRLX_PENTALTY:
             printf("Double Parameter primal relaxation penalty (0.0, inf): ");
             break;
+        case DBL_PARAM_TIMELIMIT:
+            printf("Double Parameter time limit (0.0, inf): ");
+            break;
         default:
             printf("Invalid Parameter Code %d \n", pName);
             return;
@@ -263,6 +266,8 @@ extern void DSDPParamPrint( hsdParam *param ) {
     if (prelax) {
         printDblParam(param->dblParams, DBL_PARAM_PRLX_PENTALTY);
     }
+    
+    printDblParam(param->dblParams, DBL_PARAM_TIMELIMIT);
         
     return;
 }
