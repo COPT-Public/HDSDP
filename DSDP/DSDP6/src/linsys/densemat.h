@@ -38,7 +38,6 @@ extern DSDP_INT denseMatFactorize( dsMat * dAMat                                
 extern DSDP_INT denseArrSolveInp ( dsMat *S, DSDP_INT nrhs, double *B                       );
 extern DSDP_INT denseVecSolve    ( dsMat *dAMat, vec    *dbVec, double *Ainvb               );
 extern DSDP_INT denseSpsSolve    ( dsMat *dAMat, spsMat *sBMat, double *AinvB               );
-extern DSDP_INT denseDsSolve     ( dsMat *dAMat, dsMat  *dBMat, double *AinvB               );
 
 /* Schur matrix assembly */
 extern DSDP_INT denseSpsTrace    ( dsMat *dAMat, spsMat *sBMat, double *trace               );

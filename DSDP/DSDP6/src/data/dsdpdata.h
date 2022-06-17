@@ -17,10 +17,6 @@
 #define MAT_TYPE_RANKK   3
 #define MAT_TYPE_ZERO    4
 
-#define SCHUR_BLK_UNKNOWN 5
-#define SCHUR_BLK_SPARSE  6
-#define SCHUR_BLK_DENSE   7
-
 #ifdef superDebug
 #define denseThresh      (1.0)
 #else
@@ -91,6 +87,8 @@ extern "C" {
 extern void lpMatInit     ( lpMat  *lpData );
 extern void lpMatSetDim   ( lpMat  *lpData, DSDP_INT dimy, DSDP_INT dims );
 extern DSDP_INT lpMatSetData  ( lpMat *lpData, DSDP_INT *Ap, DSDP_INT *Ai, double *Ax );
+extern void lpMatAx       ( lpMat *lpData, vec *x, vec *Ax );
+extern double lpMatcx     ( vec *c, vec *x );
 extern void lpMatFree     ( lpMat *lpData );
 extern void lpMatView     ( lpMat *lpData );
 
@@ -106,6 +104,8 @@ extern double sdpMatGetCFnorm  ( sdpMat *sdpData );
 extern double sdpMatGetAOneNorm( sdpMat *sdpData );
 extern double sdpMatGetCOneNorm( sdpMat *sdpData );
 extern void   sdpMatRScaleC    ( sdpMat *sdpData, double r );
+extern void   sdpMatAX         ( sdpMat *sdpData, dsMat *X, vec *AX );
+extern double sdpMatCX         ( sdpMat *sdpData, dsMat *X );
 extern void   sdpMatATy        ( sdpMat *sdpData, double ycoef, vec *y, double tau, spsMat *S, DSDP_INT *sumHash );
 
 extern void sdpMatFree    ( sdpMat *sdpData );

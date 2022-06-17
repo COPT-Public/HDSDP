@@ -942,7 +942,7 @@ static DSDP_INT schurMatReorder( DSDPSymSchur *M ) {
     return retcode;
 }
 
-#define SCHUR_BUFFER 10000
+#define SCHUR_BUFFER 100000
 static DSDP_INT schurMatSpsReorder( DSDPSymSchur *M ) {
     // Implement the sparse Schur matrix re-ordering technique
     DSDP_INT retcode = DSDP_RETCODE_OK;

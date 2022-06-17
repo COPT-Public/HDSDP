@@ -124,6 +124,7 @@ extern void DSDP_HEURS( adjustSolverParams )
         printf("| Hit large LPcone \n"); hit = TRUE;
         DSDPSetDblParam(dsdpSolver, DBL_PARAM_INIT_BETA, 1.0);
     }
+    
     getIntParam(dsdpSolver->param, INT_PARAM_GOLDSEARCH, &inttmp);
     if (!inttmp && sps == dsdpSolver->m && r1 == 1.0 &&
         zero == 0.0 && ds == 0.0 && dsdpSolver->m >= dsdpSolver->n * 8 &&

@@ -549,6 +549,38 @@ extern DSDP_INT dsdpgetPhaseAProxMeasure( HSDSolver *dsdpSolver, double newmu ) 
     return retcode;
 }
 
+static void SDPConic( COPS_CONSTR_EXPR_OLD )
+( HSDSolver *dsdpSolver, DSDP_INT type,
+  double ycoef, vec *y, double tau, double r ) {
+    // r * Ry + tau * C + ycoef * ATy
+    spsMat **targets = (type == DUALVAR) ? \
+    dsdpSolver->S : dsdpSolver->Scker;
+    void (*f)(HSDSolver*, DSDP_INT, DSDP_INT, double) = \
+    (type == DUALVAR) ? addMattoS : addMattoChecker;
+    double dperturb = dsdpSolver->dperturb;
+    if (type == DELTAS) {
+        targets = dsdpSolver->dS;
+        f = addMattodS;
+        dperturb = 0.0;
+    }
+    
+    dperturb += r * dsdpSolver->Ry;
+    spsMat *target = NULL; DSDP_INT m = dsdpSolver->m, i, j;
+    
+    for (i = 0; i < dsdpSolver->nBlock; ++i) {
+        target = targets[i]; spsMatReset(target);
+        if (ycoef) {
+            for (j = 0; j < m; ++j) {
+                f(dsdpSolver, i, j, ycoef * y->x[j]);
+            }
+        }
+        if (tau) { f(dsdpSolver, i, m, tau); }
+        if (dperturb)   {spsMatAdddiag(target, dperturb, dsdpSolver->symS[i]);}
+    }
+    
+    return;
+}
+
 /*
 extern DSDP_INT getSinvASinvSlow( HSDSolver *dsdpSolver, DSDP_INT blockid, DSDP_INT constrid,
                               void *SinvASinv ) {

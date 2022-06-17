@@ -42,6 +42,8 @@ extern "C" {
 #define COPS_GET_POTENTIAL  GetConicPotentialValue
 #define COPS_GET_LOGDET     GetCurrentyLogDet
 #define COPS_GET_MERIT      GetConicMeritValue
+#define COPS_GET_AX         GetConicConstrProduct
+#define COPS_GET_CX         GetConicPrimalObjective
 
 #endif
 
@@ -95,6 +97,8 @@ extern void     DSDPConic( COPS_CONSTR_EXPR    ) ( HSDSolver *dsdpSolver, DSDP_I
 extern double   DSDPConic( COPS_GET_MAXSTEP    ) ( HSDSolver *dsdpSolver, DSDP_INT type );
 extern void     DSDPConic( COPS_STEPDIRECTION  ) ( HSDSolver *dsdpSolver );
 extern double   DSDPConic( COPS_GET_LOGDET     ) ( HSDSolver *dsdpSolver, vec *y, DSDP_INT *inCone );
+extern void     DSDPConic( COPS_GET_AX         ) ( HSDSolver *dsdpSolver, vec *AX );
+extern double   DSDPConic( COPS_GET_CX         ) ( HSDSolver *dsdpSolver );
 #ifdef __cplusplus
 }
 #endif

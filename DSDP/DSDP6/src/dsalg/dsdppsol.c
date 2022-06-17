@@ -1,72 +1,51 @@
 #include "dsdppsol.h"
 #include "dsdputils.h"
 #include "dsdplog.h"
+#include "schurmat.h"
 
 static char etype[] = "Primal solution extraction";
 
+static double computePres( HSDSolver *dsdpSolver ) {
+    // Compute ||A * x - b||
+    double tmp; vec *AX = dsdpSolver->d1;
+    DSDPConic( COPS_GET_AX )(dsdpSolver, AX);
+    vec_axpy(-1.0, dsdpSolver->dObj, AX); vec_norm(AX, &tmp);
+    return tmp;
+}
+
 extern DSDP_INT computePrimalX( HSDSolver *dsdpSolver ) {
-    
     // Extract primal solution of the current block
     DSDP_INT retcode = DSDP_RETCODE_OK;
-        
-    DSDP_INT nblock = dsdpSolver->nBlock, dim = 0;
+    DSDP_INT nblock = dsdpSolver->nBlock, dim = 0, i, idx;
     vec *dymaker = dsdpSolver->dymaker, *ymaker = dsdpSolver->ymaker;
     spsMat *Smaker = NULL, *bnmaker = NULL;
-    double mumaker = dsdpSolver->mumaker;
-    double *Xtmp = NULL;
-    
-    double start = my_clock();
-    
-    getPhaseBS(dsdpSolver, dsdpSolver->y);
-    getPhaseBLps(dsdpSolver, dsdpSolver->y);
-    // Smaker = C - dsdpgetATy(A, ymaker);
-    getPhaseBCheckerS(dsdpSolver, ymaker);
-    getPhaseBLpCheckers(dsdpSolver, ymaker);
-    // bnmaker = dsdpgetATy(A, dymaker);
-    getPhaseBdS(dsdpSolver, -1.0, dymaker, 0.0);
-    getPhaseBLpds(dsdpSolver, -1.0, dymaker, 0.0);
-    
-    dsMat  *dsaux = NULL;
-    rkMat  *rkaux = NULL;
+    double mumaker = dsdpSolver->mumaker, *Xtmp = NULL, start = my_clock();
+    getPhaseBS(dsdpSolver, dsdpSolver->y); getPhaseBLps(dsdpSolver, dsdpSolver->y);
+    getPhaseBCheckerS(dsdpSolver, ymaker); getPhaseBLpCheckers(dsdpSolver, ymaker);
+    getPhaseBdS(dsdpSolver, -1.0, dymaker, 0.0); getPhaseBLpds(dsdpSolver, -1.0, dymaker, 0.0);
+    dsMat *dsaux = NULL; rkMat *rkaux = NULL;
     
     for (DSDP_INT blockid = 0; blockid < nblock; ++blockid) {
-    
-        dsaux   = dsdpSolver->dsaux[blockid];
-        rkaux   = dsdpSolver->rkaux[blockid];
-        Smaker  = dsdpSolver->Scker[blockid];
-        bnmaker = dsdpSolver->dS[blockid];
-        dim     = bnmaker->dim;
-        Xtmp    = (double *) calloc(dim * dim, sizeof(double));
-        spsMatFactorize(Smaker);
-        spsMatGetX(Smaker, bnmaker, Xtmp);
-        
+        dsaux = dsdpSolver->dsaux[blockid]; rkaux = dsdpSolver->rkaux[blockid];
+        Smaker = dsdpSolver->Scker[blockid]; bnmaker = dsdpSolver->dS[blockid];
+        dim = bnmaker->dim; Xtmp = (double *) calloc(dim * dim, sizeof(double));
+        spsMatFactorize(Smaker); spsMatGetX(Smaker, bnmaker, Xtmp);
         // X = mu * D * (speye(n) + D' * bnmaker * D) * D';
-        for (DSDP_INT i = 0, idx = 0; i < dim; ++i) {
-            memcpy(&dsaux->array[idx], &Xtmp[i * dim + i],
-                   sizeof(double) * (dim - i));
+        for (i = 0, idx = 0; i < dim; ++i) {
+            memcpy(&dsaux->array[idx], &Xtmp[i * dim + i], sizeof(double) * (dim - i));
             idx += dim - i;
         }
-        
-        for (DSDP_INT i = 0; i < nsym(dim); ++i) {
-            dsaux->array[i] *= mumaker;
-        }
-        
+        for (i = 0; i < nsym(dim); ++i) { dsaux->array[i] *= mumaker; }
         DSDP_FREE(Xtmp);
     }
-    
     // LP Cone
-    double *lpbnmaker = dsdpSolver->ds->x;
-    double *lps = dsdpSolver->scker->x, tmp = 0.0;
+    double *lpbnmaker = dsdpSolver->ds->x, *lps = dsdpSolver->scker->x, tmp = 0.0;
     vec_reset(dsdpSolver->x);
     for (DSDP_INT i = 0; i < dsdpSolver->lpDim; ++i) {
-        tmp = 1 / lps[i];
-        dsdpSolver->x->x[i] = tmp + tmp * tmp * lpbnmaker[i];
+        tmp = 1 / lps[i]; dsdpSolver->x->x[i] = tmp + tmp * tmp * lpbnmaker[i];
     }
     vec_scale(dsdpSolver->x, mumaker);
-    
-    DSDPStatUpdate(&dsdpSolver->dsdpStats, STAT_GET_X_TIME,
-                   my_clock() - start);
-    
+    DSDPStatUpdate(&dsdpSolver->dsdpStats, STAT_GET_X_TIME, my_clock() - start);
     return retcode;
 }
 
@@ -77,8 +56,8 @@ extern DSDP_INT computeDIMACS( HSDSolver *dsdpSolver ) {
     
     DSDPStats *stat = &dsdpSolver->dsdpStats;
     double bnrm, Cnrm, pObj, dObj, dInf, pInf,
-           gap, trace, tmp, minEigX, minEigS, compslack;
-    DSDP_INT nblock = dsdpSolver->nBlock, m = dsdpSolver->m;
+           gap, tmp, minEigX, minEigS, compslack;
+    DSDP_INT nblock = dsdpSolver->nBlock;
     
     DSDPGetStats(stat, STAT_ONE_NORM_C, &Cnrm);
     DSDPGetStats(stat, STAT_ONE_NORM_B, &bnrm);
@@ -87,48 +66,7 @@ extern DSDP_INT computeDIMACS( HSDSolver *dsdpSolver ) {
     dObj *= dsdpSolver->cScaler;
     
     /*  DIMACS Error 1    */
-    pInf = 0.0;
-    double *x = dsdpSolver->x->x;
-    DSDP_INT *Ap = dsdpSolver->lpData->Ap;
-    DSDP_INT *Ai = dsdpSolver->lpData->Ai;
-    double *Ax = dsdpSolver->lpData->Ax;
-    
-    for (DSDP_INT i = 0; i < m; ++i) {
-        trace = 0.0;
-        if (dsdpSolver->isLPset) {
-            for (DSDP_INT j = Ap[i]; j < Ap[i + 1]; ++j) {
-                trace += x[Ai[j]] * Ax[j];
-            }
-        }
-        for (DSDP_INT j = 0; j < nblock; ++j) {
-            switch (dsdpSolver->sdpData[j]->types[i]) {
-                case MAT_TYPE_ZERO: tmp = 0.0; break;
-                case MAT_TYPE_DENSE:
-                    denseDsTrace(dsdpSolver->dsaux[j],
-                                 dsdpSolver->sdpData[j]->sdpData[i],
-                                 &tmp);
-                    break;
-                case MAT_TYPE_SPARSE:
-                    denseSpsTrace(dsdpSolver->dsaux[j],
-                                  dsdpSolver->sdpData[j]->sdpData[i],
-                                  &tmp);
-                    break;
-                case MAT_TYPE_RANKK:
-                    rkMatdenseTrace(dsdpSolver->sdpData[j]->sdpData[i],
-                                    dsdpSolver->dsaux[j], &tmp);
-                    break;
-                default:
-                    error(etype, "Invalid matrix type. \n");
-                    break;
-            }
-            trace += tmp;
-        }
-        
-        tmp = dsdpSolver->dObj->x[i] - trace;
-        pInf += tmp * tmp;
-    }
-    
-    pInf = sqrt(pInf);
+    pInf = computePres(dsdpSolver);
     
     if (pInf / (1 + bnrm) > 1e-02 && dsdpSolver->mumaker > 0) {
         printf("| Bad primal solution. Trying backup Newton step. \n");
@@ -136,43 +74,13 @@ extern DSDP_INT computeDIMACS( HSDSolver *dsdpSolver ) {
         vec_copy(dsdpSolver->ymaker2, dsdpSolver->ymaker);
         vec_copy(dsdpSolver->dymaker2, dsdpSolver->dymaker);
         retcode = computePrimalX(dsdpSolver);
-        dsdpSolver->mumaker = -1.0;
-        computeDIMACS(dsdpSolver);
+        dsdpSolver->mumaker = -1.0; computeDIMACS(dsdpSolver);
         return retcode;
     }
     
     /*  DIMACS Error 3    */
     dInf = sqrt(dsdpSolver->n) * dsdpSolver->dperturb;
-    
-    pObj = 0.0; tmp = 0.0;
-    for (DSDP_INT i = 0; i < nblock; ++i) {
-        switch (dsdpSolver->sdpData[i]->types[m]) {
-            case MAT_TYPE_ZERO: tmp = 0.0; break;
-            case MAT_TYPE_DENSE:
-                denseDsTrace(dsdpSolver->dsaux[i],
-                             dsdpSolver->sdpData[i]->sdpData[m],
-                             &tmp);
-                break;
-            case MAT_TYPE_SPARSE:
-                denseSpsTrace(dsdpSolver->dsaux[i],
-                              dsdpSolver->sdpData[i]->sdpData[m],
-                              &tmp);
-                break;
-            case MAT_TYPE_RANKK:
-                rkMatdenseTrace(dsdpSolver->sdpData[i]->sdpData[m],
-                                dsdpSolver->dsaux[i],
-                                &tmp);
-                break;
-            default:
-                break;
-        }
-        pObj += tmp;
-    }
-    
-    vec_dot(dsdpSolver->x, dsdpSolver->lpObj, &tmp);
-    pObj += tmp;
-    
-    pObj *= dsdpSolver->cScaler;
+    pObj = DSDPConic( COPS_GET_CX )(dsdpSolver); pObj *= dsdpSolver->cScaler;
     
     /* DIMACS Error 4     */
     minEigX = DSDP_INFINITY;
@@ -189,8 +97,7 @@ extern DSDP_INT computeDIMACS( HSDSolver *dsdpSolver ) {
         vec_copy(dsdpSolver->ymaker2, dsdpSolver->ymaker);
         vec_copy(dsdpSolver->dymaker2, dsdpSolver->dymaker);
         retcode = computePrimalX(dsdpSolver);
-        dsdpSolver->mumaker = -1.0;
-        computeDIMACS(dsdpSolver);
+        dsdpSolver->mumaker = -1.0; computeDIMACS(dsdpSolver);
         return retcode;
     }
     
@@ -208,14 +115,11 @@ extern DSDP_INT computeDIMACS( HSDSolver *dsdpSolver ) {
         denseMatReset(dsdpSolver->dsaux[i]);
         spsMatFillLower2(dsdpSolver->S[i], dsdpSolver->dsaux[i]);
         denseMatMinEig(dsdpSolver->dsaux[i], &tmp);
-        
-        // spsMatMinEig(dsdpSolver->S[i], &tmp);
         minEigS = MIN(minEigS, tmp);
     }
     
     if (minEigS > 0) {
-        dInf -= minEigS * sqrt(dsdpSolver->n);
-        dInf = MAX(dInf, 0.0);
+        dInf -= minEigS * sqrt(dsdpSolver->n); dInf = MAX(dInf, 0.0);
     }
     
     // Collect errors
