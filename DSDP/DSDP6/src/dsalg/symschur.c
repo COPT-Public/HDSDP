@@ -1394,5 +1394,3 @@ extern void arysinvSetup( DSDPSymSchur *M ) {
         arysinvdsSetup(M, asinv, asinvrysinv);
     }
 }
-
-

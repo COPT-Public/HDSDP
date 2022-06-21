@@ -296,13 +296,6 @@ extern void selectMu( HSDSolver *dsdpSolver, double *newmu ) {
             // Shat = S + alphap * dS = C - A' * y + alphap * A' * dy = C - A' * (y - alphap * dy)
             vec_zaxpby(aux, 1.0, dsdpSolver->y, -alphap, dsdpSolver->b1);
             getPhaseBCheckerS(dsdpSolver, aux);
-//            for (j = 0; j < dsdpSolver->nBlock; ++j) {
-//                memcpy(dsdpSolver->Scker[j]->x, dsdpSolver->S[j]->x,
-//                       sizeof(double) * dsdpSolver->S[j]->nnz);
-//                // This step sometimes fails due to inaccurate Lanczos and line-search is necessary
-//                spsMataXpbY(alphap, dsdpSolver->dS[j],
-//                            1.0, dsdpSolver->Scker[j], dsdpSolver->symS[j]);
-//            }
             
             inCone = TRUE;
             if (dsdpSolver->isLPset) {
