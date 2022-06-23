@@ -277,6 +277,84 @@ exit_cleanup:
     return retcode;
 }
 
+static DSDP_INT extractSDPAfname( char *path, char *file ) {
+    // Extract filename
+    DSDP_INT retcode = DSDP_RETCODE_OK;
+    char sdpasuffix[] = ".dat-s", *where;
+    strcpy(file, path);
+    where = strstr(file, sdpasuffix);
+    if (!where) {
+        printf("| Fatal error. Invalid SDPA file name. \n");
+        retcode = DSDP_RETCODE_FAILED; return retcode;
+    }
+    memset(where, 0, sizeof(char));
+    return retcode;
+}
+
+extern DSDP_INT DSDPAnalyzeSDPA(int argc, char *argv[]) {
+    DSDP_INT retcode = DSDP_RETCODE_OK;
+    
+    FILE *file;
+    char filename[100], thisline[100], export[100];
+    if (argc < 2) {
+        DSDPPrintVersion(); return retcode;
+    } else {
+        strncpy(thisline, argv[1], 90); file = fopen(thisline, "r");
+    }
+    
+    retcode = extractSDPAfname(thisline, export); checkCode;
+    
+    Solver *hsdSolver = NULL;
+    Solver **phsdSolver = &hsdSolver;
+    
+    retcode = DSDPCreate(phsdSolver, export);
+    
+    strncpy(filename, argv[1], 90);
+    
+    DSDP_INT **coneAp = NULL;
+    DSDP_INT **coneAi = NULL;
+    double   **coneAx = NULL;
+    
+    DSDP_INT *lpAp  = NULL;
+    DSDP_INT *lpAi  = NULL;
+    double   *lpAx  = NULL;
+    double   *lpObj = NULL;
+    
+    double   *dObj    = NULL;
+    DSDP_INT *blocksizes = NULL;
+    DSDP_INT nConstrs = 0, nBlocks = 0, nSDPVars = 0, nLPVars = 0, nNz = 0;
+    
+    DSDPPrintVersion();
+    printf("| Running SDPA structure analysis. \n");
+    DSDPPrepareSDPData(filename, &dObj,
+                       &coneAp, &coneAi, &coneAx,
+                       &lpAp, &lpAi, &lpAx, &lpObj,
+                       &nBlocks, &blocksizes, &nLPVars,
+                       &nSDPVars, &nConstrs, &nNz);
+    retcode = DSDPSetDim(hsdSolver, nSDPVars, nBlocks, nConstrs, nLPVars, &nNz);
+    for (DSDP_INT i = 0; i < nBlocks; ++i) {
+        retcode = DSDPSetSDPConeData(hsdSolver, i, blocksizes[i], NULL,
+                                     coneAp[i], coneAi[i], coneAx[i]);
+    }
+    
+    if (nLPVars > 0) {
+        retcode = DSDPSetLPData(hsdSolver, nLPVars, lpAp, lpAi, lpAx, lpObj);
+    }
+    
+    retcode = DSDPSetObj(hsdSolver, dObj);
+    retcode = DSDPExport(hsdSolver, DSDP_EXPORT_DSYMBOLIC, export);
+    dsdpshowdash();
+    
+exit_cleanup:
+    DSDPDestroy(hsdSolver);
+    // Free data
+    for (DSDP_INT i = 0; i < nBlocks; ++i) {
+        DSDP_FREE(coneAi[i]); DSDP_FREE(coneAp[i]); DSDP_FREE(coneAx[i]);
+    }
+    DSDP_FREE(dObj); DSDP_FREE(blocksizes);
+    
+    return retcode;
+}
 
 extern DSDP_INT DSDPSolveSDPA(int argc, char *argv[]) {
     
@@ -299,7 +377,7 @@ extern DSDP_INT DSDPSolveSDPA(int argc, char *argv[]) {
     Solver *hsdSolver = NULL;
     Solver **phsdSolver = &hsdSolver;
     
-    retcode = DSDPCreate(phsdSolver);
+    retcode = DSDPCreate(phsdSolver, NULL);
     
     strncpy(filename, argv[1], 90);
     

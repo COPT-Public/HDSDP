@@ -24,38 +24,17 @@ static void dsdpstatus( DSDP_INT code, char *word ) {
     
     // Convert status code
     switch (code) {
-        case DSDP_UNKNOWN:
-            strcpy(word, "DSDP_UKNOWN");
-            break;
-        case DSDP_OPTIMAL:
-            strcpy(word, "DSDP_OPTIMAL");
-            break;
-        case DSDP_MAXITER:
-            strcpy(word, "DSDP_MAXITER");
-            break;
-        case DSDP_INTERNAL_ERROR:
-            strcpy(word, "DSDP_INTERNAL_ERROR");
-            break;
-        case DSDP_PD_FEASIBLE:
-            strcpy(word, "DSDP_PRIMAL_DUAL_FEASIBLE");
-            break;
-        case DSDP_PFEAS_DINFEAS:
-            strcpy(word, "DSDP_PFEASIBLE_DINFEASIBLE");
-            break;
-        case DSDP_PUNKNOWN_DFEAS:
-            strcpy(word, "DSDP_PUNKNOWN_DFEASIBLE");
-            break;
-        case DSDP_PUNKNOWN_DINFEAS:
-            strcpy(word, "DSDP_PUNKNOWN_DINFEASIBLE");
-            break;
-        case DSDP_PINFEAS_DFEAS:
-            strcpy(word, "DSDP_PINFEASIBLE_DFEASIBLE");
-            break;
-        case DSDP_TIMELIMIT:
-            strcpy(word, "DSDP_TIMELIMIT");
-            break;
-        default:
-            break;
+        case DSDP_UNKNOWN          : strcpy(word, "DSDP_UKNOWN"); break;
+        case DSDP_OPTIMAL         : strcpy(word, "DSDP_OPTIMAL"); break;
+        case DSDP_MAXITER         : strcpy(word, "DSDP_MAXITER"); break;
+        case DSDP_INTERNAL_ERROR  : strcpy(word, "DSDP_INTERNAL_ERROR"); break;
+        case DSDP_PD_FEASIBLE     : strcpy(word, "DSDP_PRIMAL_DUAL_FEASIBLE"); break;
+        case DSDP_PFEAS_DINFEAS   : strcpy(word, "DSDP_PFEASIBLE_DINFEASIBLE"); break;
+        case DSDP_PUNKNOWN_DFEAS  : strcpy(word, "DSDP_PUNKNOWN_DFEASIBLE"); break;
+        case DSDP_PUNKNOWN_DINFEAS: strcpy(word, "DSDP_PUNKNOWN_DINFEASIBLE"); break;
+        case DSDP_PINFEAS_DFEAS   : strcpy(word, "DSDP_PINFEASIBLE_DFEASIBLE"); break;
+        case DSDP_TIMELIMIT       : strcpy(word, "DSDP_TIMELIMIT"); break;
+        default: break;
     }
 }
 
@@ -69,8 +48,7 @@ extern void dsdpCheckNan( HSDSolver *dsdpSolver ) {
     
     // Check nan in some iterations
     if (isnan(dsdpSolver->y->x[0])) {
-        dsdpSolver->eventMonitor[EVENT_NAN_IN_ITER] = TRUE;
-        return;
+        dsdpSolver->eventMonitor[EVENT_NAN_IN_ITER] = TRUE; return;
     }
     
     if (isnan(dsdpSolver->tau)   || isnan(dsdpSolver->kappa) ||
@@ -142,6 +120,13 @@ extern void DSDPResetPhaseBMonitor( HSDSolver *dsdpSolver ) {
 extern DSDP_INT DSDPPhaseALogging( HSDSolver *dsdpSolver ) {
     
     // Implement the logging procedure of DSDP phase A
+    /*
+     Phase A Log: 'P': Primal solution found. '*': Phase A ends. 'F': Error happens. 'M': Max iteration
+     --------------------------------------------------------------------------------------------------
+     | Iter |         pObj |         dObj |      dInf |      k/t |       mu |   step |    Pnorm |   E |
+     --------------------------------------------------------------------------------------------------
+    
+     */
     DSDP_INT retcode = DSDP_RETCODE_OK;
     retcode = checkIterProgress(dsdpSolver, ITER_LOGGING);
     
@@ -205,9 +190,10 @@ print_log:
 extern DSDP_INT DSDPPhaseBLogging( HSDSolver *dsdpSolver ) {
     
     /*
-     ----------------------------------------------------------------------------------------
-    | Iter |         pObj |         dObj |        mu |    alpha |     pNrm |     dPot |   E |
-    -----------------------------------------------------------------------------------------
+     Phase B Log: 'P': Primal solution found. '*': Optimal. 'F': Error happens. 'M': Max iteration
+     --------------------------------------------------------------------------------------------------
+     | Iter |              pObj |              dObj |       pInf |       mu |   step |    Pnorm |   E |
+     --------------------------------------------------------------------------------------------------
      */
     
     // Implement the logging procedure of DSDP phase A

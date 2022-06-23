@@ -88,8 +88,11 @@ typedef int DSDP_INT;
 #define DSDP_STATUS_SOLVED      4
 #define DSDP_STATUS_FAILED      5
 
-// Memory strategy
-#define DSDP_MEMORY_THRESHOLD   10000
+// Export information type
+#define DSDP_EXPORT_DSYMBOLIC   0
+#define DSDP_EXPORT_SDPASOL     1
+#define DSDP_EXPORT_MATSTATS    2
+#define DSDP_EXPORT_STRUCTURE   3
 
 // Error log
 #define error(etype, x)          printf("[%s]: %s", (etype), (x)); assert( 0 ); \

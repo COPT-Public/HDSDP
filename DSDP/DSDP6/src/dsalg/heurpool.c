@@ -12,27 +12,15 @@ extern void DSDP_HEURS( adjustSolverParams )
     
     DSDP_INT hit = FALSE;
     
+    // Case 1: large block
     if (dsdpSolver->nBlock > 100) {
         DSDPSetIntParam(dsdpSolver, INT_PARAM_ACORRECTOR, 6);
         DSDPSetIntParam(dsdpSolver, INT_PARAM_BCORRECTOR, 0);
         DSDPSetDblParam(dsdpSolver, DBL_PARAM_INIT_BETA, 1.0);
+        dsdpSolver->pObjVal = 1e+10; hit = TRUE;
     }
     
-    // hamming problems
-    if (zero == 0.0 && dsdpSolver->m >= 50 * largeblock && dsdpSolver->m >= 15000 && !hit) {
-        printf("| Hit hamming \n"); hit = TRUE;
-        dsdpSolver->pObjVal = 1e+05; dsdpSolver->ybound = 1e+07;
-        DSDPSetDblParam(dsdpSolver, DBL_PARAM_INIT_BETA, 1.0);
-        DSDPSetDblParam(dsdpSolver, DBL_PARAM_RHO, 3.0);
-        DSDPSetDblParam(dsdpSolver, DBL_PARAM_RHON, 3.0);
-    }
-    
-    if (dsdpSolver->m >= 100 * largeblock && dsdpSolver->m >= 50000) {
-        dsdpSolver->pObjVal = 1e+10; dsdpSolver->ybound = 1e+04;
-        DSDPSetDblParam(dsdpSolver, DBL_PARAM_INIT_BETA, 1000.0);
-    }
-    
-    // prob_x_x_x problems
+    // Case 2: Extremely dense
     if (ds > 0.7 * dsdpSolver->nBlock * dsdpSolver->m && !hit) {
         printf("| Hit prob \n"); hit = TRUE;
         DSDPSetDblParam(dsdpSolver, DBL_PARAM_INIT_BETA, 1.0);
@@ -41,7 +29,16 @@ extern void DSDP_HEURS( adjustSolverParams )
         dsdpSolver->ybound = 1e+04;
     }
     
-    // theta
+    // hamming problems: Case: tr(X) = alpha
+    if (zero == 0.0 && dsdpSolver->m >= 50 * largeblock && dsdpSolver->m >= 15000 && !hit) {
+        printf("| Hit hamming \n"); hit = TRUE;
+        dsdpSolver->pObjVal = 1e+05; dsdpSolver->ybound = 1e+07;
+        DSDPSetDblParam(dsdpSolver, DBL_PARAM_INIT_BETA, 1.0);
+        DSDPSetDblParam(dsdpSolver, DBL_PARAM_RHO, 3.0);
+        DSDPSetDblParam(dsdpSolver, DBL_PARAM_RHON, 3.0);
+    }
+    
+    // theta: Case: tr(X) = alpha
     if (zero == 0.0 && r1 == 1.0 && ds == 0.0 && sps >= 2000 &&
         dsdpSolver->m >= dsdpSolver->n * 25 && !hit) {
         printf("| Hit theta \n"); hit = TRUE;
@@ -50,26 +47,7 @@ extern void DSDP_HEURS( adjustSolverParams )
         dsdpSolver->pObjVal = 1e+02;
     }
     
-    // inc_xxx
-    if (zero == 0.0 && sps == 1.0 && ds == 0.0 &&
-        (fabs(nlp / dsdpSolver->n - 4.0) < 0.5) && !hit) {
-        printf("| Hit Inc \n"); hit = TRUE;
-        DSDPSetDblParam(dsdpSolver, DBL_PARAM_INIT_BETA, 10.0);
-        DSDPSetIntParam(dsdpSolver, INT_PARAM_ACORRECTOR, 6);
-        DSDPSetIntParam(dsdpSolver, INT_PARAM_BCORRECTOR, 0);
-        dsdpSolver->ybound = 5.0;
-    }
-    
-    // swissroll
-    if ((fabs((double) dsdpSolver->m / dsdpSolver->n - 4) < 0.5)
-        && zero == 0.0 && ds ==0.0 && r1 == dsdpSolver->m && !hit) {
-        printf("| Hit Swiss \n"); hit = TRUE;
-        DSDPSetDblParam(dsdpSolver, DBL_PARAM_INIT_BETA, 10.0);
-        DSDPSetIntParam(dsdpSolver, INT_PARAM_BCORRECTOR, 1);
-        dsdpSolver->ybound = 1e+04;
-    }
-    
-    // Gxx
+    // Gxx: Case: tr(X) = alpha
     if (zero == 0.0 && r1 == dsdpSolver->m && sps == 1.0 && !hit &&
         (dsdpSolver->n == dsdpSolver->m - 1 || dsdpSolver->n == dsdpSolver->m) &&
         dsdpSolver->m <= 10000) {
@@ -90,40 +68,54 @@ extern void DSDP_HEURS( adjustSolverParams )
         }
     }
     
+    // Vibra and buck: one sided y bound
     if (nlp == dsdpSolver->m && dsdpSolver->n != dsdpSolver->m) {
         printf("| Hit ViBu \n"); hit = TRUE;
         DSDPSetDblParam(dsdpSolver, DBL_PARAM_RHO, 3.0);
         DSDPSetDblParam(dsdpSolver, DBL_PARAM_RHON, 3.0);
-        if (zero == 0.0) {
-            DSDPSetDblParam(dsdpSolver, DBL_PARAM_INIT_BETA, 1e+06);
-            DSDPSetIntParam(dsdpSolver, INT_PARAM_ACORRECTOR, 12);
-        } else {
-            DSDPSetDblParam(dsdpSolver, DBL_PARAM_INIT_BETA, 1e+02);
-            DSDPSetIntParam(dsdpSolver, INT_PARAM_ACORRECTOR, 12);
-        }
+        DSDPSetDblParam(dsdpSolver, DBL_PARAM_INIT_BETA, 1e+06);
+        DSDPSetIntParam(dsdpSolver, INT_PARAM_ACORRECTOR, 12);
     }
     
+    // inc_xxx Case: tr(E * X) = 0.0
+    if (zero == 0.0 && sps == 1.0 && ds == 0.0 &&
+        (fabs(nlp / dsdpSolver->n - 4.0) < 0.5) && !hit) {
+        printf("| Hit Inc \n"); hit = TRUE;
+        DSDPSetDblParam(dsdpSolver, DBL_PARAM_INIT_BETA, 1.0);
+        dsdpSolver->ybound = 1e+04;
+    }
+    
+    // swissroll Case: tr(E * X) = 0.0
+    if ((fabs((double) dsdpSolver->m / dsdpSolver->n - 4) < 0.5)
+        && zero == 0.0 && ds ==0.0 && r1 == dsdpSolver->m && !hit) {
+        printf("| Hit Swiss \n"); hit = TRUE;
+        DSDPSetDblParam(dsdpSolver, DBL_PARAM_INIT_BETA, 1.0);
+        dsdpSolver->ybound = 1e+04;
+    }
+    
+    // body Case: tr(E * X) = 0.0
     if (zero == 0.0 && sps == 0.0 && ds == 1.0 && r1 == dsdpSolver->m && !hit) {
         printf("| Hit body \n"); hit = TRUE;
-        DSDPSetDblParam(dsdpSolver, DBL_PARAM_RHO, 5.0);
-        DSDPSetDblParam(dsdpSolver, DBL_PARAM_RHON, 5.0);
         DSDPSetDblParam(dsdpSolver, DBL_PARAM_INIT_BETA, 1.0);
+        dsdpSolver->ybound = 1e+04;
     }
     
+    // shmup: two-sided implied bound on y
     if (nlp >= dsdpSolver->m && ds == 0.0 && r1 == 0.0 && !hit) {
         printf("| Hit shmup \n"); hit = TRUE;
-        DSDPSetDblParam(dsdpSolver, DBL_PARAM_INIT_BETA, 100.0);
+        DSDPSetDblParam(dsdpSolver, DBL_PARAM_INIT_BETA, 1.0);
         DSDPSetIntParam(dsdpSolver, INT_PARAM_BCORRECTOR, 4);
-        dsdpSolver->pObjVal = 1e+05;
-        dsdpSolver->ybound = 100;
+        dsdpSolver->pObjVal = 1e+05; dsdpSolver->ybound = 100;
     }
     
+    // Large LP cone. rabmo and reimer
     if (nlp > 30 * dsdpSolver->n && nlp > dsdpSolver->m && !hit) {
         dsdpSolver->ybound = 1.0;
         printf("| Hit large LPcone \n"); hit = TRUE;
         DSDPSetDblParam(dsdpSolver, DBL_PARAM_INIT_BETA, 1.0);
     }
     
+    // 1024: Case: tr(X) = alpha
     getIntParam(dsdpSolver->param, INT_PARAM_GOLDSEARCH, &inttmp);
     if (!inttmp && sps == dsdpSolver->m && r1 == 1.0 &&
         zero == 0.0 && ds == 0.0 && dsdpSolver->m >= dsdpSolver->n * 8 &&

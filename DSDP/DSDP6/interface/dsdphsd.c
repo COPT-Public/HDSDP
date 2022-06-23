@@ -11,12 +11,14 @@
 #include "dsdppresolve.h"
 #include "dsdpparam.h"
 #include "dsdpsolver.h"
+#include "dsdpoutput.h"
 #include "hsd.h"
 #include "dsdpdinfeas.h"
 #include "dsdputils.h"
 #include "dsdplog.h"
 #include "dsdppfeas.h"
 #include "dsdppsol.h"
+
 
 static char etype[] = "DSDP Interface";
 
@@ -558,14 +560,17 @@ extern void DSDPPrintVersion(void) {
     dsdpshowdash();
 }
 
-extern DSDP_INT DSDPCreate( HSDSolver **dsdpSolver ) {
+extern DSDP_INT DSDPCreate( HSDSolver **dsdpSolver, char *modelName ) {
     
     /* Create solver */
     DSDP_INT retcode = DSDP_RETCODE_OK;
     HSDSolver *solver = NULL;
     solver = (HSDSolver *) calloc(1, sizeof(HSDSolver));
-    retcode = DSDPIInit(solver);
-    *dsdpSolver = solver;
+    retcode = DSDPIInit(solver); *dsdpSolver = solver;
+    char defaultname[] = "DSDPModel";
+    
+    char *name = (modelName) ? modelName : defaultname;
+    strcpy(solver->SDPModel, name);
     return retcode;
 }
 
@@ -772,6 +777,25 @@ extern DSDP_INT DSDPGetPrimal( HSDSolver *dsdpSolver, double **X ) {
     for (DSDP_INT i = 0; i < dsdpSolver->nBlock; ++i) {
         denseMatFill(dsdpSolver->dsaux[i], X[i]);
     }
+    return retcode;
+}
+
+extern DSDP_INT DSDPExport( HSDSolver *dsdpSolver, DSDP_INT output, char *fname ) {
+    // Export solver information
+    DSDP_INT retcode = DSDP_RETCODE_OK;
+    
+    if (!dsdpSolver->dObj) {
+        retcode = DSDPSetObj(dsdpSolver, NULL); checkCode;
+    }
+    if (output == DSDP_EXPORT_DSYMBOLIC) {
+        if (dsdpSolver->insStatus != DSDP_STATUS_PRESOLVED) {
+            retcode = DSDPIPresolve(dsdpSolver);
+        }
+        dumpDualSymbolic(dsdpSolver, fname);
+    } else {
+        error(etype, "Not implemente. \n");
+    }
+    
     return retcode;
 }
 

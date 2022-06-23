@@ -18,6 +18,9 @@
 
 typedef struct {
     
+    // Model name
+    char SDPModel[100];   // Name of SDP model
+    
     // Problem data
     sdpMat   **sdpData;   // SDP data A after transformation.
     DSDP_INT *isSDPset;
@@ -140,7 +143,7 @@ typedef HSDSolver Solver;
 extern "C" {
 #endif
 // Solver interface
-extern DSDP_INT DSDPCreate( Solver **dsdpSolver );
+extern DSDP_INT DSDPCreate( Solver **dsdpSolver, char *modelName );
 
 extern DSDP_INT DSDPSetDim( Solver    *dsdpSolver,
                             DSDP_INT  nVars,
@@ -167,6 +170,7 @@ extern DSDP_INT DSDPSetSDPConeData( Solver    *dsdpSolver,
 extern DSDP_INT DSDPSetObj   ( HSDSolver *dsdpSolver, double *dObj );
 extern DSDP_INT DSDPOptimize ( Solver *dsdpSolver );
 
+extern DSDP_INT DSDPExport      ( HSDSolver *dsdpSolver, DSDP_INT output, char *fname     );
 extern DSDP_INT DSDPSetDblParam ( HSDSolver *dsdpSolver, DSDP_INT pName, double   dblVal  );
 extern DSDP_INT DSDPSetIntParam ( HSDSolver *dsdpSolver, DSDP_INT pName, DSDP_INT intVal  );
 extern DSDP_INT DSDPGetDblParam ( HSDSolver *dsdpSolver, DSDP_INT pName, double   *dblVal );
