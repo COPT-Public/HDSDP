@@ -415,6 +415,14 @@ extern void r1MatGetSymbolic( r1Mat *x, DSDP_INT *hash, DSDP_INT *firstNnz, DSDP
     }
 }
 
+extern DSDP_INT r1MatIsConstant( r1Mat *x ) {
+    double *a = x->x, a1 = a[x->nzIdx[0]];
+    for (DSDP_INT i = 1; i < x->nnz; ++i) {
+        if (a[x->nzIdx[i]] != a1) return FALSE;
+    }
+    return TRUE;
+}
+
 extern DSDP_INT r1MatView( r1Mat *x ) {
     
     printf("Matrix View: \n");

@@ -44,12 +44,16 @@ static void printStat( DSDPStats *stats, DSDP_INT sName ) {
             printf("Phase B time: "); break;
         case STAT_NUM_SMALL_ITER:
             printf("nIter of small step: "); break;
-        case STAT_C_ISCONSTANT:
-            printf("C is constant: "); break;
-        case STAT_B_ISNULL:
-            printf("b is NULL: "); break;
-        case STAT_SCHUR_DIAG:
-            printf("Diagonal of Schur: "); break;
+        case STAT_NO_PINTERIOR:
+            printf("No primal interior: "); break;
+        case STAT_NO_DINTERIOR:
+            printf("No dual interior: "); break;
+        case STAT_IMP_BOUNDX:
+            printf("Implicit bound on tr(X) "); break;
+        case STAT_IMP_UBOUNDY:
+            printf("Implicit upper bound on y: "); break;
+        case STAT_IMP_LBOUNDY:
+            printf("Implicit lower bound on y: "); break;
         case STAT_GAP_BROKEN:
             printf("Gap is broken: "); break;
         case STAT_DIMACS_ERR1:

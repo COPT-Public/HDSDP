@@ -27,6 +27,7 @@ extern DSDP_INT preRank1Rdc    ( HSDSolver *dsdpSolver );
 extern DSDP_INT preRankkRdc    ( HSDSolver *dsdpSolver );
 extern DSDP_INT getMatIdx      ( HSDSolver *dsdpSolver );
 extern DSDP_INT preSymbolic    ( HSDSolver *dsdpSolver );
+extern DSDP_INT preStructureDetect( HSDSolver *dsdpSolver );
 extern DSDP_INT DSDPPrepareMAssembler ( HSDSolver *dsdpSolver );
 
 

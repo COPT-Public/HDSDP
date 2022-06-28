@@ -123,10 +123,9 @@ static void initparams( HSDSolver *dsdpSolver ) {
         DSDPSetIntParam(dsdpSolver, INT_PARAM_GOLDSEARCH, TRUE);
     }
     
-    DSDPParamPrint(dsdpSolver->param);
-    
     // Some other heuristics
     DSDP_HEURS( adjustSolverParams )(dsdpSolver, largeblock);
+    DSDPParamPrint(dsdpSolver->param);
     
     DSDPGetIntParam(dsdpSolver, INT_PARAM_ACORRECTOR, &ncorrA);
     DSDPGetIntParam(dsdpSolver, INT_PARAM_BCORRECTOR, &nusercorr);

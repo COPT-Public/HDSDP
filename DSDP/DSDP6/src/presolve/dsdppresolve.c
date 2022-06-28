@@ -15,7 +15,6 @@ static DSDP_INT isDenseRank1Acc( dsMat *dataMat, DSDP_INT *isRank1 ) {
     // Detect if a dense matrix is rank one by directly computing the outer product
     // Slower but accurate
     DSDP_INT retcode = DSDP_RETCODE_OK;
-    
     double *A = dataMat->array, *a = NULL;
     DSDP_INT n = dataMat->dim, i, j, r1 = TRUE, col = 0, isNeg = FALSE;
     
@@ -25,11 +24,9 @@ static DSDP_INT isDenseRank1Acc( dsMat *dataMat, DSDP_INT *isRank1 ) {
             break;
         }
     }
-    
     if (i == n) {*isRank1 = FALSE; return retcode;}
     if (i >= n - 1 && !packIdx(A, n, i, i)) {
-        *isRank1 = FALSE;
-        return retcode;
+        *isRank1 = FALSE; return retcode;
     }
     
     col = i;
@@ -39,8 +36,7 @@ static DSDP_INT isDenseRank1Acc( dsMat *dataMat, DSDP_INT *isRank1 ) {
     double adiag = packIdx(A, n, col, col);
     
     if (adiag < 0) {
-        isNeg = TRUE;
-        adiag = sqrt(- adiag);
+        isNeg = TRUE; adiag = sqrt(- adiag);
     } else {
         adiag = sqrt(adiag);
     }
@@ -50,9 +46,7 @@ static DSDP_INT isDenseRank1Acc( dsMat *dataMat, DSDP_INT *isRank1 ) {
     }
     
     // Check if A = a * a' by computing ||A - a * a'||_F
-    double *start = NULL;
-    double err    = 0.0;
-    double diff   = 0.0;
+    double *start = NULL, err = 0.0, diff = 0.0;
     DSDP_INT idx  = 0;
     
     if (isNeg) {
@@ -64,8 +58,7 @@ static DSDP_INT isDenseRank1Acc( dsMat *dataMat, DSDP_INT *isRank1 ) {
             }
             idx += n - i;
             if (err > 1e-08) {
-                r1 = FALSE;
-                break;
+                r1 = FALSE; break;
             }
         }
     } else {
@@ -77,8 +70,7 @@ static DSDP_INT isDenseRank1Acc( dsMat *dataMat, DSDP_INT *isRank1 ) {
             }
             idx += n - i;
             if (err > 1e-08) {
-                r1 = FALSE;
-                break;
+                r1 = FALSE; break;
             }
         }
     }
@@ -608,6 +600,128 @@ clean_up:
     return retcode;
 }
 
+static void preNoPIntDetect( HSDSolver *dsdpSolver ) {
+    // Check if there is no primal interior point
+    if (dsdpSolver->nBlock > 1) { return; }
+    sdpMat *data = dsdpSolver->sdpData[0];
+    rkMat *rkdata = NULL;
+    DSDP_INT idx, nopint = FALSE;;
+    if (data->nrkMat == 0) { return; }
+    for (DSDP_INT i = 0; i < data->nrkMat; ++i) {
+        idx = data->rkMatIdx[i];
+        if (idx == data->dimy) { continue; }
+        rkdata = data->sdpData[idx];
+        if (dsdpSolver->dObj->x[idx] / rkdata->data[0]->sign <= 1e-03) {
+            // printf("%d \n", idx);
+            nopint = TRUE; break;
+        }
+    }
+    DSDPStatUpdate(&dsdpSolver->dsdpStats, STAT_NO_PINTERIOR, nopint);
+}
+
+static void preNoDIntDetect( HSDSolver *dsdpSolver ) {
+    // Check if there is no dual interior implied by linear constraints
+    if (!dsdpSolver->isLPset) { return; }
+    lpMat *lpdata = dsdpSolver->lpData;
+    DSDP_INT *Ap = lpdata->Ap, i, j, nnz, nnz2, m = lpdata->dims, n = lpdata->dimy, m2 = m / 2;
+    if (m % 2 != 0) { return; } double *c = dsdpSolver->lpObj->x;
+    for (i = 0; i < m2; ++i) { if (c[i] != -c[i + m2]) { return; } }
+    double *Ax = lpdata->Ax;
+    for (i = 0; i < n; ++i) {
+        nnz = Ap[i + 1] - Ap[i]; nnz2 = nnz / 2;
+        if (nnz % 2 != 0) { return; }
+        for (j = 0; j < nnz2; ++j) {
+            if (Ax[Ap[i] + j] != -Ax[Ap[i] + j + nnz2]) { return; }
+        }
+    }
+    
+    DSDPStatUpdate(&dsdpSolver->dsdpStats, STAT_NO_DINTERIOR, TRUE);
+    return;
+}
+
+static void preImpXBoundDetect( HSDSolver *dsdpSolver ) {
+    // Check if constraints imply trace(X, I) = T.
+    if (dsdpSolver->nBlock > 1) { return; }
+    sdpMat *data = dsdpSolver->sdpData[0];
+    spsMat *spsdata = NULL; r1Mat *r1Mat = NULL;
+    DSDP_INT impXbound = FALSE, type = 0, idx; double boundX = 0.0;
+    double *aux = dsdpSolver->M->schurAux; memset(aux, 0, sizeof(double) * data->dimS);
+    
+    if (data->nspsMat == data->dimy + 1) { type = 1; }
+    if (data->nspsMat == data->dimy &&
+        data->types[data->dimy] != MAT_TYPE_SPARSE) { type = 1; }
+    if (data->nrkMat == data->dimy &&
+        data->types[data->dimy] != MAT_TYPE_RANKK) { type = 2; }
+    
+    if (!type) { return; }
+    if (type == 1) {
+        for (DSDP_INT i = 0; i < data->dimy; ++i) {
+            spsdata = data->sdpData[i];
+            if (spsMatIsDiagonal(spsdata)) {
+                impXbound = TRUE;
+                boundX = spsMatGetXbound(spsdata, dsdpSolver->dObj); break;
+            }
+        }
+    } else {
+        for (DSDP_INT i = 0; i < data->dimy; ++i) {
+            r1Mat = ((rkMat *) data->sdpData[i])->data[0];
+            if (r1Mat->nnz == 1) {
+                idx = r1Mat->nzIdx[0];
+                aux[idx] = dsdpSolver->dObj->x[idx] / r1Mat->x[r1Mat->nzIdx[0]];
+            }
+        }
+        impXbound = TRUE;
+        for (DSDP_INT i = 0; i < data->dimS; ++i) {
+            if (aux[i]) {
+                boundX += aux[i];
+            } else {
+                impXbound = FALSE; break;
+            }
+        }
+    }
+    
+    if (impXbound) {
+        DSDPStatUpdate(&dsdpSolver->dsdpStats, STAT_IMP_BOUNDX, boundX);
+    }
+}
+
+static void preImpYBoundDetect( HSDSolver *dsdpSolver ) {
+    //  Check if LP constraints imply u <= y <= l
+    if (!dsdpSolver->isLPset) { return; }
+    
+    lpMat *lpdata = dsdpSolver->lpData;
+    DSDP_INT *Ap = lpdata->Ap, *Ai = lpdata->Ai, i, j, impy = TRUE, impylb = FALSE, impyub = FALSE;
+    double *Ax = lpdata->Ax, yubound = 0.0, ylbound = 0.0, *c = dsdpSolver->lpObj->x;
+    double *ylb = dsdpSolver->d1->x, *yub = dsdpSolver->d2->x, tmp;
+    for (i = 0; i < lpdata->dimy; ++i) {
+        for (j = Ap[i]; j < Ap[i + 1]; ++j) {
+            if (Ap[i + 1] - Ap[i] > 2) { impy = FALSE; break; }
+            if (Ax[j] > 0.0) {
+                if (yub[i]) { impy = FALSE; break; } impyub = TRUE;
+                tmp = c[Ai[j]] / Ax[j]; yub[i] = MAX(yub[i], tmp);
+            } else {
+                if (ylb[i]) { impy = FALSE; break; } impylb = TRUE;
+                tmp = c[Ai[j]] / Ax[j]; ylb[i] = MIN(ylb[i], tmp);
+            }
+        }
+        if (!impy) { break; }
+    }
+    if (impy) {
+        if (impyub) {
+            for (i = 0; i < lpdata->dimy; ++i) { yubound = MAX(yubound, yub[i]); }
+            yubound = (yubound == 0.0) ? 1.0 : yubound;
+            DSDPStatUpdate(&dsdpSolver->dsdpStats, STAT_IMP_UBOUNDY, yubound);
+        }
+        if (impylb) {
+            for (i = 0; i < lpdata->dimy; ++i) { ylbound = MIN(ylbound, ylb[i]); }
+            ylbound = (ylbound == 0.0) ? -1.0 : ylbound;
+            DSDPStatUpdate(&dsdpSolver->dsdpStats, STAT_IMP_LBOUNDY, ylbound);
+        }
+    }
+    
+    return;
+}
+
 extern DSDP_INT DSDPPrepareMAssembler( HSDSolver *dsdpSolver ) {
     // Initialize the internal Schur matrix structure
     DSDP_INT retcode = DSDP_RETCODE_OK;
@@ -733,5 +847,46 @@ extern DSDP_INT preSymbolic( HSDSolver *dsdpSolver ) {
         preSDPgetSymbolic(dsdpSolver, i);
     }
  
+    return retcode;
+}
+
+extern DSDP_INT preStructureDetect( HSDSolver *dsdpSolver ) {
+    // Detect four speccial structures in the dual formulation
+    DSDP_INT retcode = DSDP_RETCODE_OK;
+    
+    preNoPIntDetect(dsdpSolver);
+    preNoDIntDetect(dsdpSolver);
+    preImpXBoundDetect(dsdpSolver);
+    preImpYBoundDetect(dsdpSolver);
+    
+    double nopint, nodint, impX, impyub, impylb;
+    DSDPGetStats(&dsdpSolver->dsdpStats, STAT_NO_PINTERIOR, &nopint);
+    DSDPGetStats(&dsdpSolver->dsdpStats, STAT_NO_DINTERIOR, &nodint);
+    DSDPGetStats(&dsdpSolver->dsdpStats, STAT_IMP_BOUNDX, &impX);
+    DSDPGetStats(&dsdpSolver->dsdpStats, STAT_IMP_UBOUNDY, &impyub);
+    DSDPGetStats(&dsdpSolver->dsdpStats, STAT_IMP_LBOUNDY, &impylb);
+    
+    if (nopint || nodint || impX || impyub || impylb) {
+        printf("| - Special structures found \n");
+        if (nopint) {
+            printf("|    %s : %s \n", "No primal interior: tr(X * aa') -> 0", "PRelax penalty tightened");
+        }
+        if (nodint) {
+            printf("|    %s : %s \n", "No dual interior: A' * y = c", "PRelax penalty tightened");
+        }
+        if (impX) {
+            printf("|    %s = %6.2e : %s \n", "tr(X)", impX, "Bound of X fixed");
+        }
+        if (impyub) {
+            printf("|    %s <= %+5.1e : %s \n", "y", impyub, "PRelax penalty adjusted");
+        }
+        if (impylb) {
+            printf("|    %s >= %+5.1e : %s \n", "y", impylb, "PRelax penalty adjusted");
+        }
+    } else {
+        printf("| - No special structure is available \n");
+    }
+    
+    
     return retcode;
 }

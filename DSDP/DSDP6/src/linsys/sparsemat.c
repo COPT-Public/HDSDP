@@ -1022,6 +1022,27 @@ extern void spsMatGetSymbolic( spsMat *sMat, DSDP_INT *hash, DSDP_INT *firstNnz,
     }
 }
 
+extern DSDP_INT spsMatIsDiagonal( spsMat *sMat ) {
+    if (sMat->nnz != sMat->dim) {
+        return FALSE;
+    }
+    for (DSDP_INT i = 0; i < sMat->dim; ++i) {
+        if (sMat->cidx[i] != sMat->i[i]) {
+            return FALSE;
+        }
+    }
+    return TRUE;
+}
+
+extern double spsMatGetXbound( spsMat *sMat, vec *b ) {
+    double trX = 0.0;
+    assert( sMat->dim == sMat->nnz );
+    for (DSDP_INT i = 0; i < sMat->dim; ++i) {
+        trX += b->x[i] / sMat->x[i];
+    }
+    return trX;
+}
+
 // Debugging
 extern void spsMatView( spsMat *sMat ) {
     // View a sparse matrix by calling CXSparse cs_print

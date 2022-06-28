@@ -31,6 +31,7 @@
 #define STAT_MATSTAT_TIME    19
 #define STAT_SYMBOLIC_TIME   20
 #define STAT_SCHURORD_TIME   21
+#define STAT_SPECIAL_DETECT  28
 
 #define STAT_ONE_NORM_A      22
 
@@ -48,20 +49,22 @@
 
 // Solver heuristic statistics
 #define STAT_NUM_SMALL_ITER  53
-#define STAT_C_ISCONSTANT    54
-#define STAT_B_ISNULL        55
-#define STAT_SCHUR_DIAG      56
-#define STAT_GAP_BROKEN      57
+#define STAT_NO_PINTERIOR    54
+#define STAT_NO_DINTERIOR    55
+#define STAT_IMP_UBOUNDY     56
+#define STAT_IMP_LBOUNDY     57
+#define STAT_IMP_BOUNDX      58
+#define STAT_GAP_BROKEN      59
 
 // DIMACS statistics
-#define STAT_DIMACS_ERR1     58
-#define STAT_DIMACS_ERR2     59
-#define STAT_DIMACS_ERR3     60
-#define STAT_DIMACS_ERR4     61
-#define STAT_DIMACS_ERR5     62
-#define STAT_DIMACS_ERR6     63
+#define STAT_DIMACS_ERR1     60
+#define STAT_DIMACS_ERR2     61
+#define STAT_DIMACS_ERR3     62
+#define STAT_DIMACS_ERR4     63
+#define STAT_DIMACS_ERR5     64
+#define STAT_DIMACS_ERR6     65
 
-#define NUM_STATISTICS       64
+#define NUM_STATISTICS       66
 
 typedef struct {
     

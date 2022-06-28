@@ -24,7 +24,7 @@ static void dsdpstatus( DSDP_INT code, char *word ) {
     
     // Convert status code
     switch (code) {
-        case DSDP_UNKNOWN          : strcpy(word, "DSDP_UKNOWN"); break;
+        case DSDP_UNKNOWN         : strcpy(word, "DSDP_UKNOWN"); break;
         case DSDP_OPTIMAL         : strcpy(word, "DSDP_OPTIMAL"); break;
         case DSDP_MAXITER         : strcpy(word, "DSDP_MAXITER"); break;
         case DSDP_INTERNAL_ERROR  : strcpy(word, "DSDP_INTERNAL_ERROR"); break;

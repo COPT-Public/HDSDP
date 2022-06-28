@@ -205,6 +205,14 @@ extern void rkMatGetSymbolic( rkMat *R, DSDP_INT *hash, DSDP_INT *firstNnz, DSDP
     }
 }
 
+extern DSDP_INT rkMatIsConstant( rkMat *R ) {
+    if (R->rank != 1) {
+        return FALSE;
+    } else {
+        return r1MatIsConstant(R->data[0]);
+    }
+}
+
 extern DSDP_INT rkMatView( rkMat *R ) {
     
     printf("Matrix View: \n");

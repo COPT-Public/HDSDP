@@ -518,6 +518,13 @@ static DSDP_INT DSDPIPresolve( HSDSolver *dsdpSolver ) {
     printf("| - Dual symbolic check completes in %3.3f seconds \n", t);
     DSDPStatUpdate(stat, STAT_SYMBOLIC_TIME, t);
     
+    center = my_clock();
+    printf("| - Detecting special structures \n");
+    retcode = preStructureDetect(dsdpSolver);
+    t = my_clock() - center;
+    printf("| - Special structure detection completes in %3.3f seconds \n", t);
+    DSDPStatUpdate(stat, STAT_SPECIAL_DETECT, t);
+    
     dsdpSolver->insStatus = DSDP_STATUS_PRESOLVED;
     t = my_clock() - start;
     retcode = DSDPStatUpdate(stat, STAT_PRESOLVE_TIME, t);
