@@ -118,7 +118,7 @@ static void cgSolveCheck( CGSolver *cgSolver, vec *b, DSDP_INT firstInRound ) {
 
         if (cgSolver->nfailed == 20) {
             if (cgSolver->reuse != 20) {
-                printf("| Switch to CG Mode 1. Reuse preconditioner for %d solves. \n", 10);
+                printf("| Switch to CG Mode 2. Reuse preconditioner for %d solves. \n", 10);
             }
             dsdpCGSetPreReuse(cgSolver, 10);
         }

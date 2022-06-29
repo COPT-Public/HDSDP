@@ -73,7 +73,7 @@ extern void DSDP_HEURS( adjustSolverParams )
             DSDPSetIntParam(dsdpSolver, INT_PARAM_GOLDSEARCH, FALSE);
             DSDPSetDblParam(dsdpSolver, DBL_PARAM_RHO, 3.0);
             DSDPSetDblParam(dsdpSolver, DBL_PARAM_RHON, 3.0);
-            DSDPSetDblParam(dsdpSolver, DBL_PARAM_INIT_BETA, 1e+02);
+            DSDPSetDblParam(dsdpSolver, DBL_PARAM_INIT_BETA, 1e+06);
             DSDPSetIntParam(dsdpSolver, INT_PARAM_ACORRECTOR, 15);
         } else {
             // sensor sparse inc

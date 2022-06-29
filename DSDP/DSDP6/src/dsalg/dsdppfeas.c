@@ -83,7 +83,7 @@ extern DSDP_INT DSDPPFeasPhase( HSDSolver *dsdpSolver ) {
         currentpObj = dsdpSolver->pObjVal;
         
         // Select new mu
-        if ((dsdpSolver->mu > 1e-10 && i <= 480 && nopfeasIter < 10) || dsdpSolver->pObjVal == initpObj) {
+        if ((dsdpSolver->mu > 1e-12 && i <= 480 && nopfeasIter < 10) || dsdpSolver->pObjVal == initpObj) {
             selectMu(dsdpSolver, &newmu); checkCode;
             newmu = MIN(newmu, muub); newmu = MAX(newmu, mulb);
             dsdpSolver->mu = newmu;
