@@ -203,7 +203,14 @@ static void LPConic( COPS_GET_SCHUR )
     // Compute A s^-2 A^T
     if (!dsdpSolver->isLPset) { return; }
     if (dsdpSolver->Msdp->stype != SCHUR_TYPE_DENSE) {
-        printf("| Strange solver behavior. Give up. \n");
+        printf("| Fatal Error in dsdputils.c -> Line 206 -> LPConic( COPS_GET_SCHUR ). Give up. \n");
+        printf("---------------------------------------"
+               "---------------------------------------"
+               "--------------------\n");
+        printf("| DSDP Ends by Fatal Error. No solution available. \n");
+        printf("---------------------------------------"
+               "---------------------------------------"
+               "--------------------\n");
         exit(0);
     }
     double *M = dsdpSolver->Msdp->denseM->array;
@@ -550,7 +557,15 @@ static double SDPConic( COPS_GET_LOGDET )
         if (!(*inCone)) return 0.0;
     } else {
         if (!SDPConic( COPS_CHECK_INCONE )(dsdpSolver, DUALVAR)) {
-            printf("| Strange behavior. Give up. \n");
+            printf("| Fatal Error in dsdputils.c -> Line 560 -> SDPConic( COPS_CHECK_INCONE ). Give up. \n");
+            printf("---------------------------------------"
+                   "---------------------------------------"
+                   "--------------------\n");
+            printf("| DSDP Ends by Fatal Error. No solution available. \n");
+            printf("---------------------------------------"
+                   "---------------------------------------"
+                   "--------------------\n");
+            exit(0);
         }
     }
     
@@ -583,7 +598,15 @@ static double LPConic( COPS_GET_LOGDET )
         if (!(*inCone)) return 0.0;
     } else {
         if (logdet != logdet) {
-            printf("| Strange behavior in LP Cone. Give up. \n");
+            printf("| Fatal Error in dsdputils.c -> Line 601 -> LPConic( COPS_GET_LOGDET ). Give up. \n");
+            printf("---------------------------------------"
+                   "---------------------------------------"
+                   "--------------------\n");
+            printf("| DSDP Ends by Fatal Error. No solution available. \n");
+            printf("---------------------------------------"
+                   "---------------------------------------"
+                   "--------------------\n");
+            exit(0);
         }
     }
     

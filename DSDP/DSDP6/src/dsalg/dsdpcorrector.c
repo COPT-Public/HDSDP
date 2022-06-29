@@ -60,7 +60,15 @@ extern DSDP_INT dInfeasCorrectorStep( HSDSolver *dsdpSolver, DSDP_INT isfinal ) 
     
     if (!dsdpSolver->Ry) {
         if (!DSDPConic( COPS_CHECK_INCONE )(dsdpSolver, DUALVAR)) {
-            printf("| Strange behavior. Giving Up.\n");
+            printf("| Fatal Error in dsdpcorrector.c -> Line 63 -> dInfeasCorrectorStep. Give up. \n");
+            printf("---------------------------------------"
+                   "---------------------------------------"
+                   "--------------------\n");
+            printf("| DSDP Ends by Fatal Error. No solution available. \n");
+            printf("---------------------------------------"
+                   "---------------------------------------"
+                   "--------------------\n");
+            exit(0);
         }
     }
     
@@ -114,8 +122,15 @@ extern DSDP_INT dInfeasCorrectorStep( HSDSolver *dsdpSolver, DSDP_INT isfinal ) 
         if (step <= 0.005) {
             DSDPConic( COPS_GET_SLACK )(dsdpSolver, DUALVAR);
             if (!DSDPConic( COPS_CHECK_INCONE )(dsdpSolver, DUALVAR)) {
-                printf("| Strange behavior. Give up. \n");
-                assert( FALSE );
+                printf("| Fatal Error in dsdpcorrector.c -> dInfeasCorrectorStep -> Line 117. Give up. \n");
+                printf("---------------------------------------"
+                       "---------------------------------------"
+                       "--------------------\n");
+                printf("| DSDP Ends by Fatal Error. No solution available. \n");
+                printf("---------------------------------------"
+                       "---------------------------------------"
+                       "--------------------\n");
+                exit(0);
             }
             break;
         }
@@ -216,12 +231,6 @@ extern DSDP_INT dualCorrectorStep( HSDSolver *dsdpSolver ) {
             break;
         }
         
-//        if (i == 0) {
-//            if (!DSDPConic( COPS_CHECK_INCONE )(dsdpSolver, DUALVAR)) {
-//                printf("| Strange behavior. Give up. \n");
-//            }
-//        }
-        
         DSDPConic( COPS_GET_SCHURVEC )(dsdpSolver, FALSE);
         dsdpCGSolve(cg, d2, NULL); // Compute corrector step
         vec_dot(b, d2, &bTd2);
@@ -253,7 +262,14 @@ extern DSDP_INT dualCorrectorStep( HSDSolver *dsdpSolver ) {
             getPhaseBLps(dsdpSolver, ynow);
             dsdpInCone(dsdpSolver, &inCone);
             if (!inCone) {
-                printf("| Strange behavior in corrector. Give up \n");
+                printf("| Fatal Error in dsdpcorrector.c -> Line 257 -> dualCorrectorStep. Give up. \n");
+                printf("---------------------------------------"
+                       "---------------------------------------"
+                       "--------------------\n");
+                printf("| DSDP Ends by Fatal Error. No solution available. \n");
+                printf("---------------------------------------"
+                       "---------------------------------------"
+                       "--------------------\n");
                 exit(0);
             }
             continue;

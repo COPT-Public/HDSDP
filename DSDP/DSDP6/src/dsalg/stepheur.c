@@ -168,7 +168,15 @@ extern void computeAdaptivedRate( HSDSolver *dsdpSolver ) {
             alphac *= 0.8;
         }
         if (alphac < 1e-02) {
-            printf("| Strange behavior. Giving up.\n"); exit(0);
+            printf("| Fatal Error in stepheur.c -> Line 171 -> computeAdaptivedRate. Give up. \n");
+            printf("---------------------------------------"
+                   "---------------------------------------"
+                   "--------------------\n");
+            printf("| DSDP Ends by Fatal Error. No solution available. \n");
+            printf("---------------------------------------"
+                   "---------------------------------------"
+                   "--------------------\n");
+            exit(0);
         }
     }
     dsdpSolver->alpha = alphac;
@@ -379,7 +387,15 @@ extern void dualPotentialReduction( HSDSolver *dsdpSolver ) {
         inCone = TRUE;
         getCurrentyPotential(dsdpSolver, NULL, rho, &oldpotential, NULL);
         if (!inCone) {
-            printf("| Strange behavior. Give up. \n");
+            printf("| Fatal Error in stepheur.c -> Line 601 -> LPConic( COPS_GET_LOGDET ). Give up. \n");
+            printf("---------------------------------------"
+                   "---------------------------------------"
+                   "--------------------\n");
+            printf("| DSDP Ends by Fatal Error. No solution available. \n");
+            printf("---------------------------------------"
+                   "---------------------------------------"
+                   "--------------------\n");
+            exit(0);
         }
         maxstep = MIN(maxstep * 0.95, 1.0); alpha = maxstep;
         // Start line search

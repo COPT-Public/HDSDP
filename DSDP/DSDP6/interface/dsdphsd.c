@@ -561,9 +561,10 @@ static DSDP_INT DSDPIPostsolve( HSDSolver *dsdpSolver ) {
 
 extern void DSDPPrintVersion(void) {
     dsdpshowdash();
-    printf("| Homogeneous Dual Scaling Interior Point Solver. Version %d.%d.%d "
+    printf("| Homogeneous Dual Scaling Interior Point Solver. Version %d.%d.%d (Build date %d.%d %d)"
            "                                   \n",
-           VERSION_MAJOR, VERSION_MINOR, VERSION_TECHNICAL);
+           VERSION_MAJOR, VERSION_MINOR, VERSION_TECHNICAL,
+           BUILD_DATE_MONTH, BUILD_DATE_DAY, BUILD_DATE_YEAR);
     dsdpshowdash();
 }
 

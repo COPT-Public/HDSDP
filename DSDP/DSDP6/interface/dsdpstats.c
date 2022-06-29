@@ -157,9 +157,6 @@ extern void DSDPDataStatPrint( DSDPStats *stat ) {
            "---------------------------------------------\n");
     printf("| %10d | %10d | %10d | %10d |  %10.5e |  %10.5e |  %10.5e \n",
            (DSDP_INT) zero, (DSDP_INT) sps, (DSDP_INT) ds, (DSDP_INT) r1, a, b, c);
-//    dsdpshowdash();
-//    printf("| |A|: %10.6e  |b|: %10.6e  |C|: %10.6e "
-//           "                                    \n", a, b, c);
     
     return;
 }

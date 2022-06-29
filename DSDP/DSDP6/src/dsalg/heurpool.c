@@ -37,8 +37,9 @@ extern void DSDP_HEURS( adjustSolverParams )
     if (impX) {
         dsdpSolver->pObjVal = 1e+05;
         // DSDPSetIntParam(dsdpSolver, INT_PARAM_GOLDSEARCH, FALSE);
-        DSDPSetDblParam(dsdpSolver, DBL_PARAM_INIT_BETA, 10.0);
+        DSDPSetDblParam(dsdpSolver, DBL_PARAM_INIT_BETA, 1000.0);
         DSDPSetDblParam(dsdpSolver, DBL_PARAM_BOUND_X, impX);
+        DSDPSetIntParam(dsdpSolver, INT_PARAM_GOLDSEARCH, FALSE);
         DSDPSetDblParam(dsdpSolver, DBL_PARAM_RHO, 5.0);
         DSDPSetDblParam(dsdpSolver, DBL_PARAM_RHON, 5.0);
     }
@@ -46,8 +47,14 @@ extern void DSDP_HEURS( adjustSolverParams )
     // Case 4 No primal interior
     if (nopint) {
         dsdpSolver->ybound = 1e+04;
-        DSDPSetDblParam(dsdpSolver, DBL_PARAM_INIT_BETA, 1.0);
-        if (impX) { dsdpSolver->pObjVal = 1e+10; }
+        DSDPSetDblParam(dsdpSolver, DBL_PARAM_INIT_BETA, 1000.0);
+        if (impX) {
+            if (ds > 0) {
+                dsdpSolver->pObjVal = 1e+10;
+                DSDPSetDblParam(dsdpSolver, DBL_PARAM_RHO, 3.0);
+                DSDPSetDblParam(dsdpSolver, DBL_PARAM_RHON, 3.0);
+            }
+        }
     }
     
     // Case 5 Implicit dual bound
@@ -63,17 +70,33 @@ extern void DSDP_HEURS( adjustSolverParams )
     } else if (impyub || impylb) {
         // One sided bound
         if (!nopint) {
+            DSDPSetIntParam(dsdpSolver, INT_PARAM_GOLDSEARCH, FALSE);
             DSDPSetDblParam(dsdpSolver, DBL_PARAM_RHO, 3.0);
             DSDPSetDblParam(dsdpSolver, DBL_PARAM_RHON, 3.0);
-            DSDPSetDblParam(dsdpSolver, DBL_PARAM_INIT_BETA, 1e+06);
-            DSDPSetIntParam(dsdpSolver, INT_PARAM_ACORRECTOR, 12);
+            DSDPSetDblParam(dsdpSolver, DBL_PARAM_INIT_BETA, 1e+02);
+            DSDPSetIntParam(dsdpSolver, INT_PARAM_ACORRECTOR, 15);
+        } else {
+            // sensor sparse inc
+            DSDPSetDblParam(dsdpSolver, DBL_PARAM_INIT_BETA, 1e+05);
+            dsdpSolver->ybound = 1e+07;
+            if (zero == 0.0 && sps == 1.0) {
+                DSDPSetDblParam(dsdpSolver, DBL_PARAM_INIT_BETA, 1.0);
+                DSDPSetIntParam(dsdpSolver, INT_PARAM_ACORRECTOR, 6);
+                DSDPSetIntParam(dsdpSolver, INT_PARAM_BCORRECTOR, 0);
+                dsdpSolver->ybound = 1e+04;
+            }
         }
     }
     
     if (nodint) {
-        dsdpSolver->ybound = 10.0;
+        if (dsdpSolver->lpDim > dsdpSolver->m) {
+            dsdpSolver->ybound = 1.0;
+            DSDPSetDblParam(dsdpSolver, DBL_PARAM_INIT_BETA, 1.0);
+        } else {
+            dsdpSolver->ybound = 10.0;
+            DSDPSetIntParam(dsdpSolver, INT_PARAM_GOLDSEARCH, FALSE);
+        }
         DSDPSetDblParam(dsdpSolver, DBL_PARAM_INIT_BETA, 1.0);
-        DSDPSetIntParam(dsdpSolver, INT_PARAM_GOLDSEARCH, FALSE);
     }
     
     DSDPSetDblParam(dsdpSolver, DBL_PARAM_PRLX_PENTALTY, dsdpSolver->ybound);

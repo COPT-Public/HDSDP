@@ -130,13 +130,13 @@ static void printIntParam( const DSDP_INT *intParams, DSDP_INT pName ) {
             printf("Integer Parameter B maximum iteration: ");
             break;
         case INT_PARAM_PRELAX:
-            printf("Integer Parameter Primal Relaxation: ");
+            printf("Integer Parameter primal relaxation: ");
             break;
         case INT_PARAM_GOLDSEARCH:
-            printf("Integer Parameter Golden linesearch: ");
+            printf("Integer Parameter golden linesearch: ");
             break;
         default:
-            printf("Invalid Parameter Code %d \n", pName);
+            printf("Invalid parameter code %d \n", pName);
             return; break;
     }
     

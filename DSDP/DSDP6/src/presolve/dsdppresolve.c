@@ -621,7 +621,7 @@ static void preNoPIntDetect( HSDSolver *dsdpSolver ) {
 
 static void preNoDIntDetect( HSDSolver *dsdpSolver ) {
     // Check if there is no dual interior implied by linear constraints
-    if (!dsdpSolver->isLPset) { return; }
+    if (!dsdpSolver->isLPset || dsdpSolver->lpDim <= 2) { return; } 
     lpMat *lpdata = dsdpSolver->lpData;
     DSDP_INT *Ap = lpdata->Ap, i, j, nnz, nnz2, m = lpdata->dims, n = lpdata->dimy, m2 = m / 2;
     if (m % 2 != 0) { return; } double *c = dsdpSolver->lpObj->x;
@@ -641,7 +641,7 @@ static void preNoDIntDetect( HSDSolver *dsdpSolver ) {
 
 static void preImpXBoundDetect( HSDSolver *dsdpSolver ) {
     // Check if constraints imply trace(X, I) = T.
-    if (dsdpSolver->nBlock > 1) { return; }
+    if (dsdpSolver->nBlock > 1 || dsdpSolver->isLPset) { return; }
     sdpMat *data = dsdpSolver->sdpData[0];
     spsMat *spsdata = NULL; r1Mat *r1Mat = NULL;
     DSDP_INT impXbound = FALSE, type = 0, idx; double boundX = 0.0;
@@ -691,6 +691,9 @@ static void preImpYBoundDetect( HSDSolver *dsdpSolver ) {
     
     lpMat *lpdata = dsdpSolver->lpData;
     DSDP_INT *Ap = lpdata->Ap, *Ai = lpdata->Ai, i, j, impy = TRUE, impylb = FALSE, impyub = FALSE;
+    // If y is only restricted by a' * y = c
+    if (dsdpSolver->lpDim <= 2) { return; }
+    
     double *Ax = lpdata->Ax, yubound = 0.0, ylbound = 0.0, *c = dsdpSolver->lpObj->x;
     double *ylb = dsdpSolver->d1->x, *yub = dsdpSolver->d2->x, tmp;
     for (i = 0; i < lpdata->dimy; ++i) {
@@ -854,10 +857,10 @@ extern DSDP_INT preStructureDetect( HSDSolver *dsdpSolver ) {
     // Detect four speccial structures in the dual formulation
     DSDP_INT retcode = DSDP_RETCODE_OK;
     
-    preNoPIntDetect(dsdpSolver);
-    preNoDIntDetect(dsdpSolver);
-    preImpXBoundDetect(dsdpSolver);
-    preImpYBoundDetect(dsdpSolver);
+    if (dsdpSolver->nBlock < 10) {
+        preNoPIntDetect(dsdpSolver);    preNoDIntDetect(dsdpSolver);
+        preImpXBoundDetect(dsdpSolver); preImpYBoundDetect(dsdpSolver);
+    }
     
     double nopint, nodint, impX, impyub, impylb;
     DSDPGetStats(&dsdpSolver->dsdpStats, STAT_NO_PINTERIOR, &nopint);
@@ -886,7 +889,6 @@ extern DSDP_INT preStructureDetect( HSDSolver *dsdpSolver ) {
     } else {
         printf("| - No special structure is available \n");
     }
-    
     
     return retcode;
 }

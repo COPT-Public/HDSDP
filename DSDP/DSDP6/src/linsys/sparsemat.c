@@ -40,7 +40,7 @@ static void pardisoNumFactorize( spsMat *S ) {
             &msglvl, NULL, NULL, &errorSolve) ;
     if (errorSolve) {
         printf("| [Pardiso Error]: Matrix factorization failed with"
-               " code: "ID". Going without current factorization  |\n", errorSolve);
+               " code: "ID". \n", errorSolve);
     }
 }
 
@@ -52,7 +52,7 @@ static void pardisoIndefiniteNumFactorize( spsMat *S ) {
             &msglvl, NULL, NULL, &errorSolve) ;
     if (errorSolve) {
         printf("| [Pardiso Error]: Matrix factorization failed with"
-               " code: "ID". Going without current factorization  |\n", errorSolve);
+               " code: "ID". \n", errorSolve);
     }
 }
 
@@ -133,7 +133,6 @@ static void lapackNumFactorize( spsMat *S ) {
     assert( S->nominalsps );
     // memcpy(S->Sinv, S->x, sizeof(double) * S->nnz);
     dpotrf(&uplolow, &S->dim, S->x, &S->dim, &errorSolve);
-    assert( errorSolve == 0);
 }
 
 static void lapackForwardSolveBatch( spsMat *S, DSDP_INT nrhs, double *B ) {

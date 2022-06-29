@@ -41,7 +41,17 @@ static DSDP_INT DSDPPrepareSDPData( char     *filename,    // 'xxx.dat-s'
     
     printf("| Reading data from %s \n", filename);
     if (!file) {
-        error_clean(etype, "Unable to open file. \n");
+        printf("| Failed to open file. \n");
+        printf("| Fatal Error in dsdpreadsdpa.c -> Line 45 -> DSDPPrepareSDPData. Give up. \n");
+        printf("---------------------------------------"
+               "---------------------------------------"
+               "--------------------\n");
+        printf("| DSDP Ends by Fatal Error. No solution available. \n");
+        printf("---------------------------------------"
+               "---------------------------------------"
+               "--------------------\n");
+        exit(0);
+        // error_clean(etype, "Unable to open file. \n");
     }
     
     // Jump through comments
@@ -51,7 +61,7 @@ static DSDP_INT DSDPPrepareSDPData( char     *filename,    // 'xxx.dat-s'
     
     // Read nConstrs
     if (sscanf(thisline, ID, &nconstr) < 1) {
-        printf("[%s]: Failed to read number of constraints "
+        printf("| [%s]: Failed to read number of constraints "
                "from line "ID".\n", etype, line);
         error_clean(etype, "Failed to read SDPA data \n");
     }
@@ -59,7 +69,7 @@ static DSDP_INT DSDPPrepareSDPData( char     *filename,    // 'xxx.dat-s'
     // Read nBlocks
     fgets(thisline, BFSIZE, file); ++line;
     if (sscanf(thisline, ID, &nblock) != 1) {
-        printf("[%s]: Failed to read number of blocks "
+        printf("| [%s]: Failed to read number of blocks "
                "from line "ID".\n", etype, line);
         error_clean(etype, "Failed to read SDPA data \n");
     }
@@ -78,17 +88,17 @@ static DSDP_INT DSDPPrepareSDPData( char     *filename,    // 'xxx.dat-s'
                 tmpblocksize[i] = n;
             } else if (n < 0) {
                 if (lpidx != -1) {
-                    error_clean(etype, "Invalid LP data. \n");
+                    error_clean(etype, "| Invalid LP data. \n");
                 }
                 lpidx = i;
                 nlpvars = -n;
 //                nvars -= n;
                 tmpblocksize[i] = -n;
             } else {
-                error_clean(etype, "Empty block detected. \n");
+                error_clean(etype, "| Empty block detected. \n");
             }
         } else {
-            error_clean(etype, "Failed to read blocksize vector. \n");
+            error_clean(etype, "| Failed to read blocksize vector. \n");
         }
     }
 //    lpidx = -1;
@@ -119,7 +129,7 @@ static DSDP_INT DSDPPrepareSDPData( char     *filename,    // 'xxx.dat-s'
         while (fscanf(file, "%lg", &val) != 1) {
             fscanf(file, "%c", &chartmp);
             if (chartmp == '\n') {
-                error_clean(etype, "Failed to read objective. \n");
+                error_clean(etype, "| Failed to read objective. \n");
             }
         }
         dObj[i] = val;

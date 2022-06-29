@@ -341,7 +341,16 @@ extern DSDP_INT DSDPCheckPhaseAConvergence( HSDSolver *dsdpSolver, DSDP_INT *isO
     }
     
     if (my_clock() - dsdpSolver->startTime > tmax) {
-        printf("| Time out. Force exit \n");
+        printf("| Time out in Phase A. No information on primal/dual feasibility. \n");
+        printf("| Fatal Error in dsdplog.c -> Line 345-> DSDPCheckPhaseAConvergence. Give up. \n");
+        printf("---------------------------------------"
+               "---------------------------------------"
+               "--------------------\n");
+        printf("| DSDP Ends by Fatal Error. No solution available. \n");
+        printf("---------------------------------------"
+               "---------------------------------------"
+               "--------------------\n");
+        exit(0);
         *isOK = TRUE;
     }
 

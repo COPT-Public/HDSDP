@@ -114,7 +114,11 @@ typedef int DSDP_INT;
 #define DSDP_ATTEMPT_AGG        108
 
 #define VERSION_MAJOR           0
-#define VERSION_MINOR           8
+#define VERSION_MINOR           9
 #define VERSION_TECHNICAL       0
+
+#define BUILD_DATE_YEAR         2022
+#define BUILD_DATE_MONTH        6
+#define BUILD_DATE_DAY          29
 
 #endif /* dsdphsd_h */

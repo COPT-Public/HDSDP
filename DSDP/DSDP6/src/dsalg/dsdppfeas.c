@@ -34,7 +34,7 @@ extern DSDP_INT DSDPPFeasPhase( HSDSolver *dsdpSolver ) {
     DSDP_INT stop = FALSE, usegold = FALSE, nopfeasIter = 0;
     double start = my_clock();
     double newmu = 0.0, muub = 0.0, mulb = 0.0, time = 0.0;
-    double rhon, tol, sigma, currentpObj = dsdpSolver->pObjVal;
+    double rhon, tol, sigma, currentpObj = dsdpSolver->pObjVal, initpObj = dsdpSolver->pObjVal;
 
     DSDPStats *stat = &dsdpSolver->dsdpStats;
     DSDPGetIntParam(dsdpSolver, INT_PARAM_GOLDSEARCH, &usegold);
@@ -83,7 +83,7 @@ extern DSDP_INT DSDPPFeasPhase( HSDSolver *dsdpSolver ) {
         currentpObj = dsdpSolver->pObjVal;
         
         // Select new mu
-        if (dsdpSolver->mu > 1e-10 && i <= 480 && nopfeasIter < 10) {
+        if ((dsdpSolver->mu > 1e-10 && i <= 480 && nopfeasIter < 10) || dsdpSolver->pObjVal == initpObj) {
             selectMu(dsdpSolver, &newmu); checkCode;
             newmu = MIN(newmu, muub); newmu = MAX(newmu, mulb);
             dsdpSolver->mu = newmu;
@@ -91,6 +91,7 @@ extern DSDP_INT DSDPPFeasPhase( HSDSolver *dsdpSolver ) {
                 dsdpSolver->mu *= 100;
             }
         } else {
+            printf("| Hard to find a new primal solution. Give up. \n"); break;
             dsdpSolver->mu = MAX(dsdpSolver->mu * sigma, 1e-12);
         }
 

@@ -101,7 +101,16 @@ extern DSDP_INT denseMatAlloc( dsMat *dMat, DSDP_INT dim, DSDP_INT doFactor ) {
         dMat->work  = (double *) calloc(dMat->lwork, sizeof(double));
         
         if (!dMat->array || !dMat->lfactor || !dMat->ipiv || !dMat->lwork || !dMat->work) {
-            printf("| Memory allocation failed. Giving up. \n");
+            printf("| Memory allocation failed. \n");
+            printf("| Fatal Error in densemat.c -> Line 105 -> denseMatAlloc. Give up. \n");
+            printf("---------------------------------------"
+                   "---------------------------------------"
+                   "--------------------\n");
+            printf("| DSDP Ends by Fatal Error. No solution available. \n");
+            printf("---------------------------------------"
+                   "---------------------------------------"
+                   "--------------------\n");
+            exit(0);
             retcode = DSDP_RETCODE_FAILED;
         }
     } else {
