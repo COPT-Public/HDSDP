@@ -91,8 +91,10 @@ extern DSDP_INT DSDPPFeasPhase( HSDSolver *dsdpSolver ) {
                 dsdpSolver->mu *= 100;
             }
         } else {
-            printf("| Hard to find a new primal solution. Give up. \n"); break;
-            dsdpSolver->mu = MAX(dsdpSolver->mu * sigma, 1e-12);
+            if (dsdpSolver->mu < 1e-13 || nopfeasIter >= 10) {
+                printf("| Hard to find a new primal solution. Give up. \n"); break;
+            }
+            dsdpSolver->mu = MAX(dsdpSolver->mu * sigma, 1e-13);
         }
 
         DSDPSetDblParam(dsdpSolver, DBL_PARAM_RHO,
