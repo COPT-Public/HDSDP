@@ -69,11 +69,6 @@ static void initparams( HSDSolver *dsdpSolver ) {
     dblparam = (stats) ?  MIN(0.001, dblparam) : dblparam;
     dsdpSolver->pObjVal = (stats) ? 0.0 : dsdpSolver->pObjVal;
     
-    if (stats) {
-        // No search heuristic for feasibility problem
-        DSDPSetIntParam(dsdpSolver, INT_PARAM_GOLDSEARCH, FALSE);
-    }
-    
     // If not using primal relaxation in Phase A
     DSDPGetIntParam(dsdpSolver, INT_PARAM_PRELAX, &intparam);
     dsdpSolver->nall = dsdpSolver->n + dsdpSolver->lpDim + dsdpSolver->m * 2;
@@ -125,12 +120,19 @@ static void initparams( HSDSolver *dsdpSolver ) {
     
     // Some other heuristics
     DSDP_HEURS( adjustSolverParams )(dsdpSolver, largeblock);
+    
+    DSDPGetStats(&dsdpSolver->dsdpStats, STAT_PFEAS_PROBLEM, &stats);
+    if (stats) {
+        // No search heuristic for feasibility problem
+        DSDPSetIntParam(dsdpSolver, INT_PARAM_GOLDSEARCH, FALSE);
+    }
     DSDPParamPrint(dsdpSolver->param);
     
     DSDPGetIntParam(dsdpSolver, INT_PARAM_ACORRECTOR, &ncorrA);
     DSDPGetIntParam(dsdpSolver, INT_PARAM_BCORRECTOR, &nusercorr);
     printf("| Fixed Corrector A: %d  Corrector B: %d \n", ncorrA, nusercorr);
     dsdpshowdash();
+        
 }
 
 extern DSDP_INT dsdpInitializeA( HSDSolver *dsdpSolver ) {
@@ -169,6 +171,7 @@ extern DSDP_INT dsdpInitializeB( HSDSolver *dsdpSolver ) {
     
     // Primal relaxation
     if (!pfeas) DSDP_HEURS( adjPRelaxPenalty ) (dsdpSolver);
+    
     printf("| Primal relaxation penalty is set to %10.3e \n", dsdpSolver->ybound);
     
     // Dual perturb

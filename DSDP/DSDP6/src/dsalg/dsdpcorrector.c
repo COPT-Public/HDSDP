@@ -76,7 +76,15 @@ extern DSDP_INT dInfeasCorrectorStep( HSDSolver *dsdpSolver, DSDP_INT isfinal ) 
         
         if (i == 0) {
             if (!DSDPConic( COPS_CHECK_INCONE )(dsdpSolver, DUALVAR)) {
-                printf("| Strange behavior. Giving Up.\n");
+                printf("| Fatal Error in dsdpcorrector.c -> Line 79 -> dInfeasCorrectorStep. Give up. \n");
+                printf("---------------------------------------"
+                       "---------------------------------------"
+                       "--------------------\n");
+                printf("| DSDP Ends by Fatal Error. No solution available. \n");
+                printf("---------------------------------------"
+                       "---------------------------------------"
+                       "--------------------\n");
+                exit(0);
             }
         }
         
