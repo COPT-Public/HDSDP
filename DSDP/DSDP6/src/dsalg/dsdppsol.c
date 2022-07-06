@@ -26,7 +26,7 @@ extern DSDP_INT computePrimalX( HSDSolver *dsdpSolver ) {
     dsMat *dsaux = NULL; rkMat *rkaux = NULL;
     
     for (DSDP_INT blockid = 0; blockid < nblock; ++blockid) {
-        dsaux = dsdpSolver->dsaux[blockid]; rkaux = dsdpSolver->rkaux[blockid];
+        dsaux = dsdpSolver->dsaux[blockid];
         Smaker = dsdpSolver->Scker[blockid]; bnmaker = dsdpSolver->dS[blockid];
         dim = bnmaker->dim; Xtmp = (double *) calloc(dim * dim, sizeof(double));
         spsMatFactorize(Smaker); spsMatGetX(Smaker, bnmaker, Xtmp);
@@ -131,7 +131,7 @@ extern DSDP_INT computeDIMACS( HSDSolver *dsdpSolver ) {
     DSDPStatUpdate(stat, STAT_DIMACS_ERR6, compslack / (1 + fabs(pObj) + fabs(dObj)));
     
     printf("| Final pObj: %10.5e   dObj: %10.5e \n", pObj, dObj);
-    dsdpshowdash();
+    showBeautifulDashlines();
                    
     return retcode;
 }

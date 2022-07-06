@@ -6,7 +6,6 @@
 #include "dsdpdata.h"
 #include "structs.h"
 #include "dsdpsolver.h"
-#include "hsd.h"
 
 
 #ifdef __cplusplus

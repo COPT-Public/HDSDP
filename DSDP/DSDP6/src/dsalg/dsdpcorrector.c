@@ -228,7 +228,7 @@ extern DSDP_INT dualCorrectorStep( HSDSolver *dsdpSolver ) {
     double shrink = nall / (nall + sqrt(nall)), bTd1, bTd2, bTdycorr, aval;
     double oldbarrier, newbarrier, step, tmp, bound, rhon;
     
-    bound = dsdpSolver->ybound; DSDPGetDblParam(dsdpSolver, DBL_PARAM_RHON, &rhon);
+    DSDPGetDblParam(dsdpSolver, DBL_PARAM_RHON, &rhon);
     DSDP_INT ncorrector = adjCorrectorStep(dsdpSolver), inCone = FALSE;
     vec_dot(b, d1, &bTd1);
 //    printf("| !!! Fixed corrector step \n");

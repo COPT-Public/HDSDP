@@ -171,10 +171,10 @@ extern DSDP_INT DSDPSetObj   ( HSDSolver *dsdpSolver, double *dObj );
 extern DSDP_INT DSDPOptimize ( Solver *dsdpSolver );
 
 extern DSDP_INT DSDPExport      ( HSDSolver *dsdpSolver, DSDP_INT output, char *fname     );
-extern DSDP_INT DSDPSetDblParam ( HSDSolver *dsdpSolver, DSDP_INT pName, double   dblVal  );
-extern DSDP_INT DSDPSetIntParam ( HSDSolver *dsdpSolver, DSDP_INT pName, DSDP_INT intVal  );
-extern DSDP_INT DSDPGetDblParam ( HSDSolver *dsdpSolver, DSDP_INT pName, double   *dblVal );
-extern DSDP_INT DSDPGetIntParam ( HSDSolver *dsdpSolver, DSDP_INT pName, DSDP_INT *intVal );
+extern void DSDPSetDblParam ( HSDSolver *dsdpSolver, DSDP_INT pName, double   dblVal  );
+extern void DSDPSetIntParam ( HSDSolver *dsdpSolver, DSDP_INT pName, DSDP_INT intVal  );
+extern void DSDPGetDblParam ( HSDSolver *dsdpSolver, DSDP_INT pName, double   *dblVal );
+extern void DSDPGetIntParam ( HSDSolver *dsdpSolver, DSDP_INT pName, DSDP_INT *intVal );
 
 extern DSDP_INT DSDPDestroy  ( Solver *dsdpSolver );
 

@@ -312,12 +312,8 @@ static void SDPConic( COPS_CONSTR_EXPR )
     // r * Ry + tau * C + ycoef * ATy
     spsMat **targets = (type == DUALVAR) ? \
     dsdpSolver->S : dsdpSolver->Scker;
-    void (*f)(HSDSolver*, DSDP_INT, DSDP_INT, double) = \
-    (type == DUALVAR) ? addMattoS : addMattoChecker;
     double dperturb = dsdpSolver->dperturb;
-    if (type == DELTAS) {
-        targets = dsdpSolver->dS; f = addMattodS; dperturb = 0.0;
-    }
+    if (type == DELTAS) { targets = dsdpSolver->dS; }
     dperturb += r * dsdpSolver->Ry;
     spsMat *target = NULL;
     for (DSDP_INT i = 0; i < dsdpSolver->nBlock; ++i) {

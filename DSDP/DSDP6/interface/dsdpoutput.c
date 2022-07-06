@@ -1,8 +1,6 @@
 #include <string.h>
 #include "dsdpoutput.h"
 #include "dsdphsd.h"
-#include "dsdpsolver.h"
-#include "dsdplog.h"
 
 #define SUFFIX_DUALSYM "-dsym.csv"
 #define SUFFIX_SOL     ".sol"
@@ -12,21 +10,19 @@ static void dumpdMatSizes( HSDSolver *dsdpSolver, FILE *output ) {
     for (DSDP_INT i = 0; i < dsdpSolver->nBlock; ++i) {
         fprintf(output, "%d,%d,%d\n", i + 1, dsdpSolver->S[i]->dim, !dsdpSolver->S[i]->nominalsps);
     }
-    
     fprintf(output, "\n");
 }
 
 static DSDP_INT dumpDualBlock( DSDP_INT blockid, DSDP_INT n, DSDP_INT *dSym, FILE *output ) {
     // Export a block
     DSDP_INT retcode = DSDP_RETCODE_OK;
-    if (!dSym || !output) {
-        retcode = DSDP_RETCODE_FAILED; return retcode;
-    }
+    if (!dSym || !output) { retcode = DSDP_RETCODE_FAILED; return retcode; }
     DSDP_INT i, j;
     for (i = 0; i < n; ++i) {
         for (j = 0; j <= i; ++j) {
             if (packIdx(dSym, n, i, j)) {
-                fprintf(output, "%d,%d,%d\n", blockid + 1, i + 1, j + 1);
+                fprintf(output, "%d,%d,%d\n",
+                        blockid + 1, i + 1, j + 1);
             }
         }
     }
@@ -55,11 +51,9 @@ extern DSDP_INT dumpDualSymbolic( HSDSolver *dsdpSolver, char *fname ) {
             break;
         }
     }
-    
     // Block sizes
     fprintf(fp2, "%s,%s,%s\n", "block", "dim", "sparse");
     dumpdMatSizes(dsdpSolver, fp2);
-    
     retcode = (fclose(fp) == 0 && fclose(fp2) == 0) ? DSDP_RETCODE_OK : DSDP_RETCODE_FAILED;
     if (retcode == DSDP_RETCODE_OK) {
         printf("| Successfully exported symbolic structure to %s. \n", filename);
@@ -69,4 +63,3 @@ extern DSDP_INT dumpDualSymbolic( HSDSolver *dsdpSolver, char *fname ) {
     }
     return retcode;
 }
-

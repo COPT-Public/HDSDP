@@ -28,19 +28,18 @@ extern DSDP_INT DSDPPFeasPhase( HSDSolver *dsdpSolver ) {
     dsdpSolver->iterProgress[ITER_RESIDUAL] = TRUE;
     
     dsdpInitializeB(dsdpSolver);
-    dsdpprintPhaseBheader();
+    printPhaseBheader();
     
     // Start dual scaling
     DSDP_INT stop = FALSE, usegold = FALSE, nopfeasIter = 0;
     double start = my_clock();
     double newmu = 0.0, muub = 0.0, mulb = 0.0, time = 0.0;
-    double rhon, tol, sigma, currentpObj = dsdpSolver->pObjVal, initpObj = dsdpSolver->pObjVal;
+    double rhon, tol, sigma = 0.7, initpObj = dsdpSolver->pObjVal;
 
     DSDPStats *stat = &dsdpSolver->dsdpStats;
     DSDPGetIntParam(dsdpSolver, INT_PARAM_GOLDSEARCH, &usegold);
     DSDPGetDblParam(dsdpSolver, DBL_PARAM_RHON, &rhon);
     DSDPGetDblParam(dsdpSolver, DBL_PARAM_ABS_OPTTOL, &tol); tol *= 0.1;
-    DSDPGetDblParam(dsdpSolver, DBL_PARAM_BSIGMA, &sigma);
     
     DSDP_INT i;
     for (i = 0; ; ++i) {
@@ -54,16 +53,16 @@ extern DSDP_INT DSDPPFeasPhase( HSDSolver *dsdpSolver ) {
         DSDPStatUpdate(&dsdpSolver->dsdpStats, STAT_PHASE_B_ITER, (double) i);
         dsdpSolver->iterProgress[ITER_LOGGING] = FALSE;
         // Check NAN
-        dsdpCheckNan(dsdpSolver);
+        checkNan(dsdpSolver);
         // Check Algorithm convergence
-        DSDPCheckPhaseBConvergence(dsdpSolver, &stop);
+        checkPhaseBConvergence(dsdpSolver, &stop);
         // Compute dual objective value
         dsdpSolver->iterProgress[ITER_DUAL_OBJ] = FALSE;
         DSDPConic( COPS_GET_DOBJ )(dsdpSolver);
         // Logging
-        DSDPPhaseBLogging(dsdpSolver);
+        phaseBLogging(dsdpSolver);
         // Reset monitor
-        DSDPResetPhaseBMonitor(dsdpSolver);
+        resetPhaseBMonitor(dsdpSolver);
         if (stop) break;
         
         // Factorize dual matrices
@@ -73,14 +72,13 @@ extern DSDP_INT DSDPPFeasPhase( HSDSolver *dsdpSolver ) {
         
         getBslack(dsdpSolver, dsdpSolver->y, DUALVAR);
         setupSchur(dsdpSolver);
-        currentpObj = dsdpSolver->pObjVal;
+        
         dsdpgetPhaseBProxMeasure(dsdpSolver, &muub, &mulb); checkCode;
-        if (dsdpSolver->pObjVal != currentpObj) {
+        if (dsdpSolver->eventMonitor[EVENT_PFEAS_FOUND]) {
             nopfeasIter = 0;
         } else {
             nopfeasIter += 1;
         }
-        currentpObj = dsdpSolver->pObjVal;
         
         // Select new mu
         if ((dsdpSolver->mu > 1e-12 && i <= 480 && nopfeasIter < 10) || dsdpSolver->pObjVal == initpObj) {

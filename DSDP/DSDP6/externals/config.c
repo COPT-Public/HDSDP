@@ -21,7 +21,7 @@
 #define NULL ((void *) 0)
 #endif
 
-#include "SuiteSparse_config.h"
+#include "config.h"
 
 /* -------------------------------------------------------------------------- */
 /* SuiteSparse_config : a global extern struct */

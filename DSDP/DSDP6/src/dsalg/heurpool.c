@@ -7,7 +7,7 @@ extern void DSDP_HEURS( adjustSolverParams )
     double ds;   DSDPGetStats(&dsdpSolver->dsdpStats, STAT_NUM_DENSE_MAT, &ds);
     double sps;  DSDPGetStats(&dsdpSolver->dsdpStats, STAT_NUM_SPARSE_MAT, &sps);
     double zero; DSDPGetStats(&dsdpSolver->dsdpStats, STAT_NUM_ZERO_MAT, &zero);
-    double r1;   DSDPGetStats(&dsdpSolver->dsdpStats, STAT_NUM_RANKONE_MAT, &r1);
+    double r1;   DSDPGetStats(&dsdpSolver->dsdpStats, STAT_NUM_RONE_MAT, &r1);
     double nopint, nodint, impX, impyub, impylb, tmp;
     DSDPGetStats(&dsdpSolver->dsdpStats, STAT_NO_PINTERIOR, &nopint);
     DSDPGetStats(&dsdpSolver->dsdpStats, STAT_NO_DINTERIOR, &nodint);

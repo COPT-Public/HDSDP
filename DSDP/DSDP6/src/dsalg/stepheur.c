@@ -22,8 +22,7 @@ static DSDP_INT getKappaTauStep( HSDSolver *dsdpSolver, double *kappatauStep ) {
         *kappatauStep = DSDP_INFINITY; return retcode;
     }
     
-    double Aalpha, tau, dtau, step;
-    retcode = DSDPGetDblParam(dsdpSolver, DBL_PARAM_AALPHA, &Aalpha);
+    double Aalpha = 0.9, tau, dtau, step;
     tau = dsdpSolver->tau; dtau = dsdpSolver->dtau;
 #ifdef KAPPATAU
     double kappa, dkappa;
@@ -80,7 +79,7 @@ static double getBoundyStep( HSDSolver *dsdpSolver ) {
         double dtau = dsdpSolver->dtau, ds, tmpl = DSDP_INFINITY, tmpu = DSDP_INFINITY;
         double *sl = dsdpSolver->sl->x, *su = dsdpSolver->su->x;
         for (DSDP_INT i = 0; i < y->dim; ++i) {
-            yi = y->x[i]; dyi = dy->x[i];
+            dyi = dy->x[i];
             ds =  dyi + bound * dtau; tmp = ds / sl[i]; tmpl = MIN(tmpl, tmp);
             ds = -dyi + bound * dtau; tmp = ds / su[i]; tmpu = MIN(tmpu, tmp);
         }
@@ -151,11 +150,11 @@ static DSDP_INT getCurrentyPotential( HSDSolver *dsdpSolver, vec *y,
 
 extern void computeAdaptivedRate( HSDSolver *dsdpSolver ) {
     // Use heuristic to determine the rate for eliminating dual infeasibility
-    double alphac = 0.0, alphainf = DSDP_INFINITY, alpharef, tmp;
+    double alphac = 0.0, alphainf = DSDP_INFINITY, tmp;
     // dSd3 = A^T * d3
     DSDPConic( COPS_CONSTR_EXPR )(dsdpSolver, DELTAS, 1.0, dsdpSolver->d3, 0.0, 0.0);
     alphac = DSDPConic( COPS_GET_MAXSTEP )(dsdpSolver, DUALVAR);
-    alpharef = alphac; alphac = MIN(alphac * 0.98, 1.0);
+    alphac = MIN(alphac * 0.98, 1.0);
     DSDP_INT incone = FALSE, j;
     vec *aux = dsdpSolver->cgSolver->aux, *y = dsdpSolver->y;
     for (j = 0; ; ++j) {
@@ -425,8 +424,7 @@ extern void dualPotentialReduction( HSDSolver *dsdpSolver ) {
     if (alpha <= 1e-04) {
         // vec_axpy(alpha, dy, y);
         getPhaseBS(dsdpSolver, y);
-        dsdpInCone(dsdpSolver, &inCone);
-        assert( inCone );
+        dsdpInCone(dsdpSolver, &inCone); // TODO: Fix possible error in assert( inCone );
         getPhaseBLps(dsdpSolver, y);
         getBslack(dsdpSolver, y, DUALVAR);
     } else {

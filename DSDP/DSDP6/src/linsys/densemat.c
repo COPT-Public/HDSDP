@@ -1,7 +1,6 @@
 #include "densemat.h"
 #include "sparsemat.h"
 #include "rankkmat.h"
-#include "dsdpeigfact.h"
 
 // Error type
 static char etype[] = "Dense Operation Error";
@@ -124,13 +123,15 @@ extern DSDP_INT denseMatAlloc( dsMat *dMat, DSDP_INT dim, DSDP_INT doFactor ) {
 extern DSDP_INT denseMatFree( dsMat *dMat ) {
     // Free memory allocated
     DSDP_INT retcode = DSDP_RETCODE_OK;
-    if (dMat) {
+    if (!dMat) { return retcode; }
+    
+    if (!dMat->factor) {
         dMat->dim = 0; dMat->isillCond = FALSE;
         dMat->isFactorized = FALSE; dMat->lwork = 0;
         DSDP_FREE(dMat->array); DSDP_FREE(dMat->lfactor);
         DSDP_FREE(dMat->ipiv); DSDP_FREE(dMat->work);
     } else {
-        if (dMat->factor) { rkMatFree(dMat->factor); }
+        rkMatFree(dMat->factor);
     }
     return retcode;
 }

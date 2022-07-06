@@ -2,12 +2,7 @@
 #include "dsdputils.h"
 #include "symschur.h"
 #include "heurpool.h"
-#include "dsdpeigfact.h"
 #include "speigs.h"
-
-#ifdef SHOWALL
-#undef SHOWALL
-#endif
 
 static char etype[] = "Presolving operations";
 
@@ -333,7 +328,7 @@ static DSDP_INT preRankkEvRdcBlock( sdpMat *dataMat, DSDPStats *stat, speigfac *
         switch (types[i]) {
             case MAT_TYPE_ZERO: break;
             case MAT_TYPE_DENSE:
-                rank = 100000; dsdata = (dsMat *) matdata[i];
+                rank = 100000;
                 isDense = TRUE; break;
             case MAT_TYPE_SPARSE:
                 spsdata = (spsMat *) matdata[i]; isSparse = TRUE;
@@ -382,56 +377,10 @@ static DSDP_INT getBlockStatistic( sdpMat *sdpData ) {
 }
 
 static DSDP_INT preSDPMatgetPScaler( HSDSolver *dsdpSolver ) {
-    
     // Compute the primal scaler for DSDP
     DSDP_INT retcode = DSDP_RETCODE_OK;
-    DSDP_INT m = dsdpSolver->m;
     DSDPStatUpdate(&dsdpSolver->dsdpStats, STAT_ONE_NORM_B,
                    vec_onenorm(dsdpSolver->dObj));
-    return retcode;
-    
-    dsdpSolver->pScaler = (vec *) calloc(1, sizeof(vec));
-    vec_init(dsdpSolver->pScaler);
-    vec_alloc(dsdpSolver->pScaler, m);
-    
-    double nrm = 0.0, maxnrm = 0.0, minnrm = 0.0, bnrm = 0.0, bval;
-    
-    for (DSDP_INT i = 0; i < m; ++i) {
-        
-        maxnrm = 0.0;
-        bval = fabs(dsdpSolver->dObj->x[i]);
-        
-        if (bval > 0.0) {
-            minnrm = bval;
-            maxnrm = minnrm;
-        } else {
-            dsdpSolver->pScaler->x[i] = 1.0;
-            continue;
-        }
-                
-        for (DSDP_INT j = 0; j < dsdpSolver->nBlock; ++j) {
-            getMatFnorm(dsdpSolver, j, i, &nrm);
-            if (nrm > 0) {
-                minnrm = MIN(minnrm, nrm);
-                maxnrm = MAX(maxnrm, nrm);
-            }
-        }
-        
-        if (maxnrm == 0.0) {
-            error(etype, "Empty row detected. \n");
-        } else {
-            if (fabs(maxnrm * minnrm - 1.0) < 0.1) {
-                dsdpSolver->pScaler->x[i] = 1.0;
-            } else {
-                dsdpSolver->pScaler->x[i] = sqrt(maxnrm * minnrm);
-            }
-        }
-        
-        bnrm += bval; // dsdpSolver->pScaler->x[i];
-    }
-    
-    DSDPStatUpdate(&dsdpSolver->dsdpStats, STAT_ONE_NORM_B, bnrm);
-    
     return retcode;
 }
 
@@ -771,7 +720,7 @@ extern DSDP_INT preRank1Rdc( HSDSolver *dsdpSolver ) {
     
     DSDPStatUpdate(stat, STAT_NUM_SPARSE_MAT, sps);
     DSDPStatUpdate(stat, STAT_NUM_DENSE_MAT, ds);
-    DSDPStatUpdate(stat, STAT_NUM_RANKONE_MAT, r1);
+    DSDPStatUpdate(stat, STAT_NUM_RONE_MAT, r1);
     DSDPStatUpdate(stat, STAT_NUM_ZERO_MAT, zero);
 
     return retcode;

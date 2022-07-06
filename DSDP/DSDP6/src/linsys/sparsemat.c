@@ -120,17 +120,12 @@ static void pardisoFree( spsMat *S ) {
     /* Free the internal structure of pardiso */
     DSDP_INT phase = PARDISO_FREE;
     pardiso(S->pdsWorker, &maxfct, &mnum, &mtype, &phase, &S->dim,
-            S->x, S->p, S->i, &idummy, &idummy,
-            PARDISO_PARAMS_CHOLESKY, &msglvl, NULL, NULL, &errorSolve);
-    if (errorSolve) {
-        printf("[Pardiso Error]: Pardiso free failed."
-               " Error code: "ID" \n", errorSolve);
-    }
+            S->x, S->p, S->i, &idummy, &one,
+            PARDISO_PARAMS_CHOLESKY, &msglvl, &done, &done, &errorSolve);
 }
 
 /* Internal Lapack Wrapper*/
 static void lapackNumFactorize( spsMat *S ) {
-    assert( S->nominalsps );
     // memcpy(S->Sinv, S->x, sizeof(double) * S->nnz);
     dpotrf(&uplolow, &S->dim, S->x, &S->dim, &errorSolve);
 }
@@ -148,28 +143,18 @@ static void lapackBackwardSolveBatch( spsMat *S, DSDP_INT nrhs, double *B ) {
 
 static void lapackForwardSolve( spsMat *S, DSDP_INT nrhs, double *B, double *aux, DSDP_INT overwrite) {
     memcpy(aux, B, sizeof(double) * S->dim * nrhs);
-#ifdef BATCHSOLVE
-    dtrsm(&uplolow, &uplolow, &notrans, &notrans,
-          &S->dim, &nrhs, &done, S->x, &S->dim, aux, &S->dim);
-#else
     for (DSDP_INT i = 0; i < nrhs; ++i) {
         dtrsv(&uplolow, &notrans, &notrans, &S->dim,
               S->x, &S->dim, &aux[i * S->dim], &one);
     }
-#endif
 }
 
 static void lapackBackwardSolve( spsMat *S, DSDP_INT nrhs, double *B, double *aux, DSDP_INT overwrite) {
     memcpy(aux, B, sizeof(double) * S->dim * nrhs);
-#ifdef BATCHSOLVE
-    dtrsm(&uplolow, &uplolow, &trans, &notrans,
-          &S->dim, &nrhs, &done, S->x, &S->dim, aux, &S->dim);
-#else
     for (DSDP_INT i = 0; i < nrhs; ++i) {
         dtrsv(&uplolow, &trans, &notrans, &S->dim,
               S->x, &S->dim, &aux[i * S->dim], &one);
     }
-#endif
 }
 
 static void lapackSolve( spsMat *S, DSDP_INT nrhs, double *B, double *X ) {
@@ -273,13 +258,14 @@ extern void spsMatFree( spsMat *sMat ) {
     // Free memory allocated
     sMat->dim = 0; sMat->nnz = 0;
     // Note that we first free p, i and x before calling pardiso to destroy the working array
-    DSDP_FREE(sMat->p); DSDP_FREE(sMat->i); DSDP_FREE(sMat->x); DSDP_FREE(sMat->cidx);
     if (sMat->isFactorized) {
         pardisoFree(sMat); sMat->isFactorized = FALSE;
     }
     if (sMat->factor) {
         rkMatFree(sMat->factor); DSDP_FREE(sMat->factor);
     }
+    DSDP_FREE(sMat->p); DSDP_FREE(sMat->i);
+    DSDP_FREE(sMat->x); DSDP_FREE(sMat->cidx);
     sMat->nominalsps = FALSE;
 }
 
@@ -298,7 +284,7 @@ extern void spsMatAx( spsMat *A, vec *x, vec *Ax ) {
         dsymv(&uplolow, &n, &coeff, Axdata, &n,
               xdata, &one, &dzero, Axres, &one);
     } else if (cidx) {
-        for (i = j = k = 0; k < nnz; ++k) {
+        for (k = 0; k < nnz; ++k) {
             i = Ai[k]; j = cidx[k]; Axres[i] -= Axdata[k] * xdata[j];
             if (i != j) { Axres[j] -= Axdata[k] * xdata[i]; }
         }
@@ -969,7 +955,7 @@ extern void spsMatFillLower( spsMat *sMat, double *lowFullMat ) {
 }
 
 extern void spsMatFillLower2( spsMat *sMat, dsMat *lowMat ) {
-    DSDP_INT n = sMat->dim, ni = 0, *Ap = sMat->p, *Ai = sMat->i, i, j;
+    DSDP_INT n = sMat->dim, *Ap = sMat->p, *Ai = sMat->i, i, j;
     double *Ax = sMat->x;
     if (sMat->nominalsps) {
         double *p1 = Ax, *p2 = lowMat->array;
@@ -979,7 +965,6 @@ extern void spsMatFillLower2( spsMat *sMat, dsMat *lowMat ) {
         }
     } else {
         for (i = 0; i < n; ++i) {
-            ni = n * i;
             for (j = Ap[i]; j < Ap[i + 1]; ++j) {
                 packIdx(lowMat->array, n, Ai[j], i) = Ax[j];
             }
@@ -1035,7 +1020,6 @@ extern DSDP_INT spsMatIsDiagonal( spsMat *sMat ) {
 
 extern double spsMatGetXbound( spsMat *sMat, vec *b ) {
     double trX = 0.0;
-    assert( sMat->dim == sMat->nnz );
     for (DSDP_INT i = 0; i < sMat->dim; ++i) {
         trX += b->x[i] / sMat->x[i];
     }

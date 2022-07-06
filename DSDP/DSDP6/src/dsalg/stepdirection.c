@@ -13,7 +13,7 @@ static DSDP_INT assemblePhaseAArrs( HSDSolver *dsdpSolver ) {
      d1  = d11 * pweight + d12;
     */
     DSDP_INT retcode = DSDP_RETCODE_OK;
-    double pweight; DSDPGetDblParam(dsdpSolver, DBL_PARAM_OBJ_WEIGHT, &pweight);
+    double pweight = 0.0;
     
     // b2 = d2 * pweight * tau / mu - d3
     vec_zaxpby(dsdpSolver->b2, pweight * dsdpSolver->tau / dsdpSolver->mu,

@@ -128,7 +128,7 @@ static void speigGetSpecialFactor( speigfac *eigfac, DSDP_INT nnz, DSDP_INT n,
             eigvec = eigvecs + idx * n;
             if (i == j) {
                 eigvals[idx] = Ax[k]; idx += 1;
-                eigvec[i] = 1.0; eigvec += n;
+                eigvec[i] = 1.0;
             } else {
                 eigvec[j] = eigvec[i] = tmp;
                 eigvals[idx] = Ax[k]; idx += 1;

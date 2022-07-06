@@ -27,29 +27,25 @@ extern DSDP_INT DSDPDInfeasEliminator( HSDSolver *dsdpSolver ) {
     dsdpSolver->pObjVal = DSDP_INFINITY;
     
     // Initialize
-    double muprimal, tol, sigma, initpObj, boundx;
+    double muprimal, tol, initpObj, boundx;
     double trymu = 0.0, time = 0.0, start = my_clock();
-    DSDP_INT attempt;
-    
     
     DSDPGetDblParam(dsdpSolver, DBL_PARAM_INIT_MU,    &muprimal);
     DSDPGetDblParam(dsdpSolver, DBL_PARAM_ABS_OPTTOL, &tol     );
-    DSDPGetDblParam(dsdpSolver, DBL_PARAM_ASIGMA,     &sigma   );
-    DSDPGetIntParam(dsdpSolver, INT_PARAM_AATTEMPT,   &attempt );
     dsdpSolver->eventMonitor[EVENT_IN_PHASE_A] = TRUE;
     dsdpSolver->eventMonitor[EVENT_IN_PHASE_B] = FALSE;
     
     /* Start Phase A algorithm */
-    dsdpshowdash();
+    showBeautifulDashlines();
     dsdpInitializeA(dsdpSolver);
     initpObj = dsdpSolver->pObjVal;
-    
+    DSDPSetDblParam(dsdpSolver, DBL_PARAM_INIT_POBJ, dsdpSolver->pObjVal);
     DSDPGetDblParam(dsdpSolver, DBL_PARAM_BOUND_X, &boundx);
     dsdpSolver->mu = (dsdpSolver->pObjVal - dsdpSolver->dObjVal - \
                       dsdpSolver->Ry * boundx) / dsdpSolver->nall;
     
     /* Print algorithm header */
-    dsdpprintPhaseAheader();
+    printPhaseAheader();
     
     DSDP_INT i;
     for (i = 0; ; ++i) {
@@ -60,15 +56,15 @@ extern DSDP_INT DSDPDInfeasEliminator( HSDSolver *dsdpSolver ) {
         dsdpSolver->iterProgress[ITER_DUAL_OBJ] = FALSE;
         
         // Check NaN
-        dsdpCheckNan(dsdpSolver);
+        checkNan(dsdpSolver);
         // Check algorithm convergence
-        DSDPCheckPhaseAConvergence(dsdpSolver, &goOn);
+        checkPhaseAConvergence(dsdpSolver, &goOn);
         // Compute dual objective
         DSDPConic( COPS_GET_DOBJ )(dsdpSolver);
         // Logging
-        DSDPPhaseALogging(dsdpSolver);
+        phaseALogging(dsdpSolver);
         // Reset monitor
-        DSDPResetPhaseAMonitor(dsdpSolver);
+        resetPhaseAMonitor(dsdpSolver);
         
         if (i > 100) {
             dsdpSolver->eventMonitor[EVENT_HSD_UPDATE] = TRUE;

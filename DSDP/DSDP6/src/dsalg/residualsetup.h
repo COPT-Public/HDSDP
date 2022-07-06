@@ -5,7 +5,7 @@
 #include "dsdpdata.h"
 #include "structs.h"
 #include "dsdpsolver.h"
-#include "hsd.h"
+#include "dsdplog.h"
 
 /* Residual Ry is setup as proposed by Dr. Huangfu */
 #ifdef __cplusplus

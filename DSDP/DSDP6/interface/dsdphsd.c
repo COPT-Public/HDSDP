@@ -12,7 +12,7 @@
 #include "dsdpparam.h"
 #include "dsdpsolver.h"
 #include "dsdpoutput.h"
-#include "hsd.h"
+#include "dsdplog.h"
 #include "dsdpdinfeas.h"
 #include "dsdputils.h"
 #include "dsdplog.h"
@@ -203,7 +203,7 @@ static DSDP_INT DSDPIAllocIter( HSDSolver *dsdpSolver ) {
     DSDP_INT nblock = dsdpSolver->nBlock, dim = 0, m = dsdpSolver->m, CGreuse;
     DSDP_INT lpdim = dsdpSolver->lpDim;
     
-    retcode = DSDPGetIntParam(dsdpSolver, INT_PARAM_CG_REUSE, &CGreuse);
+    DSDPGetIntParam(dsdpSolver, INT_PARAM_CG_REUSE, &CGreuse);
     vec *vecIter = NULL;
     
     // Allocate S and dS
@@ -473,7 +473,7 @@ static DSDP_INT DSDPIPresolve( HSDSolver *dsdpSolver ) {
         error(etype, "Problem data is not set up. \n");
     }
     
-    dsdpshowdash();
+    showBeautifulDashlines();
     printf("| Start presolving \n");
     center = my_clock();
     retcode = preRank1Rdc(dsdpSolver); checkCode;
@@ -527,7 +527,7 @@ static DSDP_INT DSDPIPresolve( HSDSolver *dsdpSolver ) {
     
     dsdpSolver->insStatus = DSDP_STATUS_PRESOLVED;
     t = my_clock() - start;
-    retcode = DSDPStatUpdate(stat, STAT_PRESOLVE_TIME, t);
+    DSDPStatUpdate(stat, STAT_PRESOLVE_TIME, t);
     printf("| Presolve Ends. Elapsed Time: %3.3f seconds \n", t);
     
     return retcode;
@@ -560,12 +560,12 @@ static DSDP_INT DSDPIPostsolve( HSDSolver *dsdpSolver ) {
 }
 
 extern void DSDPPrintVersion(void) {
-    dsdpshowdash();
+    showBeautifulDashlines();
     printf("| Homogeneous Dual Scaling Interior Point Solver. Version %d.%d.%d (Build date %d.%d %d)"
            "                                   \n",
            VERSION_MAJOR, VERSION_MINOR, VERSION_TECHNICAL,
            BUILD_DATE_MONTH, BUILD_DATE_DAY, BUILD_DATE_YEAR);
-    dsdpshowdash();
+    showBeautifulDashlines();
 }
 
 extern DSDP_INT DSDPCreate( HSDSolver **dsdpSolver, char *modelName ) {
@@ -614,7 +614,7 @@ extern DSDP_INT DSDPSetDim( HSDSolver *dsdpSolver,
     DSDP_INT nnz = (nNzs) ? *nNzs : (-1);
     if (dsdpSolver->verbosity) {
         // printf("Dimension is successfully set. \n");
-        dsdpshowdash();
+        showBeautifulDashlines();
         printf("| nSDPBlock: "ID" "
                "| nConstrs: "ID" "
                "| nLP Vars: "ID" "
@@ -643,8 +643,6 @@ extern DSDP_INT DSDPSetLPData( HSDSolver *dsdpSolver,
     */
     
     DSDP_INT retcode = DSDP_RETCODE_OK;
-    assert( nCol = dsdpSolver->lpDim );
-    
     if (dsdpSolver->insStatus != DSDP_STATUS_INIT_UNSET) {
         error(etype, "The solver instance is either not initialized or "
               "already set. \n");
@@ -740,7 +738,7 @@ extern DSDP_INT DSDPOptimize( HSDSolver *dsdpSolver ) {
         retcode = DSDPPFeasPhase(dsdpSolver);
     }
     printf("| DSDP Ends. %86s \n", "");
-    dsdpshowdash();
+    showBeautifulDashlines();
     
     // Compute solution and get DIMACS errors
     computePrimalX(dsdpSolver);
@@ -753,7 +751,7 @@ extern DSDP_INT DSDPOptimize( HSDSolver *dsdpSolver ) {
     
     // Summary statistics
     DSDPBProfilerPrint(stat);
-    dsdpshowdash();
+    showBeautifulDashlines();
     DSDPDIMACErrorPrint(stat);
     dsdpSolver->insStatus = DSDP_STATUS_SOLVED;
     
@@ -807,24 +805,24 @@ extern DSDP_INT DSDPExport( HSDSolver *dsdpSolver, DSDP_INT output, char *fname 
     return retcode;
 }
 
-extern DSDP_INT DSDPSetDblParam( HSDSolver *dsdpSolver, DSDP_INT pName, double dblVal ) {
+extern void DSDPSetDblParam( HSDSolver *dsdpSolver, DSDP_INT pName, double dblVal ) {
     // Set double parameter
-    return setDblParam(dsdpSolver->param, pName, dblVal);
+    setDblParam(dsdpSolver->param, pName, dblVal);
 }
 
-extern DSDP_INT DSDPSetIntParam( HSDSolver *dsdpSolver, DSDP_INT pName, DSDP_INT intVal ) {
+extern void DSDPSetIntParam( HSDSolver *dsdpSolver, DSDP_INT pName, DSDP_INT intVal ) {
     // Set integer parameter
-    return setIntParam(dsdpSolver->param, pName, intVal);
+    setIntParam(dsdpSolver->param, pName, intVal);
 }
 
-extern DSDP_INT DSDPGetDblParam( HSDSolver *dsdpSolver, DSDP_INT pName, double *dblVal ) {
+extern void DSDPGetDblParam( HSDSolver *dsdpSolver, DSDP_INT pName, double *dblVal ) {
     // Get double parameter
-    return getDblParam(dsdpSolver->param, pName, dblVal);
+    getDblParam(dsdpSolver->param, pName, dblVal);
 }
 
-extern DSDP_INT DSDPGetIntParam( HSDSolver *dsdpSolver, DSDP_INT pName, DSDP_INT *intVal ) {
+extern void DSDPGetIntParam( HSDSolver *dsdpSolver, DSDP_INT pName, DSDP_INT *intVal ) {
     // Get double parameter
-    return getIntParam(dsdpSolver->param, pName, intVal);
+    getIntParam(dsdpSolver->param, pName, intVal);
 }
 
 extern DSDP_INT DSDPDestroy( HSDSolver *dsdpSolver ) {

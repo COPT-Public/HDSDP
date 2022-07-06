@@ -28,6 +28,11 @@ static DSDP_INT schurMatPerturb( HSDSolver *dsdpSolver ) {
             perturb += MIN(maxdiag * 1e-08, 1e-12);
         }
         
+//        if (dsdpSolver->Msdp->isillCond ||
+//            dsdpSolver->cgSolver->status == CG_STATUS_INDEFINITE) {
+//            perturb = 0.0;
+//        }
+        
         // if (dsdpSolver->mu < 1e-05) { perturb += maxdiag * 1e-05; }
         double invalid;
         DSDPGetStats(&dsdpSolver->dsdpStats, STAT_GAP_BROKEN, &invalid);

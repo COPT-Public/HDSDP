@@ -16,7 +16,7 @@ static DSDP_INT inity( HSDSolver *dsdpSolver ) {
 static DSDP_INT initkappatau( HSDSolver *dsdpSolver ) {
     
     DSDP_INT retcode = DSDP_RETCODE_OK;
-    retcode = DSDPGetDblParam(dsdpSolver, DBL_PARAM_INIT_TAU, &dsdpSolver->tau);
+    dsdpSolver->tau = 1.0;
 #ifdef KAPPATAU
     retcode = DSDPGetDblParam(dsdpSolver, DBL_PARAM_INIT_KAPPA, &dsdpSolver->kappa);
 #else
@@ -26,9 +26,8 @@ static DSDP_INT initkappatau( HSDSolver *dsdpSolver ) {
 }
 
 static DSDP_INT initmu( HSDSolver *dsdpSolver ) {
-    
     DSDP_INT retcode = DSDP_RETCODE_OK;
-    retcode = DSDPGetDblParam(dsdpSolver, DBL_PARAM_INIT_MU, &dsdpSolver->mu);
+    DSDPGetDblParam(dsdpSolver, DBL_PARAM_INIT_MU, &dsdpSolver->mu);
     return retcode;
 }
 
@@ -58,7 +57,7 @@ static DSDP_INT initresi( HSDSolver *dsdpSolver ) {
 static void initparams( HSDSolver *dsdpSolver ) {
     // TODO: Adjust solver parameter based on problem features
     
-    double dblparam, stats; DSDP_INT intparam;
+    double dblparam, stats;
     dsdpSolver->pObjVal = 1e+10;
     
     // Adjust bound on the y variable. Set it to the initial value
@@ -70,7 +69,6 @@ static void initparams( HSDSolver *dsdpSolver ) {
     dsdpSolver->pObjVal = (stats) ? 0.0 : dsdpSolver->pObjVal;
     
     // If not using primal relaxation in Phase A
-    DSDPGetIntParam(dsdpSolver, INT_PARAM_PRELAX, &intparam);
     dsdpSolver->nall = dsdpSolver->n + dsdpSolver->lpDim + dsdpSolver->m * 2;
     dsdpSolver->ybound = dblparam;
     
@@ -130,8 +128,8 @@ static void initparams( HSDSolver *dsdpSolver ) {
     
     DSDPGetIntParam(dsdpSolver, INT_PARAM_ACORRECTOR, &ncorrA);
     DSDPGetIntParam(dsdpSolver, INT_PARAM_BCORRECTOR, &nusercorr);
-    printf("| Fixed Corrector A: %d  Corrector B: %d \n", ncorrA, nusercorr);
-    dsdpshowdash();
+    printf("| Corrector A: %d  Corrector B: %d \n", ncorrA, nusercorr);
+    showBeautifulDashlines();
         
 }
 

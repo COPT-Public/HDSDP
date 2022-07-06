@@ -131,7 +131,7 @@ static DSDP_INT schurBlockAnalysis( sdpMat *Adata, DSDP_INT *permk, DSDP_INT *MX
         ksiM1M2 += scoreM1M2[i]; ksiM1M5 += scoreM1M5[i];
     }
     
-    double ncbe = n; ncbe *= n; ncbe *= n;
+    double ncbe = n; ncbe *= n;
     M1M2 = FALSE;// (ksiM1M2 <= ksiM1M5 + ncbe) ? TRUE: FALSE;
     
     // Determine which strategy to use
@@ -881,14 +881,13 @@ static DSDP_INT schurMatspsSetupBlock( DSDPSymSchur *M, DSDP_INT blockid ) {
     // Set up a block of the Schur matrix. Way of computing is heuristically chosen from M2 M3 and M5
     DSDP_INT retcode = DSDP_RETCODE_OK;
     assert( M->M->stype = SCHUR_TYPE_SPARSE );
-    DSDP_INT col, Mk = SCHUR_M5, nnzmats, i;
+    DSDP_INT Mk = SCHUR_M5, nnzmats, i;
     sdpMat *Adata = M->Adata[blockid]; nnzmats = Adata->nzeroMat;
     spsMat *spdata = NULL;
     
     // Begin setup
     for (i = 0; i < nnzmats; ++i) {
         // Choose schur technique
-        col = Adata->nzIdx[i];
         if (Adata->types[i] == MAT_TYPE_SPARSE) {
             spdata = Adata->sdpData[i];
             Mk = (spsMatGetRank(spdata) <= 10) ? SCHUR_M2 : SCHUR_M5;

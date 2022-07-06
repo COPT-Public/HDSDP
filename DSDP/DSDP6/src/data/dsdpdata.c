@@ -45,59 +45,13 @@ static DSDP_INT sdpMatIAllocByType( sdpMat *sdpData, DSDP_INT k, DSDP_INT *Ai,
     // Ai identifies row indices of the lower-triangular packed format of the k th matrix
     // Ax stores the data, nnz specifies the number of nonzeros
     DSDP_INT retcode = DSDP_RETCODE_OK;
-    
-    DSDP_INT m = sdpData->dimy, n = sdpData->dimS;
-    // Sort the arrays
-    assert( k < m + 1 );
+    DSDP_INT n = sdpData->dimS;
     void *userdata = NULL;
     
     // Check sparsity
     if (nnz == 0) {
         sdpData->nzeroMat += 1;
         sdpData->types[k] = MAT_TYPE_ZERO;
-        
-    } else if (sdpData->types[k] == MAT_TYPE_RANKK) {
-        // Rank 1
-        sdpData->nrkMat += 1;
-        rkMat *data = NULL;
-        data = (rkMat *) calloc(1, sizeof(rkMat)); rkMatInit(data);
-        r1Mat *r1data = (r1Mat *) calloc(1, sizeof(r1Mat)); r1MatInit(r1data);
-        retcode = r1MatAlloc(r1data, n); checkCode;
-        
-        // The first non-zero element must be a diagonal element
-        double adiag = Ax[0];
-        DSDP_INT isNeg = FALSE, rowidx = Ai[0];
-        
-        if (adiag > 0) {
-            adiag = sqrt(adiag); r1data->sign = 1.0;
-        } else {
-            r1data->sign = - 1.0; adiag = - sqrt(-adiag);
-            isNeg = TRUE;
-        }
-        
-        // Seek which column is correct
-        DSDP_INT where = 0, diagidx = 0;
-        for (DSDP_INT i = 0; i < n; ++i) {
-            if (rowidx == diagidx) { break; }
-            diagidx += n - where; where += 1;
-        }
-        
-        if (where == n) {
-            error(etype, "The matrix is not rank-one. \n");
-        }
-        
-        for (DSDP_INT i = 0; i < n - where; ++i) {
-            rowidx = Ai[i];
-            // The compressed matrix has n * (n + 1) / 2 rows and one column
-            if (rowidx >= diagidx + n - where) {
-                break;
-            }
-            r1data->x[rowidx - diagidx + where] = Ax[i] / adiag;
-        }
-        rkMatAllocAndSetData(data, n, 1, &r1data->sign, r1data->x);
-        r1MatFree(r1data);
-        DSDP_FREE(r1data);
-        userdata = (void *) data;
         
     } else if (((nnz <= denseThresh * nsym(n)) && (sdpData->types[k] == MAT_TYPE_UNKNOWN)) ||
                (sdpData->types[k] == MAT_TYPE_SPARSE)) {

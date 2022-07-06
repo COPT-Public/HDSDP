@@ -3,7 +3,7 @@
 #include "dsdpdata.h"
 #include "structs.h"
 #include "dsdpsolver.h"
-#include "hsd.h"
+#include "dsdplog.h"
 /* Implement the primal feasibility check */
 
 #ifdef __cplusplus

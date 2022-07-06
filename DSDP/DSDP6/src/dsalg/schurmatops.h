@@ -21,7 +21,7 @@
 #include "dsdpdata.h"
 #include "structs.h"
 #include "dsdpsolver.h"
-#include "hsd.h"
+#include "dsdplog.h"
 
 #ifdef __cplusplus
 extern "C" {

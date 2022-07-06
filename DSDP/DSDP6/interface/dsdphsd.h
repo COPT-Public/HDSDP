@@ -25,10 +25,6 @@
 
 //#define superDebug
 
-#ifdef SHOWALL
-#undef SHOWALL
-#endif
-
 // #define DSDP64
 
 #ifdef COMPMEX
@@ -95,6 +91,16 @@ typedef int DSDP_INT;
 #define DSDP_EXPORT_STRUCTURE   3
 
 // Error log
+#define force_exit               printf("---------------------------------------" \
+                                        "---------------------------------------" \
+                                        "--------------------\n"); \
+                                 printf("| DSDP Ends by Fatal Error. No solution available. \n"); \
+                                 printf("---------------------------------------" \
+                                        "---------------------------------------" \
+                                        "--------------------\n"); exit(-1);
+#define fatal_error              printf("| Fatal error in %s -> line %d. Give up", __FILE__, __LINE__); force_exit
+#define fatal_error_msg(etype)   printf("| Fatal error in %s -> line %d (%s). Give up.\n", __FILE__, __LINE__, (etype)); force_exit
+
 #define error(etype, x)          printf("[%s]: %s", (etype), (x)); assert( 0 ); \
                                  retcode = DSDP_RETCODE_FAILED; return retcode;
 #define error_clean(etype, x)    printf("[%s]: %s", (etype), (x)); \

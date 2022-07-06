@@ -7,7 +7,7 @@
 // Data statistics
 #define STAT_NUM_DENSE_MAT   0
 #define STAT_NUM_SPARSE_MAT  1
-#define STAT_NUM_RANKONE_MAT 2
+#define STAT_NUM_RONE_MAT    2
 #define STAT_NUM_ZERO_MAT    3
 
 #define STAT_ONE_NORM_C      4
@@ -24,24 +24,23 @@
 #define STAT_GET_X_TIME      13
 #define STAT_POSTSOLVE_TIME  14
 #define STAT_READ_TIME       15
-
 #define STAT_SCAL_TIME       16
 #define STAT_RONE_TIME       17
 #define STAT_EIG_TIME        18
 #define STAT_MATSTAT_TIME    19
 #define STAT_SYMBOLIC_TIME   20
 #define STAT_SCHURORD_TIME   21
-#define STAT_SPECIAL_DETECT  28
+#define STAT_SPECIAL_DETECT  22
 
-#define STAT_ONE_NORM_A      22
+#define STAT_ONE_NORM_A      23
 
 // Problem type
-#define STAT_PFEAS_PROBLEM   23
-#define STAT_DFEAS_PROBLEM   24
+#define STAT_PFEAS_PROBLEM   24
+#define STAT_DFEAS_PROBLEM   25
 
-#define STAT_LARGEST_BLOCK   25
-#define STAT_NNZ_OBJ         26
-#define STAT_NNZ_SCHUR       27
+#define STAT_LARGEST_BLOCK   26
+#define STAT_NNZ_OBJ         27
+#define STAT_NNZ_SCHUR       28
 
 // 20 ~ 50 left for event profiling
 #define STAT_PHASE_A_ITER    51
@@ -72,9 +71,9 @@ typedef struct {
     
 } DSDPStats;
 
-extern DSDP_INT DSDPStatInit    ( DSDPStats *stats );
-extern DSDP_INT DSDPStatUpdate  ( DSDPStats *stat, DSDP_INT sName, double  val );
-extern DSDP_INT DSDPGetStats    ( DSDPStats *stat, DSDP_INT sName, double *val );
+extern void DSDPStatInit    ( DSDPStats *stats );
+extern void DSDPStatUpdate  ( DSDPStats *stat, DSDP_INT sName, double  val );
+extern void DSDPGetStats    ( DSDPStats *stat, DSDP_INT sName, double *val );
 extern void DSDPDataStatPrint   ( DSDPStats *stat );
 extern void DSDPDIMACErrorPrint ( DSDPStats *stat );
 extern void DSDPBProfilerPrint  ( DSDPStats *stat );

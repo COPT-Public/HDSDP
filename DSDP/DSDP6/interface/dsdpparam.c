@@ -7,267 +7,143 @@
 static void printDblParam( const double *dblParams, DSDP_INT pName ) {
     
     printf("| ");
-    
-    if (pName > NUM_DBL_PARAM || pName < 0) {
-        printf("Invalid Double Parameter Code %d \n", pName);
-        return;
-    }
-    
     switch (pName) {
-            
-        case DBL_PARAM_ASIGMA:
-            printf("Double Parameter A sigma (0.0, 1.0): ");
-            break;
-        case DBL_PARAM_BSIGMA:
-            printf("Double Parameter B sigma (0.0, 1.0): ");
-            break;
-        case DBL_PARAM_RHO:
-            printf("Double Parameter rho [1.0, 10.0]: ");
-            break;
-        case DBL_PARAM_INIT_POBJ:
-            printf("Double Parameter initial pObj (-inf, inf): ");
-            break;
-        case DBL_PARAM_INIT_BETA:
-            printf("Double Parameter initial beta [1.0, inf): ");
-            break;
-        case DBL_PARAM_INIT_MU:
-            printf("Double Parameter initial mu (0.0, inf): ");
-            break;
-        case DBL_PARAM_INIT_TAU:
-            printf("Double Parameter initial tau (0.0, inf): ");
-            break;
-        case DBL_PARAM_INIT_KAPPA:
-            printf("Double Parameter initial kappa (0.0, inf): ");
-            break;
-        case DBL_PARAM_AALPHA:
-            printf("Double Parameter A alpha (0.0, 1.0): ");
-            break;
-        case DBL_PARAM_NRM_THRESH:
-            printf("Double Parameter norm threshold (0.0, inf): ");
-            break;
-        case DBL_PARAM_INFEAS_THRESH:
-            printf("Double Parameter infeasibility threshold (0.0, inf): ");
-            break;
-        case DBL_PARAM_ABS_OPTTOL:
-            printf("Double Parameter absolute optimality tolerance (0.0, inf): ");
-            break;
-        case DBL_PARAM_REL_OPTTOL:
-            printf("Double Parameter relative optimality tolerance (0.0, inf): ");
-            break;
-        case DBL_PARAM_ABS_FEASTOL:
-            printf("Double Parameter absolute feasibility tolerance (0.0, inf): ");
-            break;
-        case DBL_PARAM_REL_FEASTOL:
-            printf("Double Parameter relative feasibility tolerance (0.0, inf): ");
-            break;
-        case DBL_PARAM_PRLX_PENTALTY:
-            printf("Double Parameter primal relaxation penalty (0.0, inf): ");
-            break;
-        case DBL_PARAM_TIMELIMIT:
-            printf("Double Parameter time limit (0.0, inf): ");
-            break;
-        default:
-            printf("Invalid Parameter Code %d \n", pName);
-            return;
-            break;
-            
+        case DBL_PARAM_RHO          : printf("Rho (0.0, inf]: "); break;
+        case DBL_PARAM_RHON         : printf("Rhon [1.0, 10.0]: "); break;
+        case DBL_PARAM_INIT_POBJ    : printf("Initial pObj (-inf, inf): "); break;
+        case DBL_PARAM_INIT_BETA    : printf("Initial beta [1.0, inf): "); break;
+        case DBL_PARAM_INIT_MU      : printf("Initial mu (0.0, inf): "); break;
+        case DBL_PARAM_INFEAS_THRESH: printf("Infeasibility threshold (0.0, inf): "); break;
+        case DBL_PARAM_ABS_OPTTOL   : printf("Absolute optimality tolerance (0.0, inf): "); break;
+        case DBL_PARAM_REL_OPTTOL   : printf("Relative optimality tolerance (0.0, inf): "); break;
+        case DBL_PARAM_ABS_FEASTOL  : printf("Absolute feasibility tolerance (0.0, inf): "); break;
+        case DBL_PARAM_REL_FEASTOL  : printf("Relative feasibixlity tolerance (0.0, inf): "); break;
+        case DBL_PARAM_PRLX_PENTALTY: printf("Primal relaxation penalty (0.0, inf): "); break;
+        case DBL_PARAM_BOUND_X      : printf("Primal variable bound (0.0, inf): "); break;
+        case DBL_PARAM_TIMELIMIT    : printf("Time limit (0.0, inf): "); break;
+        default: printf("Invalid parameter code %d \n", pName); return; break;
     }
     
     printf("%g \n", dblParams[pName]);
-    return;
 }
 
 static void printIntParam( const DSDP_INT *intParams, DSDP_INT pName ) {
     
-    
     printf("| ");
-    if (pName > NUM_INT_PARAM || pName < 0) {
-        printf("Invalid Integer Parameter Code %d \n", pName);
-        return;
-    }
-    
     switch (pName) {
-        case INT_PARAM_ACORRECTOR:
-            printf("Integer Parameter A corrector step (0, 20): ");
-            break;
-        case INT_PARAM_BCORRECTOR:
-            printf("Integer Parameter B corrector step (0, 20): ");
-            break;
-        case INT_PARAM_INITMETHOD:
-            if (intParams[pName] == INIT_METHOD_FRO) {
-                printf("Integer Parameter initialization method: Frobenius Norm \n");
-            } else {
-                printf("Invalid initialization method \n");
-            }
-            return; break;
-        case INT_PARAM_AATTEMPT:
-            if (intParams[pName] == AATEMPT_AGGRESSIVE) {
-                printf("Integer Parameter A attempt mode: Aggressive \n");
-            } else if (intParams[pName] == AATEMPT_MILD) {
-                printf("Integer Parameter A attempt mode: Mild \n");
-            } else if (intParams[pName] == AATEMT_CONSERVATIVE) {
-                printf("Integer Parameter A attempt mode: Conservative \n");
-            } else {
-                printf("Invalid A attempt parameter \n");
-            }
-            return; break;
-        case INT_PARAM_CG_REUSE:
-            printf("Integer Parameter CG pre-conditioner reuse [0, 5]: ");
-            break;
-        case INT_PARAM_PRESOLVE:
-            if (intParams[pName] == PRESOLVE_AGGRESSIVE) {
-                printf("Integer Parameter presolve mode: Aggressive \n");
-            } else if (intParams[pName] == PRESOLVE_CONSERVATIVE) {
-                printf("Integer Parameter presolve mode: Conservative \n");
-            } else {
-                printf("Invalid presolve mode \n");
-            }
-            return; break;
-        case INT_PARAM_AMAXITER:
-            printf("Integer Parameter A maximum iteration: ");
-            break;
-        case INT_PARAM_BMAXITER:
-            printf("Integer Parameter B maximum iteration: ");
-            break;
-        case INT_PARAM_PRELAX:
-            printf("Integer Parameter primal relaxation: ");
-            break;
-        case INT_PARAM_GOLDSEARCH:
-            printf("Integer Parameter golden linesearch: ");
-            break;
-        default:
-            printf("Invalid parameter code %d \n", pName);
-            return; break;
+        case INT_PARAM_ACORRECTOR: printf("A corrector step (0, 20]: "); break;
+        case INT_PARAM_BCORRECTOR: printf("B corrector step [0, 20]: "); break;
+        case INT_PARAM_CG_REUSE  : printf("CG pre-conditioner reuse [0, 100]: "); break;
+        case INT_PARAM_AMAXITER  : printf("A maximum iteration (0, inf): "); break;
+        case INT_PARAM_BMAXITER  : printf("B maximum iteration (0, inf): "); break;
+        case INT_PARAM_GOLDSEARCH: printf("Golden linesearch {0, 1}: "); break;
+        default: printf("Invalid parameter code %d \n", pName); return;
     }
     
     printf("%d \n", intParams[pName]);
-    return;
 }
 
 static DSDP_INT checkDblParam( DSDP_INT pName, double dblVal ) {
-    // Check double parameter
+
     DSDP_INT retcode = DSDP_RETCODE_OK;
-    // Currently do nothing
+    
+    switch (pName) {
+        case DBL_PARAM_RHO          : if (dblVal < 0.0) { retcode = DSDP_RETCODE_FAILED; } break;
+        case DBL_PARAM_RHON         : if (dblVal > 10.0 || dblVal < 1.0) { retcode = DSDP_RETCODE_FAILED; } break;
+        case DBL_PARAM_INIT_POBJ    : if (dblVal >= DSDP_INFINITY || dblVal <= -DSDP_INFINITY) { retcode = DSDP_RETCODE_FAILED; } break;
+        case DBL_PARAM_INIT_BETA    : if (dblVal < 1.0 || dblVal >= DSDP_INFINITY) { retcode = DSDP_RETCODE_FAILED; } break;
+        case DBL_PARAM_INIT_MU      : if (dblVal < 0.0 || dblVal >= DSDP_INFINITY) { retcode = DSDP_RETCODE_FAILED; } break;
+        case DBL_PARAM_INFEAS_THRESH: if (dblVal < 0.0 || dblVal >= DSDP_INFINITY) { retcode = DSDP_RETCODE_FAILED; } break;
+        case DBL_PARAM_ABS_OPTTOL   : if (dblVal < 0.0 || dblVal >= DSDP_INFINITY) { retcode = DSDP_RETCODE_FAILED; } break;
+        case DBL_PARAM_REL_OPTTOL   : if (dblVal < 0.0 || dblVal >= DSDP_INFINITY) { retcode = DSDP_RETCODE_FAILED; } break;
+        case DBL_PARAM_ABS_FEASTOL  : if (dblVal < 0.0 || dblVal >= DSDP_INFINITY) { retcode = DSDP_RETCODE_FAILED; } break;
+        case DBL_PARAM_REL_FEASTOL  : if (dblVal < 0.0 || dblVal >= DSDP_INFINITY) { retcode = DSDP_RETCODE_FAILED; } break;
+        case DBL_PARAM_PRLX_PENTALTY: if (dblVal < 0.0 || dblVal >= DSDP_INFINITY) { retcode = DSDP_RETCODE_FAILED; } break;
+        case DBL_PARAM_BOUND_X      : if (dblVal < 0.0 || dblVal >= DSDP_INFINITY) { retcode = DSDP_RETCODE_FAILED; } break;
+        case DBL_PARAM_TIMELIMIT    : if (dblVal < 0.0 || dblVal >= DSDP_INFINITY) { retcode = DSDP_RETCODE_FAILED; } break;
+        default                     : printf("| Invalid parameter code %d \n", pName); retcode = DSDP_RETCODE_FAILED; break;
+    }
+
     return retcode;
 }
 
 static DSDP_INT checkIntParam( DSDP_INT pName, DSDP_INT intVal ) {
-    // Check integer parameter
+
     DSDP_INT retcode = DSDP_RETCODE_OK;
-    // Currently do nothing
+    
+    switch (pName) {
+        case INT_PARAM_ACORRECTOR: if (intVal <= 0 || intVal > 20) { retcode = DSDP_RETCODE_FAILED; } break;
+        case INT_PARAM_BCORRECTOR: if (intVal < 0 || intVal > 20) { retcode = DSDP_RETCODE_FAILED; } break;
+        case INT_PARAM_CG_REUSE  : if (intVal < 0 || intVal > 5) { retcode = DSDP_RETCODE_FAILED; } break;
+        case INT_PARAM_AMAXITER  : if (intVal <= 0 || intVal > DSDP_INFINITY) { retcode = DSDP_RETCODE_FAILED; } break;
+        case INT_PARAM_BMAXITER  : if (intVal <= 0 || intVal > DSDP_INFINITY) { retcode = DSDP_RETCODE_FAILED; } break;
+        case INT_PARAM_GOLDSEARCH: if (intVal != 0 && intVal != 1) { retcode = DSDP_RETCODE_FAILED; } break;
+        default: printf("Invalid parameter code %d \n", pName); retcode = DSDP_RETCODE_FAILED; break;
+    }
+    
     return retcode;
 }
 
-extern DSDP_INT setDblParam( hsdParam *param, DSDP_INT pName, double dblVal ) {
-    // Set double parameter
-    DSDP_INT retcode = DSDP_RETCODE_OK;
+extern void setDblParam( hsdParam *param, DSDP_INT pName, double dblVal ) {
     
     if (pName > NUM_DBL_PARAM || pName < 0) {
-        printf("Invalid Parameter Code %d \n", pName);
-        return DSDP_RETCODE_FAILED;
+        printf("| Invalid Parameter Code %d \n", pName); return;
     }
-    
-    // printf("| Before: \n");
-    // printDblParam(param->dblParams, pName);
-    retcode = checkDblParam(pName, dblVal);
-    
-    if (retcode == DSDP_RETCODE_OK) {
+    if (checkDblParam(pName, dblVal) == DSDP_RETCODE_OK) {
         param->dblParams[pName] = dblVal;
     } else {
-        printf("| Invalid parameter range. Parameter unchanged. \n");
+        printf("| Invalid parameter range. Parameter unchanged. \n"); return;
     }
-    
     param->dblParams[pName] = dblVal;
-    // printf("| After: \n");
-    // printDblParam(param->dblParams, pName);
-    
-    return retcode;
 }
 
-extern DSDP_INT getDblParam( hsdParam *param, DSDP_INT pName, double *dblVal ) {
-    
-    // Get double parameter
-    DSDP_INT retcode = DSDP_RETCODE_OK;
+extern void getDblParam( hsdParam *param, DSDP_INT pName, double *dblVal ) {
     
     if (pName > NUM_DBL_PARAM || pName < 0) {
-        printf("Invalid Parameter Code %d \n", pName);
-        return DSDP_RETCODE_FAILED;
+        printf("| Invalid Parameter Code %d \n", pName); return;
     }
-    
     *dblVal = param->dblParams[pName];
-    return retcode;
 }
 
-extern DSDP_INT setIntParam( hsdParam *param, DSDP_INT pName, DSDP_INT intVal ) {
-    // Set int parameter
-    DSDP_INT retcode = DSDP_RETCODE_OK;
+extern void setIntParam( hsdParam *param, DSDP_INT pName, DSDP_INT intVal ) {
     
     if (pName > NUM_INT_PARAM || pName < 0) {
-        printf("Invalid Parameter Code %d \n", pName);
-        return DSDP_RETCODE_FAILED;
+        printf("| Invalid Parameter Code %d \n", pName); return;
     }
-    
-    // printf("| Before: \n");
-    // printIntParam(param->intParams, pName);
-    retcode = checkIntParam(pName, intVal);
-    
-    if (retcode == DSDP_RETCODE_OK) {
+    if (checkIntParam(pName, intVal) == DSDP_RETCODE_OK) {
         param->intParams[pName] = intVal;
     } else {
         printf("| Invalid parameter range. Parameter unchanged. \n");
     }
-    
-    // printf("| After: \n");
-    // printIntParam(param->intParams, pName);
-    return retcode;
+    return;
 }
 
-extern DSDP_INT getIntParam( hsdParam *param, DSDP_INT pName, DSDP_INT *intVal ) {
-    // Get int parameter
-    DSDP_INT retcode = DSDP_RETCODE_OK;
+extern void getIntParam( hsdParam *param, DSDP_INT pName, DSDP_INT *intVal ) {
     
     if (pName > NUM_INT_PARAM || pName < 0) {
-        printf("Invalid Parameter Code %d \n", pName);
-        return DSDP_RETCODE_FAILED;
+        printf("Invalid Parameter Code %d \n", pName); return;
     }
-    
     *intVal = param->intParams[pName];
-    return retcode;
 }
 
 extern void printParams( hsdParam *param ) {
-    // Print all the parameters
+    
     printf("| Parameter Summary \n");
     for (DSDP_INT pName = 0; pName < NUM_DBL_PARAM; ++pName) {
         printDblParam(param->dblParams, pName);
     }
-    
     for (DSDP_INT pName = 0; pName < NUM_INT_PARAM; ++pName ) {
         printIntParam(param->intParams, pName);
     }
-    
-    return;
 }
 
 /* DSDP Summary parameters printer */
 extern void DSDPParamPrint( hsdParam *param ) {
     // Print DSDP Parameters at the beginning. Invoked before solution
-    
-    // dsdpshowdash();
     printf("| Parameter Summary: \n");
-    dsdpshowdash();
-    printDblParam(param->dblParams, DBL_PARAM_RHO);
-    
-    DSDP_INT prelax;
-    getIntParam(param, INT_PARAM_PRELAX, &prelax);
-    // printIntParam(param->intParams, INT_PARAM_PRELAX);
+    showBeautifulDashlines();
+    printDblParam(param->dblParams, DBL_PARAM_RHON);
     printIntParam(param->intParams, INT_PARAM_GOLDSEARCH);
-    
-    if (prelax) {
-        printDblParam(param->dblParams, DBL_PARAM_PRLX_PENTALTY);
-    }
-    
+    printDblParam(param->dblParams, DBL_PARAM_PRLX_PENTALTY);
     printDblParam(param->dblParams, DBL_PARAM_TIMELIMIT);
-        
-    return;
 }
