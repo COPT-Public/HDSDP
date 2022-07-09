@@ -19,6 +19,7 @@ static void cholPrecond( schurMat *P, vec *x, vec *aux ) {
 }
 
 static void preCond( CGSolver *cgSolver, vec *x ) {
+    
     if (cgSolver->pType == CG_PRECOND_DIAG) {
         diagPrecond(cgSolver->vecPre, x);
     } else {
@@ -27,10 +28,8 @@ static void preCond( CGSolver *cgSolver, vec *x ) {
     return;
 }
 
-extern DSDP_INT dsdpCGInit( CGSolver *cgSolver ) {
-    
-    DSDP_INT retcode = DSDP_RETCODE_OK;
-    
+extern void dsdpCGinit( CGSolver *cgSolver ) {
+        
     cgSolver->M     = NULL; cgSolver->r   = NULL;
     cgSolver->rnew  = NULL; cgSolver->d   = NULL;
     cgSolver->Pinvr = NULL; cgSolver->x   = NULL;
@@ -39,20 +38,16 @@ extern DSDP_INT dsdpCGInit( CGSolver *cgSolver ) {
     cgSolver->vecPre  = NULL;
     cgSolver->cholPre = NULL;
     cgSolver->pType = CG_PRECOND_DIAG;
-    cgSolver->reuse = 0;
-    cgSolver->nused = 1024;
+    cgSolver->reuse = 0; cgSolver->nused = 1024;
     
-    cgSolver->dim = 0; cgSolver->tol = 1e-04;
+    cgSolver->dim = 0; cgSolver->tol = 0.0;
     cgSolver->resinrm = 0.0; cgSolver->niter = 0;
-    cgSolver->maxiter = 20; cgSolver->nfailed = 0;
-    
-    return retcode;
+    cgSolver->maxiter = 0; cgSolver->nfailed = 0;
 }
 
 extern DSDP_INT dsdpCGAlloc( CGSolver *cgSolver, DSDP_INT m ) {
     
     DSDP_INT retcode = DSDP_RETCODE_OK;
-    
     assert( m > 0 );
     cgSolver->dim   = m;
     cgSolver->r     = (vec *) calloc(1, sizeof(vec));
@@ -74,9 +69,7 @@ extern DSDP_INT dsdpCGAlloc( CGSolver *cgSolver, DSDP_INT m ) {
     return retcode;
 }
 
-extern DSDP_INT dsdpCGFree( CGSolver *cgSolver ) {
-    
-    DSDP_INT retcode = DSDP_RETCODE_OK;
+extern void dsdpCGFree( CGSolver *cgSolver ) {
     
     cgSolver->M = NULL;
     vec_free(cgSolver->r);     DSDP_FREE(cgSolver->r);
@@ -96,71 +89,65 @@ extern DSDP_INT dsdpCGFree( CGSolver *cgSolver ) {
     cgSolver->maxiter = 0;   cgSolver->status  = 0;
     cgSolver->reuse   = 0;   cgSolver->nused   = 0;
     cgSolver->nfailed = 0;
+}
+
+extern void dsdpCGSetTol( CGSolver *cgSolver, double tol ) {
     
-    return retcode;
-}
-
-extern DSDP_INT dsdpCGSetTol( CGSolver *cgSolver, double tol ) {
-    assert( tol > 0 );
     cgSolver->tol = MAX(1e-20, tol);
-    return DSDP_RETCODE_OK;
 }
 
-extern DSDP_INT dsdpCGSetMaxIter( CGSolver *cgSolver, DSDP_INT maxiter ) {
-    assert( maxiter >= 1 );
+extern void dsdpCGSetMaxIter( CGSolver *cgSolver, DSDP_INT maxiter ) {
+    
     cgSolver->maxiter = MAX(maxiter, 1);
-    return DSDP_RETCODE_OK;
 }
 
-extern DSDP_INT dsdpCGSetM( CGSolver *cgSolver, schurMat *M ) {
-    assert( M->m == cgSolver->dim );
+extern void dsdpCGSetM( CGSolver *cgSolver, schurMat *M ) {
+    
     cgSolver->M = M;
-    return DSDP_RETCODE_OK;
 }
 
-extern DSDP_INT dsdpCGSetDPre( CGSolver *cgSolver, vec *preCond ) {
+extern void dsdpCGSetDPre( CGSolver *cgSolver, vec *preCond ) {
+    
     cgSolver->vecPre = preCond;
-    return DSDP_RETCODE_OK;
 }
 
-extern DSDP_INT dsdpCGSetCholPre( CGSolver *cgSolver, schurMat *preCond ) {
+extern void dsdpCGSetCholPre( CGSolver *cgSolver, schurMat *preCond ) {
+    
     cgSolver->cholPre = preCond;
-    return DSDP_RETCODE_OK;
 }
 
-extern DSDP_INT dsdpCGSetPType( CGSolver *cgSolver, DSDP_INT pType ) {
-    assert( pType == CG_PRECOND_DIAG || pType == CG_PRECOND_CHOL);
+extern void dsdpCGSetPType( CGSolver *cgSolver, DSDP_INT pType ) {
+    
     cgSolver->pType = pType;
-    return DSDP_RETCODE_OK;
 }
 
-extern DSDP_INT dsdpCGGetStatus( CGSolver *cgSolver, DSDP_INT *status ) {
+extern void dsdpCGGetStatus( CGSolver *cgSolver, DSDP_INT *status ) {
+    
     *status = cgSolver->status;
-    return DSDP_RETCODE_OK;
 }
 
-extern DSDP_INT dsdpCGGetSolStatistic( CGSolver *cgSolver, DSDP_INT *iter, double *resinorm ) {
+extern void dsdpCGGetSolStatistic( CGSolver *cgSolver, DSDP_INT *iter, double *resinorm ) {
+    
     *iter = cgSolver->niter;
     *resinorm = cgSolver->resinrm;
-    return DSDP_RETCODE_OK;
 }
 
-extern DSDP_INT dsdpCGSetPreReuse( CGSolver *cgSolver, DSDP_INT reuse ) {
+extern void dsdpCGSetPreReuse( CGSolver *cgSolver, DSDP_INT reuse ) {
+    
     cgSolver->reuse = reuse;
-    return DSDP_RETCODE_OK;
 }
 
-extern DSDP_INT dsdpCGResetPreReuse( CGSolver *cgSolver ) {
+extern void dsdpCGResetPreReuse( CGSolver *cgSolver ) {
+    
     cgSolver->nused = 0;
-    return DSDP_RETCODE_OK;
 }
 
-extern DSDP_INT dsdpCGprepareP( CGSolver *cgSolver ) {
+extern void dsdpCGprepareP( CGSolver *cgSolver ) {
     
     if (cgSolver->status == CG_STATUS_INDEFINITE) {
         schurMatReset(cgSolver->M, FALSE); // Clean factor
         schurMatFactorize(cgSolver->M);
-        return DSDP_RETCODE_OK;
+        return;
     }
     
     if (cgSolver->reuse == 0) {
@@ -169,7 +156,7 @@ extern DSDP_INT dsdpCGprepareP( CGSolver *cgSolver ) {
     
     // Prepare pre-conditioner in CG Solver
     if (cgSolver->pType == CG_PRECOND_DIAG) {
-        return DSDP_RETCODE_OK;
+        return;
     } else if (cgSolver->pType == CG_PRECOND_CHOL && cgSolver->nused > cgSolver->reuse){
         schurMatReset(cgSolver->M, FALSE);
         schurMatFactorize(cgSolver->M);
@@ -180,7 +167,7 @@ extern DSDP_INT dsdpCGprepareP( CGSolver *cgSolver ) {
     } else {
         if (cgSolver->M->isillCond || cgSolver->M->denseM->isillCond) {
             cgSolver->status = CG_STATUS_INDEFINITE;
-            return DSDP_RETCODE_OK;
+            return;
         }
         if (cgSolver->nused >= cgSolver->reuse) {
             dsdpCGSetPType(cgSolver, CG_PRECOND_DIAG);
@@ -189,22 +176,21 @@ extern DSDP_INT dsdpCGprepareP( CGSolver *cgSolver ) {
         }
         
     }
-    return DSDP_RETCODE_OK;
 }
 
 extern void dsdpCGStoreRHS( CGSolver *cgSolver, vec *bin ) {
+    
     vec_copy(bin, cgSolver->aux);
 }
 
 extern void dsdpCGRestoreRHS( CGSolver *cgSolver, vec *bout ) {
+    
     vec_copy(cgSolver->aux, bout);
 }
 
 /* Implement (pre-conditioned) conjugate gradient for Schur system */
 extern DSDP_INT dsdpCGSolve( CGSolver *cgSolver, vec *b, vec *x0 ) {
-    /* CG solver for schur system. Solve P^-1 M x = P^-1 b
-       On exit b is over-written
-     */
+    // CG solver for schur system. Solve P^-1 M x = P^-1 b. On exit b is over-written
     DSDP_INT retcode = DSDP_RETCODE_OK;
     
     if (cgSolver->M->stype == SCHUR_TYPE_SPARSE) {

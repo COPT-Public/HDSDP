@@ -44,7 +44,7 @@ extern "C" {
 /* Timer */
 extern double my_clock(void);
 /* Utils */
-extern DSDP_INT checkIterProgress( HSDSolver *dsdpSolver, DSDP_INT iter );
+extern DSDP_INT checkIterProgress           ( HSDSolver *dsdpSolver, DSDP_INT iter );
 extern void showBeautifulDashlines          ( void );
 extern void printPhaseAheader               ( void );
 extern void printPhaseBheader               ( void );

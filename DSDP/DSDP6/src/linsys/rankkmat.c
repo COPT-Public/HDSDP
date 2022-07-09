@@ -8,10 +8,9 @@ static char etype[] = "Rank-k matrix computation";
 static char uplolow = DSDP_MAT_LOW;
 static DSDP_INT one = 1;
 
-extern DSDP_INT rkMatInit( rkMat *R ) {
+extern void rkMatInit( rkMat *R ) {
     // Initialize rank k matrix
     R->rank = 0; R->dim  = 0; R->isdata = FALSE; R->data = NULL;
-    return DSDP_RETCODE_OK;
 }
 
 extern DSDP_INT rkMatAllocIter( rkMat *R, DSDP_INT n ) {
@@ -129,16 +128,14 @@ extern void rkMatdiagTrace( rkMat *R, double diag, double *trace ) {
     *trace = res;
 }
 
-extern DSDP_INT rkMatCountNnz( rkMat *R ) {
+extern void rkMatCountNnz( rkMat *R ) {
     
     for (DSDP_INT i = 0; i < R->rank; ++i) {
         r1MatCountNnz(R->data[i]);
     }
-    
-    return DSDP_RETCODE_OK;
 }
 
-extern DSDP_INT rkMatFree( rkMat *R ) {
+extern void rkMatFree( rkMat *R ) {
     
     if (R) {
         if (R->isdata) {
@@ -152,11 +149,9 @@ extern DSDP_INT rkMatFree( rkMat *R ) {
         }
         R->dim = 0; R->rank = 0; R->isdata = FALSE;
     }
-    
-    return DSDP_RETCODE_OK;
 }
 
-extern DSDP_INT rkMatFnorm( rkMat *R, double *fnrm ) {
+extern void rkMatFnorm( rkMat *R, double *fnrm ) {
     /* Compute the Frobenius norm of rank k matrix */
     double res = 0.0, tmp;
     DSDP_INT rank = R->rank;
@@ -166,22 +161,18 @@ extern DSDP_INT rkMatFnorm( rkMat *R, double *fnrm ) {
     }
     
     *fnrm = sqrt(res);
-    return DSDP_RETCODE_OK;
 }
 
-extern DSDP_INT rkMatScale( rkMat *R, double a ) {
+extern void rkMatScale( rkMat *R, double a ) {
     for (DSDP_INT i = 0; i < R->rank; ++i) { r1MatScale(R->data[i], a); }
-    return DSDP_RETCODE_OK;
 }
 
-extern DSDP_INT rkMatRscale( rkMat *R, double r ) {
+extern void rkMatRscale( rkMat *R, double r ) {
     for (DSDP_INT i = 0; i < R->rank; ++i) { r1MatRscale(R->data[i], r); }
-    return DSDP_RETCODE_OK;
 }
 
-extern DSDP_INT rkMatisRank1( rkMat *R, DSDP_INT *isRank1 ) {
+extern void rkMatisRank1( rkMat *R, DSDP_INT *isRank1 ) {
     *isRank1 = (R->rank == 1) ? TRUE : FALSE;
-    return DSDP_RETCODE_OK;
 }
 
 extern DSDP_INT rkMatGetRank( rkMat *R ) {
@@ -213,13 +204,11 @@ extern DSDP_INT rkMatIsConstant( rkMat *R ) {
     }
 }
 
-extern DSDP_INT rkMatView( rkMat *R ) {
+extern void rkMatView( rkMat *R ) {
     
     printf("Matrix View: \n");
     printf("Matrix rank "ID" : \n", R->rank);
     for (DSDP_INT i = 0; i < R->rank; ++i) {
         r1MatView(R->data[i]);
     }
-    
-    return DSDP_RETCODE_OK;
 }

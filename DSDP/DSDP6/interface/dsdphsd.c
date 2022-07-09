@@ -1,27 +1,11 @@
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
-#include "dsdphsd.h"
-#include "dsdpdata.h"
-#include "vec.h"
-#include "sparsemat.h"
-#include "densemat.h"
-#include "rankonemat.h"
-#include "schurmat.h"
 #include "dsdppresolve.h"
-#include "dsdpparam.h"
-#include "dsdpsolver.h"
 #include "dsdpoutput.h"
-#include "dsdplog.h"
 #include "dsdpdinfeas.h"
-#include "dsdputils.h"
-#include "dsdplog.h"
 #include "dsdppfeas.h"
 #include "dsdppsol.h"
-
+#include "schurmat.h"
 
 static char etype[] = "DSDP Interface";
-
 #define vec_init_alloc(v, n) vecIter = (vec *) calloc(1, sizeof(vec)); (v) = vecIter; \
                              vec_init(vecIter); retcode = vec_alloc(vecIter, (n)); checkCode;
 
@@ -30,20 +14,19 @@ static DSDP_INT DSDPIInit( HSDSolver *dsdpSolver ) {
     
     // Allocate memory for the internal solver
     DSDP_INT retcode = DSDP_RETCODE_OK;
-    assert( dsdpSolver->insStatus == DSDP_STATUS_UNINIT );
-    
     if (dsdpSolver->insStatus != DSDP_STATUS_UNINIT) {
         error(etype, "Instance has been initialized. \n");
     }
     
     // Problem data
     dsdpSolver->sdpData = NULL;
-    dsdpSolver->lpObj   = NULL;
-    dsdpSolver->lpData  = NULL;
-    dsdpSolver->dObj    = NULL;
-    
-    dsdpSolver->isLPset  = FALSE;
     dsdpSolver->isSDPset = NULL;
+    
+    dsdpSolver->lpData  = NULL;
+    dsdpSolver->lpObj   = NULL;
+    dsdpSolver->isLPset = FALSE;
+    
+    dsdpSolver->dObj = NULL;
     
     // Dimension data
     dsdpSolver->n      = 0;
@@ -52,14 +35,9 @@ static DSDP_INT DSDPIInit( HSDSolver *dsdpSolver ) {
     dsdpSolver->nBlock = 0;
     dsdpSolver->lpDim  = 0;
     
-    // IterProgress monitor
+    // Monitors
     memset(dsdpSolver->eventMonitor, 0, sizeof(DSDP_INT) * nEvent);
     memset(dsdpSolver->iterProgress, 0, sizeof(DSDP_INT) * IterStep);
-    
-    // Residuals
-    dsdpSolver->Ry = 0.0;
-    dsdpSolver->drate = 0.0;
-    dsdpSolver->ry = NULL;
     
     // Iterator
     dsdpSolver->pObjVal = 0.0;
@@ -73,8 +51,8 @@ static DSDP_INT DSDPIInit( HSDSolver *dsdpSolver ) {
     
     dsdpSolver->asinv       = NULL;
     dsdpSolver->asinvrysinv = NULL;
-    dsdpSolver->csinv       = 0.0;
     dsdpSolver->csinvcsinv  = 0.0;
+    dsdpSolver->csinv       = 0.0;
     dsdpSolver->csinvrysinv = 0.0;
     
     dsdpSolver->M        = NULL;
@@ -82,8 +60,8 @@ static DSDP_INT DSDPIInit( HSDSolver *dsdpSolver ) {
     dsdpSolver->cgSolver = NULL;
     dsdpSolver->Mdiag    = NULL;
     dsdpSolver->Mscaler  = 0.0;
-    dsdpSolver->u        = NULL;
     
+    dsdpSolver->u      = NULL;
     dsdpSolver->b1     = NULL;
     dsdpSolver->b2     = NULL;
     dsdpSolver->d1     = NULL;
@@ -102,14 +80,18 @@ static DSDP_INT DSDPIInit( HSDSolver *dsdpSolver ) {
     dsdpSolver->Pnrm   = 0.0;
     dsdpSolver->dPotential = 0.0;
     
+    // Residuals
+    dsdpSolver->rysinv = 0.0;
+    dsdpSolver->Ry    = 0.0;
+    dsdpSolver->drate = 0.0;
+
     // Step matrix
     dsdpSolver->dS     = NULL;
-    dsdpSolver->Scker  = NULL;
-    dsdpSolver->scker  = NULL;
-    
-    dsdpSolver->lczSolver = NULL;
+    dsdpSolver->lczs   = NULL;
     dsdpSolver->dsaux  = NULL;
     dsdpSolver->rkaux  = NULL;
+    dsdpSolver->Scker  = NULL;
+    dsdpSolver->scker  = NULL;
     dsdpSolver->ds     = NULL;
     dsdpSolver->dy     = NULL;
     dsdpSolver->dtau   = 0.0;
@@ -133,112 +115,97 @@ static DSDP_INT DSDPIInit( HSDSolver *dsdpSolver ) {
     dsdpSolver->pScaler = NULL;
     dsdpSolver->cScaler = 0.0;
     dsdpSolver->ymaker  = NULL;
-    dsdpSolver->ymaker2 = NULL;
     dsdpSolver->dymaker = NULL;
+    dsdpSolver->mumaker  = 0.0;
+    dsdpSolver->ymaker2 = NULL;
     dsdpSolver->dymaker2 = NULL;
-    dsdpSolver->mumaker = 0.0;
     dsdpSolver->mumaker2 = 0.0;
     
+    // Solution statistic
     DSDPStatInit(&dsdpSolver->dsdpStats);
     dsdpSolver->startTime = my_clock();
     
     return retcode;
 }
 
-static DSDP_INT DSDPIAlloc( HSDSolver *dsdpSolver ) {
+static DSDP_INT DSDPICheckInputDim( DSDP_INT sdpDim, DSDP_INT nBlock, DSDP_INT nConstr, DSDP_INT lpDim ) {
     
+    DSDP_INT retcode = DSDP_RETCODE_OK;
+    if (sdpDim <= 0) {
+        printf("| Invalid SDP dimension %d <= 0. \n", sdpDim);
+        retcode = DSDP_RETCODE_FAILED; return retcode;
+    }
+    if (lpDim < 0) {
+        printf("| Invalid LP dimension %d < 0. \n", lpDim);
+        retcode = DSDP_RETCODE_FAILED; return retcode;
+    }
+    if (nBlock <= 0) {
+        printf("| Invalid block number %d <= 0. \n", nBlock);
+        retcode = DSDP_RETCODE_FAILED; return retcode;
+    }
+    if (nConstr <= 0) {
+        printf("| Invalid constraint number %d <= 0. \n", nBlock);
+        retcode = DSDP_RETCODE_FAILED; return retcode;
+    }
+    return retcode;
+}
+
+static DSDP_INT DSDPIAlloc( HSDSolver *dsdpSolver ) {
     // Allocate memory for the internal solver (level 1)
     // The allocation only involves data/indicator arrays and the rest of memory will be
     // allocated when setting the problem data or starting to optimize
     DSDP_INT retcode = DSDP_RETCODE_OK;
-    assert( dsdpSolver->insStatus == DSDP_STATUS_INIT_UNSET );
-    
     if (dsdpSolver->insStatus != DSDP_STATUS_INIT_UNSET) {
-        error(etype, "Level 1 memory cannot be allocated. \n");
-        retcode = DSDP_RETCODE_FAILED;
-        return retcode;
+        error(etype, "| Incorrect solver instance status. \n");
+        retcode = DSDP_RETCODE_FAILED; return retcode;
     }
-    
     DSDP_INT nblock = dsdpSolver->nBlock;
-    
-    dsdpSolver->sdpData   = (sdpMat  **) calloc(nblock, sizeof(sdpMat *));
-    dsdpSolver->lczSolver = (DSDPLanczos **) calloc(nblock, sizeof(DSDPLanczos *));
-    dsdpSolver->lpData    = (lpMat    *) calloc(1,      sizeof(lpMat   ));
-    dsdpSolver->lpObj     = (vec      *) calloc(1,      sizeof(vec     ));
-    dsdpSolver->M         = (DSDPSymSchur*) calloc(1,      sizeof(DSDPSymSchur));
-    dsdpSolver->cgSolver  = (CGSolver *) calloc(1,      sizeof(CGSolver));
-    dsdpSolver->isSDPset  = (DSDP_INT *) calloc(nblock, sizeof(DSDP_INT));
-    
-    retcode = dsdpCGInit(dsdpSolver->cgSolver);
+    dsdpSolver->sdpData  = (sdpMat  **) calloc(nblock, sizeof(sdpMat *));
+    dsdpSolver->lczs     = (DSDPLanczos **) calloc(nblock, sizeof(DSDPLanczos *));
+    dsdpSolver->lpData   = (lpMat    *) calloc(1, sizeof(lpMat));
+    dsdpSolver->lpObj    = (vec      *) calloc(1, sizeof(vec));
+    dsdpSolver->M        = (symM     *) calloc(1, sizeof(symM));
+    dsdpSolver->cgSolver = (CGSolver *) calloc(1, sizeof(CGSolver));
+    dsdpSolver->isSDPset = (DSDP_INT *) calloc(nblock, sizeof(DSDP_INT));
+    dsdpCGinit(dsdpSolver->cgSolver);
     
     for (DSDP_INT i = 0; i < nblock; ++i) {
         dsdpSolver->sdpData[i] = (sdpMat *) calloc(1, sizeof(sdpMat));
         sdpMatInit(dsdpSolver->sdpData[i]);
-        dsdpSolver->lczSolver[i] = (DSDPLanczos *) calloc(1, sizeof(DSDPLanczos));
-        dsdpLanczosInit(dsdpSolver->lczSolver[i]);
+        dsdpSolver->lczs[i] = (DSDPLanczos *) calloc(1, sizeof(DSDPLanczos));
+        dsdpLanczosInit(dsdpSolver->lczs[i]);
     }
-    
-    return retcode;
-}
-
-static DSDP_INT DSDPIAllocResi( HSDSolver *dsdpSolver ) {
-    
-    // Allocate memory for residuals
-    DSDP_INT retcode = DSDP_RETCODE_OK;
-    DSDP_INT lpdim = dsdpSolver->lpDim;
-
-    // Allocate ry
-    dsdpSolver->ry = (vec *) calloc(1, sizeof(vec));
-    vec_init(dsdpSolver->ry);
-    retcode = vec_alloc(dsdpSolver->ry, lpdim);
     
     return retcode;
 }
 
 static DSDP_INT DSDPIAllocIter( HSDSolver *dsdpSolver ) {
-    
     // Invoked after the getIdx routine is called
     // Allocate memory for the iterates
     DSDP_INT retcode = DSDP_RETCODE_OK;
     DSDP_INT nblock = dsdpSolver->nBlock, dim = 0, m = dsdpSolver->m, CGreuse;
-    DSDP_INT lpdim = dsdpSolver->lpDim;
+    DSDP_INT lpdim = dsdpSolver->lpDim; vec *vecIter = NULL;
     
     DSDPGetIntParam(dsdpSolver, INT_PARAM_CG_REUSE, &CGreuse);
-    vec *vecIter = NULL;
-    
-    // Allocate S and dS
     dsdpSolver->S  = (spsMat **) calloc(nblock, sizeof(spsMat *));
-    dsdpSolver->dS = (spsMat **) calloc(nblock, sizeof(spsMat *));
-    
-    // Allocate symbolic structure
     dsdpSolver->symS = (DSDP_INT **) calloc(nblock, sizeof(DSDP_INT *));
-
-    // Allocate s and scker
     vec_init_alloc(dsdpSolver->s, lpdim);
-    vec_init_alloc(dsdpSolver->scker, lpdim);
-    
-    // Allocate x
     vec_init_alloc(dsdpSolver->x, lpdim);
-    
-    // Allocate asinv and asinvrysinv
     vec_init_alloc(dsdpSolver->asinv, m);
     vec_init_alloc(dsdpSolver->asinvrysinv, m);
     
-    // Allocate Msdp
     dsdpSolver->Msdp = (schurMat *) calloc(1, sizeof(schurMat));
     schurMatInit(dsdpSolver->Msdp);
     retcode = schurMatAlloc(dsdpSolver->Msdp, m); checkCode;
     
-    // Allocate CG solver
-    retcode = dsdpCGAlloc(dsdpSolver->cgSolver, m);
-    retcode = dsdpCGSetTol(dsdpSolver->cgSolver, 1e-05);
-    retcode = dsdpCGSetPreReuse(dsdpSolver->cgSolver, CGreuse);
-    retcode = dsdpCGSetM(dsdpSolver->cgSolver, dsdpSolver->Msdp);
-    retcode = dsdpCGSetCholPre(dsdpSolver->cgSolver, dsdpSolver->Msdp);
-    
-    // Allocate Mdiag, u, b1, b2, d1, d12, d2, d3 and d4
+    retcode = dsdpCGAlloc(dsdpSolver->cgSolver, m); checkCode;
+    dsdpCGSetTol(dsdpSolver->cgSolver, 1e-05);
+    dsdpCGSetPreReuse(dsdpSolver->cgSolver, CGreuse);
+    dsdpCGSetM(dsdpSolver->cgSolver, dsdpSolver->Msdp);
+    dsdpCGSetCholPre(dsdpSolver->cgSolver, dsdpSolver->Msdp);
     vec_init_alloc(dsdpSolver->Mdiag, m);
-    retcode = dsdpCGSetDPre(dsdpSolver->cgSolver, dsdpSolver->Mdiag);
+    dsdpCGSetDPre(dsdpSolver->cgSolver, dsdpSolver->Mdiag);
+    
     vec_init_alloc(dsdpSolver->u, m);
     vec_init_alloc(dsdpSolver->b1, m);
     vec_init_alloc(dsdpSolver->b2, m);
@@ -247,37 +214,34 @@ static DSDP_INT DSDPIAllocIter( HSDSolver *dsdpSolver ) {
     vec_init_alloc(dsdpSolver->d2, m);
     vec_init_alloc(dsdpSolver->d3, m);
     vec_init_alloc(dsdpSolver->d4, m);
-    
-    // Allocate y
     vec_init_alloc(dsdpSolver->y, m);
-    // ds, dy, ymaker, dymaker
-    vec_init_alloc(dsdpSolver->ds, dsdpSolver->lpDim);
-    vec_init_alloc(dsdpSolver->dy, dsdpSolver->m);
-    vec_init_alloc(dsdpSolver->ymaker, dsdpSolver->m);
-    vec_init_alloc(dsdpSolver->dymaker, dsdpSolver->m);
-    vec_init_alloc(dsdpSolver->ymaker2, dsdpSolver->m);
-    vec_init_alloc(dsdpSolver->dymaker2, dsdpSolver->m);
     
-    // sl, su, scker, slcker, sucker
-    vec_init_alloc(dsdpSolver->sl, dsdpSolver->m);
-    vec_init_alloc(dsdpSolver->su, dsdpSolver->m);
-    vec_init_alloc(dsdpSolver->slcker, dsdpSolver->m);
-    vec_init_alloc(dsdpSolver->sucker, dsdpSolver->m);
+    dsdpSolver->dS = (spsMat **) calloc(nblock, sizeof(spsMat *));
+    vec_init_alloc(dsdpSolver->sl,       m);
+    vec_init_alloc(dsdpSolver->su,       m);
+    vec_init_alloc(dsdpSolver->slcker,   m);
+    vec_init_alloc(dsdpSolver->sucker,   m);
+    vec_init_alloc(dsdpSolver->scker,    lpdim);
+    vec_init_alloc(dsdpSolver->ds,       lpdim);
+    vec_init_alloc(dsdpSolver->dy,       m);
+    vec_init_alloc(dsdpSolver->ymaker,   m);
+    vec_init_alloc(dsdpSolver->dymaker,  m);
+    vec_init_alloc(dsdpSolver->ymaker2,  m);
+    vec_init_alloc(dsdpSolver->dymaker2, m);
     
-    // Allocate Scker
     dsdpSolver->Scker = (spsMat **) calloc(nblock, sizeof(spsMat *));
     dsdpSolver->dsaux = (dsMat  **) calloc(nblock, sizeof(dsMat *));
     dsdpSolver->rkaux = (rkMat  **) calloc(nblock, sizeof(rkMat *));
     
     for (DSDP_INT i = 0; i < nblock; ++i) {
         dim = dsdpSolver->sdpData[i]->dimS;
-        retcode = dsdpLanczosAlloc(dsdpSolver->lczSolver[i], dim); checkCode;
+        retcode = dsdpLanczosAlloc(dsdpSolver->lczs[i], dim); checkCode;
         dsdpSolver->Scker[i] = (spsMat *) calloc(1, sizeof(spsMat));
         dsdpSolver->dsaux[i] = (dsMat  *) calloc(1, sizeof(dsMat));
         dsdpSolver->rkaux[i] = (rkMat  *) calloc(1, sizeof(rkMat));
-        retcode = denseMatInit(dsdpSolver->dsaux[i]); checkCode;
+        denseMatInit(dsdpSolver->dsaux[i]);
         retcode = denseMatAlloc(dsdpSolver->dsaux[i], dim, -1); checkCode;
-        retcode = rkMatInit(dsdpSolver->rkaux[i]); checkCode;
+        rkMatInit(dsdpSolver->rkaux[i]);
         retcode = rkMatAllocIter(dsdpSolver->rkaux[i], dim); checkCode;
     }
     
@@ -285,68 +249,39 @@ static DSDP_INT DSDPIAllocIter( HSDSolver *dsdpSolver ) {
 }
 
 static DSDP_INT DSDPICheckData( HSDSolver *dsdpSolver ) {
-    
     // Check whether problem data is alreay set up
-    DSDP_INT retcode = DSDP_RETCODE_OK;
-    DSDP_INT nblock = dsdpSolver->nBlock, nblockSet = 0;
-    for (DSDP_INT i = 0; i < nblock; ++i) {
-        nblockSet += dsdpSolver->isSDPset[i];
-    }
+    DSDP_INT retcode = DSDP_RETCODE_OK, nblock = dsdpSolver->nBlock, nblockSet = 0;
+    for (DSDP_INT i = 0; i < nblock; ++i) { nblockSet += dsdpSolver->isSDPset[i]; }
     if (nblockSet == nblock) {
         dsdpSolver->insStatus = DSDP_STATUS_SET;
         retcode = DSDPIAllocIter(dsdpSolver);
-        retcode = DSDPIAllocResi(dsdpSolver);
-    }
-    
-    return retcode;
-}
-
-static DSDP_INT DSDPIFreeLPData ( HSDSolver *dsdpSolver ) {
-    
-    // Free the internal LP data
-    DSDP_INT retcode = DSDP_RETCODE_OK;
-    
-    if (dsdpSolver->isLPset) {
-        lpMatFree(dsdpSolver->lpData);
-        dsdpSolver->isLPset = 0;
-    }
-    
-    DSDP_FREE(dsdpSolver->lpData);
-    return retcode;
-}
-
-static DSDP_INT DSDPIFreeSDPData( HSDSolver *dsdpSolver ) {
-    
-    // Free the internal SDP data. Not responsible for isSDPSet
-    DSDP_INT retcode = DSDP_RETCODE_OK;
-    
-    for (DSDP_INT i = 0; i < dsdpSolver->nBlock; ++i) {
-        if (dsdpSolver->isSDPset[i]) {
-            sdpMatFree(dsdpSolver->sdpData[i]);
-            DSDP_FREE(dsdpSolver->sdpData[i]);
+        if (retcode != DSDP_RETCODE_OK) {
+            printf("| Iteration memory allocation failed. \n");
         }
     }
-    
-    DSDP_FREE(dsdpSolver->sdpData);
     return retcode;
 }
 
-static DSDP_INT DSDPIFreeResi( HSDSolver *dsdpSolver ) {
-    
-    // Free the internal residual data
-    DSDP_INT retcode = DSDP_RETCODE_OK;
-    DSDP_FREE(dsdpSolver->ry);
-    return retcode;
-}
-
-static DSDP_INT DSDPIFreeAlgIter( HSDSolver *dsdpSolver ) {
-    
-    // Free the internal iteration data
-    DSDP_INT retcode = DSDP_RETCODE_OK;
-    
-    if (dsdpSolver->insStatus != DSDP_STATUS_SOLVED) {
-        return retcode;
+static void DSDPIFreeLPData ( HSDSolver *dsdpSolver ) {
+    // Free the internal LP data
+    if (dsdpSolver->isLPset) {
+        lpMatFree(dsdpSolver->lpData); dsdpSolver->isLPset = 0;
     }
+    DSDP_FREE(dsdpSolver->lpData);
+}
+
+static void DSDPIFreeSDPData( HSDSolver *dsdpSolver ) {
+    // Free the internal SDP data. Not responsible for isSDPSet
+    for (DSDP_INT i = 0; i < dsdpSolver->nBlock; ++i) {
+        if (dsdpSolver->isSDPset[i]) {
+            sdpMatFree(dsdpSolver->sdpData[i]); DSDP_FREE(dsdpSolver->sdpData[i]);
+        }
+    }
+    DSDP_FREE(dsdpSolver->sdpData);
+}
+
+static void DSDPIFreeAlgIter( HSDSolver *dsdpSolver ) {
+    // Free the internal iteration data
     
     DSDP_INT nblock = dsdpSolver->nBlock;
     // S
@@ -394,14 +329,14 @@ static DSDP_INT DSDPIFreeAlgIter( HSDSolver *dsdpSolver ) {
     DSDP_FREE(dsdpSolver->Scker);
     // dsaux
     for (DSDP_INT i = 0; i < nblock; ++i) {
-        retcode = denseMatFree(dsdpSolver->dsaux[i]);
+        denseMatFree(dsdpSolver->dsaux[i]);
         DSDP_FREE(dsdpSolver->dsaux[i]);
     }
     DSDP_FREE(dsdpSolver->dsaux);
     
     // rkaux
     for (DSDP_INT i = 0; i < nblock; ++i) {
-        retcode = rkMatFree(dsdpSolver->rkaux[i]);
+        rkMatFree(dsdpSolver->rkaux[i]);
         DSDP_FREE(dsdpSolver->rkaux[i]);
     }
     DSDP_FREE(dsdpSolver->rkaux);
@@ -423,12 +358,9 @@ static DSDP_INT DSDPIFreeAlgIter( HSDSolver *dsdpSolver ) {
     DSDP_FREE(dsdpSolver->dymaker2);
     
     symSchurMatFree(dsdpSolver->M); DSDP_FREE(dsdpSolver->M);
-    
-    return retcode;
 }
 
 static DSDP_INT DSDPIFreeCleanUp( HSDSolver *dsdpSolver ) {
-    
     // Free the internal indicator arrays and some common data
     DSDP_INT retcode = DSDP_RETCODE_OK;
     
@@ -463,7 +395,6 @@ static DSDP_INT DSDPIFreeCleanUp( HSDSolver *dsdpSolver ) {
 }
 
 static DSDP_INT DSDPIPresolve( HSDSolver *dsdpSolver ) {
-    
     // Do presolve
     DSDP_INT retcode = DSDP_RETCODE_OK;
     DSDPStats *stat = &dsdpSolver->dsdpStats;
@@ -560,6 +491,7 @@ static DSDP_INT DSDPIPostsolve( HSDSolver *dsdpSolver ) {
 }
 
 extern void DSDPPrintVersion(void) {
+    
     showBeautifulDashlines();
     printf("| Homogeneous Dual Scaling Interior Point Solver. Version %d.%d.%d (Build date %d.%d %d)"
            "                                   \n",
@@ -569,16 +501,18 @@ extern void DSDPPrintVersion(void) {
 }
 
 extern DSDP_INT DSDPCreate( HSDSolver **dsdpSolver, char *modelName ) {
-    
-    /* Create solver */
+    // Create solver
     DSDP_INT retcode = DSDP_RETCODE_OK;
     HSDSolver *solver = NULL;
+    char defaultname[] = "DSDPModel", *name;
     solver = (HSDSolver *) calloc(1, sizeof(HSDSolver));
-    retcode = DSDPIInit(solver); *dsdpSolver = solver;
-    char defaultname[] = "DSDPModel";
-    
-    char *name = (modelName) ? modelName : defaultname;
+    retcode = DSDPIInit(solver);
+    if (retcode != DSDP_RETCODE_OK) {
+        return retcode;
+    }
+    *dsdpSolver = solver; name = (modelName) ? modelName : defaultname;
     strcpy(solver->SDPModel, name);
+    
     return retcode;
 }
 
@@ -588,45 +522,27 @@ extern DSDP_INT DSDPSetDim( HSDSolver *dsdpSolver,
                             DSDP_INT  nConstrs,
                             DSDP_INT  lpDim,
                             DSDP_INT  *nNzs ) {
+
+    DSDP_INT retcode = DSDP_RETCODE_OK, nnz;
     
-    /* Set dimension of the DSDP problem instance
-       
-       nVars    is the total number of variables of the instance
-       nBlock   is the number of SDP blocks participating in the instance
-       nConstrs is the dimension of the dual variable
-       lpDim    is the dimension of the LP
-     
-    */
-    
-    DSDP_INT retcode = DSDP_RETCODE_OK;
-    assert( dsdpSolver->insStatus == DSDP_STATUS_INIT_UNSET );
     if (dsdpSolver->insStatus != DSDP_STATUS_INIT_UNSET) {
-        error(etype, "Instance not yet initialized or "
-              "dimension is already set. \n");
-        retcode = DSDP_RETCODE_FAILED;
-        return retcode;
+        error(etype, "| Instance not yet initialized or dimension is already set. \n");
+        retcode = DSDP_RETCODE_FAILED; return retcode;
     }
     
-    if ((sdpDim + lpDim) <= 0 || nConstrs < 0 || lpDim < 0 || nBlock < 0 || sdpDim < 0) {
-        error(etype, "Invalid dimension. \n");
-    }
-    
-    DSDP_INT nnz = (nNzs) ? *nNzs : (-1);
-    if (dsdpSolver->verbosity) {
-        // printf("Dimension is successfully set. \n");
-        showBeautifulDashlines();
-        printf("| nSDPBlock: "ID" "
-               "| nConstrs: "ID" "
-               "| nLP Vars: "ID" "
-               "| SDP Dimension: "ID" "
-               "| Nonzeros: "ID" \n", nBlock, nConstrs, lpDim, sdpDim, nnz);
-    }
-    
+    retcode = DSDPICheckInputDim(sdpDim, nBlock, nConstrs, lpDim); checkCode;
+    nnz = (nNzs) ? *nNzs : (-1);
+    showBeautifulDashlines();
+    printf("| nSDPBlock: "ID" | nConstrs: "ID" | LP. Dim: "ID" | SDP. Dim: "ID" | Nonzeros: "ID" \n",
+           nBlock, nConstrs, lpDim, sdpDim, nnz);
     dsdpSolver->nBlock = nBlock; dsdpSolver->m = nConstrs;
     dsdpSolver->lpDim = lpDim; dsdpSolver->n = sdpDim;
     
-    retcode = DSDPIAlloc(dsdpSolver); checkCode;
-    
+    retcode = DSDPIAlloc(dsdpSolver);
+    if (retcode != DSDP_RETCODE_OK) {
+        printf("| Failed to allocate memories for dimension-related arrays. \n");
+        retcode = DSDP_RETCODE_FAILED;
+    }
     return retcode;
 }
 
@@ -636,27 +552,20 @@ extern DSDP_INT DSDPSetLPData( HSDSolver *dsdpSolver,
                                DSDP_INT  *Ai,
                                double    *Ax,
                                double    *lpObj ) {
-    
-    /*
-     LP data interface for the user. DSDP accepts the
-     CSC representaion of coefficient A
-    */
-    
+    // LP data interface for the user. Accept the CSC representaion of coefficient A
     DSDP_INT retcode = DSDP_RETCODE_OK;
     if (dsdpSolver->insStatus != DSDP_STATUS_INIT_UNSET) {
-        error(etype, "The solver instance is either not initialized or "
-              "already set. \n");
+        error(etype, "The solver instance is either uninitialized or already set. \n");
     } else if (dsdpSolver->m <= 0) {
         error(etype, "Instance dimension is not set. \n");
     } else if (dsdpSolver->isLPset) {
         error(etype, "LP data is already set. \n");
-    } else if (nCol <= 0) {
+    } else if (nCol != dsdpSolver->lpDim) {
         error(etype, "Invalid number of columns. \n");
     }
-    
     lpMatInit(dsdpSolver->lpData);
-    lpMatSetDim(dsdpSolver->lpData, dsdpSolver->m, nCol); checkCode;
-    retcode = vec_alloc(dsdpSolver->lpObj, nCol);
+    lpMatSetDim(dsdpSolver->lpData, dsdpSolver->m, nCol);
+    retcode = vec_alloc(dsdpSolver->lpObj, nCol); checkCode;
     retcode = lpMatSetData(dsdpSolver->lpData, Ap, Ai, Ax); checkCode;
     memcpy(dsdpSolver->lpObj->x, lpObj, sizeof(double) * nCol);
     
@@ -667,7 +576,6 @@ extern DSDP_INT DSDPSetLPData( HSDSolver *dsdpSolver,
 extern DSDP_INT DSDPSetSDPConeData( HSDSolver *dsdpSolver,
                                     DSDP_INT  blockid,
                                     DSDP_INT  coneSize,
-                                    DSDP_INT  *typehint,
                                     DSDP_INT  *Asdpp,
                                     DSDP_INT  *Asdpi,
                                     double    *Asdpx ) {
@@ -675,22 +583,20 @@ extern DSDP_INT DSDPSetSDPConeData( HSDSolver *dsdpSolver,
     DSDP_INT retcode = DSDP_RETCODE_OK;
     double cnnz = 0, tmp;
     if (dsdpSolver->insStatus != DSDP_STATUS_INIT_UNSET) {
-        error(etype, "The solver instance is either not initialized or "
+        error(etype, "The solver instance is either uninitialized or "
               "already set. \n");
-    } else if ((blockid >= dsdpSolver->nBlock) || (blockid < 0)) {
+    } else if (blockid >= dsdpSolver->nBlock || blockid < 0) {
         error(etype, "Invalid block id. \n");
     } else if (dsdpSolver->isSDPset[blockid]) {
         error(etype, "SDP block is already set. \n");
     }
+    
     sdpMat *data = dsdpSolver->sdpData[blockid];
     sdpMatSetDim(data, dsdpSolver->m, coneSize, blockid);
     retcode = sdpMatAlloc(data); checkCode;
-    if (typehint) { sdpMatSetHint(data, typehint); }
-    
     DSDPGetStats(&dsdpSolver->dsdpStats, STAT_NNZ_OBJ, &cnnz);
     retcode = sdpMatSetData(data, Asdpp, Asdpi, Asdpx, &tmp); checkCode;
     cnnz += tmp; DSDPStatUpdate(&dsdpSolver->dsdpStats, STAT_NNZ_OBJ, cnnz);
-    
     dsdpSolver->isSDPset[blockid] = TRUE;
     
     return retcode;
@@ -699,10 +605,21 @@ extern DSDP_INT DSDPSetSDPConeData( HSDSolver *dsdpSolver,
 extern DSDP_INT DSDPSetObj( HSDSolver *dsdpSolver, double *dObj ) {
     // Set the dual objective
     DSDP_INT retcode = DSDP_RETCODE_OK;
+    // Most likely to run out of memory
     retcode = DSDPICheckData(dsdpSolver);
-    assert( dsdpSolver->insStatus == DSDP_STATUS_SET && !dsdpSolver->dObj );
+    if (retcode != DSDP_RETCODE_OK) {
+        printf("| Failed to allocate internal iteration data. \n");
+        return retcode;
+    }
+    
     dsdpSolver->dObj = (vec *) calloc(1, sizeof(vec));
-    vec_init(dsdpSolver->dObj); vec_alloc(dsdpSolver->dObj, dsdpSolver->m);
+    vec_init(dsdpSolver->dObj);
+    
+    retcode = vec_alloc(dsdpSolver->dObj, dsdpSolver->m);
+    if (retcode != DSDP_RETCODE_OK) {
+        printf("| Failed to allocate memory for the dual objective. \n");
+        return retcode;
+    }
     
     if (dObj) {
         memcpy(dsdpSolver->dObj->x, dObj, sizeof(double) * dsdpSolver->m);
@@ -761,11 +678,7 @@ extern DSDP_INT DSDPOptimize( HSDSolver *dsdpSolver ) {
 extern DSDP_INT DSDPGetDual( HSDSolver *dsdpSolver, double *y, double **S ) {
     // Extract dual solution y and S
     DSDP_INT retcode = DSDP_RETCODE_OK;
-    
-    if (y) {
-        memcpy(y, dsdpSolver->y->x, sizeof(double) * dsdpSolver->y->dim);
-    }
-    
+    if (y) { memcpy(y, dsdpSolver->y->x, sizeof(double) * dsdpSolver->y->dim); }
     if (S) {
         for (DSDP_INT i = 0; i < dsdpSolver->nBlock; ++i) {
             spsMatFill(dsdpSolver->S[i], S[i]);
@@ -794,14 +707,14 @@ extern DSDP_INT DSDPExport( HSDSolver *dsdpSolver, DSDP_INT output, char *fname 
         retcode = DSDPSetObj(dsdpSolver, NULL); checkCode;
     }
     if (output == DSDP_EXPORT_DSYMBOLIC) {
-        if (dsdpSolver->insStatus != DSDP_STATUS_PRESOLVED) {
-            retcode = DSDPIPresolve(dsdpSolver);
+        retcode = DSDPIPresolve(dsdpSolver);
+        if (retcode != DSDP_RETCODE_OK) {
+            printf("| Presolve failed. \n"); return retcode;
         }
         dumpDualSymbolic(dsdpSolver, fname);
     } else {
-        error(etype, "Not implemente. \n");
+        error(etype, "Not implemented export type. \n");
     }
-    
     return retcode;
 }
 
@@ -826,17 +739,9 @@ extern void DSDPGetIntParam( HSDSolver *dsdpSolver, DSDP_INT pName, DSDP_INT *in
 }
 
 extern DSDP_INT DSDPDestroy( HSDSolver *dsdpSolver ) {
-    
     /* Free the internal data structures */
     DSDP_INT retcode = DSDP_RETCODE_OK;
-    
-    retcode = DSDPIFreeLPData (dsdpSolver); checkCode;
-    retcode = DSDPIFreeSDPData(dsdpSolver); checkCode;
-    retcode = DSDPIFreeResi(dsdpSolver);    checkCode;
-    retcode = DSDPIFreeAlgIter(dsdpSolver); checkCode;
-    retcode = DSDPIFreeCleanUp(dsdpSolver); checkCode;
-    
-    DSDP_FREE(dsdpSolver);
-    
-    return retcode;
+    DSDPIFreeLPData (dsdpSolver); DSDPIFreeSDPData(dsdpSolver);
+    DSDPIFreeAlgIter(dsdpSolver); DSDPIFreeCleanUp(dsdpSolver);
+    DSDP_FREE(dsdpSolver); return retcode;
 }

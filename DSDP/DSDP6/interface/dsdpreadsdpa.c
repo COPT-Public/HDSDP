@@ -1,7 +1,3 @@
-#include <string.h>
-#include "dsdpreadsdpa.h"
-#include "dsdphsd.h"
-#include "dsdpsolver.h"
 #include "dsdplog.h"
 
 // A simple SDPA reader for HDSDP
@@ -24,6 +20,7 @@ static DSDP_INT DSDPPrepareSDPData( char     *filename,    // 'xxx.dat-s'
                                     DSDP_INT *nVars,       // Total number of variables
                                     DSDP_INT *nConstr,     // Total number of constraints
                                     DSDP_INT *nNzs ) {     // Number of nonzero elements
+    
     // Adapted from readsdpa.c of DSDP5.8
     DSDP_INT retcode = DSDP_RETCODE_OK;
     FILE *file; char chartmp, thisline[BFSIZE] = "*";
@@ -308,7 +305,7 @@ extern DSDP_INT DSDPAnalyzeSDPA(int argc, char *argv[]) {
     
     retcode = DSDPSetDim(analyzer, nSDPVars, nBlocks, nConstrs, nLPVars, &nNz);
     for (i = 0; i < nBlocks; ++i) {
-        retcode = DSDPSetSDPConeData(analyzer, i, blocksizes[i], NULL,
+        retcode = DSDPSetSDPConeData(analyzer, i, blocksizes[i],
                                      coneAp[i], coneAi[i], coneAx[i]);
         if (retcode != DSDP_RETCODE_OK) {
             break;
@@ -392,7 +389,7 @@ extern DSDP_INT DSDPSolveSDPA(int argc, char *argv[]) {
     retcode = DSDPSetDim(hsdSolver, nSDPVars, nBlocks, nConstrs, nLPVars, &nNz);
     
     for (i = 0; i < nBlocks; ++i) {
-        retcode = DSDPSetSDPConeData(hsdSolver, i, blocksizes[i], NULL,
+        retcode = DSDPSetSDPConeData(hsdSolver, i, blocksizes[i],
                                      coneAp[i], coneAi[i], coneAx[i]);
         if (retcode != DSDP_RETCODE_OK) {
             break;
@@ -427,6 +424,16 @@ extern DSDP_INT DSDPSolveSDPA(int argc, char *argv[]) {
     if (retcode != DSDP_RETCODE_OK) {
         printf("| Optimization failed. \n");
     }
+    
+//    double *y = NULL;
+//    y = (double *) calloc(sizeof(double), nConstrs);
+//    DSDPGetDual(hsdSolver, y, NULL);
+//
+//    for (i = 0; i < nConstrs; ++i) {
+//        printf("%10.6e, ", y[i]);
+//    }
+//
+//    DSDP_FREE(y);
     
 exit_cleanup:
     DSDPDestroy(hsdSolver);

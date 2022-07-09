@@ -51,27 +51,27 @@ typedef struct {
     DSDP_INT *gold;     // Is Golden search being used ?
     DSDP_INT *lpSet;    // Is LP cone present ?
     
-} DSDPSymSchur;
+} symM;
 
 
 #ifdef __cplusplus
 extern "C" {
 #endif
 
-extern DSDP_INT symSchurMatInit    ( DSDPSymSchur *M );
-extern DSDP_INT symSchurMatSetDim  ( DSDPSymSchur *M, DSDP_INT m, DSDP_INT nblock );
-extern DSDP_INT symSchurMatAlloc   ( DSDPSymSchur *M );
-extern DSDP_INT symSchurMatRegister( DSDPSymSchur *M, spsMat **S, dsMat **B, sdpMat **Adata, schurMat *Msdp,
+extern DSDP_INT symSchurMatInit    ( symM *M );
+extern DSDP_INT symSchurMatSetDim  ( symM *M, DSDP_INT m, DSDP_INT nblock );
+extern DSDP_INT symSchurMatAlloc   ( symM *M );
+extern DSDP_INT symSchurMatRegister( symM *M, spsMat **S, dsMat **B, sdpMat **Adata, schurMat *Msdp,
                                      vec *asinv, vec *asinvrysinv, vec *asinvcsinv, double *csinvrysinv,
                                      double *csinv, double *csinvcsinv, double *rysinv, double *Ry,
                                      rkMat **rkaux, DSDP_INT *phaseA, DSDP_INT *buildHsd,
                                      DSDP_INT *gold, DSDP_INT *lpSet );
-extern DSDP_INT symSchurMatFree    ( DSDPSymSchur *M );
-extern DSDP_INT DSDPSchurReorder   ( DSDPSymSchur *M );
-extern DSDP_INT DSDPCheckSchurType ( DSDPSymSchur *M );
-extern DSDP_INT DSDPSchurSetup     ( DSDPSymSchur *M );
-extern void asinvSetup         ( DSDPSymSchur *M );
-extern void arysinvSetup       ( DSDPSymSchur *M );
+extern DSDP_INT symSchurMatFree    ( symM *M );
+extern DSDP_INT DSDPSchurReorder   ( symM *M );
+extern DSDP_INT DSDPCheckSchurType ( symM *M );
+extern DSDP_INT DSDPSchurSetup     ( symM *M );
+extern void asinvSetup         ( symM *M );
+extern void arysinvSetup       ( symM *M );
 
 #ifdef __cplusplus
 }

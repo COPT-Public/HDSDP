@@ -18,20 +18,21 @@ static DSDP_INT lanczosAlloc( vec **v,  vec **w,
     DSDP_INT retcode = DSDP_RETCODE_OK;
     vec *vecdata = NULL;
     vecdata = (vec *) calloc(1, sizeof(vec));
-    vec_init(vecdata); vec_alloc(vecdata, n);
-    *v = vecdata;
+    vec_init(vecdata); retcode = vec_alloc(vecdata, n);
+    checkCode; *v = vecdata;
     vecdata = (vec *) calloc(1, sizeof(vec));
-    vec_init(vecdata); vec_alloc(vecdata, n);
-    *w = vecdata;
+    vec_init(vecdata); retcode = vec_alloc(vecdata, n);
+    checkCode; *w = vecdata;
     vecdata = (vec *) calloc(1, sizeof(vec));
-    vec_init(vecdata); vec_alloc(vecdata, n);
-    *z1 = vecdata;
+    vec_init(vecdata); retcode = vec_alloc(vecdata, n);
+    checkCode; *z1 = vecdata;
     vecdata = (vec *) calloc(1, sizeof(vec));
-    vec_init(vecdata); vec_alloc(vecdata, n);
-    *z2 = vecdata;
+    vec_init(vecdata); retcode = vec_alloc(vecdata, n);
+    checkCode; *z2 = vecdata;
     vecdata = (vec *) calloc(1, sizeof(vec));
-    vec_init(vecdata); vec_alloc(vecdata, n);
-    *vecaux = vecdata;
+    vec_init(vecdata); retcode = vec_alloc(vecdata, n);
+    checkCode; *vecaux = vecdata;
+    
     *V = (double *) calloc(n * (maxiter + 1), sizeof(double));
     *H = (double *) calloc((maxiter + 1) * (maxiter + 1), sizeof(double));
     *Y = (double *) calloc(2 * maxiter, sizeof(double));
@@ -39,6 +40,11 @@ static DSDP_INT lanczosAlloc( vec **v,  vec **w,
     *mataux = (double *) calloc(maxiter * maxiter, sizeof(double));
     *eigaux = (double *) calloc(maxiter * LWORK, sizeof(double));
     *eigintaux = (DSDP_INT *) calloc(maxiter * IWORK, sizeof(DSDP_INT));
+    
+    if (!V || !H || !Y || !d || !mataux || !eigaux || !eigintaux) {
+        printf("| Failed to allocate memory for Lanczos iterator. \n");
+        retcode = DSDP_RETCODE_FAILED; return retcode;
+    }
     
     return retcode;
 }
@@ -68,7 +74,6 @@ static DSDP_INT lanczosFree( vec **v,  vec **w,
 static DSDP_INT lanczositerInitalize( vec *v, double *V ) {
     // v = v / norm(v); V(:, 1) = v;
     DSDP_INT retcode = DSDP_RETCODE_OK;
-    
     srand(v->dim); double nrm = 0.0;
     for (DSDP_INT i = 0; i < v->dim; ++i) {
         srand(rand());
@@ -81,6 +86,7 @@ static DSDP_INT lanczositerInitalize( vec *v, double *V ) {
 }
 
 extern DSDP_INT dsdpLanczosInit( DSDPLanczos *lczSolver ) {
+    
     lczSolver->n = 0; lczSolver->v = NULL; lczSolver->w = NULL;
     lczSolver->z1 = NULL; lczSolver->z2 = NULL; lczSolver->vecaux = NULL;
     lczSolver->V = NULL; lczSolver->H = NULL; lczSolver->Y = NULL;
@@ -91,15 +97,16 @@ extern DSDP_INT dsdpLanczosInit( DSDPLanczos *lczSolver ) {
 }
 
 extern DSDP_INT dsdpLanczosAlloc( DSDPLanczos *lczSolver, DSDP_INT n ) {
+    
     DSDPLanczos *l = lczSolver;
     lczSolver->n = n;
-    lanczosAlloc(&l->v, &l->w, &l->z1, &l->z2, &l->vecaux,
-                 &l->V, &l->H, &l->Y, &l->d, &l->mataux,
-                 &l->eigaux, &l->eigintaux, l->n, MAXITER);
-    return DSDP_RETCODE_OK;
+    return lanczosAlloc(&l->v, &l->w, &l->z1, &l->z2, &l->vecaux,
+                        &l->V, &l->H, &l->Y, &l->d, &l->mataux,
+                        &l->eigaux, &l->eigintaux, l->n, MAXITER);
 }
 
 extern void dsdpLanczosFree( DSDPLanczos *lczSolver ) {
+    
     DSDPLanczos *l = lczSolver;
     lanczosFree(&l->v, &l->w, &l->z1, &l->z2, &l->vecaux,
                 &l->V, &l->H, &l->Y, &l->d, &l->mataux,
@@ -108,8 +115,7 @@ extern void dsdpLanczosFree( DSDPLanczos *lczSolver ) {
 }
 
 extern DSDP_INT dsdpLanczosStep( DSDPLanczos *lczSolver, spsMat *S, spsMat *dS, double *lbd, double *delta ) {
-    
-    /* Lanczos algorithm that computes lambda_max(L^-1 dS L^-T) */
+    // Lanczos algorithm that computes lambda_max(L^-1 dS L^-T)
     DSDP_INT retcode = DSDP_RETCODE_OK;    
     DSDPLanczos *l = lczSolver;
     double fnrm = 0.0; spsMatFnorm(dS, &fnrm);
@@ -204,7 +210,8 @@ extern DSDP_INT dsdpLanczosStep( DSDPLanczos *lczSolver, spsMat *S, spsMat *dS, 
                 dgemv(&notrans, &n, &kp1, &alpha, V, &n,
                       Y, &one, &beta, z2->x, &one);
                 // tmp  = dS * (LT \ z2);
-                spsMatVecBSolve(S, z2, z1); spsMatAx(dS, z1, vecaux);
+                spsMatVecBSolve(S, z2, z1);
+                spsMatAx(dS, z1, vecaux);
                 spsMatVecFSolve(S, vecaux, z1);
                 // res2 = norm(L \ tmp - lambda * z);
                 vec_axpby(1.0, z1, -lambda1, z2);

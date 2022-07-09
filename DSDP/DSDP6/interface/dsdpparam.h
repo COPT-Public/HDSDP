@@ -31,7 +31,7 @@
 typedef struct {
     DSDP_INT *intParams;
     double *dblParams;
-} hsdParam;
+} dsdpparam;
 
 static DSDP_INT defaultIntParam[NUM_INT_PARAM] = {
     4,     // INT_PARAM_ACORRECTOR
@@ -58,17 +58,17 @@ static double defaultDblParam[NUM_DBL_PARAM] = {
     15000, // DBL_PARAM_TIME_LIMIT
 };
 
-static hsdParam defaultParam =
+static dsdpparam defaultParam =
 {
     defaultIntParam,
     defaultDblParam
 };
 
-extern void setDblParam ( hsdParam *param, DSDP_INT pName, double    dblVal );
-extern void getDblParam ( hsdParam *param, DSDP_INT pName, double   *dblVal );
-extern void setIntParam ( hsdParam *param, DSDP_INT pName, DSDP_INT  intVal );
-extern void getIntParam ( hsdParam *param, DSDP_INT pName, DSDP_INT *intVal );
-extern void printParams ( hsdParam *param                                   );
-extern void DSDPParamPrint ( hsdParam *param );
+extern void setDblParam ( dsdpparam *param, DSDP_INT pName, double    dblVal );
+extern void getDblParam ( dsdpparam *param, DSDP_INT pName, double   *dblVal );
+extern void setIntParam ( dsdpparam *param, DSDP_INT pName, DSDP_INT  intVal );
+extern void getIntParam ( dsdpparam *param, DSDP_INT pName, DSDP_INT *intVal );
+extern void printParams ( dsdpparam *param                                   );
+extern void DSDPParamPrint ( dsdpparam *param );
 
 #endif /* dsdpparam_h */

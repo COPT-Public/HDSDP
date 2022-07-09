@@ -1,5 +1,4 @@
 #include "sys/time.h"
-#include <stdio.h>
 #include "dsdplog.h"
 
 #ifndef isnan

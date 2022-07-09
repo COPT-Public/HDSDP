@@ -60,15 +60,7 @@ extern DSDP_INT dInfeasCorrectorStep( HSDSolver *dsdpSolver, DSDP_INT isfinal ) 
     
     if (!dsdpSolver->Ry) {
         if (!DSDPConic( COPS_CHECK_INCONE )(dsdpSolver, DUALVAR)) {
-            printf("| Fatal Error in dsdpcorrector.c -> Line 63 -> dInfeasCorrectorStep. Give up. \n");
-            printf("---------------------------------------"
-                   "---------------------------------------"
-                   "--------------------\n");
-            printf("| DSDP Ends by Fatal Error. No solution available. \n");
-            printf("---------------------------------------"
-                   "---------------------------------------"
-                   "--------------------\n");
-            exit(0);
+            fatal_error_msg(etype);
         }
     }
     
@@ -76,15 +68,7 @@ extern DSDP_INT dInfeasCorrectorStep( HSDSolver *dsdpSolver, DSDP_INT isfinal ) 
         
         if (i == 0) {
             if (!DSDPConic( COPS_CHECK_INCONE )(dsdpSolver, DUALVAR)) {
-                printf("| Fatal Error in dsdpcorrector.c -> Line 79 -> dInfeasCorrectorStep. Give up. \n");
-                printf("---------------------------------------"
-                       "---------------------------------------"
-                       "--------------------\n");
-                printf("| DSDP Ends by Fatal Error. No solution available. \n");
-                printf("---------------------------------------"
-                       "---------------------------------------"
-                       "--------------------\n");
-                exit(0);
+                fatal_error_msg(etype);
             }
         }
         
@@ -130,15 +114,7 @@ extern DSDP_INT dInfeasCorrectorStep( HSDSolver *dsdpSolver, DSDP_INT isfinal ) 
         if (step <= 0.005) {
             DSDPConic( COPS_GET_SLACK )(dsdpSolver, DUALVAR);
             if (!DSDPConic( COPS_CHECK_INCONE )(dsdpSolver, DUALVAR)) {
-                printf("| Fatal Error in dsdpcorrector.c -> dInfeasCorrectorStep -> Line 117. Give up. \n");
-                printf("---------------------------------------"
-                       "---------------------------------------"
-                       "--------------------\n");
-                printf("| DSDP Ends by Fatal Error. No solution available. \n");
-                printf("---------------------------------------"
-                       "---------------------------------------"
-                       "--------------------\n");
-                exit(0);
+                fatal_error_msg(etype);
             }
             break;
         }
@@ -270,15 +246,7 @@ extern DSDP_INT dualCorrectorStep( HSDSolver *dsdpSolver ) {
             getPhaseBLps(dsdpSolver, ynow);
             dsdpInCone(dsdpSolver, &inCone);
             if (!inCone) {
-                printf("| Fatal Error in dsdpcorrector.c -> Line 257 -> dualCorrectorStep. Give up. \n");
-                printf("---------------------------------------"
-                       "---------------------------------------"
-                       "--------------------\n");
-                printf("| DSDP Ends by Fatal Error. No solution available. \n");
-                printf("---------------------------------------"
-                       "---------------------------------------"
-                       "--------------------\n");
-                exit(0);
+                fatal_error_msg(etype);
             }
             continue;
         }

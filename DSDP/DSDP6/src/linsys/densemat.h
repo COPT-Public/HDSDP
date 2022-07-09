@@ -18,30 +18,30 @@ extern "C" {
 #endif
 
 /* Structure operations */
-extern DSDP_INT denseMatInit     ( dsMat *dMat                                              );
+extern void denseMatInit     ( dsMat *dMat                                              );
 extern DSDP_INT denseMatAlloc    ( dsMat *dMat, DSDP_INT dim, DSDP_INT doFactor             );
-extern DSDP_INT denseMatFree     ( dsMat *dMat                                              );
+extern void denseMatFree     ( dsMat *dMat                                              );
 
 /* Basic operations */
-extern DSDP_INT denseMataXpbY    ( double alpha, dsMat *dXMat, double beta, dsMat *dYMat    );
-extern DSDP_INT denseMataAxpby   ( dsMat *dAMat, double alpha, vec *x, double beta, vec *Ax );
-extern DSDP_INT denseMatAdddiag  ( dsMat *dAMat, double d                                   );
-extern DSDP_INT denseMatAdddiagVec( dsMat *dAMat, vec *d                                    );
+extern void denseMataXpbY    ( double alpha, dsMat *dXMat, double beta, dsMat *dYMat    );
+extern void denseMataAxpby   ( dsMat *dAMat, double alpha, vec *x, double beta, vec *Ax );
+extern void denseMatAdddiag  ( dsMat *dAMat, double d                                   );
+extern void denseMatAdddiagVec( dsMat *dAMat, vec *d                                    );
 extern double   denseMatxTAx     ( dsMat *dAMat, double *aux,  double *x                    );
-extern DSDP_INT denseMatFnorm    ( dsMat  *dMat, double *fnrm                               );
+extern void denseMatFnorm    ( dsMat  *dMat, double *fnrm                               );
 extern double   denseMatOneNorm  ( dsMat *dMat                                              );
-extern DSDP_INT denseMatScale    ( dsMat *dXMat, double a                                   );
-extern DSDP_INT denseMatRscale   ( dsMat *dXMat, double r                                   );
+extern void denseMatScale    ( dsMat *dXMat, double a                                   );
+extern void denseMatRscale   ( dsMat *dXMat, double r                                   );
 
 /* Factorization and linear system solver */
 extern DSDP_INT denseMatFactorize( dsMat * dAMat                                            );
-extern DSDP_INT denseArrSolveInp ( dsMat *S, DSDP_INT nrhs, double *B                       );
-extern DSDP_INT denseVecSolve    ( dsMat *dAMat, vec    *dbVec, double *Ainvb               );
-extern DSDP_INT denseSpsSolve    ( dsMat *dAMat, spsMat *sBMat, double *AinvB               );
+extern void denseArrSolveInp ( dsMat *S, DSDP_INT nrhs, double *B                       );
+extern void denseVecSolve    ( dsMat *dAMat, vec    *dbVec, double *Ainvb               );
+extern void denseSpsSolve    ( dsMat *dAMat, spsMat *sBMat, double *AinvB               );
 
 /* Schur matrix assembly */
-extern DSDP_INT denseSpsTrace    ( dsMat *dAMat, spsMat *sBMat, double *trace               );
-extern DSDP_INT denseDsTrace     ( dsMat *dAMat, dsMat *dBMat,  double *trace               );
+extern void denseSpsTrace    ( dsMat *dAMat, spsMat *sBMat, double *trace               );
+extern void denseDsTrace     ( dsMat *dAMat, dsMat *dBMat,  double *trace               );
 extern double   denseSinvASinv   ( const double *Sinv, dsMat *A, const double *ASinv        );
 extern double   denseDiagTrace   ( dsMat *dAMat, double diag                                );
 extern double   denseFullTrace   ( dsMat *dMat, double *S                                   );
@@ -50,18 +50,18 @@ extern double   denseSinvSolve   ( const double *Sinv, dsMat *A, double *ASinv, 
 extern double   denseSinvSolve2  ( double *Sinv, dsMat *A, double *asinv, double Ry );
 
 /* Utilities */
-extern DSDP_INT denseMatScatter  ( dsMat *dMat, vec *b, DSDP_INT k                          );
-extern DSDP_INT denseMatStoreFactor ( dsMat *dMat, rkMat *factor                            );
+extern void denseMatScatter  ( dsMat *dMat, vec *b, DSDP_INT k                          );
+extern void denseMatStoreFactor ( dsMat *dMat, rkMat *factor                            );
 extern rkMat*   denseMatGetFactor( dsMat *dMat                                              );
-extern DSDP_INT denseMatGetRank  ( dsMat *dMat, DSDP_INT *rank                              );
-extern DSDP_INT denseMatFillLow  ( dsMat *dMat, double *fulldMat                            );
-extern DSDP_INT denseMatFill     ( dsMat *dMat, double *fulldMat                            );
+extern void denseMatGetRank  ( dsMat *dMat, DSDP_INT *rank                              );
+extern void denseMatFillLow  ( dsMat *dMat, double *fulldMat                            );
+extern void denseMatFill     ( dsMat *dMat, double *fulldMat                            );
 extern void     denseMatReflex   ( dsMat *dMat );
 extern void     denseMatGetdiag  ( dsMat *dMat, vec *diag                                   );
-extern DSDP_INT denseMatMinEig   ( dsMat *dMat, double *minEig                              );
-extern DSDP_INT denseMatView     ( dsMat *dMat                                              );
-extern DSDP_INT denseMatReset    ( dsMat *dMat                                              );
-extern DSDP_INT denseMatResetFactor( dsMat *dMat                                            );
+extern void denseMatMinEig   ( dsMat *dMat, double *minEig                              );
+extern void denseMatView     ( dsMat *dMat                                              );
+extern void denseMatReset    ( dsMat *dMat                                              );
+extern void denseMatResetFactor( dsMat *dMat                                            );
 
 #ifdef __cplusplus
 }

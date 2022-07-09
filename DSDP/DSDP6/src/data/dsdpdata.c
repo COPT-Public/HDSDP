@@ -2,14 +2,6 @@
 #include "dsdpdata.h"
 #include "dsdpsort.h"
 // Implement the data interface for DSDP-HSD Solver
-/*
- Problem data is presented using two structures
- 
- sdpMat
- lpMat
- 
- for SDP data and LP data respectively.
-*/
 
 static char *etype = "Data interface";
 
@@ -22,7 +14,6 @@ static DSDP_INT idxsort( DSDP_INT *Ai, double *Ax, DSDP_INT nnz ) {
 
 /* LP internal methods */
 static DSDP_INT lpMatIAlloc( lpMat *lpData, DSDP_INT nnz ) {
-    
     // Allocate memory for internal LP matrix
     DSDP_INT retcode = DSDP_RETCODE_OK;
     assert( (lpData->dimy > 0) && (lpData->dims > 0) );
@@ -30,17 +21,21 @@ static DSDP_INT lpMatIAlloc( lpMat *lpData, DSDP_INT nnz ) {
     if ((lpData->dimy <= 0) || (lpData->dims <= 0)) {
         error(etype, "Incorrect size for LP data matrix for allocation. \n");
     }
-    
     lpData->Ap = (DSDP_INT *) calloc(lpData->dimy + 1, sizeof(DSDP_INT));
     lpData->Ai = (DSDP_INT *) calloc(nnz, sizeof(DSDP_INT));
     lpData->Ax = (double   *) calloc(nnz, sizeof(double));
+    
+    if (!lpData->Ap || !lpData->Ai || !lpData->Ax) {
+        printf("| Failed to allocate memory for internal LP data. \n");
+        retcode = DSDP_RETCODE_FAILED; return retcode;
+    }
+    
     return retcode;
 }
 
 /* SDP internal methods */
 static DSDP_INT sdpMatIAllocByType( sdpMat *sdpData, DSDP_INT k, DSDP_INT *Ai,
                                     double *Ax, DSDP_INT nnz ) {
-    
     // Automatically detect the type of a matrix and allocate memory for it
     // Ai identifies row indices of the lower-triangular packed format of the k th matrix
     // Ax stores the data, nnz specifies the number of nonzeros
@@ -102,7 +97,7 @@ static DSDP_INT sdpMatIAllocByType( sdpMat *sdpData, DSDP_INT k, DSDP_INT *Ai,
         dsMat *data = NULL;
         data = (dsMat *) calloc(1, sizeof(dsMat));
         
-        retcode = denseMatInit(data); checkCode;
+        denseMatInit(data); checkCode;
         retcode = denseMatAlloc(data, n, FALSE); checkCode;
         
         for (DSDP_INT i = 0; i < nnz - nnz % 4; i+=4) {
@@ -138,19 +133,12 @@ extern void lpMatSetDim( lpMat *lpData, DSDP_INT dimy, DSDP_INT dims ) {
 
 extern DSDP_INT lpMatSetData( lpMat *lpData, DSDP_INT *Ap, DSDP_INT *Ai, double *Ax ) {
     // Set LP data
-    DSDP_INT retcode = DSDP_RETCODE_OK;
-    DSDP_INT m = lpData->dimy, nnz = Ap[m];
-    retcode = lpMatIAlloc(lpData, nnz);
-    
-    // Set problem data
+    DSDP_INT retcode = DSDP_RETCODE_OK, m = lpData->dimy, nnz = Ap[m];
+    retcode = lpMatIAlloc(lpData, nnz); checkCode;
     memcpy(lpData->Ap, Ap, sizeof(DSDP_INT) * (m + 1));
     memcpy(lpData->Ai, Ai, sizeof(DSDP_INT) * nnz);
-    memcpy(lpData->Ax, Ax, sizeof(double)   * nnz);
-    
-    // Some extra parameters
-    lpData->nnz = nnz;
-    
-    return retcode;
+    memcpy(lpData->Ax, Ax, sizeof(double) * nnz);
+    lpData->nnz = nnz; return retcode;
 }
 
 extern void lpMataATy( double alpha, lpMat *lpData, vec *y, double *ATy ) {
@@ -177,14 +165,14 @@ extern void lpMatAx( lpMat *lpData, vec *x, vec *Ax ) {
 }
 
 extern double lpMatcx( vec *c, vec *x ) {
+    
     double cx; vec_dot(c, x, &cx); return cx;
 }
 
 extern void lpMatFree( lpMat *lpData ) {
-
     // Free the lpData structure
-    lpData->dimy = 0;
-    lpData->dims = 0;
+    if (!lpData) { return; }
+    lpData->dimy = 0; lpData->dims = 0;
     DSDP_FREE(lpData->Ap); DSDP_FREE(lpData->Ai); DSDP_FREE(lpData->Ax);
     DSDP_FREE(lpData->xscale);
 }
@@ -198,27 +186,22 @@ extern void lpMatView( lpMat *lpData ) {
 
 /* SDP public methods */
 extern DSDP_INT sdpMatAlloc( sdpMat *sdpData ) {
-    
     // Allocate memory for internal SDP matrix
     DSDP_INT retcode = DSDP_RETCODE_OK;
-    assert( (sdpData->dimy > 0) && (sdpData->dimS > 0) );
-    
     if ((sdpData->dimy <= 0) || (sdpData->dimS <= 0)) {
-        error(etype, "Incorrect size for SDP data matrix for allocation. \n");
+        error(etype, "Incorrect size of SDP data matrix for allocation. \n");
     }
-    
     sdpData->types   = (DSDP_INT *) calloc(sdpData->dimy + 1, sizeof(DSDP_INT));
     sdpData->sdpData = (void **) calloc(sdpData->dimy + 1, sizeof(void *));
-    
-    for (DSDP_INT i = 0; i < sdpData->dimy; ++i) {
-        sdpData->types[i] = MAT_TYPE_UNKNOWN;
+    if (!sdpData->types || !sdpData->sdpData) {
+        printf("| Failed to allocate internal SDP data. \n");
+        retcode = DSDP_RETCODE_FAILED; return retcode;
     }
-    
+    memset(sdpData->types, 0, sizeof(DSDP_INT) * sdpData->dimy);
     return retcode;
 }
 
 extern void sdpMatInit( sdpMat *sdpData ) {
-    
     // Initialize SDP data
     sdpData->blockId     = 0;
     sdpData->dimy        = 0;
@@ -242,27 +225,11 @@ extern void sdpMatInit( sdpMat *sdpData ) {
 }
 
 extern void sdpMatSetDim( sdpMat *sdpData, DSDP_INT dimy, DSDP_INT dimS, DSDP_INT blockId ) {
-    
     // Set dimension of the corresponding block
     sdpData->blockId = blockId; sdpData->dimy = dimy; sdpData->dimS = dimS;
 }
 
-extern void sdpMatSetHint( sdpMat *sdpData, DSDP_INT *hint ) {
-    
-    // Set type hint for matrix type
-    for (DSDP_INT i = 0; i < sdpData->dimy + 1; ++i) {
-        switch (hint[i]) {
-            case MAT_TYPE_RANKK  : sdpData->types[i] = MAT_TYPE_RANKK; break;
-            case MAT_TYPE_DENSE  : sdpData->types[i] = MAT_TYPE_DENSE; break;
-            case MAT_TYPE_SPARSE : sdpData->types[i] = MAT_TYPE_SPARSE; break;
-            case MAT_TYPE_UNKNOWN: sdpData->types[i] = MAT_TYPE_ZERO; break;
-            default: sdpData->types[i] = MAT_TYPE_UNKNOWN; break;
-        }
-    }
-}
-
 extern DSDP_INT sdpMatSetData( sdpMat *sdpData, DSDP_INT *Ap, DSDP_INT *Ai, double *Ax, double *cnnz ) {
-    
     // Set SDP data
     DSDP_INT retcode = DSDP_RETCODE_OK;
     
@@ -307,6 +274,7 @@ extern void sdpMatSetSchurIndex( sdpMat *sdpData, DSDP_INT start, DSDP_INT col, 
 }
 
 extern double sdpMatGetCFnorm( sdpMat *sdpData ) {
+    
     double fnrm = 0.0;
     if (sdpData->schurspIdx) {
         if (sdpData->nnzAmat == sdpData->nzeroMat) {
@@ -520,23 +488,6 @@ extern void sdpMatATy( sdpMat *sdpData, double ycoef, vec *y, double tau, spsMat
             spsMatAddrk(S, coef, sdpData->sdpData[j], sumHash);
         }
     } else {
-        /*
-        for (i = 0; i < m; ++i) {
-            coef = ycoef * y->x[i];
-            switch (sdpData->types[i]) {
-                case MAT_TYPE_SPARSE: spsMataXpbY(coef, sdpData->sdpData[i], 1.0, S, sumHash); break;
-                case MAT_TYPE_DENSE : spsMatAddds(S, coef, sdpData->sdpData[i]); break;
-                case MAT_TYPE_RANKK : spsMatAddrk(S, coef, sdpData->sdpData[i], sumHash); break;
-                default: assert( FALSE );
-            }
-        }
-        switch (sdpData->types[m]) {
-            case MAT_TYPE_SPARSE: spsMataXpbY(tau, sdpData->sdpData[m], 1.0, S, sumHash); break;
-            case MAT_TYPE_DENSE : spsMatAddds(S, tau, sdpData->sdpData[m]); break;
-            case MAT_TYPE_RANKK : spsMatAddrk(S, tau, sdpData->sdpData[m], sumHash); break;
-            default: assert( FALSE );
-        }
-         */
         // Add sparse
         if (nsps) {
             for (i = 0; i < nsps - 1; ++i) {
@@ -571,10 +522,11 @@ extern void sdpMatATy( sdpMat *sdpData, double ycoef, vec *y, double tau, spsMat
 }
 
 extern void sdpMatFree( sdpMat *sdpData ) {
-    
     // Free SDP data
-    void *data = NULL;
     
+    if (!sdpData) { return; }
+    
+    void *data = NULL;
     DSDP_INT ndatatofree = (sdpData->schurspIdx) ? sdpData->nzeroMat : sdpData->dimy + 1;
     
     for (DSDP_INT i = 0; i < ndatatofree; ++i) {
@@ -587,7 +539,6 @@ extern void sdpMatFree( sdpMat *sdpData ) {
             default: assert( FALSE );
         }
     }
-        
     DSDP_FREE(sdpData->types); DSDP_FREE(sdpData->schurspIdx);
     DSDP_FREE(sdpData->spsMatIdx); DSDP_FREE(sdpData->denseMatIdx);
     DSDP_FREE(sdpData->rkMatIdx); DSDP_FREE(sdpData->nzIdx);

@@ -58,14 +58,13 @@ typedef struct {
     double   csinv;       // Store csinv
     double   csinvrysinv; // Store trace(C * Sinv * Ry * Sinv)
     
-    
-    DSDPSymSchur *M;      // Advanced Schur matrix setup
+    symM     *M;          // Advanced Schur matrix setup
     schurMat *Msdp;       // Schur matrix for SDP (dense or sparse)
     CGSolver *cgSolver;   // Internal CG solvers
     vec      *Mdiag;      // Diagonal elements of Schur matrix for pre-conditioning
     double   Mscaler;     // Scaler of Schur complement
-    vec      *u;          // A_ls^(-2)c + AS^(-1)CS^(-1)
     
+    vec      *u;          // A_ls^(-2)c + AS^(-1)CS^(-1)
     vec      *b1;         // Auxiliary array 1
     vec      *b2;         // Auxiliary array 2
     vec      *d1;         // Embedding
@@ -75,9 +74,9 @@ typedef struct {
     vec      *d4;         // Dual infeasibility
     
     vec      *y;          // y
+    
     double   tau;         // tau
     double   kappa;       // kappa
-    
     double   alpha;       // Stepsize
     
     // Proximity measure
@@ -90,12 +89,11 @@ typedef struct {
     double    rysinv;     // Complementarity residual
     double    Ry;         // SDP Dual infeasibility
     double    drate;      // Rate for eliminating dual infeasibility
-    vec      *ry;         // LP dual infeasibility
     
     // Step matrix
     spsMat   **dS;        // SDP step matrix
     
-    DSDPLanczos **lczSolver; // Lanczos solver
+    DSDPLanczos **lczs;   // Lanczos solver
     dsMat    **dsaux;     // Used for Schur matrix setup
     rkMat    **rkaux;     // Use for Schur matrix setup
     spsMat   **Scker;     // Used for checking positive definiteness
@@ -112,7 +110,7 @@ typedef struct {
     double   pinfeas;     // Primal infeasibility
     
     // Solver parameter
-    hsdParam *param;      // Solver parameters
+    dsdpparam *param;      // Solver parameters
     
     // Solver status
     DSDP_INT insStatus;   // Solver instance status
@@ -123,7 +121,7 @@ typedef struct {
     
     // Primal variable
     vec      *pScaler;    // Primal scaling coefficient
-    double    cScaler;    // |C|
+    double    cScaler;    // C is scaled by
     vec      *ymaker;     // y
     vec      *dymaker;    // dy
     double    mumaker;    // mu
@@ -143,40 +141,40 @@ typedef HSDSolver Solver;
 extern "C" {
 #endif
 // Solver interface
-extern DSDP_INT DSDPCreate( Solver **dsdpSolver, char *modelName );
+extern DSDP_INT DSDPCreate( HSDSolver **dsdpSolver, char *modelName );
 
-extern DSDP_INT DSDPSetDim( Solver    *dsdpSolver,
+extern DSDP_INT DSDPSetDim( HSDSolver *dsdpSolver,
                             DSDP_INT  nVars,
                             DSDP_INT  nBlock,
                             DSDP_INT  nConstrs,
                             DSDP_INT  lpDim,
                             DSDP_INT  *nNzs );
 
-extern DSDP_INT DSDPSetLPData( Solver    *dsdpSolver,
+extern DSDP_INT DSDPSetLPData( HSDSolver *dsdpSolver,
                                DSDP_INT  nCol,
                                DSDP_INT  *Ap,
                                DSDP_INT  *Ai,
                                double    *Ax,
                                double    *lpObj );
 
-extern DSDP_INT DSDPSetSDPConeData( Solver    *dsdpSolver,
+extern DSDP_INT DSDPSetSDPConeData( HSDSolver *dsdpSolver,
                                     DSDP_INT  blockid,
                                     DSDP_INT  coneSize,
-                                    DSDP_INT  *typehint,
                                     DSDP_INT  *Asdpp,
                                     DSDP_INT  *Asdpi,
                                     double    *Asdpx );
 
 extern DSDP_INT DSDPSetObj   ( HSDSolver *dsdpSolver, double *dObj );
-extern DSDP_INT DSDPOptimize ( Solver *dsdpSolver );
-
-extern DSDP_INT DSDPExport      ( HSDSolver *dsdpSolver, DSDP_INT output, char *fname     );
+extern DSDP_INT DSDPOptimize ( HSDSolver *dsdpSolver );
+extern DSDP_INT DSDPGetDual( HSDSolver *dsdpSolver, double *y, double **S );
+extern DSDP_INT DSDPGetPrimal( HSDSolver *dsdpSolver, double **X );
+extern DSDP_INT DSDPExport  ( HSDSolver *dsdpSolver, DSDP_INT output, char *fname     );
 extern void DSDPSetDblParam ( HSDSolver *dsdpSolver, DSDP_INT pName, double   dblVal  );
 extern void DSDPSetIntParam ( HSDSolver *dsdpSolver, DSDP_INT pName, DSDP_INT intVal  );
 extern void DSDPGetDblParam ( HSDSolver *dsdpSolver, DSDP_INT pName, double   *dblVal );
 extern void DSDPGetIntParam ( HSDSolver *dsdpSolver, DSDP_INT pName, DSDP_INT *intVal );
 
-extern DSDP_INT DSDPDestroy  ( Solver *dsdpSolver );
+extern DSDP_INT DSDPDestroy  ( HSDSolver *dsdpSolver );
 
 extern void     DSDPPrintVersion (void);
 

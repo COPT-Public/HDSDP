@@ -1,6 +1,4 @@
-#include "dsdppresolve.h"
 #include "dsdputils.h"
-#include "symschur.h"
 #include "heurpool.h"
 #include "speigs.h"
 
@@ -294,7 +292,7 @@ static DSDP_INT preRank1RdcBlock( sdpMat *dataMat ) {
             if (isDense) {
                 dsdata = matdata[i]; extractR1fromDs(dsdata, r1data->x, isRank1);
                 rkMatAllocAndSetData(rkdata, n, 1, &r1data->sign, r1data->x);
-                retcode = denseMatFree(dsdata);
+                denseMatFree(dsdata);
                 DSDP_FREE(dsdata); dataMat->ndenseMat -= 1;
             }
             if (isSparse) {
@@ -343,7 +341,7 @@ static DSDP_INT preRankkEvRdcBlock( sdpMat *dataMat, DSDPStats *stat, speigfac *
         // Threshold for low-rank matrix
         if (rank <= n) { // rank = n + 1 if the matrix is already rank-one
             rkdata = (rkMat *) calloc(1, sizeof(rkMat)); checkCode;
-            retcode = rkMatInit(rkdata);
+            rkMatInit(rkdata);
             if (isDense) { dsdata = matdata[i]; denseMatStoreFactor(dsdata, rkdata); }
             if (isSparse) { spsdata = matdata[i]; spsMatStoreFactor(spsdata, rkdata); }
             rkMatAllocAndSelectData(rkdata, n, rank, 1e-10, eigvals, eigvecs);
@@ -678,7 +676,7 @@ extern DSDP_INT DSDPPrepareMAssembler( HSDSolver *dsdpSolver ) {
     // Initialize the internal Schur matrix structure
     DSDP_INT retcode = DSDP_RETCODE_OK;
     
-    DSDPSymSchur *M = dsdpSolver->M;
+    symM *M = dsdpSolver->M;
     retcode = symSchurMatInit(M);
     retcode = symSchurMatSetDim(M, dsdpSolver->m, dsdpSolver->nBlock);
     retcode = symSchurMatAlloc(M);

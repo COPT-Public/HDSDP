@@ -129,6 +129,10 @@ static void initparams( HSDSolver *dsdpSolver ) {
     DSDPGetIntParam(dsdpSolver, INT_PARAM_ACORRECTOR, &ncorrA);
     DSDPGetIntParam(dsdpSolver, INT_PARAM_BCORRECTOR, &nusercorr);
     printf("| Corrector A: %d  Corrector B: %d \n", ncorrA, nusercorr);
+    
+//    dsdpSolver->y->x[0] = -1e+06;
+//    DSDPSetDblParam(dsdpSolver, DBL_PARAM_INIT_BETA, 0.001);
+//    DSDPSetIntParam(dsdpSolver, INT_PARAM_GOLDSEARCH, FALSE);
     showBeautifulDashlines();
         
 }

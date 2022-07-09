@@ -95,7 +95,6 @@ extern void lpMatView     ( lpMat *lpData );
 extern void sdpMatInit    ( sdpMat *sdpData );
 extern DSDP_INT sdpMatAlloc   ( sdpMat *sdpData );
 extern void sdpMatSetDim  ( sdpMat *sdpData, DSDP_INT dimy, DSDP_INT dimS, DSDP_INT blockId );
-extern void sdpMatSetHint ( sdpMat *sdpData, DSDP_INT *hint );
 extern DSDP_INT sdpMatSetData   ( sdpMat *sdpData, DSDP_INT *Ap, DSDP_INT *Ai, double *Ax, double *cnnz );
 extern DSDP_INT sdpMatScatterNnz( sdpMat *sdpData, DSDP_INT start, DSDP_INT col, DSDP_INT *colNnz );
 extern void sdpMatSetSchurIndex ( sdpMat *sdpData, DSDP_INT start, DSDP_INT col, DSDP_INT *csum, DSDP_INT ishift );

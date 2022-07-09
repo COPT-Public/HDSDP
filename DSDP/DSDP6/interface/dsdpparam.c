@@ -1,5 +1,3 @@
-#include <stdio.h>
-#include "dsdphsd.h"
 #include "dsdpparam.h"
 #include "dsdplog.h"
 
@@ -51,7 +49,7 @@ static DSDP_INT checkDblParam( DSDP_INT pName, double dblVal ) {
         case DBL_PARAM_RHO          : if (dblVal < 0.0) { retcode = DSDP_RETCODE_FAILED; } break;
         case DBL_PARAM_RHON         : if (dblVal > 10.0 || dblVal < 1.0) { retcode = DSDP_RETCODE_FAILED; } break;
         case DBL_PARAM_INIT_POBJ    : if (dblVal >= DSDP_INFINITY || dblVal <= -DSDP_INFINITY) { retcode = DSDP_RETCODE_FAILED; } break;
-        case DBL_PARAM_INIT_BETA    : if (dblVal < 1.0 || dblVal >= DSDP_INFINITY) { retcode = DSDP_RETCODE_FAILED; } break;
+        case DBL_PARAM_INIT_BETA    : if (dblVal < 0.0 || dblVal >= DSDP_INFINITY) { retcode = DSDP_RETCODE_FAILED; } break;
         case DBL_PARAM_INIT_MU      : if (dblVal < 0.0 || dblVal >= DSDP_INFINITY) { retcode = DSDP_RETCODE_FAILED; } break;
         case DBL_PARAM_INFEAS_THRESH: if (dblVal < 0.0 || dblVal >= DSDP_INFINITY) { retcode = DSDP_RETCODE_FAILED; } break;
         case DBL_PARAM_ABS_OPTTOL   : if (dblVal < 0.0 || dblVal >= DSDP_INFINITY) { retcode = DSDP_RETCODE_FAILED; } break;
@@ -84,7 +82,7 @@ static DSDP_INT checkIntParam( DSDP_INT pName, DSDP_INT intVal ) {
     return retcode;
 }
 
-extern void setDblParam( hsdParam *param, DSDP_INT pName, double dblVal ) {
+extern void setDblParam( dsdpparam *param, DSDP_INT pName, double dblVal ) {
     
     if (pName > NUM_DBL_PARAM || pName < 0) {
         printf("| Invalid Parameter Code %d \n", pName); return;
@@ -97,7 +95,7 @@ extern void setDblParam( hsdParam *param, DSDP_INT pName, double dblVal ) {
     param->dblParams[pName] = dblVal;
 }
 
-extern void getDblParam( hsdParam *param, DSDP_INT pName, double *dblVal ) {
+extern void getDblParam( dsdpparam *param, DSDP_INT pName, double *dblVal ) {
     
     if (pName > NUM_DBL_PARAM || pName < 0) {
         printf("| Invalid Parameter Code %d \n", pName); return;
@@ -105,7 +103,7 @@ extern void getDblParam( hsdParam *param, DSDP_INT pName, double *dblVal ) {
     *dblVal = param->dblParams[pName];
 }
 
-extern void setIntParam( hsdParam *param, DSDP_INT pName, DSDP_INT intVal ) {
+extern void setIntParam( dsdpparam *param, DSDP_INT pName, DSDP_INT intVal ) {
     
     if (pName > NUM_INT_PARAM || pName < 0) {
         printf("| Invalid Parameter Code %d \n", pName); return;
@@ -118,7 +116,7 @@ extern void setIntParam( hsdParam *param, DSDP_INT pName, DSDP_INT intVal ) {
     return;
 }
 
-extern void getIntParam( hsdParam *param, DSDP_INT pName, DSDP_INT *intVal ) {
+extern void getIntParam( dsdpparam *param, DSDP_INT pName, DSDP_INT *intVal ) {
     
     if (pName > NUM_INT_PARAM || pName < 0) {
         printf("Invalid Parameter Code %d \n", pName); return;
@@ -126,7 +124,7 @@ extern void getIntParam( hsdParam *param, DSDP_INT pName, DSDP_INT *intVal ) {
     *intVal = param->intParams[pName];
 }
 
-extern void printParams( hsdParam *param ) {
+extern void printParams( dsdpparam *param ) {
     
     printf("| Parameter Summary \n");
     for (DSDP_INT pName = 0; pName < NUM_DBL_PARAM; ++pName) {
@@ -138,7 +136,7 @@ extern void printParams( hsdParam *param ) {
 }
 
 /* DSDP Summary parameters printer */
-extern void DSDPParamPrint( hsdParam *param ) {
+extern void DSDPParamPrint( dsdpparam *param ) {
     // Print DSDP Parameters at the beginning. Invoked before solution
     printf("| Parameter Summary: \n");
     showBeautifulDashlines();

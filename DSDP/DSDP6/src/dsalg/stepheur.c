@@ -167,15 +167,7 @@ extern void computeAdaptivedRate( HSDSolver *dsdpSolver ) {
             alphac *= 0.8;
         }
         if (alphac < 1e-02) {
-            printf("| Fatal Error in stepheur.c -> Line 171 -> computeAdaptivedRate. Give up. \n");
-            printf("---------------------------------------"
-                   "---------------------------------------"
-                   "--------------------\n");
-            printf("| DSDP Ends by Fatal Error. No solution available. \n");
-            printf("---------------------------------------"
-                   "---------------------------------------"
-                   "--------------------\n");
-            exit(0);
+            fatal_error_msg(etype);
         }
     }
     dsdpSolver->alpha = alphac;
@@ -341,7 +333,7 @@ extern void selectMu( HSDSolver *dsdpSolver, double *newmu ) {
         
         tmp = DSDP_INFINITY;
         for (DSDP_INT i = 0; i < dsdpSolver->nBlock; ++i) {
-            dsdpGetAlpha(dsdpSolver->lczSolver[i], dsdpSolver->Scker[i], dsdpSolver->dS[i], &alpha);
+            dsdpGetAlpha(dsdpSolver->lczs[i], dsdpSolver->Scker[i], dsdpSolver->dS[i], &alpha);
             tmp = MIN(tmp, alpha);
         }
         
@@ -386,15 +378,7 @@ extern void dualPotentialReduction( HSDSolver *dsdpSolver ) {
         inCone = TRUE;
         getCurrentyPotential(dsdpSolver, NULL, rho, &oldpotential, NULL);
         if (!inCone) {
-            printf("| Fatal Error in stepheur.c -> Line 601 -> LPConic( COPS_GET_LOGDET ). Give up. \n");
-            printf("---------------------------------------"
-                   "---------------------------------------"
-                   "--------------------\n");
-            printf("| DSDP Ends by Fatal Error. No solution available. \n");
-            printf("---------------------------------------"
-                   "---------------------------------------"
-                   "--------------------\n");
-            exit(0);
+            fatal_error_msg(etype);
         }
         maxstep = MIN(maxstep * 0.95, 1.0); alpha = maxstep;
         // Start line search

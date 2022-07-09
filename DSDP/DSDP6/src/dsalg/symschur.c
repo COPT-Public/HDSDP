@@ -150,7 +150,7 @@ static DSDP_INT schurBlockAnalysis( sdpMat *Adata, DSDP_INT *permk, DSDP_INT *MX
     return retcode;
 }
 
-static void schurMatSinvCleanup( DSDPSymSchur *M ) {
+static void schurMatSinvCleanup( symM *M ) {
     // Set up the inverse of matrices when necessary
     for (DSDP_INT i = 0, j, n; i < M->nblock; ++i) {
         n = M->Adata[i]->dimS; memset(M->Sinv[i], 0, sizeof(double) * n * n);
@@ -158,7 +158,7 @@ static void schurMatSinvCleanup( DSDPSymSchur *M ) {
     }
 }
 
-static void schurMatCleanup( DSDPSymSchur *M ) {
+static void schurMatCleanup( symM *M ) {
     // Clean up the arrays related to the Schur matrix
     schurMatReset(M->M, TRUE); vec_reset(M->asinv);
     if (*M->phaseA) {
@@ -172,7 +172,7 @@ static void schurMatCleanup( DSDPSymSchur *M ) {
     schurMatSinvCleanup(M);
 }
 
-static void schurMatGetSinv( DSDPSymSchur *M ) {
+static void schurMatGetSinv( symM *M ) {
     // Compute inverse of the dual matrix when M3, M4 or M5 techniques are used
     M->scaler = 1.0;
     
@@ -191,7 +191,7 @@ static void schurMatGetSinv( DSDPSymSchur *M ) {
     }
 }
 
-static DSDP_INT schurM1rowSetup( DSDPSymSchur *M, DSDP_INT blockid, DSDP_INT row ) {
+static DSDP_INT schurM1rowSetup( symM *M, DSDP_INT blockid, DSDP_INT row ) {
     // Apply M1 technique to setup a row of the Schur complement matrix
     /*
      M1 technique first applies rank-1 update to get B_i = <S^-1 * A_i * S^-1>
@@ -276,7 +276,7 @@ static DSDP_INT schurM1rowSetup( DSDPSymSchur *M, DSDP_INT blockid, DSDP_INT row
     return retcode;
 }
 
-static DSDP_INT schurM2rowSetup( DSDPSymSchur *M, DSDP_INT blockid, DSDP_INT row ) {
+static DSDP_INT schurM2rowSetup( symM *M, DSDP_INT blockid, DSDP_INT row ) {
     // Apply M2 technique to setup a row of the Schur complement matrix
     /*
      M2 technique does not form <S^-1 * A_i * S^-1> but compute the value of quadratic forms
@@ -374,7 +374,7 @@ static DSDP_INT schurM2rowSetup( DSDPSymSchur *M, DSDP_INT blockid, DSDP_INT row
     return retcode;
 }
 
-static DSDP_INT schurM3rowSetup( DSDPSymSchur *M, DSDP_INT blockid, DSDP_INT row ) {
+static DSDP_INT schurM3rowSetup( symM *M, DSDP_INT blockid, DSDP_INT row ) {
     // Apply M3 technique to setup a row of the Schur complement matrix
     
     /*
@@ -462,7 +462,7 @@ static DSDP_INT schurM3rowSetup( DSDPSymSchur *M, DSDP_INT blockid, DSDP_INT row
     return retcode;
 }
 
-static DSDP_INT schurM4rowSetup( DSDPSymSchur *M, DSDP_INT blockid, DSDP_INT row ) {
+static DSDP_INT schurM4rowSetup( symM *M, DSDP_INT blockid, DSDP_INT row ) {
     // Apply M4 technique to setup a row of the Schur complement matrix
     DSDP_INT retcode = DSDP_RETCODE_OK;
     
@@ -564,7 +564,7 @@ static double schurM5MatAux( DSDP_INT type1, void *A1, DSDP_INT type2, void *A2,
     assert( FALSE ); return 0.0;
 }
 
-static DSDP_INT schurM5rowSetup( DSDPSymSchur *M, DSDP_INT blockid, DSDP_INT row ) {
+static DSDP_INT schurM5rowSetup( symM *M, DSDP_INT blockid, DSDP_INT row ) {
     // Apply M5 technique to setup a row of the Schur complement matrix
     /*
      M5 Technique directly computes elements of the Schur matrix without any intermediate variables
@@ -632,7 +632,7 @@ static DSDP_INT schurM5rowSetup( DSDPSymSchur *M, DSDP_INT blockid, DSDP_INT row
 static double schurTime[5] = {0.0};
 #endif
 
-static DSDP_INT schurMatSetupBlock( DSDPSymSchur *M, DSDP_INT blockid ) {
+static DSDP_INT schurMatSetupBlock( symM *M, DSDP_INT blockid ) {
     // Set up a block of the Schur matrix
     DSDP_INT retcode = DSDP_RETCODE_OK;
 #ifdef SCHUR_PROFILER
@@ -672,7 +672,7 @@ static DSDP_INT schurMatSetupBlock( DSDPSymSchur *M, DSDP_INT blockid ) {
     return retcode;
 }
 
-static DSDP_INT schurspM2Setup( DSDPSymSchur *M, DSDP_INT blockid, DSDP_INT idx ) {
+static DSDP_INT schurspM2Setup( symM *M, DSDP_INT blockid, DSDP_INT idx ) {
     // Apply M2 technique to set up a sub-matrix of the sparse schur matrix. Sparse version of schurM2Setup.
     DSDP_INT retcode = DSDP_RETCODE_OK;
     DSDP_INT i, j, k, r, m = M->m, nzmats = M->Adata[blockid]->nzeroMat, computeC = FALSE, rank, \
@@ -757,7 +757,7 @@ static DSDP_INT schurspM2Setup( DSDPSymSchur *M, DSDP_INT blockid, DSDP_INT idx 
     return retcode;
 }
 
-static DSDP_INT schurspM3Setup( DSDPSymSchur *M, DSDP_INT blockid, DSDP_INT idx ) {
+static DSDP_INT schurspM3Setup( symM *M, DSDP_INT blockid, DSDP_INT idx ) {
     // Apply M3 technique to set up a sub-matrix of the sparse schur matrix. Sparse version of schurM3Setup.
     DSDP_INT retcode = DSDP_RETCODE_OK;
     DSDP_INT i, j, k, m = M->m, computeC = FALSE, nzmats = M->Adata[blockid]->nzeroMat, \
@@ -823,7 +823,7 @@ static DSDP_INT schurspM3Setup( DSDPSymSchur *M, DSDP_INT blockid, DSDP_INT idx 
     return retcode;
 }
 
-static DSDP_INT schurspM5Setup( DSDPSymSchur *M, DSDP_INT blockid, DSDP_INT idx ) {
+static DSDP_INT schurspM5Setup( symM *M, DSDP_INT blockid, DSDP_INT idx ) {
     // Apply M5 technique to set up a sub-matrix of the sparse schur matrix. Sparse version of schurM5Setup.
     DSDP_INT retcode = DSDP_RETCODE_OK;
     DSDP_INT i, j, k, m = M->m, computeC = FALSE, gold = *M->gold, *nzidx = M->Adata[blockid]->nzIdx, \
@@ -877,7 +877,7 @@ static DSDP_INT schurspM5Setup( DSDPSymSchur *M, DSDP_INT blockid, DSDP_INT idx 
     return retcode;
 }
 
-static DSDP_INT schurMatspsSetupBlock( DSDPSymSchur *M, DSDP_INT blockid ) {
+static DSDP_INT schurMatspsSetupBlock( symM *M, DSDP_INT blockid ) {
     // Set up a block of the Schur matrix. Way of computing is heuristically chosen from M2 M3 and M5
     DSDP_INT retcode = DSDP_RETCODE_OK;
     assert( M->M->stype = SCHUR_TYPE_SPARSE );
@@ -909,7 +909,7 @@ static DSDP_INT schurMatspsSetupBlock( DSDPSymSchur *M, DSDP_INT blockid ) {
     return retcode;
 }
 
-static DSDP_INT schurMatReorder( DSDPSymSchur *M ) {
+static DSDP_INT schurMatReorder( symM *M ) {
     
     DSDP_INT retcode = DSDP_RETCODE_OK;
     DSDP_INT maxblock = 0;
@@ -942,7 +942,7 @@ static DSDP_INT schurMatReorder( DSDPSymSchur *M ) {
 }
 
 #define SCHUR_BUFFER 100000
-static DSDP_INT schurMatSpsReorder( DSDPSymSchur *M ) {
+static DSDP_INT schurMatSpsReorder( symM *M ) {
     // Implement the sparse Schur matrix re-ordering technique
     DSDP_INT retcode = DSDP_RETCODE_OK;
     
@@ -1007,7 +1007,7 @@ static DSDP_INT schurMatSpsReorder( DSDPSymSchur *M ) {
     return retcode;
 }
 
-static void asinvdsSetup( DSDPSymSchur *M, vec *asinv ) {
+static void asinvdsSetup( symM *M, vec *asinv ) {
     // Set up dense asinv for the corrector step
     DSDP_INT m = M->m; double res = 0.0, *Sinv; void *data;
     for (DSDP_INT blockid = 0, i = 0; blockid < M->nblock; ++blockid) {
@@ -1026,7 +1026,7 @@ static void asinvdsSetup( DSDPSymSchur *M, vec *asinv ) {
     }
 }
 
-static void asinvspSetup( DSDPSymSchur *M, vec *asinv ) {
+static void asinvspSetup( symM *M, vec *asinv ) {
     // Set up sparse asinv for the corrector step
     double res = 0.0, *Sinv; void *data;
     for (DSDP_INT blockid = 0, i = 0, j; blockid < M->nblock; ++blockid) {
@@ -1044,7 +1044,7 @@ static void asinvspSetup( DSDPSymSchur *M, vec *asinv ) {
     }
 }
 
-static void arysinvdsSetup( DSDPSymSchur *M, vec *asinv, vec *asinvrysinv ) {
+static void arysinvdsSetup( symM *M, vec *asinv, vec *asinvrysinv ) {
     // Set up both asinv and asinvrysinv for the corrector step, M5 routines are used
     DSDP_INT m = M->m; double res1 = 0.0, res2 = 0.0, *Sinv, Ry = *M->Ry; void *data;
     for (DSDP_INT blockid = 0, i = 0; blockid < M->nblock; ++blockid) {
@@ -1063,7 +1063,7 @@ static void arysinvdsSetup( DSDPSymSchur *M, vec *asinv, vec *asinvrysinv ) {
     }
 }
 
-static void arysinvspSetup( DSDPSymSchur *M, vec *asinv, vec *asinvrysinv ) {
+static void arysinvspSetup( symM *M, vec *asinv, vec *asinvrysinv ) {
     // Set up both asinv and asinvrysinv for the corrector step, M5 routines are used
     double res1 = 0.0, res2 = 0.0, *Sinv, Ry = *M->Ry; void *data;
     for (DSDP_INT blockid = 0, i = 0, j; blockid < M->nblock; ++blockid) {
@@ -1081,7 +1081,7 @@ static void arysinvspSetup( DSDPSymSchur *M, vec *asinv, vec *asinvrysinv ) {
     }
 }
 
-extern DSDP_INT symSchurMatInit( DSDPSymSchur *M ) {
+extern DSDP_INT symSchurMatInit( symM *M ) {
     
     DSDP_INT retcode = DSDP_RETCODE_OK;
     
@@ -1096,13 +1096,13 @@ extern DSDP_INT symSchurMatInit( DSDPSymSchur *M ) {
     return retcode;
 }
 
-extern DSDP_INT symSchurMatSetDim( DSDPSymSchur *M, DSDP_INT m, DSDP_INT nblock ) {
+extern DSDP_INT symSchurMatSetDim( symM *M, DSDP_INT m, DSDP_INT nblock ) {
     assert( m > 0 && nblock > 0);
     M->m = m; M->nblock = nblock;
     return DSDP_RETCODE_OK;
 }
 
-extern DSDP_INT symSchurMatAlloc( DSDPSymSchur *M ) {
+extern DSDP_INT symSchurMatAlloc( symM *M ) {
     // Allocate memory for internal perms
     DSDP_INT retcode = DSDP_RETCODE_OK;
     
@@ -1119,7 +1119,7 @@ extern DSDP_INT symSchurMatAlloc( DSDPSymSchur *M ) {
     return retcode;
 }
 
-extern DSDP_INT symSchurMatRegister( DSDPSymSchur *M, spsMat **S, dsMat **B, sdpMat **Adata, schurMat *Msdp,
+extern DSDP_INT symSchurMatRegister( symM *M, spsMat **S, dsMat **B, sdpMat **Adata, schurMat *Msdp,
                                      vec *asinv, vec *asinvrysinv, vec *asinvcsinv, double *csinvrysinv,
                                      double *csinv, double *csinvcsinv, double *rysinv, double *Ry,
                                      rkMat **rkaux, DSDP_INT *phaseA, DSDP_INT *buildHSD, DSDP_INT *gold,
@@ -1139,7 +1139,7 @@ extern DSDP_INT symSchurMatRegister( DSDPSymSchur *M, spsMat **S, dsMat **B, sdp
     return retcode;
 }
 
-extern DSDP_INT symSchurMatFree( DSDPSymSchur *M ) {
+extern DSDP_INT symSchurMatFree( symM *M ) {
     
     DSDP_INT retcode = DSDP_RETCODE_OK;
     for (DSDP_INT i = 0; i < M->nblock; ++i) {
@@ -1159,12 +1159,12 @@ extern DSDP_INT symSchurMatFree( DSDPSymSchur *M ) {
 }
 
 // Schur matrix re-ordering heuristic
-extern DSDP_INT DSDPSchurReorder( DSDPSymSchur *M ) {
+extern DSDP_INT DSDPSchurReorder( symM *M ) {
     // Invoke the re-ordering heuristic for dense Schur matrix setup
     return (M->M->stype == SCHUR_TYPE_SPARSE) ? schurMatSpsReorder(M) : schurMatReorder(M);
 }
 
-extern DSDP_INT DSDPCheckSchurType( DSDPSymSchur *M ) {
+extern DSDP_INT DSDPCheckSchurType( symM *M ) {
     // Determine the sparsity pattern of the Schur matrix
     DSDP_INT retcode = DSDP_RETCODE_OK;
     
@@ -1198,7 +1198,7 @@ extern DSDP_INT DSDPCheckSchurType( DSDPSymSchur *M ) {
 
 // static double schurtime = 0.0;
 
-extern DSDP_INT DSDPSchurSetup( DSDPSymSchur *M ) {
+extern DSDP_INT DSDPSchurSetup( symM *M ) {
     // Routine for setting up the Schur complement matrix M
     /*
      In phase A where HSD is to get solved, we need
@@ -1371,7 +1371,7 @@ extern DSDP_INT DSDPSchurSetup( DSDPSymSchur *M ) {
     return retcode;
 }
 
-extern void asinvSetup( DSDPSymSchur *M ) {
+extern void asinvSetup( symM *M ) {
     // Set up asinv for the corrector step
     vec *asinv = M->asinv; vec_reset(asinv);
     schurMatSinvCleanup(M); schurMatGetSinv(M);
@@ -1382,7 +1382,7 @@ extern void asinvSetup( DSDPSymSchur *M ) {
     }
 }
 
-extern void arysinvSetup( DSDPSymSchur *M ) {
+extern void arysinvSetup( symM *M ) {
     // Set up both asinv and asinvrysinv for the corrector step, M5 routines are used
     vec *asinv = M->asinv, *asinvrysinv = M->asinvrysinv;
     vec_reset(asinv); vec_reset(asinvrysinv);

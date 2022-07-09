@@ -98,10 +98,10 @@ typedef int DSDP_INT;
                                  printf("---------------------------------------" \
                                         "---------------------------------------" \
                                         "--------------------\n"); exit(-1);
-#define fatal_error              printf("| Fatal error in %s -> line %d. Give up", __FILE__, __LINE__); force_exit
+#define fatal_error              printf("| Fatal error in %s -> line %d. Give up. \n", __FILE__, __LINE__); force_exit
 #define fatal_error_msg(etype)   printf("| Fatal error in %s -> line %d (%s). Give up.\n", __FILE__, __LINE__, (etype)); force_exit
 
-#define error(etype, x)          printf("[%s]: %s", (etype), (x)); assert( 0 ); \
+#define error(etype, x)          printf("| [%s]: %s", (etype), (x)); \
                                  retcode = DSDP_RETCODE_FAILED; return retcode;
 #define error_clean(etype, x)    printf("[%s]: %s", (etype), (x)); \
                                  retcode = DSDP_RETCODE_FAILED; \

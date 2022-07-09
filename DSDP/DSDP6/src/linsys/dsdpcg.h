@@ -44,19 +44,19 @@ typedef struct {
 extern "C" {
 #endif
 
-extern DSDP_INT dsdpCGInit            ( CGSolver *cgSolver                                     );
+extern void dsdpCGinit            ( CGSolver *cgSolver                                     );
 extern DSDP_INT dsdpCGAlloc           ( CGSolver *cgSolver, DSDP_INT m                         );
-extern DSDP_INT dsdpCGFree            ( CGSolver *cgSolver                                     );
-extern DSDP_INT dsdpCGSetTol          ( CGSolver *cgSolver, double tol                         );
-extern DSDP_INT dsdpCGSetMaxIter      ( CGSolver *cgSolver, DSDP_INT maxiter                   );
-extern DSDP_INT dsdpCGSetM            ( CGSolver *cgSolver, schurMat *M                        );
-extern DSDP_INT dsdpCGSetDPre         ( CGSolver *cgSolver, vec   *preCond                     );
-extern DSDP_INT dsdpCGSetCholPre      ( CGSolver *cgSolver, schurMat *preCond                  );
-extern DSDP_INT dsdpCGSetPType        ( CGSolver *cgSolver, DSDP_INT pType                     );
-extern DSDP_INT dsdpCGprepareP        ( CGSolver *cgSolver                                     );
-extern DSDP_INT dsdpCGGetStatus       ( CGSolver *cgSolver, DSDP_INT *status                   );
-extern DSDP_INT dsdpCGGetSolStatistic ( CGSolver *cgSolver, DSDP_INT *status, double *resinorm );
-extern DSDP_INT dsdpCGSetPreReuse     ( CGSolver *cgSolver, DSDP_INT reuse                     );
+extern void dsdpCGFree            ( CGSolver *cgSolver                                     );
+extern void dsdpCGSetTol          ( CGSolver *cgSolver, double tol                         );
+extern void dsdpCGSetMaxIter      ( CGSolver *cgSolver, DSDP_INT maxiter                   );
+extern void dsdpCGSetM            ( CGSolver *cgSolver, schurMat *M                        );
+extern void dsdpCGSetDPre         ( CGSolver *cgSolver, vec   *preCond                     );
+extern void dsdpCGSetCholPre      ( CGSolver *cgSolver, schurMat *preCond                  );
+extern void dsdpCGSetPType        ( CGSolver *cgSolver, DSDP_INT pType                     );
+extern void dsdpCGprepareP        ( CGSolver *cgSolver                                     );
+extern void dsdpCGGetStatus       ( CGSolver *cgSolver, DSDP_INT *status                   );
+extern void dsdpCGGetSolStatistic ( CGSolver *cgSolver, DSDP_INT *status, double *resinorm );
+extern void dsdpCGSetPreReuse     ( CGSolver *cgSolver, DSDP_INT reuse                     );
 extern void dsdpCGStoreRHS        ( CGSolver *cgSolver, vec *bin                           );
 extern void dsdpCGRestoreRHS      ( CGSolver *cgSolver, vec *bout                          );
 extern void     dsdpCGStoreLdiag      ( CGSolver *cgSolver                                     );

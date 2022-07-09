@@ -203,15 +203,7 @@ static void LPConic( COPS_GET_SCHUR )
     // Compute A s^-2 A^T
     if (!dsdpSolver->isLPset) { return; }
     if (dsdpSolver->Msdp->stype != SCHUR_TYPE_DENSE) {
-        printf("| Fatal Error in dsdputils.c -> Line 206 -> LPConic( COPS_GET_SCHUR ). Give up. \n");
-        printf("---------------------------------------"
-               "---------------------------------------"
-               "--------------------\n");
-        printf("| DSDP Ends by Fatal Error. No solution available. \n");
-        printf("---------------------------------------"
-               "---------------------------------------"
-               "--------------------\n");
-        exit(0);
+        fatal_error_msg(etype);
     }
     double *M = dsdpSolver->Msdp->denseM->array;
     double *asinv = dsdpSolver->asinv->x;
@@ -428,7 +420,7 @@ static double SDPConic( COPS_GET_MAXSTEP )
     double step = DSDP_INFINITY, tmp;
     spsMat **targets = (type == DUALVAR) ? dsdpSolver->S : dsdpSolver->Scker;
     for (DSDP_INT i = 0; i < dsdpSolver->nBlock; ++i) {
-        dsdpGetAlpha(dsdpSolver->lczSolver[i], targets[i], dsdpSolver->dS[i], &tmp);
+        dsdpGetAlpha(dsdpSolver->lczs[i], targets[i], dsdpSolver->dS[i], &tmp);
         step = MIN(step, tmp);
     }
     return step;
@@ -553,15 +545,7 @@ static double SDPConic( COPS_GET_LOGDET )
         if (!(*inCone)) return 0.0;
     } else {
         if (!SDPConic( COPS_CHECK_INCONE )(dsdpSolver, DUALVAR)) {
-            printf("| Fatal Error in dsdputils.c -> Line 560 -> SDPConic( COPS_CHECK_INCONE ). Give up. \n");
-            printf("---------------------------------------"
-                   "---------------------------------------"
-                   "--------------------\n");
-            printf("| DSDP Ends by Fatal Error. No solution available. \n");
-            printf("---------------------------------------"
-                   "---------------------------------------"
-                   "--------------------\n");
-            exit(0);
+            fatal_error_msg(etype);
         }
     }
     
@@ -594,15 +578,7 @@ static double LPConic( COPS_GET_LOGDET )
         if (!(*inCone)) return 0.0;
     } else {
         if (logdet != logdet) {
-            printf("| Fatal Error in dsdputils.c -> Line 601 -> LPConic( COPS_GET_LOGDET ). Give up. \n");
-            printf("---------------------------------------"
-                   "---------------------------------------"
-                   "--------------------\n");
-            printf("| DSDP Ends by Fatal Error. No solution available. \n");
-            printf("---------------------------------------"
-                   "---------------------------------------"
-                   "--------------------\n");
-            exit(0);
+            fatal_error_msg(etype);
         }
     }
     

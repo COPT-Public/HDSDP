@@ -2,10 +2,6 @@
 #define schurmat_h
 
 /* Implement the Schur matrix related operations */
-#include <stdio.h>
-#include "dsdphsd.h"
-#include "dsdplapack.h"
-#include "vec.h"
 #include "structs.h"
 
 #define SCHUR_TYPE_UNKNOWN 0
