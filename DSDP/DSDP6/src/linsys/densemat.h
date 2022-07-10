@@ -45,7 +45,7 @@ extern void denseSpsSolve    ( dsMat *dAMat, spsMat *sBMat, double *AinvB       
 /* Schur matrix assembly */
 extern void denseSpsTrace    ( dsMat *dAMat, spsMat *sBMat, double *trace               );
 extern void denseDsTrace     ( dsMat *dAMat, dsMat *dBMat,  double *trace               );
-extern double   denseSinvASinv   ( const double *Sinv, dsMat *A, const double *ASinv        );
+extern double   denseSinvASinv   ( const double *sv, dsMat *A, const double *asv        );
 extern double   denseDiagTrace   ( dsMat *dAMat, double diag                                );
 extern double   denseFullTrace   ( dsMat *dMat, double *S                                   );
 extern double   SinvDsSinv       ( const double *Sinv, double *aux, dsMat  *A, dsMat *SinvASinv );
@@ -53,7 +53,6 @@ extern double   denseSinvSolve   ( const double *Sinv, dsMat *A, double *ASinv, 
 extern double   denseSinvSolve2  ( double *Sinv, dsMat *A, double *asinv, double Ry );
 
 /* Utilities */
-extern void denseMatScatter  ( dsMat *dMat, vec *b, DSDP_INT k                          );
 extern void denseMatStoreFactor ( dsMat *dMat, rkMat *factor                            );
 extern rkMat*   denseMatGetFactor( dsMat *dMat                                              );
 extern void denseMatGetRank  ( dsMat *dMat, DSDP_INT *rank                              );
