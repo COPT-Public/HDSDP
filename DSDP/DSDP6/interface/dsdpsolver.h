@@ -166,14 +166,13 @@ extern DSDP_INT DSDPSetSDPConeData( HSDSolver *dsdpSolver,
 
 extern DSDP_INT DSDPSetObj   ( HSDSolver *dsdpSolver, double *dObj );
 extern DSDP_INT DSDPOptimize ( HSDSolver *dsdpSolver );
-extern DSDP_INT DSDPGetDual( HSDSolver *dsdpSolver, double *y, double **S );
+extern DSDP_INT DSDPGetDual  ( HSDSolver *dsdpSolver, double *y, double **S );
 extern DSDP_INT DSDPGetPrimal( HSDSolver *dsdpSolver, double **X );
-extern DSDP_INT DSDPExport  ( HSDSolver *dsdpSolver, DSDP_INT output, char *fname     );
-extern void DSDPSetDblParam ( HSDSolver *dsdpSolver, DSDP_INT pName, double   dblVal  );
-extern void DSDPSetIntParam ( HSDSolver *dsdpSolver, DSDP_INT pName, DSDP_INT intVal  );
-extern void DSDPGetDblParam ( HSDSolver *dsdpSolver, DSDP_INT pName, double   *dblVal );
-extern void DSDPGetIntParam ( HSDSolver *dsdpSolver, DSDP_INT pName, DSDP_INT *intVal );
-
+extern DSDP_INT DSDPExport   ( HSDSolver *dsdpSolver, DSDP_INT output, char *fname     );
+extern void DSDPSetDblParam  ( HSDSolver *dsdpSolver, DSDP_INT pName, double    dblVal );
+extern void DSDPSetIntParam  ( HSDSolver *dsdpSolver, DSDP_INT pName, DSDP_INT  intVal );
+extern void DSDPGetDblParam  ( HSDSolver *dsdpSolver, DSDP_INT pName, double   *dblVal );
+extern void DSDPGetIntParam  ( HSDSolver *dsdpSolver, DSDP_INT pName, DSDP_INT *intVal );
 extern DSDP_INT DSDPDestroy  ( HSDSolver *dsdpSolver );
 
 extern void     DSDPPrintVersion (void);

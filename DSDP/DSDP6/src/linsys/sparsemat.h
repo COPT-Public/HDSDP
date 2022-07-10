@@ -37,6 +37,9 @@ extern DSDP_INT spsMatAllocData    ( spsMat *sMat, DSDP_INT dim, DSDP_INT nnz );
 extern void     spsNominalLinkSinv ( spsMat *sMat, double *Sinv );
 extern void spsMatFree         ( spsMat *sMat );
 
+extern void spsMatr1check( spsMat *dataMat, DSDP_INT *isRank1 );
+extern void spsMatr1extract( dsMat *dataMat, double *a, DSDP_INT isNeg );
+
 /* Basic operations */
 extern void spsMatAx           ( spsMat *A, vec *x, vec *Ax );
 extern void     spsMatAx2          ( spsMat *A, vec *x, vec *Ax );

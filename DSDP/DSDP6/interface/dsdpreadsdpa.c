@@ -3,7 +3,7 @@
 // A simple SDPA reader for HDSDP
 static char etype[] = "SDPA File Reader";
 
-#define BFSIZE 4096 // 4 * 1024
+#define BFSIZE 1024
 
 static DSDP_INT DSDPPrepareSDPData( char     *filename,    // 'xxx.dat-s'
                                     double   **dObjVec,    // DSDP dual objective

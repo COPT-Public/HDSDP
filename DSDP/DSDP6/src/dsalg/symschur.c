@@ -1096,10 +1096,9 @@ extern DSDP_INT symSchurMatInit( symM *M ) {
     return retcode;
 }
 
-extern DSDP_INT symSchurMatSetDim( symM *M, DSDP_INT m, DSDP_INT nblock ) {
-    assert( m > 0 && nblock > 0);
+extern void symSchurMatSetDim( symM *M, DSDP_INT m, DSDP_INT nblock ) {
+    
     M->m = m; M->nblock = nblock;
-    return DSDP_RETCODE_OK;
 }
 
 extern DSDP_INT symSchurMatAlloc( symM *M ) {
@@ -1112,6 +1111,11 @@ extern DSDP_INT symSchurMatAlloc( symM *M ) {
     M->Sinv   = (double   **) calloc(M->nblock, sizeof(double *));
     M->scaler = 0.0;
     
+    if (!M->perms || !M->MX || !M->useTwo || !M->Sinv) {
+        retcode = DSDP_RETCODE_FAILED;
+        return retcode;
+    }
+    
     for (DSDP_INT i = 0; i < M->nblock; ++i) {
         M->perms[i] = NULL; M->MX[i] = NULL; M->Sinv[i] = NULL;
     }
@@ -1119,24 +1123,18 @@ extern DSDP_INT symSchurMatAlloc( symM *M ) {
     return retcode;
 }
 
-extern DSDP_INT symSchurMatRegister( symM *M, spsMat **S, dsMat **B, sdpMat **Adata, schurMat *Msdp,
+extern void symSchurMatRegister( symM *M, spsMat **S, dsMat **B, sdpMat **Adata, schurMat *Msdp,
                                      vec *asinv, vec *asinvrysinv, vec *asinvcsinv, double *csinvrysinv,
                                      double *csinv, double *csinvcsinv, double *rysinv, double *Ry,
                                      rkMat **rkaux, DSDP_INT *phaseA, DSDP_INT *buildHSD, DSDP_INT *gold,
                                      DSDP_INT *lpSet ) {
     // Register information into M
-    DSDP_INT retcode = DSDP_RETCODE_OK;
-    assert( S && B && Adata && Msdp && !M->Mready);
     M->S = S; M->B = B; M->Adata = Adata; M->M = Msdp;
-    
-    assert( asinv && asinvrysinv && asinvcsinv && csinvrysinv );
     M->asinv = asinv; M->asinvrysinv = asinvrysinv; M->Ry = Ry;
     M->asinvcsinv = asinvcsinv; M->csinvrysinv = csinvrysinv;
     M->csinv = csinv; M->csinvcsinv = csinvcsinv; M->rkaux = rkaux;
     M->phaseA = phaseA; M->buildhsd = buildHSD; M->rysinv = rysinv;
     M->gold = gold; M->lpSet = lpSet;
-    
-    return retcode;
 }
 
 extern DSDP_INT symSchurMatFree( symM *M ) {
@@ -1210,10 +1208,7 @@ extern DSDP_INT DSDPSchurSetup( symM *M ) {
      We set up the Schur matrix as if there are (m + 1) {A_i} matrices and the
      residual related terms are set up during the set up (in different parts of the techniques
      */
-    
     DSDP_INT retcode = DSDP_RETCODE_OK;
-    
-    assert( M->Mready );
     
 #ifdef superDebug
     DSDP_INT m = M->m, mpack = nsym(m);

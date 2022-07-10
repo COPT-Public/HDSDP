@@ -59,9 +59,9 @@ extern "C" {
 #endif
 
 extern DSDP_INT symSchurMatInit    ( symM *M );
-extern DSDP_INT symSchurMatSetDim  ( symM *M, DSDP_INT m, DSDP_INT nblock );
+extern void symSchurMatSetDim  ( symM *M, DSDP_INT m, DSDP_INT nblock );
 extern DSDP_INT symSchurMatAlloc   ( symM *M );
-extern DSDP_INT symSchurMatRegister( symM *M, spsMat **S, dsMat **B, sdpMat **Adata, schurMat *Msdp,
+extern void symSchurMatRegister( symM *M, spsMat **S, dsMat **B, sdpMat **Adata, schurMat *Msdp,
                                      vec *asinv, vec *asinvrysinv, vec *asinvcsinv, double *csinvrysinv,
                                      double *csinv, double *csinvcsinv, double *rysinv, double *Ry,
                                      rkMat **rkaux, DSDP_INT *phaseA, DSDP_INT *buildHsd,

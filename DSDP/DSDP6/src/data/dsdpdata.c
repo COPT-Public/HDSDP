@@ -523,9 +523,7 @@ extern void sdpMatATy( sdpMat *sdpData, double ycoef, vec *y, double tau, spsMat
 
 extern void sdpMatFree( sdpMat *sdpData ) {
     // Free SDP data
-    
     if (!sdpData) { return; }
-    
     void *data = NULL;
     DSDP_INT ndatatofree = (sdpData->schurspIdx) ? sdpData->nzeroMat : sdpData->dimy + 1;
     

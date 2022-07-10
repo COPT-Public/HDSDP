@@ -64,11 +64,11 @@ static dsdpparam defaultParam =
     defaultDblParam
 };
 
-extern void setDblParam ( dsdpparam *param, DSDP_INT pName, double    dblVal );
-extern void getDblParam ( dsdpparam *param, DSDP_INT pName, double   *dblVal );
-extern void setIntParam ( dsdpparam *param, DSDP_INT pName, DSDP_INT  intVal );
-extern void getIntParam ( dsdpparam *param, DSDP_INT pName, DSDP_INT *intVal );
-extern void printParams ( dsdpparam *param                                   );
+extern void setDblParam    ( dsdpparam *param, DSDP_INT pName, double    dblVal );
+extern void getDblParam    ( dsdpparam *param, DSDP_INT pName, double   *dblVal );
+extern void setIntParam    ( dsdpparam *param, DSDP_INT pName, DSDP_INT  intVal );
+extern void getIntParam    ( dsdpparam *param, DSDP_INT pName, DSDP_INT *intVal );
+extern void printParams    ( dsdpparam *param                                   );
 extern void DSDPParamPrint ( dsdpparam *param );
 
 #endif /* dsdpparam_h */

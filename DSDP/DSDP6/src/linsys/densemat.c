@@ -112,9 +112,7 @@ extern DSDP_INT denseMatAlloc( dsMat *dMat, DSDP_INT dim, DSDP_INT doFactor ) {
 
 extern void denseMatFree( dsMat *dMat ) {
     // Free memory allocated
-    DSDP_INT retcode = DSDP_RETCODE_OK;
     if (!dMat) { return; }
-    
     if (!dMat->factor) {
         dMat->dim = 0; dMat->isillCond = FALSE;
         dMat->isFactorized = FALSE; dMat->lwork = 0;
@@ -123,6 +121,66 @@ extern void denseMatFree( dsMat *dMat ) {
     } else {
         rkMatFree(dMat->factor);
     }
+}
+
+extern void dsr1check( dsMat *dataMat, DSDP_INT *isRank1 ) {
+    // Is a dense packed array rank-one? (using matrix product)
+    double *A = dataMat->array, *start = NULL, *a = NULL, adiag, err = 0.0, diff = 0.0;
+    DSDP_INT n = dataMat->dim, i, j, r1 = TRUE, col = 0, isNeg = FALSE, idx = 0;
+
+    // Get the first column that contains non-zero elements
+    for (i = 0; i < n; ++i) {
+        if (packIdx(A, n, i, i) != 0) { break; }
+    }
+    if (i == n) {*isRank1 = FALSE; return;}
+    if (i >= n - 1 && !packIdx(A, n, i, i)) {
+        *isRank1 = FALSE; return;
+    }
+    col = i; a = (double *) calloc(n, sizeof(double));
+    adiag = packIdx(A, n, col, col);
+    if (adiag < 0) {
+        isNeg = TRUE; adiag = sqrt(-adiag);
+    } else {
+        adiag = sqrt(adiag);
+    }
+    for (i = col; i < n; ++i) {
+        a[i] = packIdx(A, n, i, col) / adiag;
+    }
+    // Check if A = a * a' by computing ||A - a * a'||_F
+    if (isNeg) {
+        for (i = 0; i < n; ++i) {
+            start = &A[idx];
+            for (j = 0; j < n - i; ++j) {
+                diff = start[j] + a[i] * a[i + j];
+                err += diff * diff;
+            }
+            idx += n - i;
+            if (err > 1e-08) { r1 = FALSE; break; }
+        }
+    } else {
+        for (i = 0; i < n; ++i) {
+            start = &A[idx];
+            for (j = 0; j < n - i; ++j) {
+                diff = start[j] - a[i] * a[i + j];
+                err += diff * diff;
+            }
+            idx += n - i;
+            if (err > 1e-08) { r1 = FALSE; break; }
+        }
+    }
+    *isRank1 = (r1) ? (DSDP_INT) (1 - 2 * isNeg) : FALSE;
+    DSDP_FREE(a);
+}
+
+extern void dsr1extract( spsMat *dataMat, double *a, DSDP_INT isNeg ) {
+    // Extract the rank 1 data from sparse data structure
+    double *Ax  = dataMat->x, adiag = 0.0;
+    DSDP_INT n = dataMat->dim, col = 0, *Ap = dataMat->p, *Ai = dataMat->i, i;
+    memset(a, 0, sizeof(double) * n);
+    for (i = 0; i < n; ++i) { col = i; if (Ap[i + 1] - Ap[i] > 0) { break; } }
+    adiag = (isNeg == -1) ? sqrt(-Ax[0]) : sqrt(Ax[0]);
+    if (adiag != adiag) { fatal_error; }
+    for (i = Ap[col]; i < Ap[col + 1]; ++i) { a[Ai[i]] = Ax[i] / adiag; }
 }
 
 /* Basic operations */
@@ -182,6 +240,7 @@ extern double denseMatxTAx( dsMat *dAMat, double *aux, double *x ) {
 }
 
 extern void denseMatScale( dsMat *dXMat, double a ) {
+    if (a == 1.0) { return; }
     DSDP_INT n = nsym(dXMat->dim);
     dscal(&n, &a, dXMat->array, &one);
     if (dXMat->factor) {

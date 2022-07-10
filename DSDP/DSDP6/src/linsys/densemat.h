@@ -22,6 +22,9 @@ extern void denseMatInit     ( dsMat *dMat                                      
 extern DSDP_INT denseMatAlloc    ( dsMat *dMat, DSDP_INT dim, DSDP_INT doFactor             );
 extern void denseMatFree     ( dsMat *dMat                                              );
 
+extern void dsr1check( dsMat *dataMat, DSDP_INT *isRank1 );
+extern void dsr1extract( spsMat *dataMat, double *a, DSDP_INT isNeg );
+
 /* Basic operations */
 extern void denseMataXpbY    ( double alpha, dsMat *dXMat, double beta, dsMat *dYMat    );
 extern void denseMataAxpby   ( dsMat *dAMat, double alpha, vec *x, double beta, vec *Ax );

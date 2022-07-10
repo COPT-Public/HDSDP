@@ -269,6 +269,70 @@ extern void spsMatFree( spsMat *sMat ) {
     sMat->nominalsps = FALSE;
 }
 
+extern void spsMatr1check( spsMat *dataMat, DSDP_INT *isRank1 ) {
+    // Check if a sparse matrix is rank-one
+    DSDP_INT *Ap = dataMat->p, *Ai = dataMat->i, r1 = TRUE;
+    double *Ax = dataMat->x, *a = NULL, err = 0.0, diff = 0.0, adiag = 0.0;
+    DSDP_INT n = dataMat->dim, i, j, col = 0, isNeg = FALSE, nnz = 0;
+    // First detect the first column containing nonzeros
+    for (i = 0; i < n; ++i) {
+        col = i; if (Ap[i + 1] - Ap[i] > 0) { break; }
+    }
+    if (Ai[0] != col) {
+        r1 = FALSE; *isRank1 = r1; return;
+    }
+    a = (double *) calloc(n, sizeof(double));
+    adiag = Ax[0];
+    if (adiag < 0) {
+        isNeg = TRUE; adiag = - sqrt(-adiag);
+    } else {
+        adiag = sqrt(adiag);
+    }
+    // Get the sparse rank 1 matrix
+    for (i = Ap[col]; i < Ap[col + 1]; ++i) {
+        // If the diagonal is zero but other rows contain non-zeros
+        a[Ai[i]] = Ax[i] / adiag; nnz += (Ax[i] != 0);
+    }
+    if (dataMat->nnz != nsym(nnz)) { r1 = FALSE; }
+    if (r1) {
+        for (i = col + 1; i < n; ++i) {
+            if (Ap[i] > Ap[col + 1] && Ap[i] < dataMat->nnz) {
+                if (Ai[Ap[i]] < col) { r1 = FALSE; break; }
+            }
+        }
+    }
+    if (r1) {
+        if (isNeg) {
+            for (i = 0; i < n; ++i) {
+                for (j = Ap[i]; j < Ap[i + 1]; ++j) {
+                    diff = Ax[j] + a[i] * a[Ai[j]]; err += fabs(diff);
+                }
+                if (err > 1e-10) { r1 = FALSE; break; }
+            }
+        } else {
+            for (i = 0; i < n; ++i) {
+                for (j = Ap[i]; j < Ap[i + 1]; ++j) {
+                    diff = Ax[j] - a[i] * a[Ai[j]]; err += fabs(diff);
+                }
+                if (err > 1e-10) { r1 = FALSE; break; }
+            }
+        }
+    }
+    *isRank1 = (r1) ? (DSDP_INT) (1 - 2 * isNeg) : FALSE;
+    DSDP_FREE(a);
+}
+
+extern void spsMatr1extract( dsMat *dataMat, double *a, DSDP_INT isNeg ) {
+    // Extract the rank 1 data from dense data structure
+    double *A = dataMat->array, adiag;
+    DSDP_INT n = dataMat->dim, col = 0, i;
+    memset(a, 0, sizeof(double) * n);
+    for (i = 0; i < n; ++i) { col = i; if (packIdx(A, n, i, i) != 0) { break; } }
+    adiag = packIdx(A, n, col, col);
+    adiag = (isNeg == -1) ? sqrt(-adiag) : sqrt(adiag);
+    for (i = col; i < n; ++i) { a[i] = packIdx(A, n, i, col) / adiag; }
+}
+
 /* Basic operations */
 extern void spsMatAx( spsMat *A, vec *x, vec *Ax ) {
     /* Sparse matrix multiplication for Lanczos Method
@@ -448,6 +512,7 @@ extern void spsMatAddrk( spsMat *sXMat, double alpha, rkMat *rkYMat, DSDP_INT *s
 
 extern void spsMatScale( spsMat *sXMat, double alpha ) {
     // Scale a sparse matrix by some number.
+    if (alpha == 1.0) { return; }
     vecscal(&sXMat->nnz, &alpha, sXMat->x, &one);
 }
 

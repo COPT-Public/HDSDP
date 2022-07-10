@@ -84,30 +84,30 @@ typedef struct {
 extern "C" {
 #endif
 
-extern void lpMatInit     ( lpMat  *lpData );
-extern void lpMatSetDim   ( lpMat  *lpData, DSDP_INT dimy, DSDP_INT dims );
-extern DSDP_INT lpMatSetData  ( lpMat *lpData, DSDP_INT *Ap, DSDP_INT *Ai, double *Ax );
-extern void lpMatAx       ( lpMat *lpData, vec *x, vec *Ax );
-extern double lpMatcx     ( vec *c, vec *x );
-extern void lpMatFree     ( lpMat *lpData );
-extern void lpMatView     ( lpMat *lpData );
+extern void lpMatInit        ( lpMat  *lpData );
+extern void lpMatSetDim      ( lpMat  *lpData, DSDP_INT dimy, DSDP_INT dims );
+extern DSDP_INT lpMatSetData ( lpMat *lpData, DSDP_INT *Ap, DSDP_INT *Ai, double *Ax );
+extern void lpMatAx          ( lpMat *lpData, vec *x, vec *Ax );
+extern double lpMatcx        ( vec *c, vec *x );
+extern void lpMatFree        ( lpMat *lpData );
+extern void lpMatView        ( lpMat *lpData );
 
-extern void sdpMatInit    ( sdpMat *sdpData );
-extern DSDP_INT sdpMatAlloc   ( sdpMat *sdpData );
-extern void sdpMatSetDim  ( sdpMat *sdpData, DSDP_INT dimy, DSDP_INT dimS, DSDP_INT blockId );
-extern DSDP_INT sdpMatSetData   ( sdpMat *sdpData, DSDP_INT *Ap, DSDP_INT *Ai, double *Ax, double *cnnz );
-extern DSDP_INT sdpMatScatterNnz( sdpMat *sdpData, DSDP_INT start, DSDP_INT col, DSDP_INT *colNnz );
-extern void sdpMatSetSchurIndex ( sdpMat *sdpData, DSDP_INT start, DSDP_INT col, DSDP_INT *csum, DSDP_INT ishift );
+extern void sdpMatInit           ( sdpMat *sdpData );
+extern DSDP_INT sdpMatAlloc      ( sdpMat *sdpData );
+extern void sdpMatSetDim         ( sdpMat *sdpData, DSDP_INT dimy, DSDP_INT dimS, DSDP_INT blockId );
+extern DSDP_INT sdpMatSetData    ( sdpMat *sdpData, DSDP_INT *Ap, DSDP_INT *Ai, double *Ax, double *cnnz );
+extern DSDP_INT sdpMatScatterNnz ( sdpMat *sdpData, DSDP_INT start, DSDP_INT col, DSDP_INT *colNnz );
+extern void sdpMatSetSchurIndex  ( sdpMat *sdpData, DSDP_INT start, DSDP_INT col, DSDP_INT *csum, DSDP_INT ishift );
 
-extern double sdpMatGetCFnorm  ( sdpMat *sdpData );
-extern double sdpMatGetAOneNorm( sdpMat *sdpData );
-extern double sdpMatGetCOneNorm( sdpMat *sdpData );
-extern void   sdpMatRScaleC    ( sdpMat *sdpData, double r );
-extern void   sdpMatAX         ( sdpMat *sdpData, dsMat *X, vec *AX );
-extern double sdpMatCX         ( sdpMat *sdpData, dsMat *X );
-extern void   sdpMatATy        ( sdpMat *sdpData, double ycoef, vec *y, double tau, spsMat *S, DSDP_INT *sumHash );
+extern double sdpMatGetCFnorm   ( sdpMat *sdpData );
+extern double sdpMatGetAOneNorm ( sdpMat *sdpData );
+extern double sdpMatGetCOneNorm ( sdpMat *sdpData );
+extern void   sdpMatRScaleC     ( sdpMat *sdpData, double r );
+extern void   sdpMatAX          ( sdpMat *sdpData, dsMat *X, vec *AX );
+extern double sdpMatCX          ( sdpMat *sdpData, dsMat *X );
+extern void   sdpMatATy         ( sdpMat *sdpData, double ycoef, vec *y, double tau, spsMat *S, DSDP_INT *sumHash );
 
-extern void sdpMatFree    ( sdpMat *sdpData );
+extern void sdpMatFree ( sdpMat *sdpData );
 
 #ifdef __cplusplus
 }

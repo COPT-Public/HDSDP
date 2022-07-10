@@ -2,7 +2,6 @@
 #define __DSDPHSD__
 
 /*
-    
     A primary implementation of the dual scaling algorithm for semi-definite programming
     using Homogeneous Self-dual Embedding
     

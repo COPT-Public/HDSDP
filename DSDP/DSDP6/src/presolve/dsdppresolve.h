@@ -18,6 +18,7 @@ extern DSDP_INT getMatIdx             ( HSDSolver *dsdpSolver );
 extern DSDP_INT preSymbolic           ( HSDSolver *dsdpSolver );
 extern DSDP_INT preStructureDetect    ( HSDSolver *dsdpSolver );
 extern DSDP_INT DSDPPrepareMAssembler ( HSDSolver *dsdpSolver );
+
 #ifdef __cplusplus
 }
 #endif
