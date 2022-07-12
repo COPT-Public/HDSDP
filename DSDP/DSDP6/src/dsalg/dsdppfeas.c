@@ -80,6 +80,14 @@ extern DSDP_INT DSDPPFeasPhase( HSDSolver *dsdpSolver ) {
             nopfeasIter += 1;
         }
         
+#ifdef OPT_PRECOND
+        selectMu(dsdpSolver, &newmu); checkCode;
+        newmu = MIN(newmu, muub); newmu = MAX(newmu, mulb);
+        dsdpSolver->mu = newmu;
+        if (nopfeasIter >= 20 && dsdpSolver->pObjVal != initpObj) {
+            printf("| Hard to find a new primal solution. Give up. \n"); break;
+        }
+#else
         // Select new mu
         if ((dsdpSolver->mu > 1e-12 && i <= 480 && nopfeasIter < 10) || dsdpSolver->pObjVal == initpObj) {
             selectMu(dsdpSolver, &newmu); checkCode;
@@ -89,11 +97,12 @@ extern DSDP_INT DSDPPFeasPhase( HSDSolver *dsdpSolver ) {
                 dsdpSolver->mu *= 100;
             }
         } else {
-            if (dsdpSolver->mu < 1e-13 || nopfeasIter >= 10) {
+            if (dsdpSolver->mu < 1e-13 || nopfeasIter >= 15) {
                 printf("| Hard to find a new primal solution. Give up. \n"); break;
             }
             dsdpSolver->mu = MAX(dsdpSolver->mu * sigma, 1e-13);
         }
+#endif
 
         DSDPSetDblParam(dsdpSolver, DBL_PARAM_RHO,
                         (dsdpSolver->pObjVal - dsdpSolver->dObjVal) / dsdpSolver->mu);

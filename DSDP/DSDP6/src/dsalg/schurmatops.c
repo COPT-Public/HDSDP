@@ -14,7 +14,8 @@ static DSDP_INT schurMatPerturb( HSDSolver *dsdpSolver ) {
     schurMatGetdiag(dsdpSolver->Msdp, dsdpSolver->Mdiag);
     DSDPGetStats(&dsdpSolver->dsdpStats, STAT_PHASE_B_ITER, &iterB);
     
-    if (!dsdpSolver->eventMonitor[EVENT_INVALID_GAP]) {
+    if (!dsdpSolver->eventMonitor[EVENT_INVALID_GAP] &&
+        dsdpSolver->eventMonitor[EVENT_IN_PHASE_A]) {
         
         if (dsdpSolver->mu < 1e-05) { perturb += 1e-12; }
         maxdiag = vec_infnorm(dsdpSolver->Mdiag);

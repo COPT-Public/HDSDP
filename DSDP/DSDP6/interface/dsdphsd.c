@@ -715,6 +715,9 @@ extern DSDP_INT DSDPExport( HSDSolver *dsdpSolver, DSDP_INT output, char *fname 
             printf("| Presolve failed. \n"); return retcode;
         }
         dumpDualSymbolic(dsdpSolver, fname);
+        
+    } else if (output == DSDP_EXPORT_YSOL) {
+        retcode = dumpDualSol(dsdpSolver, fname);
     } else {
         error(etype, "Not implemented export type. \n");
     }

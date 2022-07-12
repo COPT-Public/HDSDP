@@ -305,7 +305,7 @@ static void SDPConic( COPS_CONSTR_EXPR )
     spsMat **targets = (type == DUALVAR) ? \
     dsdpSolver->S : dsdpSolver->Scker;
     double dperturb = dsdpSolver->dperturb;
-    if (type == DELTAS) { targets = dsdpSolver->dS; }
+    if (type == DELTAS) { targets = dsdpSolver->dS; dperturb = 0.0; }
     dperturb += r * dsdpSolver->Ry;
     spsMat *target = NULL;
     for (DSDP_INT i = 0; i < dsdpSolver->nBlock; ++i) {

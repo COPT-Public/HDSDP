@@ -20,7 +20,7 @@ extern DSDP_INT r1denseSpsUpdate ( spsMat *sAMat, double alpha, r1Mat *r1BMat );
 
 /* M2 Technique */
 extern double   r1Matr1Trace     ( r1Mat *x, r1Mat  *y );
-extern DSDP_INT r1MatdenseTrace  ( r1Mat *x, dsMat  *A, double *trace );
+extern void r1MatdenseTrace  ( r1Mat *x, dsMat  *A, double *trace );
 
 /* M4 Technique */
 extern double   r1MatSinvSolve   ( const double *Sinv, r1Mat *x, double *ASinv, double *aux, double *asinv, double Ry );

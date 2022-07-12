@@ -17,7 +17,7 @@ extern DSDP_INT dsdpgetPhaseAProxMeasure( HSDSolver *dsdpSolver, double newmu ) 
     // Compute Pnrm
     vec_zaxpby(vecaux, 1 / dsdpSolver->mu, dsdpSolver->dObj, -1.0, dsdpSolver->asinv);
     vec_dot(vecaux, dydelta, &dsdpSolver->Pnrm);
-    dsdpSolver->Pnrm = sqrt(dsdpSolver->Pnrm);
+    dsdpSolver->Pnrm = sqrt(MAX(dsdpSolver->Pnrm, 0.0));
     
     // Check feasibility
     dsdpCheckPhaseAPfeas(dsdpSolver, 0.0, dydelta, &ispfeas);
@@ -108,7 +108,11 @@ extern DSDP_INT dsdpgetPhaseBProxMeasure( HSDSolver *dsdpSolver, double *muub, d
             dsdpSolver->mumaker2 = dsdpSolver->mu;
             vec_copy(dsdpSolver->y, dsdpSolver->ymaker2);
             vec_copy(dsdpSolver->b1, dsdpSolver->dymaker2);
-        } else if (gap >= 1e-06 * denominator){
+#ifdef OPT_PRECOND
+        } else if (gap >= 1e-10 * denominator){
+#else
+        } else if (gap >= 5e-06 * denominator){
+#endif
             dsdpSolver->mumaker = dsdpSolver->mu;
             vec_copy(dsdpSolver->y, dsdpSolver->ymaker);
             vec_copy(dsdpSolver->b1, dsdpSolver->dymaker);

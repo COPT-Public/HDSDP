@@ -15,16 +15,19 @@ extern void rkMatInit( rkMat *R ) {
 
 extern DSDP_INT rkMatAllocIter( rkMat *R, DSDP_INT n ) {
     
+    DSDP_INT retcode = DSDP_RETCODE_OK;
+    r1Mat *r1data = NULL;
     R->dim = n; R->isdata = FALSE; R->rank = n;
     R->data = (r1Mat **) calloc(n, sizeof(r1Mat *));
-    if (!R->data) return DSDP_RETCODE_FAILED;
-    r1Mat *r1data = NULL;
+    if (!R->data) { retcode = DSDP_RETCODE_FAILED; return retcode; }
     for (DSDP_INT i = 0; i < n; ++i) {
         r1data = (r1Mat *) calloc(1, sizeof(r1Mat));
-        R->data[i] = r1data; r1MatInit(r1data); r1MatAlloc(r1data, n);
+        R->data[i] = r1data; r1MatInit(r1data);
+        if (r1MatAlloc(r1data, n) != DSDP_RETCODE_OK) {
+            retcode = DSDP_RETCODE_FAILED; return retcode;
+        }
     }
-    
-    return DSDP_RETCODE_OK;
+    return retcode;
 }
 
 extern DSDP_INT rkMatAllocAndSetData( rkMat *R, DSDP_INT n, DSDP_INT rank,
@@ -32,13 +35,14 @@ extern DSDP_INT rkMatAllocAndSetData( rkMat *R, DSDP_INT n, DSDP_INT rank,
     // Allocate memory for the r1Mat array
     DSDP_INT retcode = DSDP_RETCODE_OK;
     
-    assert( R->dim == 0 && rank <= n );
     R->dim  = n; R->data = (r1Mat **) calloc(rank, sizeof(r1Mat *));
     R->rank = rank; R->isdata = TRUE;
     r1Mat *r1data = NULL;
     for (DSDP_INT i = 0; i < rank; ++i) {
         r1data = (r1Mat *) calloc(1, sizeof(r1Mat));
-        R->data[i] = r1data; r1MatInit(r1data); r1MatAlloc(r1data, n);
+        R->data[i] = r1data; r1MatInit(r1data);
+        retcode = r1MatAlloc(r1data, n);
+        if (retcode != DSDP_RETCODE_OK) { return retcode; }
         retcode = r1MatSetData(r1data, eigvals[i], &eigvecs[i * n]);
     }
     
@@ -57,35 +61,16 @@ extern DSDP_INT rkMatAllocAndSelectData( rkMat *R, DSDP_INT n, DSDP_INT rank, do
         if (fabs(eigvals[i]) > thresh) {
             r1data = (r1Mat *) calloc(1, sizeof(r1Mat));
             R->data[counter] = r1data;
-            r1MatInit(r1data); r1MatAlloc(r1data, n);
+            r1MatInit(r1data);
+            retcode = r1MatAlloc(r1data, n);
+            if (retcode != DSDP_RETCODE_OK) { return retcode; }
             retcode = r1MatSetData(r1data, eigvals[i], &eigvecs[i * n]);
+            if (retcode != DSDP_RETCODE_OK) { return retcode; }
             counter += 1; if (counter == rank) { break; }
         }
     }
     
     return retcode;
-}
-
-extern void rkMatrkTrace( rkMat *R1, rkMat *R2, double *trace ) {
-    
-    // Compute the inner product between two rank-k matrices
-    /*
-      trace(R1 * R2) = trace( \sum_i \sum_j c_i * d_j a_i a_i' * b_j * b_j')
-                     = \sum_i \sum_j c_i * d_j trace( a_i a_i' * b_j * b_j')
-                     = \sum_i \sum_j c_i * d_j (a_i' * b_j)^2
-     
-     Implemented by calling r1Matr1Trace
-     
-     When this routine is called, R1 is an iterator (SinvASinv) and R2 is data (A)
-    */
-    
-    double res = 0.0; DSDP_INT i, j;
-    for (i = 0; i < R1->rank; ++i) {
-        for (j = 0; j < R2->rank; ++j) {
-            res += r1Matr1Trace(R1->data[i], R2->data[j]);
-        }
-    }
-    *trace = res;
 }
 
 extern void rkMatdenseUpdate( dsMat *dAMat, rkMat *rkBMat ) {
@@ -164,26 +149,32 @@ extern void rkMatFnorm( rkMat *R, double *fnrm ) {
 }
 
 extern void rkMatScale( rkMat *R, double a ) {
+    
     for (DSDP_INT i = 0; i < R->rank; ++i) { r1MatScale(R->data[i], a); }
 }
 
 extern void rkMatRscale( rkMat *R, double r ) {
+    
     for (DSDP_INT i = 0; i < R->rank; ++i) { r1MatRscale(R->data[i], r); }
 }
 
 extern void rkMatisRank1( rkMat *R, DSDP_INT *isRank1 ) {
+    
     *isRank1 = (R->rank == 1) ? TRUE : FALSE;
 }
 
 extern DSDP_INT rkMatGetRank( rkMat *R ) {
+    
     return R->rank;
 }
 
 extern r1Mat *rkMatGetBase( rkMat *R, DSDP_INT i) {
+    
     return R->data[i];
 }
 
 extern void rkMatCheckSparsity( rkMat *R, DSDP_INT *isdense, double thresh ) {
+    
     for (DSDP_INT i = 0; i < R->rank; ++i) {
         r1MatCheckSparsity(R->data[i], isdense, thresh);
         if (isdense) { break; }
@@ -191,12 +182,14 @@ extern void rkMatCheckSparsity( rkMat *R, DSDP_INT *isdense, double thresh ) {
 }
 
 extern void rkMatGetSymbolic( rkMat *R, DSDP_INT *hash, DSDP_INT *firstNnz, DSDP_INT *nnzs ) {
+    
     for (DSDP_INT i = 0; i < R->rank; ++i) {
         r1MatGetSymbolic(R->data[i], hash, firstNnz, nnzs);
     }
 }
 
 extern DSDP_INT rkMatIsConstant( rkMat *R ) {
+    
     if (R->rank != 1) {
         return FALSE;
     } else {

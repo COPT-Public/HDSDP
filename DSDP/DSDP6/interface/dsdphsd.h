@@ -15,6 +15,10 @@
 
 // #define superDebug
 //#define compareMode
+//
+//#ifndef OPT_PRECOND
+//#define OPT_PRECOND
+//#endif
 
 #ifdef RELEASE
 #define assert(x) if (!(x)) { printf("Fatal error. \n"); exit(0); };
@@ -85,9 +89,10 @@ typedef int DSDP_INT;
 
 // Export information type
 #define DSDP_EXPORT_DSYMBOLIC   0
-#define DSDP_EXPORT_SDPASOL     1
-#define DSDP_EXPORT_MATSTATS    2
-#define DSDP_EXPORT_STRUCTURE   3
+#define DSDP_EXPORT_YSOL        1
+#define DSDP_EXPORT_SDPASOL     2
+#define DSDP_EXPORT_MATSTATS    3
+#define DSDP_EXPORT_STRUCTURE   4
 
 // Error log
 #define force_exit               printf("---------------------------------------" \
@@ -120,10 +125,10 @@ typedef int DSDP_INT;
 
 #define VERSION_MAJOR           1
 #define VERSION_MINOR           0
-#define VERSION_TECHNICAL       0
+#define VERSION_TECHNICAL       1
 
 #define BUILD_DATE_YEAR         2022
-#define BUILD_DATE_MONTH        6
-#define BUILD_DATE_DAY          30
+#define BUILD_DATE_MONTH        7
+#define BUILD_DATE_DAY          12
 
 #endif /* dsdphsd_h */

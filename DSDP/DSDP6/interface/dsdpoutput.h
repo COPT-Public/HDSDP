@@ -9,6 +9,7 @@ extern "C" {
 #endif
 
 extern DSDP_INT dumpDualSymbolic( HSDSolver *dsdpSolver, char *fname );
+extern DSDP_INT dumpDualSol     ( HSDSolver *dsdpSolver, char *fname );
 
 #ifdef __cplusplus
 }

@@ -1,5 +1,4 @@
 #include "dsdplog.h"
-
 // A simple SDPA reader for HDSDP
 static char etype[] = "SDPA File Reader";
 
@@ -350,7 +349,7 @@ exit_cleanup:
 extern DSDP_INT DSDPSolveSDPA(int argc, char *argv[]) {
     
     DSDP_INT retcode = DSDP_RETCODE_OK;
-    FILE *file; char filename[100], thisline[100], maxtime[100];
+    FILE *file; char filename[100], thisline[100], maxtime[100], export[100];
     double tmax = 0.0;
     if (argc < 2) {
         DSDPPrintVersion(); return retcode;
@@ -359,6 +358,13 @@ extern DSDP_INT DSDPSolveSDPA(int argc, char *argv[]) {
         if (argc == 4 && strcmp(argv[2], "-timelimit") == 0) {
             strncpy(maxtime, argv[3], 20); tmax = atof(maxtime);
         }
+    }
+    retcode = extractSDPAfname(thisline, export);
+    
+    if (!retcode) {
+        printf("| Failed to extract SDPA filename. Using 'model' by default. \n");
+        char name[] = "model"; memset(export, 0, 100 * sizeof(char));
+        strcat(export, name);
     }
     
     if (tmax <= 0.0) { tmax = 15000.0; }
@@ -424,6 +430,15 @@ extern DSDP_INT DSDPSolveSDPA(int argc, char *argv[]) {
     if (retcode != DSDP_RETCODE_OK) {
         printf("| Optimization failed. \n");
     }
+    
+    
+#ifdef OPT_PRECOND
+    retcode = DSDPExport(hsdSolver, DSDP_EXPORT_YSOL, export);
+    if (retcode != DSDP_RETCODE_OK) {
+        printf("| Export failed. \n");
+    }
+    showBeautifulDashlines();
+#endif
     
 //    double *y = NULL;
 //    y = (double *) calloc(sizeof(double), nConstrs);

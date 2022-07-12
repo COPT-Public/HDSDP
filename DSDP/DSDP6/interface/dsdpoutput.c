@@ -1,6 +1,6 @@
 #include "dsdpoutput.h"
 #define SUFFIX_DUALSYM "-dsym.csv"
-#define SUFFIX_SOL     ".sol"
+#define SUFFIX_SOL     ".csv"
 
 static void dumpdMatSizes( HSDSolver *dsdpSolver, FILE *output ) {
     // Export block statistics
@@ -27,6 +27,34 @@ static DSDP_INT dumpDualBlock( DSDP_INT blockid, DSDP_INT n, DSDP_INT *dSym, FIL
 }
 
 /* Implement the output interface for HDSDP */
+extern DSDP_INT dumpDualSol( HSDSolver *dsdpSolver, char *fname ) {
+    // Dump the dual solution y
+    DSDP_INT retcode = DSDP_RETCODE_OK;
+    if (dsdpSolver->insStatus != DSDP_STATUS_SOLVED) {
+        printf("| The instance is not solved. \n");
+        retcode = DSDP_RETCODE_FAILED; return retcode;
+    }
+    char filename[100] = "", suffix[] = SUFFIX_SOL;
+    strcat(filename, fname); strcat(filename, suffix);
+    FILE *fp; fp = fopen(filename, "w+");
+    
+    if (!fp) {
+        printf("| Failed to create symbolic file. \n");
+        retcode = DSDP_RETCODE_FAILED; return retcode;
+    }
+    // Dual solution y
+    for (DSDP_INT i = 0; i < dsdpSolver->y->dim; ++i) {
+        fprintf(fp, "%10.10e,", dsdpSolver->y->x[i]);
+    }
+    retcode = (fclose(fp) == 0) ? DSDP_RETCODE_OK : DSDP_RETCODE_FAILED;
+    if (retcode == DSDP_RETCODE_OK) {
+        printf("| Successfully exported dual solution y to %s. \n", filename);
+    } else {
+        printf("| Error in export. \n");
+    }
+    return retcode;
+}
+
 extern DSDP_INT dumpDualSymbolic( HSDSolver *dsdpSolver, char *fname ) {
     // Dump the dual symbolic structure
     DSDP_INT retcode = DSDP_RETCODE_OK;
