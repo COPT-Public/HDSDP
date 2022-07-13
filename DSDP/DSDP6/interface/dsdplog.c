@@ -186,7 +186,7 @@ extern void checkPhaseAConvergence( HSDSolver *dsdpSolver, DSDP_INT *isOK ) {
     DSDPGetDblParam(dsdpSolver, DBL_PARAM_ABS_OPTTOL, &absOptTol);
     DSDPGetDblParam(dsdpSolver, DBL_PARAM_ABS_FEASTOL, &absFeasTol);
     DSDPGetDblParam(dsdpSolver, DBL_PARAM_INIT_POBJ, &initpObj);
-    DSDPGetDblParam(dsdpSolver, DBL_PARAM_INIT_POBJ, &tmax);
+    DSDPGetDblParam(dsdpSolver, DBL_PARAM_TIMELIMIT, &tmax);
     DSDPGetIntParam(dsdpSolver, INT_PARAM_AMAXITER, &AmaxIter);
     
     // Dual infeasibility eliminated
