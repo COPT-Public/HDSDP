@@ -1,8 +1,11 @@
-#include "sparsemat.h"
 #include "dsdplanczos.h"
+#include "sparsemat.h"
+#include "vec.h"
+#include "dsdplapack.h"
 
 static char etype[] = "Lanczos iteration";
 
+#define MAXITER 30
 #define LWORK   30  // >= MAXITER + 6
 #define IWORK   12  // >= 10
 
@@ -18,21 +21,15 @@ static DSDP_INT lanczosAlloc( vec **v,  vec **w,
     DSDP_INT retcode = DSDP_RETCODE_OK;
     vec *vecdata = NULL;
     vecdata = (vec *) calloc(1, sizeof(vec));
-    vec_init(vecdata); retcode = vec_alloc(vecdata, n);
-    checkCode; *v = vecdata;
+    vec_init(vecdata); retcode = vec_alloc(vecdata, n); checkCode; *v = vecdata;
     vecdata = (vec *) calloc(1, sizeof(vec));
-    vec_init(vecdata); retcode = vec_alloc(vecdata, n);
-    checkCode; *w = vecdata;
+    vec_init(vecdata); retcode = vec_alloc(vecdata, n); checkCode; *w = vecdata;
     vecdata = (vec *) calloc(1, sizeof(vec));
-    vec_init(vecdata); retcode = vec_alloc(vecdata, n);
-    checkCode; *z1 = vecdata;
+    vec_init(vecdata); retcode = vec_alloc(vecdata, n); checkCode; *z1 = vecdata;
     vecdata = (vec *) calloc(1, sizeof(vec));
-    vec_init(vecdata); retcode = vec_alloc(vecdata, n);
-    checkCode; *z2 = vecdata;
+    vec_init(vecdata); retcode = vec_alloc(vecdata, n); checkCode; *z2 = vecdata;
     vecdata = (vec *) calloc(1, sizeof(vec));
-    vec_init(vecdata); retcode = vec_alloc(vecdata, n);
-    checkCode; *vecaux = vecdata;
-    
+    vec_init(vecdata); retcode = vec_alloc(vecdata, n); checkCode; *vecaux = vecdata;
     *V = (double *) calloc(n * (maxiter + 1), sizeof(double));
     *H = (double *) calloc((maxiter + 1) * (maxiter + 1), sizeof(double));
     *Y = (double *) calloc(2 * maxiter, sizeof(double));
@@ -40,12 +37,10 @@ static DSDP_INT lanczosAlloc( vec **v,  vec **w,
     *mataux = (double *) calloc(maxiter * maxiter, sizeof(double));
     *eigaux = (double *) calloc(maxiter * LWORK, sizeof(double));
     *eigintaux = (DSDP_INT *) calloc(maxiter * IWORK, sizeof(DSDP_INT));
-    
     if (!V || !H || !Y || !d || !mataux || !eigaux || !eigintaux) {
         printf("| Failed to allocate memory for Lanczos iterator. \n");
         retcode = DSDP_RETCODE_FAILED; return retcode;
     }
-    
     return retcode;
 }
 
@@ -117,12 +112,11 @@ extern void dsdpLanczosFree( DSDPLanczos *lczSolver ) {
 extern DSDP_INT dsdpLanczosStep( DSDPLanczos *lczSolver, spsMat *S, spsMat *dS, double *lbd, double *delta ) {
     // Lanczos algorithm that computes lambda_max(L^-1 dS L^-T)
     DSDP_INT retcode = DSDP_RETCODE_OK;    
-    DSDPLanczos *l = lczSolver;
-    double fnrm = 0.0; spsMatFnorm(dS, &fnrm);
+    DSDPLanczos *l = lczSolver; double fnrm = 0.0; spsMatFnorm(dS, &fnrm);
     if (fnrm < 1e-13) { *lbd = 0.0; *delta = 0.0; return retcode;}
     
     /* Prepare working array */
-    DSDP_INT n = S->dim, maxiter = MAXITER, one = 1, mH = maxiter + 1,
+    DSDP_INT n = S->dim, maxiter = MAXITER, one = 1, mH = maxiter + 1, p, q,
              il, iu, lwork = lczSolver->lwork, iwork = lczSolver->iwork, failed = FALSE, \
             idx, neigs, info, *eigintaux = lczSolver->eigintaux, *isuppz = lczSolver->isuppz;
     
@@ -156,12 +150,11 @@ extern DSDP_INT dsdpLanczosStep( DSDPLanczos *lczSolver, spsMat *S, spsMat *dS, 
         if (nrm2 < 0.8 * nrm && (FALSE)) {
             alpha = 1.0; beta  = 0.0; // s = (w' * V(:, 1:k))';
             idx = k + 1; memset(mataux, 0, sizeof(double) * idx);
-            for (DSDP_INT p = 0, q; p < idx; ++p) {
+            for (p = 0, q; p < idx; ++p) {
                 for (q = 0; q < n; ++q) {
                     mataux[p] += V[p * n + q] * w->x[q];
                 }
             }
-            
             dgemv(&notrans, &n, &idx, &alpha, V, &n, mataux,
                   &one, &alpha, w->x, &one); // w = w - V(:, 1:k) * s;
             daxpy(&idx, &alpha, mataux, &one, &H[mH * k], &one); // H(1:k, k) = H(1:k, k) + s;

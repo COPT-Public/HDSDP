@@ -1,7 +1,9 @@
-#include "sparsemat.h"
-#include "densemat.h"
-#include "schurmat.h"
+#include <stdlib.h>
 #include "dsdpcg.h"
+#include "dsdplapack.h"
+#include "schurmat.h"
+#include "vec.h"
+
 
 static void diagPrecond( vec *P, vec *x ) {
     // Diagonal preconditioning

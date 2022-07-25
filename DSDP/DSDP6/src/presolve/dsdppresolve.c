@@ -1,6 +1,8 @@
+#include "dsdppresolve.h""
 #include "dsdputils.h"
 #include "heurpool.h"
 #include "speigs.h"
+#include "dsdplapack.h"
 
 static char etype[] = "Presolving operations";
 
@@ -304,7 +306,7 @@ static void preImpXBoundDetect( HSDSolver *dsdpSolver ) {
     if (type == 1) {
         for (DSDP_INT i = 0; i < data->dimy; ++i) {
             spsdata = data->sdpData[i];
-            if (spsMatIsDiagonal(spsdata)) {
+            if (spsMatIsDiag(spsdata)) {
                 impXbound = TRUE;
                 boundX = spsMatGetXbound(spsdata, dsdpSolver->dObj); break;
             }

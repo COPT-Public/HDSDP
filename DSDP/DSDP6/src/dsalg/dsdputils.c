@@ -2,6 +2,7 @@
 #include "dsdpsolver.h"
 #include "sparsemat.h"
 #include "schurmat.h"
+#include "dsdplapack.h"
 static char etype[] = "DSDP Conic Utility";
 
 // #define CONIC
@@ -420,7 +421,7 @@ static double SDPConic( COPS_GET_MAXSTEP )
     double step = DSDP_INFINITY, tmp;
     spsMat **targets = (type == DUALVAR) ? dsdpSolver->S : dsdpSolver->Scker;
     for (DSDP_INT i = 0; i < dsdpSolver->nBlock; ++i) {
-        dsdpGetAlpha(dsdpSolver->lczs[i], targets[i], dsdpSolver->dS[i], &tmp);
+        spsMatGetAlpha(dsdpSolver->lczs[i], targets[i], dsdpSolver->dS[i], &tmp);
         step = MIN(step, tmp);
     }
     return step;

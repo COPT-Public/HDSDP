@@ -1,5 +1,6 @@
 #include "stepheur.h"
 #include "dsdputils.h"
+#include "dsdplapack.h"
 /*
    Implement the strategies to choose the proper stepsize and update the
    dual iteration variables
@@ -333,7 +334,7 @@ extern void selectMu( HSDSolver *dsdpSolver, double *newmu ) {
         
         tmp = DSDP_INFINITY;
         for (DSDP_INT i = 0; i < dsdpSolver->nBlock; ++i) {
-            dsdpGetAlpha(dsdpSolver->lczs[i], dsdpSolver->Scker[i], dsdpSolver->dS[i], &alpha);
+            spsMatGetAlpha(dsdpSolver->lczs[i], dsdpSolver->Scker[i], dsdpSolver->dS[i], &alpha);
             tmp = MIN(tmp, alpha);
         }
         

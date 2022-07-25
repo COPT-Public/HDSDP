@@ -3,6 +3,7 @@
 #include "dsdpsolver.h"
 #include "schurmat.h"
 #include "dsdpsort.h"
+#include "dsdplapack.h"
 
 #define continue_if_not_in_A_or_not_building_hsd if (!(*M->phaseA) || !(*M->buildhsd) ) { continue; }
 #define return_if_not_in_A_or_not_building_hsd   if ((!(*M->phaseA) || !(*M->buildhsd)) && computeC) { return retcode; }

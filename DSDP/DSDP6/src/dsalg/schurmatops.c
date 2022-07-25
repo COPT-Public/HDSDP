@@ -1,6 +1,7 @@
 #include "schurmatops.h"
 #include "dsdputils.h"
 #include "schurmat.h"
+#include "dsdplapack.h"
 
 #define M1Threshold 0.7
 static char etype[] = "Schur matrix setup";

@@ -1,6 +1,4 @@
-#include <stdio.h>
 #include "rankonemat.h"
-#include "sparsemat.h"
 #include "dsdplapack.h"
 
 // Define constants involving Lapack and Blas

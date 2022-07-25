@@ -1,4 +1,6 @@
 #include "densemat.h"
+#include "dsdplapack.h"
+#include "structs.h"
 #include "sparsemat.h"
 #include "rankkmat.h"
 

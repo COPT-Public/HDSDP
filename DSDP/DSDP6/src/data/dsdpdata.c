@@ -1,6 +1,7 @@
 #include <string.h>
 #include "dsdpdata.h"
 #include "dsdpsort.h"
+#include "dsdplapack.h"
 // Implement the data interface for DSDP-HSD Solver
 
 static char *etype = "Data interface";

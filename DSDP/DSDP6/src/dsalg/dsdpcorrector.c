@@ -1,5 +1,6 @@
 #include "dsdpcorrector.h"
 #include "dsdputils.h"
+#include "dsdplapack.h"
 
 /*
  Implement the dual corrector for DSDP Phase B

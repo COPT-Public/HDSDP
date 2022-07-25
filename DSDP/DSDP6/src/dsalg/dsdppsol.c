@@ -2,6 +2,7 @@
 #include "dsdputils.h"
 #include "dsdplog.h"
 #include "schurmat.h"
+#include "dsdplapack.h"
 
 static char etype[] = "Primal solution extraction";
 

@@ -1,11 +1,7 @@
+#include <stdlib.h>
 #include "schurmat.h"
 #include "densemat.h"
 #include "sparsemat.h"
-#include "rankkmat.h"
-#include "vec.h"
-
-// Error type
-static char etype[] = "Schur Matrix operation Error";
 
 static DSDP_INT schurMatselectTypeDense( schurMat *sMat ) {
     
@@ -98,11 +94,11 @@ extern void schurMatFactorize( schurMat *sMat ) {
         if (!sMat->isillCond) {
             spsMatIspd(sMat->spsM, &ispsd);
             if (!ispsd) {
-                spsMatIndefiniteFactorize(sMat->spsM);
+                spsMatLDLFactorize(sMat->spsM);
                 sMat->isillCond = TRUE;
             }
         } else {
-            spsMatIndefiniteFactorize(sMat->spsM);
+            spsMatLDLFactorize(sMat->spsM);
         }
     } else {
         assert( FALSE );

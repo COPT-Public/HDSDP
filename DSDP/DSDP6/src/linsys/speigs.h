@@ -2,7 +2,6 @@
 #define speigs_h
 
 // Implement the sparse eigen-decomposition used in DSDP
-#include "dsdphsd.h"
 #include "structs.h"
 
 #define EIG_FACTOR_FEAST   1
@@ -10,26 +9,6 @@
 
 #define LWORK   30
 #define IWORK   12
-
-typedef struct {
-    
-    DSDP_INT  nmax;    // Maximum possible dimension of matrix to factorize
-    DSDP_INT  lwork;   // Length of working space
-    DSDP_INT  liwork;  // Length of working space
-    DSDP_INT  factorMethod;
-    
-    double   *dwork;   // Double working space
-    double   *dworkmat;// Double working space
-    double   *dworkevc;// Double working space
-    double   *dworkevl;// Double working space
-    
-    DSDP_INT *perm;    // Permutation vector
-    DSDP_INT *pinv;    // Inverse of the permutation
-    DSDP_INT *colnnz;  // Column nnz counter
-    DSDP_INT *iwork;   // Integer working space
-    DSDP_INT *iworkup; // Another integer working space
-    
-} speigfac;
 
 #ifdef __cplusplus
 extern "C" {

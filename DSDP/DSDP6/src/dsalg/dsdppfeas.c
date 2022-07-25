@@ -9,6 +9,7 @@
 #include "dsdplog.h"
 #include "dsdppfeascheck.h"
 #include "dsdpcorrector.h"
+#include "dsdplapack.h"
 
 static char etype[] = "DSDP Primal Feasibility Certificate";
 

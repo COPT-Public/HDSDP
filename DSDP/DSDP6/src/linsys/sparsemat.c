@@ -1,22 +1,18 @@
 #include "sparsemat.h"
-#include "densemat.h"
-#include "dsdpfeast.h"
-#include "dsdpdata.h"
+#include "cs.h"
+#include "dsdplapack.h"
+#include "rankkmat.h"
+#include "vec.h"
+#include "dsdplanczos.h"
 
 // Enable hash sum check
 #ifdef VERIFY_HASH
 #undef VERIFY_HASH
 #endif
 
-static char etype[] = "Sparse/Dual matrix";
-static DSDP_INT one = 1;
-static double done = 1.0;
-static double dzero = 0.0;
-static char uplolow = 'L';
-static char trans = 'T';
-static char notrans = 'N';
-static DSDP_INT phaseSolve = PARDISO_SOLVE;
-static DSDP_INT errorSolve;
+static double done = 1.0, dzero = 0.0;
+static char uplolow = 'L', trans = 'T', notrans = 'N';
+static DSDP_INT phaseSolve = PARDISO_SOLVE, one = 1, errorSolve;
 
 /* Internal Pardiso Wrapper */
 static void pardisoSymFactorize( spsMat *S ) {
@@ -596,7 +592,7 @@ extern void spsMatFactorize( spsMat *sAMat ) {
     }
 }
 
-extern void spsMatIndefiniteFactorize( spsMat *sAMat ) {
+extern void spsMatLDLFactorize( spsMat *sAMat ) {
     // Sparse matrix Cholesky decomposition
     assert( !sAMat->nominalsps );
     pardisoIndefiniteNumFactorize(sAMat);
@@ -692,7 +688,7 @@ extern void spsMatGetX( spsMat *S, spsMat *dS, double *LinvSLTinv ) {
 }
 
 /* DSDP routine for computing the stepsize in the SDP cone */
-extern double dsdpGetAlpha( DSDPLanczos *lczSolver, spsMat *S, spsMat *dS, double *alpha ) {
+extern double spsMatGetAlpha( DSDPLanczos *lczSolver, spsMat *S, spsMat *dS, double *alpha ) {
     // Get the maximum alpha such that S + alpha * dS is PSD
     double lbd = 0.0, delta = 0.0;
     if (S->dim == 1) {
@@ -910,40 +906,6 @@ extern double spsFullTrace( spsMat *A, double *S ) {
     return 2.0 * res;
 }
 
-/* Eigen value routines */
-extern void spsMatMaxEig( spsMat *sMat, double *maxEig ) {
-    // Eigen value utility: compute the maximum eigenvalue of a matrix
-    DSDP_INT n = sMat->dim, info = 0;
-    
-    double *eigvec = (double *) calloc(n, sizeof(double));
-    sparse_matrix_t A = NULL;
-    mkl_sparse_d_create_csr(&A, SPARSE_INDEX_BASE_ZERO,
-                            n, n, sMat->p, sMat->p + 1,
-                            sMat->i, sMat->x);
-    info = mkl_sparse_d_ev(&MAX_EIG, pm, A, dsdp_descr,
-                           k0, &k, maxEig, eigvec, &resi);
-    if (info != SPARSE_STATUS_SUCCESS) {
-        printf("Maximum eigen value computation failed. \n");
-    }
-    mkl_sparse_destroy( A ); // eigvec is freed here
-}
-
-extern void spsMatMinEig( spsMat *sMat, double *minEig ) {
-    // Eigen value utility: compute the minimum eigenvalue of a matrix
-    DSDP_INT n = sMat->dim, info = 0;
-    double *eigvec = (double *) calloc(n, sizeof(double));
-    sparse_matrix_t A = NULL;
-    mkl_sparse_d_create_csr(&A, SPARSE_INDEX_BASE_ZERO,
-                            n, n, sMat->p, sMat->p + 1,
-                            sMat->i, sMat->x);
-    info = mkl_sparse_d_ev(&MIN_EIG, pm, A, dsdp_descr,
-                           k0, &k, minEig, eigvec, &resi);
-    if (info != SPARSE_STATUS_SUCCESS) {
-        printf("Minimum eigen value computation failed. \n");
-    }
-    mkl_sparse_destroy( A );
-}
-
 /* Other utilities */
 extern void spsMatIspd( spsMat *sMat, DSDP_INT *ispd ) {
     // A critical routine that determines whether a matrix is positive definite
@@ -1071,7 +1033,7 @@ extern void spsMatGetSymbolic( spsMat *sMat, DSDP_INT *hash, DSDP_INT *firstNnz,
     }
 }
 
-extern DSDP_INT spsMatIsDiagonal( spsMat *sMat ) {
+extern DSDP_INT spsMatIsDiag( spsMat *sMat ) {
     if (sMat->nnz != sMat->dim) {
         return FALSE;
     }
@@ -1152,3 +1114,40 @@ extern void spsMatExport( spsMat *A ) {
     printf("\n");
     return;
 }
+
+
+/* External eigen value routines */
+#ifdef MKL_FEAST
+extern void spsMatMaxEig( spsMat *sMat, double *maxEig ) {
+    // Eigen value utility: compute the maximum eigenvalue of a matrix
+    DSDP_INT n = sMat->dim, info = 0;
+    
+    double *eigvec = (double *) calloc(n, sizeof(double));
+    sparse_matrix_t A = NULL;
+    mkl_sparse_d_create_csr(&A, SPARSE_INDEX_BASE_ZERO,
+                            n, n, sMat->p, sMat->p + 1,
+                            sMat->i, sMat->x);
+    info = mkl_sparse_d_ev(&MAX_EIG, pm, A, dsdp_descr,
+                           k0, &k, maxEig, eigvec, &resi);
+    if (info != SPARSE_STATUS_SUCCESS) {
+        printf("Maximum eigen value computation failed. \n");
+    }
+    mkl_sparse_destroy( A ); // eigvec is freed here
+}
+
+extern void spsMatMinEig( spsMat *sMat, double *minEig ) {
+    // Eigen value utility: compute the minimum eigenvalue of a matrix
+    DSDP_INT n = sMat->dim, info = 0;
+    double *eigvec = (double *) calloc(n, sizeof(double));
+    sparse_matrix_t A = NULL;
+    mkl_sparse_d_create_csr(&A, SPARSE_INDEX_BASE_ZERO,
+                            n, n, sMat->p, sMat->p + 1,
+                            sMat->i, sMat->x);
+    info = mkl_sparse_d_ev(&MIN_EIG, pm, A, dsdp_descr,
+                           k0, &k, minEig, eigvec, &resi);
+    if (info != SPARSE_STATUS_SUCCESS) {
+        printf("Minimum eigen value computation failed. \n");
+    }
+    mkl_sparse_destroy( A );
+}
+#endif

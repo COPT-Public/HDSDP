@@ -2,7 +2,6 @@
 #define vec_h
 
 /* Implement vector operations for DSDP */
-
 #include "structs.h"
 
 #ifdef __cplusplus

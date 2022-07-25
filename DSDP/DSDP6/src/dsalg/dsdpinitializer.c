@@ -3,6 +3,7 @@
 #include "dsdputils.h"
 #include "dsdplog.h"
 #include "heurpool.h"
+#include "dsdplapack.h"
 /* Implement the initialization procedure of DSDP */
 static char etype[] = "DSDP Initialization";
 

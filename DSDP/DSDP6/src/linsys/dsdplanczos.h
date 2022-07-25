@@ -1,36 +1,9 @@
 #ifndef dsdplanczos_h
 #define dsdplanczos_h
 
-#include "dsdphsd.h"
 #include "structs.h"
 
 // Implementation of Lanczos iteration for SDP stepsize
-#define MAXITER 30
-
-typedef struct {
-    
-    DSDP_INT n;
-    vec *v;
-    vec *w;
-    vec *z1;
-    vec *z2;
-    vec *vecaux;
-    
-    double *V;
-    double *H;
-    double *Y;
-    double *d;
-    
-    double *mataux;
-    double *eigaux;
-    
-    DSDP_INT *eigintaux;
-    DSDP_INT isuppz[4];
-    
-    DSDP_INT iwork;
-    DSDP_INT lwork;
-    
-} DSDPLanczos;
 
 #ifdef __cplusplus
 extern "C" {

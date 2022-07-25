@@ -1,4 +1,5 @@
 #include "heurpool.h"
+#include "dsdplapack.h"
 // Implement the Heuristics
 
 extern void DSDP_HEURS( adjustSolverParams )

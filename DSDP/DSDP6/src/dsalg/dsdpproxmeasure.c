@@ -2,6 +2,7 @@
 #include "dsdppfeascheck.h"
 #include "stepheur.h"
 #include "dsdputils.h"
+#include "dsdplapack.h"
 
 extern DSDP_INT dsdpgetPhaseAProxMeasure( HSDSolver *dsdpSolver, double newmu ) {
     

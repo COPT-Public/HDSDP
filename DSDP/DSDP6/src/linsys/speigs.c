@@ -1,20 +1,10 @@
 #include <string.h>
+#include <math.h>
 #include "speigs.h"
-#include "dsdpfeast.h"
-#include "densemat.h"
-#include "sparsemat.h"
+#include "dsdplapack.h"
 
-static char etype[] = "Eigen Interface";
-static char jobz = 'V';
-static char range = 'A';
-static char uplolow = 'L';
-static double abstol = 0.0;
-static double eps = 1e-10;
-
-/*
- Implement a highly-efficient eigen-decomposition interface using LAPACK or Intel FEAST
- as the backend. The routine is derived from DSDP5.8 by Steve J. Benson.
- */
+static char jobz = 'V', range = 'A', uplolow = 'L';
+static double abstol = 0.0, eps = 1e-10;
 
 static void speigReset( speigfac *eigfac ) {
     memset(eigfac->colnnz,   0, sizeof(DSDP_INT) * eigfac->nmax);
@@ -46,67 +36,6 @@ static DSDP_INT speigGetCStats( speigfac *eigfac, DSDP_INT n,
     if (elem1) { return 2; }
     
     return 0;
-}
-
-static DSDP_INT denser1check( speigfac *eigfac, DSDP_INT n, double *A ) {
-    // Detect if a dense matrix is rank one by directly computing the outer product
-    // Slower but accurate
-    
-    double *a = eigfac->dworkevl; memset(a, 0, sizeof(double) * n);
-    DSDP_INT i, j, r1  = TRUE, col = 0, isNeg = FALSE;
-    
-    // Get the first column that contains non-zero elements
-    for (i = 0, j = 0; i < n; ++i) {
-        if (A[j] != 0) { break; }
-        j += n - i;
-    }
-    
-    if (i == n - 1 && !A[j]) {
-        return FALSE;
-    }
-    
-    col = i; double adiag = A[j];
-    
-    if (adiag < 0) {
-        isNeg = TRUE; adiag = sqrt(- adiag);
-    } else {
-        adiag = sqrt(adiag);
-    }
-    
-    for (i = col; i < n; ++i) {
-        a[j] = A[j] / adiag;
-        j += n - i;
-    }
-    
-    // Check if A = a * a' by computing ||A - a * a'||_F
-    double *start = NULL, err = 0.0, diff   = 0.0;
-    DSDP_INT idx  = 0;
-    
-    if (isNeg) {
-        for (i = 0; i < n; ++i) {
-            start = &A[idx];
-            for (j = 0; j < n - i; ++j) {
-                diff = start[j] + a[i] * a[i + j]; err += diff * diff;
-            }
-            idx += n - i;
-            if (err > eps) { r1 = FALSE; break; }
-        }
-    } else {
-        for (i = 0; i < n; ++i) {
-            start = &A[idx];
-            for (j = 0; j < n - i; ++j) {
-                diff = start[j] - a[i] * a[i + j]; err += diff * diff;
-            }
-            idx += n - i;
-            if (err > eps) { r1 = FALSE; break; }
-        }
-    }
-    
-    if (r1) {
-        return (1 - 2 * isNeg);
-    }
-    
-    return FALSE;
 }
 
 #define ROOT 7.0710678118654757273731092936941422522068e-01

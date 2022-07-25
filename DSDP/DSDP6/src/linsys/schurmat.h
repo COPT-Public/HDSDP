@@ -21,7 +21,6 @@ extern void     schurMatAdddiag    ( schurMat *sMat, double d );
 extern void     schurMatFactorize  ( schurMat *sMat );
 extern void     schurMatSolve      ( schurMat *sMat, DSDP_INT nrhs, double *B, double *aux );
 extern void     schurMatMx         ( schurMat *sMat, vec *x, vec *Ax );
-// extern void     schurMatPrint      ( schurMat *sMat );
 extern void     schurMatReset      ( schurMat *sMat, DSDP_INT cleanM );
 
 #ifdef __cplusplus
