@@ -1,8 +1,15 @@
 #include "dsdputils.h"
-#include "dsdpsolver.h"
-#include "sparsemat.h"
-#include "schurmat.h"
 #include "dsdplapack.h"
+#include "dsdpsolver.h"
+#include "dsdplog.h"
+#include "dsdpdata.h"
+#include "schurmat.h"
+#include "sparsemat.h"
+#include "densemat.h"
+#include "rankonemat.h"
+#include "rankkmat.h"
+#include "vec.h"
+
 static char etype[] = "DSDP Conic Utility";
 
 // #define CONIC
@@ -350,24 +357,21 @@ static void BConic( COPS_CONSTR_EXPR )
   double ycoef, vec *y, double tau, double r ) {
     // r = 0 and S = tau * C + ycoef * ATy
     // -I * y + sl = -l and I * y + su =  u
-    double bd = dsdpSolver->ybound;
+    double bd = dsdpSolver->ybound; DSDP_INT i;
     if (type == DELTAS) { // Take care of this !!
         double *dy = dsdpSolver->dy->x;
-        for (DSDP_INT i = 0; i < dsdpSolver->m; ++i) {
+        for (i = 0; i < dsdpSolver->m; ++i) {
             dy[i] = tau * bd - ycoef * y->x[i];
         }
     }
     double *sl, *su, *ydata = y->x;
     if (type == DUALVAR) {
-        sl = dsdpSolver->sl->x;
-        su = dsdpSolver->su->x;
+        sl = dsdpSolver->sl->x; su = dsdpSolver->su->x;
     } else {
-        sl = dsdpSolver->slcker->x;
-        su = dsdpSolver->sucker->x;
+        sl = dsdpSolver->slcker->x; su = dsdpSolver->sucker->x;
     }
-    for (DSDP_INT i = 0; i < dsdpSolver->m; ++i) {
-        sl[i] = tau * bd - ycoef * ydata[i];
-        su[i] = tau * bd + ycoef * ydata[i];
+    for (i = 0; i < dsdpSolver->m; ++i) {
+        sl[i] = tau * bd - ycoef * ydata[i]; su[i] = tau * bd + ycoef * ydata[i];
     }
     return;
 }
@@ -490,13 +494,10 @@ static void LPConic( COPS_GET_SCHURVEC )
     
     if (!dsdpSolver->isLPset) { return; }
     
-    double *a = dsdpSolver->x->x, tmp;
-    double *s = dsdpSolver->s->x;
+    double *a = dsdpSolver->x->x, *s = dsdpSolver->s->x, tmp;
     DSDP_INT i, k, m = dsdpSolver->m, n = dsdpSolver->lpDim;
-    DSDP_INT *Ap = dsdpSolver->lpData->Ap;
-    DSDP_INT *Ai = dsdpSolver->lpData->Ai;
-    double *Ax = dsdpSolver->lpData->Ax;
-    double *asinv = dsdpSolver->asinv->x;
+    DSDP_INT *Ap = dsdpSolver->lpData->Ap, *Ai = dsdpSolver->lpData->Ai;
+    double *Ax = dsdpSolver->lpData->Ax, *asinv = dsdpSolver->asinv->x;
     
     if (dInfeas) {
         double Ry = dsdpSolver->Ry, *asinvrysinv = dsdpSolver->asinvrysinv->x;

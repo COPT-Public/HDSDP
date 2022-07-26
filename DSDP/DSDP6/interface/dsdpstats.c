@@ -1,4 +1,5 @@
 #include "dsdpstats.h"
+#include "dsdplapack.h"
 #include "dsdplog.h"
 
 // Implement the solver statistics interface for DSDP

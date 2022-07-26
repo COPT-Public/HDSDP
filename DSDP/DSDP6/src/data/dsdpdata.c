@@ -1,7 +1,14 @@
 #include <string.h>
+#include "dsdplapack.h"
 #include "dsdpdata.h"
 #include "dsdpsort.h"
-#include "dsdplapack.h"
+#include "cs.h"
+#include "sparsemat.h"
+#include "densemat.h"
+#include "rankonemat.h"
+#include "rankkmat.h"
+#include "vec.h"
+
 // Implement the data interface for DSDP-HSD Solver
 
 static char *etype = "Data interface";

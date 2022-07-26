@@ -1,5 +1,7 @@
 #include "heurpool.h"
 #include "dsdplapack.h"
+#include "vec.h"
+
 // Implement the Heuristics
 
 extern void DSDP_HEURS( adjustSolverParams )
@@ -143,5 +145,4 @@ extern void DSDP_HEURS( adjDualPerturb )
     }
     
     dsdpSolver->dperturb = MIN(dsdpSolver->dperturb, 1e-05 );
-    
 }

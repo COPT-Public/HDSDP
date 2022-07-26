@@ -1,4 +1,6 @@
+#include <stdio.h>
 #include "dsdpoutput.h"
+
 #define SUFFIX_DUALSYM "-dsym.csv"
 #define SUFFIX_SOL     ".csv"
 

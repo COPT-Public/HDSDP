@@ -1,19 +1,11 @@
 #ifndef dsdputils_h
 #define dsdputils_h
+
 /* Define DSDP utility routines */
-
-#include "dsdpdata.h"
-#include "structs.h"
 #include "dsdpsolver.h"
-#include "dsdplog.h"
-
-#ifdef __cplusplus
-extern "C" {
-#endif
 
 #define DBGTime(X) clock_t debug_start_time = clock(); (X); \
                    printf("| Time: %f \n", ((double) (clock() - debug_start_time) / CLOCKS_PER_SEC));
-
 
 #ifndef DSDPConic
 #define SDPConic(x)  SDPCone##x
@@ -47,8 +39,11 @@ extern "C" {
 
 #endif
 
+#ifdef __cplusplus
+extern "C" {
+#endif
 
-/* Schur matrix set up */
+// Special operations
 extern void getPhaseALps         ( HSDSolver *dsdpSolver, vec *y, double tau );
 extern void getPhaseBLpCheckers  ( HSDSolver *dsdpSolver, vec *y );
 extern void getPhaseBLps         ( HSDSolver *dsdpSolver, vec *y );
@@ -56,24 +51,24 @@ extern void getPhaseBLpds        ( HSDSolver *dsdpSolver, double alpha, vec *dy,
 extern void getPhaseALpCheckers  ( HSDSolver *dsdpSolver, vec *y, double tau );
 extern void getPhaseALpds        ( HSDSolver *dsdpSolver, double drate, vec *dy, double dtau );
 extern void dsdpLpCheckerInCone  ( HSDSolver *dsdpSolver, DSDP_INT *ispsd );
-extern void dsdpLpInCone       ( HSDSolver *dsdpSolver, DSDP_INT *ispsd );
-extern double getMaxLpstep     ( HSDSolver *dsdpSolver, DSDP_INT type );
-extern void getBslack          ( HSDSolver *dsdpSolver, vec *y, DSDP_INT type );
-extern void getPhaseAS         ( HSDSolver *dsdpSolver, vec *y,  double tau );
-extern void getPhaseACheckerS  ( HSDSolver *dsdpSolver, vec *y,  double tau );
-extern void getPhaseAdS        ( HSDSolver *dsdpSolver, double drate, vec *dy, double dtau );
-extern void getPhaseBS         ( HSDSolver *dsdpSolver, vec *y );
-extern void getPhaseBCheckerS  ( HSDSolver *dsdpSolver, vec *y );
-extern void getPhaseBdS        ( HSDSolver *dsdpSolver, double alpha, vec *dy, double beta );
-extern void dsdpCheckerInCone  ( HSDSolver *dsdpSolver, DSDP_INT *ispsd );
-extern void dsdpInCone         ( HSDSolver *dsdpSolver, DSDP_INT *ispsd );
-extern double getMaxSDPstep    ( HSDSolver *dsdpSolver, DSDP_INT type   );
+extern void dsdpLpInCone         ( HSDSolver *dsdpSolver, DSDP_INT *ispsd );
+extern double getMaxLpstep       ( HSDSolver *dsdpSolver, DSDP_INT type );
+extern void getBslack            ( HSDSolver *dsdpSolver, vec *y, DSDP_INT type );
+extern void getPhaseAS           ( HSDSolver *dsdpSolver, vec *y,  double tau );
+extern void getPhaseACheckerS    ( HSDSolver *dsdpSolver, vec *y,  double tau );
+extern void getPhaseAdS          ( HSDSolver *dsdpSolver, double drate, vec *dy, double dtau );
+extern void getPhaseBS           ( HSDSolver *dsdpSolver, vec *y );
+extern void getPhaseBCheckerS    ( HSDSolver *dsdpSolver, vec *y );
+extern void getPhaseBdS          ( HSDSolver *dsdpSolver, double alpha, vec *dy, double beta );
+extern void dsdpCheckerInCone    ( HSDSolver *dsdpSolver, DSDP_INT *ispsd );
+extern void dsdpInCone           ( HSDSolver *dsdpSolver, DSDP_INT *ispsd );
+extern double getMaxSDPstep      ( HSDSolver *dsdpSolver, DSDP_INT type   );
 
-/* Objective */
-extern DSDP_INT getSDPPrimalObjPhaseB   ( HSDSolver *dsdpSolver );
+// Objective
+extern DSDP_INT getSDPPrimalObjPhaseB ( HSDSolver *dsdpSolver );
 
-/* Other utilities */
-extern double getMatOneNorm      ( HSDSolver *dsdpSolver, DSDP_INT blockid, DSDP_INT constrid               );
+// Other utilities
+extern double getMatOneNorm      ( HSDSolver *dsdpSolver, DSDP_INT blockid, DSDP_INT constrid );
 extern void   getMatFnorm        ( HSDSolver *dsdpSolver, DSDP_INT blockid, DSDP_INT constrid, double *nrm  );
 extern void   matRScale          ( HSDSolver *dsdpSolver, DSDP_INT blockid, DSDP_INT constrid, double scaler);
 extern void   addMattoS          ( HSDSolver *dsdpSolver, DSDP_INT blockid, DSDP_INT constrid, double alpha );

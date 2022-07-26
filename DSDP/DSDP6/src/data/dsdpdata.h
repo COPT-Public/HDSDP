@@ -2,14 +2,7 @@
 #define dsdpdata_h
 
 /* Implement problem data interface of DSDP-HSD solver */
-#include <stdio.h>
-#include "dsdphsd.h"
-#include "sparsemat.h"
-#include "densemat.h"
-#include "rankkmat.h"
-#include "rankonemat.h"
-#include "vec.h"
-#include "cs.h"
+#include "structs.h"
 
 #define MAT_TYPE_UNKNOWN 0
 #define MAT_TYPE_SPARSE  1

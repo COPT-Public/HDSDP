@@ -137,7 +137,7 @@ extern void rkMatFree( rkMat *R ) {
 }
 
 extern void rkMatFnorm( rkMat *R, double *fnrm ) {
-    /* Compute the Frobenius norm of rank k matrix */
+    // Frobenius norm of rank k matrix
     double res = 0.0, tmp;
     DSDP_INT rank = R->rank;
     

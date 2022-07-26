@@ -4,11 +4,9 @@
 #include <string.h>
 #include "structs.h"
 #include "dsdpdata.h"
-#include "dsdpcg.h"
 #include "dsdpparam.h"
 #include "dsdpstats.h"
 #include "symschur.h"
-#include "dsdplanczos.h"
 
 #define IterStep 20
 #define nEvent   20
@@ -16,7 +14,7 @@
 #define LIKELY(x)   __builtin_expect(!!(x), 1)
 #define UNLIKELY(x) __builtin_expect(!!(x), 0)
 
-typedef struct {
+struct hdsdp {
     
     // Model name
     char SDPModel[100];   // Name of SDP model
@@ -133,53 +131,9 @@ typedef struct {
     DSDPStats dsdpStats;  // Solver statistics
     double    startTime;  // Solver start time
     
-} HSDSolver;
+};
 
-typedef HSDSolver Solver;
-
-#ifdef __cplusplus
-extern "C" {
-#endif
-// Solver interface
-extern DSDP_INT DSDPCreate( HSDSolver **dsdpSolver, char *modelName );
-
-extern DSDP_INT DSDPSetDim( HSDSolver *dsdpSolver,
-                            DSDP_INT  nVars,
-                            DSDP_INT  nBlock,
-                            DSDP_INT  nConstrs,
-                            DSDP_INT  lpDim,
-                            DSDP_INT  *nNzs );
-
-extern DSDP_INT DSDPSetLPData( HSDSolver *dsdpSolver,
-                               DSDP_INT  nCol,
-                               DSDP_INT  *Ap,
-                               DSDP_INT  *Ai,
-                               double    *Ax,
-                               double    *lpObj );
-
-extern DSDP_INT DSDPSetSDPConeData( HSDSolver *dsdpSolver,
-                                    DSDP_INT  blockid,
-                                    DSDP_INT  coneSize,
-                                    DSDP_INT  *Asdpp,
-                                    DSDP_INT  *Asdpi,
-                                    double    *Asdpx );
-
-extern DSDP_INT DSDPSetObj   ( HSDSolver *dsdpSolver, double *dObj );
-extern DSDP_INT DSDPOptimize ( HSDSolver *dsdpSolver );
-extern DSDP_INT DSDPGetDual  ( HSDSolver *dsdpSolver, double *y, double **S );
-extern DSDP_INT DSDPGetPrimal( HSDSolver *dsdpSolver, double **X );
-extern DSDP_INT DSDPExport   ( HSDSolver *dsdpSolver, DSDP_INT output, char *fname     );
-extern void DSDPSetDblParam  ( HSDSolver *dsdpSolver, DSDP_INT pName, double    dblVal );
-extern void DSDPSetIntParam  ( HSDSolver *dsdpSolver, DSDP_INT pName, DSDP_INT  intVal );
-extern void DSDPGetDblParam  ( HSDSolver *dsdpSolver, DSDP_INT pName, double   *dblVal );
-extern void DSDPGetIntParam  ( HSDSolver *dsdpSolver, DSDP_INT pName, DSDP_INT *intVal );
-extern DSDP_INT DSDPDestroy  ( HSDSolver *dsdpSolver );
-
-extern void     DSDPPrintVersion (void);
-
-#ifdef __cplusplus
-}
-#endif
+typedef struct hdsdp HSDSolver;
 
 
 #endif /* dsdpsolver_h */

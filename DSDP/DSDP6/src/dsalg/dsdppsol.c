@@ -1,8 +1,11 @@
 #include "dsdppsol.h"
+#include "dsdplapack.h"
 #include "dsdputils.h"
 #include "dsdplog.h"
 #include "schurmat.h"
-#include "dsdplapack.h"
+#include "sparsemat.h"
+#include "densemat.h"
+#include "vec.h"
 
 static char etype[] = "Primal solution extraction";
 
@@ -24,7 +27,7 @@ extern DSDP_INT computePrimalX( HSDSolver *dsdpSolver ) {
     getPhaseBS(dsdpSolver, dsdpSolver->y); getPhaseBLps(dsdpSolver, dsdpSolver->y);
     getPhaseBCheckerS(dsdpSolver, ymaker); getPhaseBLpCheckers(dsdpSolver, ymaker);
     getPhaseBdS(dsdpSolver, -1.0, dymaker, 0.0); getPhaseBLpds(dsdpSolver, -1.0, dymaker, 0.0);
-    dsMat *dsaux = NULL; rkMat *rkaux = NULL;
+    dsMat *dsaux = NULL;
     
     for (DSDP_INT blockid = 0; blockid < nblock; ++blockid) {
         dsaux = dsdpSolver->dsaux[blockid];

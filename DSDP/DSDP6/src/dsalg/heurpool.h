@@ -1,7 +1,7 @@
 #ifndef heurpool_h
 #define heurpool_h
 
-#include "dsdpinitializer.h"
+#include "dsdpsolver.h"
 
 #ifndef DSDP_HEURS
 #define DSDP_HEURS(x) DSDP_HEURISTIC_##x

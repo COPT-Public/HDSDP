@@ -1,4 +1,10 @@
+#include "dsdpreadsdpa.h"
+#include "dsdplapack.h"
+#include "cs.h"
 #include "dsdplog.h"
+#include "dsdpdata.h"
+
+
 // A simple SDPA reader for HDSDP
 static char etype[] = "SDPA File Reader";
 
@@ -278,7 +284,7 @@ extern DSDP_INT DSDPAnalyzeSDPA(int argc, char *argv[]) {
         printf("| Failed to extract SDPA filename. \n"); return retcode;
     }
     
-    Solver *analyzer = NULL, **panalyzer = &analyzer;
+    HSDSolver *analyzer = NULL, **panalyzer = &analyzer;
     
     retcode = DSDPCreate(panalyzer, export);
     if (retcode != DSDP_RETCODE_OK) {
@@ -369,7 +375,7 @@ extern DSDP_INT DSDPSolveSDPA(int argc, char *argv[]) {
     
     if (tmax <= 0.0) { tmax = 15000.0; }
     
-    Solver *hsdSolver = NULL, **phsdSolver = &hsdSolver;
+    HSDSolver *hsdSolver = NULL, **phsdSolver = &hsdSolver;
     
     retcode = DSDPCreate(phsdSolver, NULL);
     if (retcode != DSDP_RETCODE_OK) {

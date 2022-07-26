@@ -1,8 +1,55 @@
 #include "dsdpproxmeasure.h"
 #include "dsdppfeascheck.h"
-#include "stepheur.h"
-#include "dsdputils.h"
+#include "dsdplog.h"
 #include "dsdplapack.h"
+#include "vec.h"
+
+#ifndef Phi
+#define Phi 1.6180339887498949
+#endif
+
+static double getApproxpObj( double mu, vec *asinv, vec *b, double csinv,
+                             double ybound, double *pinfeas ) {
+    // Compute mu * csinv + ybound * || mu * asinv - b ||_1 and estimate primal infeasibility
+    // asinv is not changed and b is used as buffer
+    vec_axpy(-mu, asinv, b); *pinfeas = vec_onenorm(b);
+    return (*pinfeas * ybound + mu * csinv);
+}
+
+static void searchpObj( HSDSolver *dsdpSolver, double *approxpObj ) {
+    // Implement the golden search heuristic to decrease the primal objective
+    /*
+      This heuristic treats mu <S^-1> as the primal objective and computes the
+      relaxed primal objective by evaluating
+        x_l = [mu * asinv - b]_+  and   x_u = [b - mu * asinv]_+
+     A golden line search is applied to find mu such that
+        mu * csinv + M * ||mu * asinv - b||_1
+     is minimized
+    */
+    
+    double boundy = dsdpSolver->ybound, pinfeas, csinv = dsdpSolver->csinv;
+    double ub = dsdpSolver->mu, lb = 0.0, tol = MIN(1e-06 * ub, 1e-06) / Phi;
+    double c, cObj, d, dObj, diff = (ub - lb) / Phi;
+    vec *b = dsdpSolver->dObj, *asinv = dsdpSolver->d12, *buffer = dsdpSolver->d4;
+    
+    // Start golden line search
+    for (DSDP_INT i = 0; diff > tol && i <= 100; ++i) {
+        c = ub - diff; d = lb + diff;
+        vec_copy(b, buffer);
+        cObj = getApproxpObj(c, asinv, buffer, csinv, boundy, &pinfeas);
+        vec_copy(b, buffer);
+        dObj = getApproxpObj(d, asinv, buffer, csinv, boundy, &pinfeas);
+        if (cObj < dObj) {
+            ub = d;
+        } else {
+            lb = c;
+        }
+        diff = (ub - lb) / Phi;
+    }
+    
+    ub = (ub + lb) / 2; vec_copy(b, buffer);
+    *approxpObj = getApproxpObj(ub, asinv, buffer, csinv, boundy, &pinfeas);
+}
 
 extern DSDP_INT dsdpgetPhaseAProxMeasure( HSDSolver *dsdpSolver, double newmu ) {
     

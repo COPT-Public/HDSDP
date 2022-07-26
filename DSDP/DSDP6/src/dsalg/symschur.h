@@ -5,7 +5,6 @@
    Only involving setup (no perturbation or solve)
  */
 
-#include "dsdphsd.h"
 #include "dsdpdata.h"
 #include "structs.h"
 
@@ -53,15 +52,14 @@ typedef struct {
     
 } symM;
 
-
 #ifdef __cplusplus
 extern "C" {
 #endif
 
 extern DSDP_INT symSchurMatInit    ( symM *M );
-extern void symSchurMatSetDim  ( symM *M, DSDP_INT m, DSDP_INT nblock );
+extern void symSchurMatSetDim      ( symM *M, DSDP_INT m, DSDP_INT nblock );
 extern DSDP_INT symSchurMatAlloc   ( symM *M );
-extern void symSchurMatRegister( symM *M, spsMat **S, dsMat **B, sdpMat **Adata, schurMat *Msdp,
+extern void symSchurMatRegister    ( symM *M, spsMat **S, dsMat **B, sdpMat **Adata, schurMat *Msdp,
                                      vec *asinv, vec *asinvrysinv, vec *asinvcsinv, double *csinvrysinv,
                                      double *csinv, double *csinvcsinv, double *rysinv, double *Ry,
                                      rkMat **rkaux, DSDP_INT *phaseA, DSDP_INT *buildHsd,
@@ -70,8 +68,8 @@ extern DSDP_INT symSchurMatFree    ( symM *M );
 extern DSDP_INT DSDPSchurReorder   ( symM *M );
 extern DSDP_INT DSDPCheckSchurType ( symM *M );
 extern DSDP_INT DSDPSchurSetup     ( symM *M );
-extern void asinvSetup         ( symM *M );
-extern void arysinvSetup       ( symM *M );
+extern void asinvSetup             ( symM *M );
+extern void arysinvSetup           ( symM *M );
 
 #ifdef __cplusplus
 }

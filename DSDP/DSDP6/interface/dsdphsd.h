@@ -26,8 +26,6 @@
 #include <assert.h>
 #endif
 
-//#define superDebug
-
 // #define DSDP64
 
 #ifdef COMPMEX
@@ -51,7 +49,6 @@ typedef int DSDP_INT;
 #endif
 #endif
 
-//typedef HSDSolver Solver;
 
 // Memory handler
 #define DSDP_FREE(var) do {free((var)); (var) = NULL;} while (0)
@@ -61,11 +58,11 @@ typedef int DSDP_INT;
 #define FALSE                   0
 
 // Constants
-#define DSDP_INFINITY           1e+20
+#define DSDP_INFINITY           1e+30
 
 // Solver return code
-#define DSDP_RETCODE_OK         2
-#define DSDP_RETCODE_FAILED     3
+#define DSDP_RETCODE_OK           0
+#define DSDP_RETCODE_FAILED     (-1)
 
 // Algorithm status
 #define DSDP_UNKNOWN            99
@@ -113,22 +110,59 @@ typedef int DSDP_INT;
 #define checkCode                if (retcode != DSDP_RETCODE_OK) {error(etype, "\n") return retcode;}
 #define checkCodeFree            if (retcode != DSDP_RETCODE_OK) {error(etype, "\n") goto clean_up;}
 
-// Parameters
-
-// Initialization
-#define DSDP_INITMETHOD_FRO     105
-
-// Phase A attempt
-#define DSDP_ATTEMPT_NO         106
-#define DSDP_ATTEMPT_CONSV      107
-#define DSDP_ATTEMPT_AGG        108
-
-#define VERSION_MAJOR           1
-#define VERSION_MINOR           0
-#define VERSION_TECHNICAL       1
+#define VERSION_MAJOR           0
+#define VERSION_MINOR           9
+#define VERSION_TECHNICAL       3
 
 #define BUILD_DATE_YEAR         2022
 #define BUILD_DATE_MONTH        7
-#define BUILD_DATE_DAY          12
+#define BUILD_DATE_DAY          26
+
+typedef struct hdsdp HSDSolver;
+
+#ifdef __cplusplus
+extern "C" {
+#endif
+
+// Solver interface
+extern DSDP_INT DSDPCreate( HSDSolver **dsdpSolver, char *modelName );
+
+extern DSDP_INT DSDPSetDim( HSDSolver *dsdpSolver,
+                            DSDP_INT  nVars,
+                            DSDP_INT  nBlock,
+                            DSDP_INT  nConstrs,
+                            DSDP_INT  lpDim,
+                            DSDP_INT  *nNzs );
+
+extern DSDP_INT DSDPSetLPData( HSDSolver *dsdpSolver,
+                               DSDP_INT  nCol,
+                               DSDP_INT  *Ap,
+                               DSDP_INT  *Ai,
+                               double    *Ax,
+                               double    *lpObj );
+
+extern DSDP_INT DSDPSetSDPConeData( HSDSolver *dsdpSolver,
+                                    DSDP_INT  blockid,
+                                    DSDP_INT  coneSize,
+                                    DSDP_INT  *Asdpp,
+                                    DSDP_INT  *Asdpi,
+                                    double    *Asdpx );
+
+extern DSDP_INT DSDPSetObj   ( HSDSolver *dsdpSolver, double *dObj );
+extern DSDP_INT DSDPOptimize ( HSDSolver *dsdpSolver );
+extern DSDP_INT DSDPGetDual  ( HSDSolver *dsdpSolver, double *y, double **S );
+extern DSDP_INT DSDPGetPrimal( HSDSolver *dsdpSolver, double **X );
+extern DSDP_INT DSDPExport   ( HSDSolver *dsdpSolver, DSDP_INT output, char *fname     );
+extern void DSDPSetDblParam  ( HSDSolver *dsdpSolver, DSDP_INT pName, double    dblVal );
+extern void DSDPSetIntParam  ( HSDSolver *dsdpSolver, DSDP_INT pName, DSDP_INT  intVal );
+extern void DSDPGetDblParam  ( HSDSolver *dsdpSolver, DSDP_INT pName, double   *dblVal );
+extern void DSDPGetIntParam  ( HSDSolver *dsdpSolver, DSDP_INT pName, DSDP_INT *intVal );
+extern DSDP_INT DSDPDestroy  ( HSDSolver *dsdpSolver );
+
+extern void     DSDPPrintVersion (void);
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif /* dsdphsd_h */

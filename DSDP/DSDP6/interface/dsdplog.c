@@ -1,4 +1,5 @@
-#include "sys/time.h"
+#include <sys/time.h>
+#include "dsdplapack.h"
 #include "dsdplog.h"
 
 #ifndef isnan

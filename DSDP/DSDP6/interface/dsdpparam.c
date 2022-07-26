@@ -1,3 +1,4 @@
+#include <stdio.h>
 #include "dsdpparam.h"
 #include "dsdplog.h"
 

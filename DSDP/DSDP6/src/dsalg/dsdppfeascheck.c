@@ -1,5 +1,10 @@
 #include "dsdppfeascheck.h"
+#include "dsdplapack.h"
 #include "dsdputils.h"
+#include "dsdplog.h"
+#include "sparsemat.h"
+#include "vec.h"
+
 
 /* Implement DSDP primal feasibility check */
 extern void dsdpCheckPhaseAPfeas( HSDSolver *dsdpSolver, double dtaudelta,
@@ -10,8 +15,6 @@ extern void dsdpCheckPhaseAPfeas( HSDSolver *dsdpSolver, double dtaudelta,
     DSDPConic( COPS_CONSTR_EXPR )(dsdpSolver, CHECKER, -1.0,
                                   dydelta, dsdpSolver->tau - dtaudelta, -1.0);
     *ispfeas = DSDPConic( COPS_CHECK_INCONE )(dsdpSolver, CHECKER);
-//     getPhaseACheckerS(dsdpSolver, dydelta, dsdpSolver->tau - dtaudelta);
-//     dsdpCheckerInCone(dsdpSolver, ispfeas);
 }
 
 extern void dsdpCheckBackwardNewton( HSDSolver *dsdpSolver, DSDP_INT *ispfeas ) {

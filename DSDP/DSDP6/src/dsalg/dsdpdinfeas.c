@@ -1,13 +1,12 @@
 #include "dsdpdinfeas.h"
+#include "dsdplog.h"
 #include "dsdputils.h"
 #include "dsdpinitializer.h"
 #include "schurmatops.h"
-#include "residualsetup.h"
 #include "stepdirection.h"
 #include "stepheur.h"
 #include "dsdpproxmeasure.h"
 #include "dsdpcorrector.h"
-#include "dsdplog.h"
 #include "dsdplapack.h"
 
 // Implement the phase A of the dual scaling algorithm: Dual infeasibility elimination
@@ -108,7 +107,8 @@ extern DSDP_INT DSDPDInfeasEliminator( HSDSolver *dsdpSolver ) {
         // Compute maximum available stepsize
         getMaxStep(dsdpSolver);
         // Compute residual
-        setupRes(dsdpSolver);
+        dsdpSolver->Ry *= (1 - dsdpSolver->drate * dsdpSolver->alpha);
+        dsdpSolver->iterProgress[ITER_RESIDUAL] = TRUE;
         if (i == 3 && fabs(dsdpSolver->pObjVal - initpObj) < 1e-10) {
             dsdpSolver->Ry = - MIN(fabs(dsdpSolver->Ry) * 1e+10, 1e+15);
         }

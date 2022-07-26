@@ -16,19 +16,14 @@
  2. Compute tr(A, SinvASinv) for different A 
   
  */
-#include "dsdphsd.h"
-#include "residualsetup.h"
-#include "dsdpdata.h"
-#include "structs.h"
 #include "dsdpsolver.h"
-#include "dsdplog.h"
 
 #ifdef __cplusplus
 extern "C" {
 #endif
 
-extern DSDP_INT setupFactorize     ( HSDSolver *dsdpSolver );
-extern DSDP_INT setupSchur   ( HSDSolver *dsdpSolver );
+extern DSDP_INT setupFactorize ( HSDSolver *dsdpSolver );
+extern DSDP_INT setupSchur     ( HSDSolver *dsdpSolver );
 
 #ifdef __cplusplus
 }

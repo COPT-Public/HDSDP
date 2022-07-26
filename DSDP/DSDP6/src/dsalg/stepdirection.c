@@ -1,6 +1,9 @@
 #include "stepdirection.h"
-#include "dsdputils.h"
 #include "dsdplapack.h"
+#include "dsdputils.h"
+#include "dsdplog.h"
+#include "vec.h"
+
 /* Recover the steps to take after solving the Schur system */
 
 static char etype[] = "Stepsize recovery";

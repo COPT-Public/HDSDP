@@ -1,6 +1,6 @@
 #ifndef dsdplog_h
 #define dsdplog_h
-#include "dsdphsd.h"
+
 #include "dsdpsolver.h"
 
 /* Implement problem statistic collection and logging */

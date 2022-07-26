@@ -150,7 +150,7 @@ extern DSDP_INT dsdpLanczosStep( DSDPLanczos *lczSolver, spsMat *S, spsMat *dS, 
         if (nrm2 < 0.8 * nrm && (FALSE)) {
             alpha = 1.0; beta  = 0.0; // s = (w' * V(:, 1:k))';
             idx = k + 1; memset(mataux, 0, sizeof(double) * idx);
-            for (p = 0, q; p < idx; ++p) {
+            for (p = 0; p < idx; ++p) {
                 for (q = 0; q < n; ++q) {
                     mataux[p] += V[p * n + q] * w->x[q];
                 }
@@ -194,26 +194,18 @@ extern DSDP_INT dsdpLanczosStep( DSDPLanczos *lczSolver, spsMat *S, spsMat *dS, 
                 dgemv(&notrans, &n, &kp1, &alpha, V, &n,
                       &Y[kp1], &one, &beta, z1->x, &one);
                 // tmp  = dS * (LT \ z);
-                spsMatVecBSolve(S, z1, z2); spsMatAx(dS, z2, vecaux);
-                spsMatVecFSolve(S, vecaux, z2);
+                spsMatVecBSolve(S, z1, z2); spsMatAx(dS, z2, vecaux); spsMatVecFSolve(S, vecaux, z2);
                 // res1 = norm(L \ tmp - lambda * z);
-                vec_axpby(1.0, z2, -lambda1, z1);
-                vec_norm(z1, &res1);
+                vec_axpby(1.0, z2, -lambda1, z1); vec_norm(z1, &res1);
                 // z2 = V(:, 1:k) * Y(:, idx(k - 1));
                 dgemv(&notrans, &n, &kp1, &alpha, V, &n,
                       Y, &one, &beta, z2->x, &one);
                 // tmp  = dS * (LT \ z2);
-                spsMatVecBSolve(S, z2, z1);
-                spsMatAx(dS, z1, vecaux);
-                spsMatVecFSolve(S, vecaux, z1);
+                spsMatVecBSolve(S, z2, z1); spsMatAx(dS, z1, vecaux); spsMatVecFSolve(S, vecaux, z1);
                 // res2 = norm(L \ tmp - lambda * z);
-                vec_axpby(1.0, z1, -lambda1, z2);
-                vec_norm(z2, &res2);
-                tmp = lambda1 - lambda2 - res2;
-                gamma = (tmp > 0) ? tmp : 1e-15;
-                tmp = res1 * res1 / gamma;
-                gamma = MIN(res1, tmp);
-                
+                vec_axpby(1.0, z1, -lambda1, z2); vec_norm(z2, &res2);
+                tmp = lambda1 - lambda2 - res2; gamma = (tmp > 0) ? tmp : 1e-15;
+                tmp = res1 * res1 / gamma; gamma = MIN(res1, tmp);
                 if (gamma < 1e-03 || gamma + lambda1 <= 0.8 || failed) {
                     if (failed) { lambda1 = MAX(1000.0, lambda1); }
                     *delta = gamma; *lbd = lambda1; break;

@@ -1,6 +1,9 @@
 #include "dsdpcorrector.h"
-#include "dsdputils.h"
 #include "dsdplapack.h"
+#include "dsdplog.h"
+#include "dsdputils.h"
+#include "dsdpcg.h"
+#include "vec.h"
 
 /*
  Implement the dual corrector for DSDP Phase B
@@ -15,9 +18,7 @@ static double getCurrentLogBarrier( HSDSolver *dsdpSolver, vec *y, DSDP_INT *inC
     logdet = DSDPConic( COPS_GET_LOGDET )(dsdpSolver, y, inCone);
     
     if (inCone) {
-        if (!(*inCone)) {
-            return 0.0;
-        }
+        if (!(*inCone)) { return 0.0; }
     }
     vec_dot(b, y, &logbarrier);
     logbarrier += dsdpSolver->mu * logdet;
@@ -26,7 +27,6 @@ static double getCurrentLogBarrier( HSDSolver *dsdpSolver, vec *y, DSDP_INT *inC
 
 static DSDP_INT adjCorrectorStep( HSDSolver *dsdpSolver ) {
     // Automatically adjust the number of currector steps by problem structure
-    
     DSDP_INT nusercorr;
     DSDPGetIntParam(dsdpSolver, INT_PARAM_BCORRECTOR, &nusercorr);
     
@@ -203,18 +203,15 @@ extern DSDP_INT dualCorrectorStep( HSDSolver *dsdpSolver ) {
     vec *d1 = dsdpSolver->d1, *b = dsdpSolver->dObj, *ynew = dsdpSolver->d4; // d4 is reused for storing ynew
     vec *dycorr = dsdpSolver->b1, *sl = dsdpSolver->sl, *su = dsdpSolver->su, *ynow = dsdpSolver->y;
     double shrink = nall / (nall + sqrt(nall)), bTd1, bTd2, bTdycorr, aval;
-    double oldbarrier, newbarrier, step, tmp, bound, rhon;
+    double oldbarrier, newbarrier, step, tmp, rhon;
     
     DSDPGetDblParam(dsdpSolver, DBL_PARAM_RHON, &rhon);
     DSDP_INT ncorrector = adjCorrectorStep(dsdpSolver), inCone = FALSE;
     vec_dot(b, d1, &bTd1);
-//    printf("| !!! Fixed corrector step \n");
-//    ncorrector = 4;
+    
     for (DSDP_INT i = 0, j; i < ncorrector; ++i) {
         
-        if (dsdpSolver->mu < 1e-05) {
-            break;
-        }
+        if (dsdpSolver->mu < 1e-05) { break; }
         
         DSDPConic( COPS_GET_SCHURVEC )(dsdpSolver, FALSE);
         dsdpCGSolve(cg, d2, NULL); // Compute corrector step

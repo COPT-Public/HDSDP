@@ -252,7 +252,7 @@ extern void spsNominalLinkSinv( spsMat *sMat, double *Sinv ) {
 
 extern void spsMatFree( spsMat *sMat ) {
     // Free memory allocated
-    sMat->dim = 0; sMat->nnz = 0;
+    if (!sMat) { return; } sMat->dim = 0; sMat->nnz = 0;
     // Note that we first free p, i and x before calling pardiso to destroy the working array
     if (sMat->isFactorized) {
         pardisoFree(sMat); sMat->isFactorized = FALSE;

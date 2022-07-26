@@ -2,11 +2,7 @@
 #define stepheur_h
 
 /* Implement step-size related routines */
-#include "dsdphsd.h"
-#include "dsdpdata.h"
-#include "structs.h"
 #include "dsdpsolver.h"
-#include "dsdplog.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -15,7 +11,6 @@ extern "C" {
 extern void computeAdaptivedRate( HSDSolver *dsdpSolver );
 extern void getMaxStep( HSDSolver *dsdpSolver );
 extern void takeStep  ( HSDSolver *dsdpSolver );
-extern void searchpObj( HSDSolver *dsdpSolver, double *approxpObj );
 extern void selectMu  ( HSDSolver *dsdpSolver, double *newmu );
 extern void dualPotentialReduction ( HSDSolver *dsdpSolver );
 

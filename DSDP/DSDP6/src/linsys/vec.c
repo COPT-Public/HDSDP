@@ -1,5 +1,5 @@
-#include "dsdplapack.h"
 #include "vec.h"
+#include "dsdplapack.h"
 
 #define CHECKVEC(x, y)
 // Define constants involving Lapack and Blas

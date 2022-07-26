@@ -1,8 +1,14 @@
-#include "dsdppresolve.h""
-#include "dsdputils.h"
-#include "heurpool.h"
-#include "speigs.h"
+#include "dsdppresolve.h"
 #include "dsdplapack.h"
+#include "dsdputils.h"
+#include "dsdplog.h"
+#include "heurpool.h"
+#include "sparsemat.h"
+#include "densemat.h"
+#include "rankonemat.h"
+#include "rankkmat.h"
+#include "vec.h"
+#include "speigs.h"
 
 static char etype[] = "Presolving operations";
 

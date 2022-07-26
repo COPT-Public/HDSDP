@@ -1,15 +1,14 @@
 #include "dsdppfeas.h"
+#include "dsdplapack.h"
 #include "dsdputils.h"
 #include "dsdpinitializer.h"
 #include "schurmatops.h"
-#include "residualsetup.h"
 #include "stepdirection.h"
 #include "stepheur.h"
 #include "dsdpproxmeasure.h"
 #include "dsdplog.h"
 #include "dsdppfeascheck.h"
 #include "dsdpcorrector.h"
-#include "dsdplapack.h"
 
 static char etype[] = "DSDP Primal Feasibility Certificate";
 

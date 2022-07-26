@@ -1,9 +1,19 @@
+#include <stdio.h>
+#include <stdlib.h>
 #include "dsdppresolve.h"
+#include "dsdplog.h"
 #include "dsdpoutput.h"
 #include "dsdpdinfeas.h"
 #include "dsdppfeas.h"
 #include "dsdppsol.h"
 #include "schurmat.h"
+#include "dsdpcg.h"
+#include "dsdplanczos.h"
+#include "sparsemat.h"
+#include "densemat.h"
+#include "rankonemat.h"
+#include "rankkmat.h"
+#include "vec.h"
 
 static char etype[] = "DSDP Interface";
 #define vec_init_alloc(v, n) vecIter = (vec *) calloc(1, sizeof(vec)); (v) = vecIter; \

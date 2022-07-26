@@ -1,9 +1,10 @@
 #include "dsdpinitializer.h"
-#include "dsdpcorrector.h"
+#include "dsdplapack.h"
 #include "dsdputils.h"
 #include "dsdplog.h"
 #include "heurpool.h"
-#include "dsdplapack.h"
+#include "vec.h"
+
 /* Implement the initialization procedure of DSDP */
 static char etype[] = "DSDP Initialization";
 

@@ -1,9 +1,14 @@
 #include "symschur.h"
-#include "dsdputils.h"
+#include "dsdplapack.h"
 #include "dsdpsolver.h"
 #include "schurmat.h"
+#include "sparsemat.h"
+#include "densemat.h"
+#include "rankonemat.h"
+#include "rankkmat.h"
+#include "vec.h"
 #include "dsdpsort.h"
-#include "dsdplapack.h"
+
 
 #define continue_if_not_in_A_or_not_building_hsd if (!(*M->phaseA) || !(*M->buildhsd) ) { continue; }
 #define return_if_not_in_A_or_not_building_hsd   if ((!(*M->phaseA) || !(*M->buildhsd)) && computeC) { return retcode; }
