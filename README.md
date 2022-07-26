@@ -168,7 +168,7 @@ HDSDP is licensed under the MIT License. Check license.md for more details
 
 #### Acknowledgement
 
-We thank all the users using and making suggestings during the development of DSDP/HDSDP solver. Specially we than Dr. Qi Huangfu from COPT development team for his constructive suggestions during the solver development. We sincerely repect the developers of DSDP for their precious suggestions [1] and their invaluable efforts getting DSDP through all along the way. It is the efficient and elegant implementation from DSDP5.8 that guides HDSDP to where it is.
+We thank all the users using and making suggestings during the development of DSDP/HDSDP solver. Specially we than Dr. Qi Huangfu from COPT development team for his constructive suggestions during the solver development. We sincerely respect the developers of DSDP for their precious suggestions [1] and their invaluable efforts getting DSDP through all along the way. It is the efficient and elegant implementation from DSDP5.8 that guides HDSDP to where it is.
 
 Interested users can refer to the following literature and links for the theory and elegant implementation behind **DSDP (v5.8)**. 
 
