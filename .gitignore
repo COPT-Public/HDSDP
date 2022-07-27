@@ -1,1 +1,8 @@
 .DS_Store
+DSDPClion
+DSDP/DSDP6/matlab/test/sdplib
+DSDP/DSDP6/matlab/test/mat
+DSDP/DSDP6/matlab/src/firstord
+DSDP/DSDP6/build/CMakeFiles
+DSDP/DSDP6/build
+DSDP/DSDP6/doc/hdsdp_latex/.texpadtmp

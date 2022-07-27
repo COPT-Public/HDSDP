@@ -1,0 +1,309 @@
+\section{Homogeneous Dual Scaling Algorithm }\label{sec3}
+
+In this section we review the dual-scaling algorithm in
+{{\texttt{DSDP}}} and its interpretations through Newton's method. Then
+we show how the simplified HSD embedding applies to the dual method leveraging 
+this interpretation.
+
+\subsection{Dual-scaling Algorithm}
+
+The dual-scaling algorithm for SDP is initially proposed in
+{\cite{benson1999mixed}} and works under three conditions. {\textbf{1)}} the
+ data $\left\{ \mathbf{A}_i \right\}$ are linearly independent.
+{\textbf{2)}} ({{\em P\/}}) and ({{\em D\/}}) both admit interior point
+solution. {\textbf{3)}} an interior dual feasible solution $\left( \mathbf{y}^0,
+\mathbf{S}^0 \right) \in \mathcal{F}^0 (D)$ is known. The first two conditions imply
+strong duality and the existence of a primal-dual optimal pair $\left(
+\mathbf{X}^{\ast}, \mathbf{y}^{\ast}, \mathbf{S}^{\ast} \right)$ satisfying complementarity condition
+$\left\langle \mathbf{X}^{\ast}, \mathbf{S}^{\ast} \right\rangle = 0$ and $\mathbf{X} \mathbf{S} = \textbf{0}$.
+Also, the central path $\mathcal{C} (\mu) :=
+\left\{ \left( \mathbf{X}, \mathbf{y}, \mathbf{S} \right) \in \mathcal{F}^0 (P) \times \mathcal{F}^0
+(D) : \mathbf{X} \mathbf{S} = \mu \mathbf{I} \right\}$ is guaranteed to exist,  which serves as the foundation of the
+path-following IPMs. Given barrier parameter $\mu$, by the last condition, 
+dual-scaling starts from a dual-feasible solution
+$\left( \mathbf{y}, \mathbf{S} \right)$ and takes Newton's step towards $\mathcal{A} \mathbf{X} = \mathbf{b},
+\mathcal{A}^{\ast} \mathbf{y} + \mathbf{S} = \mathbf{C}$ and $\mathbf{X} \mathbf{S} = \mu \mathbf{I}$ by solving
+\begin{eqnarray}\label{dsdpnewton}
+  \mathcal{A} \left( \mathbf{X} + \Delta \mathbf{X} \right) & = & \mathbf{b} \nonumber \\
+  \mathcal{A}^{\ast} \Delta \mathbf{y} + \Delta \mathbf{S} & = & \textbf{0} \\
+  \mu \mathbf{S}^{- 1} \Delta \mathbf{S} \mathbf{S}^{- 1} + \Delta \mathbf{X} & = & \mu \mathbf{S}^{- 1} - \mathbf{X} \nonumber, 
+\end{eqnarray}
+where the last relation linearizes $\mathbf{X} = \mu \mathbf{S}^{- 1}$ instead of $\mathbf{X} \mathbf{S} =
+\mu \mathbf{I}$ and $\mathbf{S}^{- 1}$ is called a scaling matrix. 
+By carefully driving $\mu$ to 0, dual-scaling eliminates infeasibility, approaches optimality, and finally solves the problem.
+
+One feature of dual-scaling is that $\mathbf{X}$ and $\Delta \mathbf{X}$
+vanish in the Schur complement system of \eqref{dsdpnewton}
+
+\begin{eqnarray} \label{dsdpM}
+	\left(\begin{array}{ccc}
+     \left\langle \mathbf{A}_1, \mathbf{S}^{- 1} \mathbf{A}_1 \mathbf{S}^{- 1} \right\rangle & \cdots &
+     \left\langle \mathbf{A}_1, \mathbf{S}^{- 1} \mathbf{A}_m \mathbf{S}^{- 1} \right\rangle\\
+     \vdots & \ddots & \vdots\\
+     \left\langle \mathbf{A}_m, \mathbf{S}^{- 1} \mathbf{A}_1 \mathbf{S}^{- 1} \right\rangle & \cdots &
+     \left\langle \mathbf{A}_m, \mathbf{S}^{- 1} \mathbf{A}_m \mathbf{S}^{- 1} \right\rangle
+   \end{array}\right) \Delta \mathbf{y} = \frac{1}{\mu} \mathbf{b} - \mathcal{A} \mathbf{S}^{- 1}
+\end{eqnarray}\\
+and the dual algorithm thereby avoids explicit reference to the primal
+variable $\mathbf{X}$. For brevity we sometimes denote the left-hand side matrix in \eqref{dsdpM} by $\mathbf{M}$.
+When $\left\{ \mathbf{A}_i \right\}, \mathbf{C}$ are sparse, the dual variable $\mathbf{S} = \mathbf{C}
+-\mathcal{A}^{\ast} \mathbf{y}$ inherits the sparsity pattern from the data and it is
+therefore cheaper to iterate in the dual space to exploit sparsity.
+Another desirable feature of dual-scaling is the availablity of primal
+solution by solving a projection subproblem at the end of the algorithm \cite{benson2008algorithm}. The
+above properties characterize the behavior of dual-scaling.\\
+
+However, the nice theoretical properties of the dual method is not free. 
+First, an initial dual feasible solution is needed but obtaining such a
+solution is often as difficult as solving the original problem. Second, due to
+a lack of information from the primal space, the dual-scaling has to be
+property guided to avoid deviating too far away from the central path. Last,
+dual-scaling linearizes the highly nonlinear relation $\mathbf{X} = \mu \mathbf{S}^{- 1}$ and
+this imposes strict constraint on the damping factor towards the Newton's
+direction. To overcome the aforementioned difficulties, {{\texttt{DSDP}}}
+introduces slack variables with big-$M$ penalty to ensure nonempty interior
+and a trivial dual feasible solution. Moreover, a potential function is introduced 
+to guide the dual iterations. These attempts works
+well in practice and makes {{\texttt{DSDP}}} an efficient general SDP solver.
+For a complete description of the theoretical aspects of {{\texttt{DSDP}}} and
+its delicate implementation, we refer the interested readers to
+{\cite{benson2000solving, benson2008algorithm}}\\
+
+Although {{\texttt{DSDP}}} proves efficient in real practice, the big-$M$
+methods requires prior estimation of the optimal solution to retain optimality. 
+Also, a large penalty might lead to numerical difficulties and
+misclassification of infeasible problems when the problem is ill-conditioned. 
+It is natural to ask if there exists an alternative to
+big-$M$ method to address these issues and in this work, we propose to
+leverage the well-known HSD embedding.
+
+\subsection{Homogeneous Dual-scaling Algorithm}
+
+In this section, we introduce the theoretical idea behind {{\texttt{HDSDP}}}.
+HSD embedding is a skew symmetric system whose non-trivial interior point
+solution certificates primal-dual feasibility. \{hdsdp} adopts the simplified
+HSD embedding {\cite{xu1996simplified}} and its extension to SDP
+{\cite{potra1998homogeneous}}.\\
+
+{\textbf{HSD embedding for SDP}}
+\begin{eqnarray}
+  \mathcal{A} \mathbf{X} - \mathbf{b} \tau & = & \textbf{0} \nonumber\\
+  - \mathcal{A}^{\ast} \mathbf{y} + \mathbf{C} \tau - \mathbf{S} & = & \textbf{0}  \\
+  \mathbf{b}^{\top} \mathbf{y} - \left\langle \mathbf{C}, \mathbf{X} \right\rangle - \kappa & = & 0 \nonumber\\
+  \mathbf{X}, \mathbf{S} \succeq 0, &  & \kappa, \tau \geq 0 \nonumber,
+\end{eqnarray}
+where $\kappa, \tau \geq 0$ are homogenizing variables for infeasibility
+detection. Given parameter $\mu$, we similarly define the central path
+\begin{eqnarray}
+  \mathcal{A} \mathbf{X} - \mathbf{b} \tau & = & \textbf{0} \nonumber \\
+  - \mathcal{A}^{\ast} \mathbf{y} + \mathbf{C} \tau - \mathbf{S} & = & \textbf{0} \nonumber \\
+  \mathbf{b}^{\top} \mathbf{y} - \left\langle \mathbf{C}, \mathbf{X} \right\rangle - \kappa & = & 0 \nonumber \\
+  \mathbf{X} \mathbf{S} = \mu \mathbf{I}, &  & \kappa \tau = \mu \label{hdsdpcompl} \\
+  \mathbf{X}, \mathbf{S} \succeq 0, &  & \kappa, \tau \geq 0. \nonumber
+\end{eqnarray}
+Here $\left( \mathbf{y}, \mathbf{S}, \tau \right)$ are jointly considered as dual variables.
+Given a dual point $\left( \mathbf{y}, \mathbf{S}, \tau \right)$ such that $- \mathcal{A}^{\ast} \mathbf{y} +
+\mathbf{C} \tau - \mathbf{S} = \mathbf{R}$, {{\texttt{HDSDP}}} chooses a damping factor $\gamma \in
+(0, 1]$ and takes Newton's step towards
+\begin{eqnarray*}
+  \mathcal{A} \left( \mathbf{X} + \Delta \mathbf{X} \right) - \mathbf{b} (\tau + \Delta \tau) & = & \textbf{0}\\
+  -\mathcal{A}^{\ast} \left( \mathbf{y} + \Delta \mathbf{y} \right) + \mathbf{C} (\tau + \Delta \tau)
+  - \left( \mathbf{S} + \Delta \mathbf{S} \right) & = & - \gamma \mathbf{R}\\
+  \mu \mathbf{S}^{- 1} \Delta \mathbf{S} \mathbf{S}^{- 1} + \Delta \mathbf{X} & = & \mu \mathbf{S}^{- 1} - \mathbf{X},\\
+  \mu \tau^{- 2} \Delta \tau + \Delta \kappa & = & \mu \tau^{- 1} - \kappa,
+\end{eqnarray*}
+where, as in {{\texttt{DSDP}}}, we modify \eqref{hdsdpcompl} and linearize $\mathbf{X} = \mu \mathbf{S}^{- 1}$ and $\kappa
+= \mu \tau^{- 1}$. We note that the damping factor can be chosen after the
+directions are computed and for simplicity we set $\gamma = 0$. Then the
+Newton's direction $\left( \Delta \mathbf{y}, \Delta \tau \right)$ is computed through
+the following Schur complement.
+
+\begin{eqnarray}
+  &  & \left(\begin{array}{cc}
+    \mu \mathbf{M} & - \mathbf{b} - \mu \mathcal{A} \mathbf{S}^{- 1} \mathbf{C} \mathbf{S}^{- 1}\\
+    - \mathbf{b} + \mu \mathcal{A} \mathbf{S}^{- 1} \mathbf{C} \mathbf{S}^{- 1} & - \mu \left(
+    \left\langle \mathbf{C}, \mathbf{S}^{- 1} \mathbf{C} \mathbf{S}^{- 1} \right\rangle + \tau^{- 2} \right)
+  \end{array}\right) \left(\begin{array}{c}
+    \Delta \mathbf{y}\\
+    \Delta \tau
+  \end{array}\right)\\ \nonumber
+  & = & \left(\begin{array}{c}
+    \mathbf{b} \tau\\
+    \mathbf{b}^{\top} \mathbf{y} - \mu \tau^{- 1}
+  \end{array}\right) - \mu \left(\begin{array}{c}
+    \mathcal{A} \mathbf{S}^{- 1}\\
+    \left\langle \mathbf{C}, \mathbf{S}^{- 1} \right\rangle
+  \end{array}\right) + \mu \left(\begin{array}{c}
+    \mathcal{A} \mathbf{S}^{- 1} \mathbf{R} \mathbf{S}^{- 1}\\
+    \left\langle \mathbf{C}, \mathbf{S}^{- 1} \mathbf{R} \mathbf{S}^{- 1} \right\rangle
+  \end{array}\right) \\ \nonumber
+\end{eqnarray}
+
+In practice, {{\texttt{HDSDP}}} solves $\Delta \mathbf{y}_1 := \mathbf{M}^{- 1} \mathbf{b},
+\Delta \mathbf{y}_2 := \mathbf{M}^{- 1} \mathcal{A} \mathbf{S}^{- 1}, \Delta \mathbf{y}_3 := \mathbf{M}^{- 1} \mathcal{A}
+\mathbf{S}^{- 1} \mathbf{R} \mathbf{S}^{- 1}, \Delta \mathbf{y}_4 = \mathbf{M}^{- 1} \mathcal{A} \mathbf{S}^{- 1} \mathbf{C} \mathbf{S}^{-
+1}$, plugs $\Delta \mathbf{y} = \frac{\tau + \Delta \tau}{\mu} \Delta \mathbf{y}_1 - \Delta
+\mathbf{y}_2 + \Delta \mathbf{y}_3 + \Delta \mathbf{y}_4 \Delta \tau$ into the second equation to
+solve for $\Delta \tau$ and finally assembles $\Delta \mathbf{y}$ using $\tau, \Delta
+\tau$ and $\mu$. With the above relations, $\mathbf{X} (\mu) := \mu \mathbf{S}^{- 1}
+\left( \mathbf{S} - \mathbf{R} +\mathcal{A}^{\ast} \Delta \mathbf{y} - \mathbf{C} \Delta \tau \right) \mathbf{S}^{-
+1}$ satisfies $\mathcal{A} \mathbf{X} (\mu) - \mathbf{b} (\tau + \Delta \tau) = \textbf{0}$ and $\mathbf{X} (\mu)
+\succeq \textbf{0}$ iff. $-\mathcal{A}^{\ast} \left( \mathbf{y} - \Delta \mathbf{y} \right) + \mathbf{C} (\tau
+- \Delta \tau) - 2 \mathbf{R} \succeq \textbf{0}$. When $-\mathcal{A}^{\ast} \left( \mathbf{y} -
+\Delta \mathbf{y} \right) + \mathbf{C} (\tau - \Delta \tau) - 2 \mathbf{R}$ is positive definite, an
+objective bound follows by
+\begin{eqnarray*}
+  \bar{z} & = & \left\langle \mathbf{C} \tau, \mathbf{X} (\mu) \right\rangle\\
+  & = & \left\langle \mathbf{R} + \mathbf{S} + \mathcal{A}^{\ast} \mathbf{y}, \mu \mathbf{S}^{- 1} \left( \mathbf{S} - \mathbf{R}
+  +\mathcal{A}^{\ast} \Delta \mathbf{y} - \mathbf{C} \Delta \tau \right) \mathbf{S}^{- 1}
+  \right\rangle\\
+  & = & (\tau + \Delta \tau) \mathbf{b}^{\top} \mathbf{y} + n \mu + \left( \mathcal{A} \mathbf{S}^{- 1} +
+  \mathcal{A} \mathbf{S}^{- 1} \mathbf{R} \mathbf{S}^{- 1} \right)^{\top} \Delta \mathbf{y} + \mu \left(
+  \left\langle \mathbf{C}, \mathbf{S}^{- 1} \right\rangle + \left\langle \mathbf{C}, \mathbf{S}^{- 1} \mathbf{C}
+  \mathbf{S}^{- 1} \right\rangle \right) \Delta \tau
+\end{eqnarray*}
+and dividing both sides by $\tau$. Alternatively {{\texttt{HDSDP}}} extracts a
+bound from the projection problem
+\begin{eqnarray*}
+  \min_{\mathbf{X}} & \left\| \mathbf{S}^{1 / 2} \mathbf{X} \mathbf{S}^{1 / 2} - \mu \mathbf{I} \right\|_F^2 & \\
+  \text{subject to} & \mathcal{A} \mathbf{X} = \mathbf{b} \tau, & 
+\end{eqnarray*}
+whose optimal solution is $\mathbf{X}' (\mu) := \mu \mathbf{S}^{- 1} \left( \mathbf{C} \tau -
+\mathcal{A}^{\ast} \left( \mathbf{y} - \Delta' \mathbf{y} \right) - \mathbf{R} \right) \mathbf{S}^{- 1}$, where
+$\Delta \mathbf{y}' = \frac{\tau}{\mu} \Delta \mathbf{y}_1 - \Delta \mathbf{y}_2$ and
+\[ z' = \left\langle \mathbf{C} \tau, \mathbf{X}' (\mu) \right\rangle = \mu \left\{
+   \left\langle \mathbf{R}, \mathbf{S}^{- 1} \right\rangle + \left( \mathcal{A} \mathbf{S}^{- 1} \mathbf{R}_{\mathbf{y}}
+   \mathbf{S}^{- 1} + \mathcal{A} \mathbf{S}^{- 1} \right)^{\top} \Delta' \mathbf{y} + n \right\} + \tau
+   \mathbf{b}^{\top} \mathbf{y} . \]
+In practice, when the explicit solution $\mathbf{X} (\mu)$ or $\mathbf{X}' (\mu)$ is needed,
+we can decompose $\mathbf{S}$ and solve two sets of linear systems to obtain them.\\
+
+One major computationally intensive part in {{\texttt{HDSDP}}} is the setup of
+the Schur complement matrix $\mathbf{M}$. Since the objective $\mathbf{C}$ often does not
+enjoy the same structure as $\left\{ \mathbf{A}_i \right\}$, the additional cost from
+$\mathcal{A} \mathbf{S}^{- 1} \mathbf{C} \mathbf{S}^{- 1}$ and $\left\langle \mathbf{C}, \mathbf{S}^{- 1} \mathbf{C} \mathbf{S}^{- 1}
+\right\rangle$ calls for more efficient techniques to set up $\mathbf{M}$. In
+{{\texttt{HDSDP}}}, a permutation $\sigma (m)$ of the rows of $\mathbf{M}$ is
+generated heuristically and $\mathbf{M}$ is then set up using one of the following five
+techniques row-by-row.
+
+\[ \left(\begin{array}{ccc}
+     \left\langle \mathbf{A}_{\sigma (1)}, \mathbf{S}^{- 1} \mathbf{A}_{\sigma (1)} \mathbf{S}^{- 1}
+     \right\rangle & \cdots & \left\langle \mathbf{A}_{\sigma (1)}, \mathbf{S}^{- 1}
+     \mathbf{A}_{\sigma (m)} \mathbf{S}^{- 1} \right\rangle\\
+     & \ddots & \vdots\\
+     &  & \left\langle \mathbf{A}_{\sigma (m)}, \mathbf{S}^{- 1} \mathbf{A}_{\sigma (m)} \mathbf{S}^{- 1}
+     \right\rangle
+   \end{array}\right) \]\\
+   
+Technique {\textbf{M1}} and {\textbf{M2}} are inherited from
+{{\texttt{DSDP}}}. They exploit the low-rank structure of the problem data and
+an eigen-decomposition of the problem data
+\[ \mathbf{A}_i = \sum_{r = 1}^{\ensuremath{\operatorname{rank}} \left( \mathbf{A}_i \right)} \lambda_{i r}
+   \mathbf{a}_{i, r} \mathbf{a}^{\top}_{i, r} \]
+has to be computed at the beginning of the algorithm.\\
+
+\begin{center}
+\fbox{	\begin{minipage}{0.8\textwidth}
+		{\textbf{Technique M1}}
+\begin{enumerate}
+  \item {\textbf{Setup}} $\mathbf{B}_{\sigma (i)} = \sum_{r =
+  1}^{\ensuremath{\operatorname{rank}} \left( \mathbf{A}_{\sigma (i)} \right)} \lambda_r \left( \mathbf{S}^{- 1}
+  \mathbf{a}_{\sigma (i), r} \right) \left( \mathbf{S}^{- 1} \mathbf{a}_{\sigma (i), r}
+  \right)^{\top}$.
+  
+  \item {\textbf{Compute}} $M_{\sigma (i) \sigma (j)} = \left\langle
+  \mathbf{B}_{\sigma (i)}, \mathbf{A}_{\sigma (j)} \right\rangle, \forall j \geq i$.
+\end{enumerate}
+{\textbf{Technique M2}}
+\begin{enumerate}
+  \item {\textbf{Setup}} $\mathbf{S}^{- 1} \mathbf{a}_{\sigma (i), r}, r = 1, \ldots,
+  r_{\sigma (i)}$.
+  \item {\textbf{Compute}} $M_{\sigma (i) \sigma (j)} = \sum_{r =
+  1}^{\ensuremath{\operatorname{rank}} \left( \mathbf{A}_{\sigma (i)} \right)} \left( \mathbf{S}^{- 1}
+  \mathbf{a}_{\sigma (i), r} \right)^{\top} \mathbf{A}_{\sigma (j)} \left( \mathbf{S}^{- 1}
+  \mathbf{a}_{\sigma (i), r} \right)$.
+\end{enumerate}
+\end{minipage}} 
+\end{center}
+Technique {\textbf{M3}}, {\textbf{M4}} and {\textbf{M5}} exploit the sparsity of the constraints and needs evaluation of $\mathbf{S}^{-1}$.
+{\cite{fujisawa1997exploiting}}.
+\begin{center}
+	\fbox{\begin{minipage}{0.8\textwidth}
+{\textbf{Technique M3}}
+\begin{enumerate}
+  \item {\textbf{Setup}} $\mathbf{B}_{\sigma (i)} = \mathbf{S}^{- 1} \mathbf{A}_{\sigma
+  (i)} \mathbf{S}^{- 1}$.
+  
+  \item {\textbf{Compute}} $M_{\sigma (i) \sigma (j)} = \left\langle
+  \mathbf{B}_{\sigma (i)}, \mathbf{A}_{\sigma (j)} \right\rangle, \forall j \geq i$.
+\end{enumerate}
+{\textbf{Technique M4}}
+\begin{enumerate}
+  \item {\textbf{Setup}} $\mathbf{B}_{\sigma (i)} = \mathbf{S}^{- 1} \mathbf{A}_{\sigma
+  (i)}$.
+  
+  \item {\textbf{Compute}} $M_{\sigma (i) \sigma (j)} = \left\langle
+  \mathbf{B}_{\sigma (i)} \mathbf{S}^{- 1}, \mathbf{A}_{\sigma (j)} \right\rangle, \forall j
+  \geq i$.
+\end{enumerate}
+{\textbf{Technique M5}}
+\begin{enumerate}
+  \item {\textbf{Compute}} $M_{\sigma (i) \sigma (j)} = \left\langle \mathbf{S}^{-
+  1} \mathbf{A}_{\sigma (i)} \mathbf{S}^{- 1}, \mathbf{A}_{\sigma (j)} \right\rangle, \forall j \geq
+  i$ directly.\
+\end{enumerate}
+\end{minipage}}
+\end{center}\
+
+
+At the beginning of the algorithm, {{\texttt{HDSDP}}} estimates the
+number of flops using each technique and each row of $\mathbf{M}$ is associated with the cheapest
+technique to minimize the overall computation cost. This is a major
+improvement over {{\texttt{DSDP5.8}}} in the computational aspect and 
+we leave the details to the later sections. \\
+
+After setting up $\mathbf{M}$, conjugate gradient (CG) method is
+employed to solve the linear systems. The maximum number of iterations is
+chosen around $50 / m$ and is heuristically adjusted. Either the diagonal of
+$\mathbf{M}$ or its Cholesky decomposition is chosen as pre-conditioner and
+after a Cholesky pre-conditioner is computed, {{\texttt{HDSDP}}} reuses it for 
+the consecutive solves till a heuristic determines that the current
+pre-conditioner is outdated. When the algorithm approaches optimality, $\mathbf{M}$
+might become ill-conditioned and {{\texttt{HDSDP}}} switches to {\textsf{LDLT}} decomposition in case Cholesky fails.\\
+
+Using the Newton's direction, {{\texttt{HDSDP}}} computes the maximum stepsize
+$$\alpha = \max \left\{ \alpha \in [0, 1] : \mathbf{S} + \alpha \Delta \mathbf{S} \succeq \textbf{0},
+\tau + \alpha \Delta \tau \geq 0 \right\}$$ via a Lanczos procedure
+{\cite{toh2002note}}. Then to determine a proper stepsize, one line-search
+determines $\alpha_c$ such that the barrier satisfies $- \log \det \left( \mathbf{S}
++ \alpha_c \Delta \mathbf{S} \right) - \log \det (\tau + \alpha_c \Delta \tau) \leq -
+\log \det \left( \mathbf{S} + \alpha_c \Delta \mathbf{S} \right) - \log \det (\tau +
+\alpha_c \Delta \tau)$ and a second line-search chooses $\gamma$ such that $\mathbf{S}
++ \alpha_c \mathcal{A}^{\ast} \Delta \mathbf{y}_2 + \alpha_c \gamma \left( \mathbf{R}
+-\mathcal{A}^{\ast} \Delta \mathbf{y}_3 \right) \succeq \textbf{0}$. Next a full direction
+$\left( \Delta \mathbf{y}^{\gamma}, \Delta \mathbf{S}^{\gamma}, \Delta \tau^{\gamma} \right)$
+is assembled from the Newton system with damping factor $\gamma$ and
+a third Lanczos procedure computes  $\alpha' = \max \left\{ \alpha \in [0, 1] :
+\mathbf{S} + \alpha \Delta \mathbf{S}^r \succeq \textbf{0}, \tau + \alpha \Delta \tau^r \geq 0
+\right\}$. Last {{\texttt{HDSDP}}} updates $\mathbf{y} \leftarrow \mathbf{y} + 0.95 \alpha'
+\Delta \mathbf{y}^r$ and $\tau \leftarrow \tau + 0.95 \alpha \Delta \tau^r$. To make
+further use of the Schur matrix and to maintain centrality, the
+above procedure is repeated several times in an iteration. \\
+
+In {{\texttt{HDSDP}}}, the update of the barrier parameter $\mu$ is another
+critical factor. At the end of each iteration, {{\texttt{HDSDP}}} updates the
+barrier parameter $\mu$ by $\left( \bar{z} - \mathbf{b}^{\top} \mathbf{y} + \theta \left\|
+\mathbf{R} \right\|_F \right) / \rho n$, where $\rho$ and $\theta$ are pre-defined
+parameters. Heuristics also adjust $\mu$ using  previously computed $\alpha_c, \alpha'$ and $\gamma$. \\
+
+To get the best of the two worlds, {{\texttt{HDSDP}}} implements the same
+dual-scaling algorithm as in \text{{\ttfamily{DSDP5.8}}} assuming a dual feasible solution. 
+When the dual infeasibility
+$\left\| \mathcal{A}^{\ast} \mathbf{y} + \mathbf{S} - \mathbf{C} \right\|_F \leq \varepsilon \tau$ and $\mu$
+are sufficiently small, {{\texttt{HDSDP}}} fixes $\tau = 1$, re-starts with
+$\left( \mathbf{y} / \tau, \mathbf{S} / \tau \right)$ and applies dual-scaling to guide
+convergence. For the detailed implementation of dual-scaling in
+\text{{\ttfamily{DSDP5.8}}} refer to {\cite{benson2008algorithm}}. To sum up,
+{{\texttt{HDSDP}}} implements strategies and computational tricks tailored for
+the embedding and can switch to {{\texttt{DSDP5.8}}} once a dual feasible solution is available.
