@@ -98,19 +98,20 @@ extern void mexFunction( int nlhs, mxArray *plhs[], int nrhs, const mxArray *prh
     }
     
     if ( !quiet ) {
-        mexPrintf("Memory needed for analysis: integer array %d, "
-                  "double array. \n", liwork, lwork);
+        mexPrintf("Memory needed for analysis: "
+                  "integer array length %d, double array length %d. \n",
+                  liwork, lwork);
     }
     
-    aiwork = mxCalloc(liwork, sizeof(spint));
-    awork = mxCalloc(lwork, sizeof(double));
+    aiwork = (spint *) mxCalloc(liwork, sizeof(spint));
+    awork = (double *) mxCalloc(lwork, sizeof(double));
     
     if ( !aiwork || !awork ) {
         sperr("Memory allocation failed in analysis. \n");
     }
     
     if ( !quiet ) {
-        mexPrintf("SPEIGS analysis starts. \n", liwork, lwork);
+        mexPrintf("SPEIGS analysis starts. \n");
     }
     retcode = speigs_analyze(Ap, Ai, Ax, &n, aiwork, &liwork, awork,
                              &lwork, &mtype, &sn, tol, gthresh);
@@ -127,7 +128,7 @@ extern void mexFunction( int nlhs, mxArray *plhs[], int nrhs, const mxArray *prh
     /* ------------------- Factorization Phase ------------------- */
     if ( !quiet ) {
         mexPrintf("Factorization phase starts. "
-                  "Getting memory requirement. \n", liwork, lwork);
+                  "Getting memory requirement. \n");
     }
     
     retcode = speigs_factorize(NULL, NULL, NULL, &n, aiwork, awork,
@@ -143,15 +144,15 @@ extern void mexFunction( int nlhs, mxArray *plhs[], int nrhs, const mxArray *prh
                   liwork, lwork);
     }
     
-    fiwork = mxCalloc(liwork, sizeof(spint));
-    fwork = mxCalloc(lwork, sizeof(double));
+    fiwork = (spint *) mxCalloc(liwork, sizeof(spint));
+    fwork = (double *) mxCalloc(lwork, sizeof(double));
     
     if ( !fiwork || !fwork ) {
         sperr("Memory allocation failed in factorization. \n");
     }
     
     if ( !quiet ) {
-        mexPrintf("SPEIGS factorization starts. \n", liwork, lwork);
+        mexPrintf("SPEIGS factorization starts. \n");
     }
     
     V = mxCreateDoubleMatrix(n, n, mxREAL);

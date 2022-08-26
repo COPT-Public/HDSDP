@@ -21,28 +21,24 @@
 #include <stddef.h>
 
 #ifdef MATLAB_MEX_FILE
-    #include "mex.h"
-    typedef mwSize spint;
-    #define sperr mexErrMsgTxt
-    #define id "%d"
+#include "mex.h"
+typedef mwSize spint;
+#define sperr mexErrMsgTxt
+#define id "%d"
 #else
-    #ifdef SPEIG_64
-        typedef int32_t spint;
-        #define id "%d"
-    #else
-        typedef int64_t spint;
-        #define id "%lld"
-    #endif
-    #define sperr printf
+#ifdef SPEIG_64
+typedef int64_t spint;
+#define id "%lld"
+#else
+typedef int32_t spint;
+#define id "%d"
+#endif
+#define sperr(x) printf(x);
 #endif
 
 /* Return code */
 #define SP_EIGS_OK           (0)
 #define SP_EIGS_ERR          (1)
-
-/* Boolean */
-#define TRUE                 (1)
-#define FALSE                (0)
 
 /* Matrix type */
 #define MATRIX_TYPE_ZERO     (0)

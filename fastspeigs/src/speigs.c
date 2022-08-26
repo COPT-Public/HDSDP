@@ -58,7 +58,7 @@ static void speig_get_factorize_space( spint *n, spint *sn, spint *type, spint *
 static void speigs_is_diag( spint *p, spint *i, spint n, spint *is_diag ) {
     
     for ( spint j = 0; j < n; ++j ) {
-        if ( (p[j + 1] - p[j] > 0) && i[j] != j ) {
+        if ( (p[j + 1] - p[j] > 0) && i[p[j]] != j ) {
             *is_diag = FALSE; return;
         }
     }
@@ -99,14 +99,14 @@ static void speigs_is_rankone( spint *p, spint *i, double *x, spint n,
     d = ( sgn ) ? sqrt(d) : -sqrt(-d);
     
     /* The leading nonzero element is actually close to 0 */
-    if ( d < tol ) { *is_rankone = FALSE; return; }
+    if ( fabs(d) < tol ) { *is_rankone = FALSE; return; }
     memset(work, 0, sizeof(double) * n);
     
     for ( j = p[c]; j < p[c + 1]; ++j ) {
         work[i[j]] = x[j] / d; nnz += (x[j] != 0.0);
     }
     
-    if ( 2 * p[n + 1] != nnz * (nnz + 1) ) {
+    if ( 2 * p[n] != nnz * (nnz + 1) ) {
         *is_rankone = FALSE; return;
     }
     
@@ -117,7 +117,7 @@ static void speigs_is_rankone( spint *p, spint *i, double *x, spint n,
     }
     
     if ( sgn ) {
-        if ( p[n + 1] >= 5 * n ) {
+        if ( p[n] >= 5 * n ) {
             for ( j = 0; j < n; ++j ) {
                 for ( k = p[j]; k < p[j + 1]; ++k ) {
                     err += fabs(x[k] - work[j] * work[i[k]]);
@@ -132,7 +132,7 @@ static void speigs_is_rankone( spint *p, spint *i, double *x, spint n,
             }
         }
     } else {
-        if ( p[n + 1] >= 5 * n ) {
+        if ( p[n] >= 5 * n ) {
             for ( j = 0; j < n; ++j ) {
                 for ( k = p[j]; k < p[j + 1]; ++k ) {
                     err += fabs(x[k] + work[j] * work[i[k]]);
@@ -349,8 +349,11 @@ static spint speigs_factorize_dense( double *a, double *evals, double *evecs, sp
     spint retcode = SP_EIGS_OK, m, info;
     dsyevr(&jobz, &range, &uplolow, n, a, n, NULL, NULL, NULL, NULL, &abstol, &m,
            evals, evecs, n, isuppz, work, lwork, iwork, liwork, &info);
-    if ( info ) { retcode = SP_EIGS_ERR; }
-    sperr("Eigen-decomposition failed \n");
+    if ( info ) {
+        retcode = SP_EIGS_ERR;
+        sperr("Eigen-decomposition failed \n");
+    }
+    
     return retcode;
 }
 
@@ -533,11 +536,11 @@ extern spint speigs_analyze( spint *Ap, spint *Ai, double *Ax, spint *dim,
     /* Begin analysis */
     spint *p = Ap, *i = Ai, n = *dim, j;
     spint *nnzs = iwork + 0, *perm = iwork + n, *iperm = iwork + 2 * n;
-    spint is_diag = FALSE, is_two = FALSE, is_rankone = FALSE;
+    spint is_diag = TRUE, is_two = TRUE, is_rankone = FALSE;
     double *x = Ax;
     
     /* Case 1: Zero matrix */
-    if ( p[n + 1] == 0 ) {
+    if ( p[n] == 0 ) {
         *sn = 0; *type = MATRIX_TYPE_ZERO;
         return retcode;
     }
@@ -663,8 +666,10 @@ extern spint speigs_factorize( spint *Ap, spint *Ai, double *Ax, spint *dim, spi
         return retcode;
     }
     
-    if ( *liwork <= (*sn) * LAPACK_IWORK ||
-         *lwork <= 2 * (*sn) * (*sn) + (*sn) * LAPACK_LWORK + (*sn) ) {
+    spint liwork2, lwork2;
+    speig_get_factorize_space(dim, sn, type, &liwork2, &lwork2);
+    
+    if ( *liwork < liwork2 || *lwork < lwork2) {
         sperr("Insufficient space for factorization phase. \n");
         retcode = SP_EIGS_ERR; return retcode;
     }

@@ -10,8 +10,10 @@
 #define spinfo_h
 
 /* Boolean */
+#ifndef TRUE
 #define TRUE                 (1)
 #define FALSE                (0)
+#endif
 
 /* Some constants */
 #define ROOT                 (7.0710678118654757273731092936941422522068e-01) ///< \f$ \frac{\sqrt{2}}{2} \f$
