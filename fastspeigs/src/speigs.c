@@ -1,69 +1,171 @@
+/** @file speigs.c
+ *  @brief The implementation of sparse eigen decomposition routine for HDSDP
+ *
+ * A set of routines that factorize very sparse matrices that typically arise from semi-definite programming problems.
+ * The routines detect the special structures of the matrix and accelerate the factorization procedure.
+ *
+ *  @author Wenzhi Gao, Shanghai University of Finance and Economics
+ *  @date Aug, 24th, 2022
+ *
+ */
+
 #include <stdio.h>
 #include <math.h>
 #include <string.h>
 #include "speigs.h"
 #include "spinfo.h"
 
+/* Define Lapack-related constants */
+static char   jobz = 'V';
+static char   range = 'A';
+static char   uplolow = 'L';
+static double abstol = 0.0;
+
+
+/** @brief Compute lwork and iwork
+ *  @param[in] n Dimension of the matrix
+ *  @param[in] sn Dimension of the submatrix
+ *  @param[in] type Type of the matrix
+ *  @param[out] liwork Estimated integer workspace length
+ *  @param[out] lwork Estimated double workspace length
+ *
+ *  The function computes the space requirement for the subroutines that will be invoked in the factorization phase
+ */
+static void speig_get_factorize_space( spint *n, spint *sn, spint *type, spint *liwork, spint *lwork ) {
+    
+    switch ( *type ) {
+        case MATRIX_TYPE_ZERO:    *liwork = 0; *lwork = 0; break;
+        case MATRIX_TYPE_DIAG:    *liwork = 0; *lwork = 0; break;
+        case MATRIX_TYPE_TWOTWO:  *liwork = 0; *lwork = 0; break;
+        case MATRIX_TYPE_RANKONE: *liwork = 0; *lwork = 0; break;
+        case MATRIX_TYPE_SPARSE:
+            *liwork = (*sn) * LAPACK_IWORK + (*sn) * 2; // Lapack iwork + iworkup
+            *lwork = 2 * (*sn) * (*sn) + (*sn) * LAPACK_LWORK + (*sn); break;
+        case MATRIX_TYPE_GENERAL:
+            *liwork = (*n) * LAPACK_IWORK + (*n) * 2;
+            *lwork = 2 * (*n) * (*n) + (*n) * LAPACK_LWORK + (*n); break;
+        default: sperr("Unknown matrix type. \n"); break;
+    }
+    return;
+}
+
+/** @brief Check if a matrix is diagonal
+ *  @param[in] p  CSC format column pointer
+ *  @param[in] i  CSC format row index
+ *  @param[in] n  Dimension of the matrix
+ *  @param[out] is_diag Is the matrix diagonal?
+ */
 static void speigs_is_diag( spint *p, spint *i, spint n, spint *is_diag ) {
-    /* Find out if the matrix is diagonal */
+    
     for ( spint j = 0; j < n; ++j ) {
-        if ( (p[j + 1] - p[j] > 0) && i[j] != j ) { *is_diag = FALSE; return; }
+        if ( (p[j + 1] - p[j] > 0) && i[j] != j ) {
+            *is_diag = FALSE; return;
+        }
     }
     
     *is_diag = TRUE; return;
 }
 
+/** @brief Find out if a matrix is rank-one. \f$ A = \alpha  a  a^T \f$
+ *  @param[in] p  CSC format column pointer
+ *  @param[in] i  CSC format row index
+ *  @param[in] x  CSC format matrix nonzero entries
+ *  @param[in] n  Dimension of the matrix
+ *  @param[out] is_rankone Is the matrix rank-one?
+ *  @param[out] work Working array for rank-one detection
+ *  @param[in] tol Tolerance for rank-one classification \f$||A - a a^T||_F \leq tol\f$
+ *
+ *  On exit, the array "work" would be filled by the rank-one factor a if A is rank-one
+ */
 static void speigs_is_rankone( spint *p, spint *i, double *x, spint n,
                                spint *is_rankone, double *work, double tol ) {
-    /* Find out if the matrix is rank one*/
-    *is_rankone = TRUE;
+    /*
+     A sparse rank-one matrix must look like
+     
+                0  0  0  0
+                0  0  0  0
+                0  0 [*] *
+                0  0  *  *
+     */
+    
     spint j, k, sgn, c = 0, nnz = 0; double d, err = 0.0;
     
     for ( j = 0; j < n; ++j ) {
         c = j; if ( p[j + 1] - p[j] > 0 ) { break; }
     }
     
-    if (i[0] != c ) { *is_rankone = FALSE; return; }
+    if ( i[0] != c ) { *is_rankone = FALSE; return; }
     d = x[0]; sgn = (d > 0) ? 1 : 0;
     d = ( sgn ) ? sqrt(d) : -sqrt(-d);
     
+    /* The leading nonzero element is actually close to 0 */
     if ( d < tol ) { *is_rankone = FALSE; return; }
-    
     memset(work, 0, sizeof(double) * n);
+    
     for ( j = p[c]; j < p[c + 1]; ++j ) {
         work[i[j]] = x[j] / d; nnz += (x[j] != 0.0);
     }
     
-    if ( 2 * p[n + 1] != nnz * (nnz + 1) ) { *is_rankone = FALSE; return; }
+    if ( 2 * p[n + 1] != nnz * (nnz + 1) ) {
+        *is_rankone = FALSE; return;
+    }
     
     for ( j = c + 1; j < n; ++j ) {
-        if ( p[j] > p[c + 1] && p[j] < p[n + 1] ) {
-            if ( i[p[j]] < c ) { *is_rankone = FALSE; return; }
+        if ( work[j] && i[p[j]] != j ) {
+            *is_rankone = FALSE; return;
         }
     }
     
     if ( sgn ) {
-        for ( j = 0; j < n; ++j ) {
-            for ( k = p[j]; k < p[j + 1]; ++k ) {
-                err += fabs(x[k] + work[j] * work[i[k]]);
+        if ( p[n + 1] >= 5 * n ) {
+            for ( j = 0; j < n; ++j ) {
+                for ( k = p[j]; k < p[j + 1]; ++k ) {
+                    err += fabs(x[k] - work[j] * work[i[k]]);
+                }
+                if ( err > tol ) { *is_rankone = FALSE; return; }
             }
-            if ( err > tol ) { *is_rankone = FALSE; return; }
+        } else {
+            for ( j = 0; j < n; ++j ) {
+                for ( k = p[j]; k < p[j + 1]; ++k ) {
+                    err += fabs(x[k] - work[j] * work[i[k]]);
+                }
+            }
         }
     } else {
-        for ( j = 0; j < n; ++j ) {
-            for ( k = p[j]; k < p[j + 1]; ++k ) {
-                err += fabs(x[k] - work[j] * work[i[k]]);
+        if ( p[n + 1] >= 5 * n ) {
+            for ( j = 0; j < n; ++j ) {
+                for ( k = p[j]; k < p[j + 1]; ++k ) {
+                    err += fabs(x[k] + work[j] * work[i[k]]);
+                }
+                if ( err > tol ) { *is_rankone = FALSE; return; }
             }
-            if ( err > tol ) { *is_rankone = FALSE; return; }
+        } else {
+            for ( j = 0; j < n; ++j ) {
+                for ( k = p[j]; k < p[j + 1]; ++k ) {
+                    err += fabs(x[k] + work[j] * work[i[k]]);
+                }
+            }
         }
     }
     
-    return;
+    if ( err > tol ) { *is_rankone = FALSE; return; }
+    *is_rankone = TRUE; return;
 }
 
+/** @brief Compute the dense submatrix of a large sparse matrix
+ *  @param[in] p  CSC format column pointer
+ *  @param[in] i  CSC format row index
+ *  @param[in] n  Dimension of the matrix
+ *  @param[out] sn Dimension of the submatrix
+ *  @param[in] nnzs Number of nonzeros in each column
+ *  @param[out] perm Permutation that gathers nonzero elements
+ *  @param[out] iperm Inverse permutation
+ *
+ * On exit, "perm" and "iperm" will be filled by the permutation and its inverse respectively
+ */
 static void speigs_compute_submat( spint *p, spint *i, spint n, spint *sn,
                                    spint *nnzs, spint *perm, spint *iperm ) {
-    /* Find out the submatrix embedded */
+    
     spint s = 0, j;
     for ( j = 0; j < n; ++j ) {
         if ( nnzs[j] ) {
@@ -73,18 +175,62 @@ static void speigs_compute_submat( spint *p, spint *i, spint n, spint *sn,
     *sn = s; return;
 }
 
-static spint speigs_factorize_zero( spint *p, spint *i, double *x, spint n, spint *aiwork, double *awork, spint *sn,
-                                    spint *iwork, spint *liwork, double *work, spint *lwork,
-                                    double *evals, double *evecs, spint *rank ) {
-    /* Factorize a zero matrix. Nothing is needed. */
+/** @brief Compute the eigen factorization of an all-zero matrix
+ *  @param[in] p  CSC format column pointer
+ *  @param[in] i  CSC format row index
+ *  @param[in] x  CSC format matrix nonzero entries
+ *  @param[in] n  Dimension of the matrix
+ *  @param[in] aiwork Integer working array from the analysis phase
+ *  @param[in] awork Double working array from the analysis phase
+ *  @param[in] sn Dimension of the submatrix
+ *  @param[in] iwork Integer working array for the factorization phase
+ *  @param[in] liwork Length of "iwork"
+ *  @param[in] work Double working array for the factorization phase
+ *  @param[in] lwork Length of "work"
+ *  @param[out] evals Eigen-values after factorization
+ *  @param[out] evecs Eigen-vectors after factorization
+ *  @param[out] rank Rank of the factorized matrix
+ *  @param[in] tol Tolerance to tell if an eigen-value is 0
+ *  @return retcode Status of the factorization
+ *
+ * On exit, "evals" and "evecs" will be overwritten by the eigen-decomposition of the matrix. "rank" is the rank of the matrix
+ * Since the matrix is all-zero, no operation is needed.
+ */
+static spint speigs_factorize_zero( spint *p, spint *i, double *x, spint n, spint *aiwork,
+                                    double *awork, spint *sn, spint *iwork, spint *liwork,
+                                    double *work, spint *lwork, double *evals, double *evecs,
+                                    spint *rank, double tol ) {
+    
     spint retcode = SP_EIGS_OK;
     *rank = 0; return retcode;
 }
 
-static spint speigs_factorize_diag( spint *p, spint *i, double *x, spint n, spint *aiwork, double *awork, spint *sn,
-                                    spint *iwork, spint *liwork, double *work, spint *lwork,
-                                    double *evals, double *evecs, spint *rank ) {
-    /* Factorize a diagonal matrix. */
+/** @brief Compute the eigen factorization of a diagonal matrix
+ *  @param[in] p  CSC format column pointer
+ *  @param[in] i  CSC format row index
+ *  @param[in] x  CSC format matrix nonzero entries
+ *  @param[in] n  Dimension of the matrix
+ *  @param[in] aiwork Integer working array from the analysis phase
+ *  @param[in] awork Double working array from the analysis phase
+ *  @param[in] sn Dimension of the submatrix
+ *  @param[in] iwork Integer working array for the factorization phase
+ *  @param[in] liwork Length of "iwork"
+ *  @param[in] work Double working array for the factorization phase
+ *  @param[in] lwork Length of "work"
+ *  @param[out] evals Eigen-values after factorization
+ *  @param[out] evecs Eigen-vectors after factorization
+ *  @param[out] rank Rank of the factorized matrix
+ *  @param[in] tol Tolerance to tell if an eigen-value is 0
+ *  @return retcode Status of the factorization
+ *
+ * On exit, "evals" and "evecs" will be overwritten by the eigen-decomposition of the matrix. "rank" is the rank of the matrix
+ * Since the matrix is diagonal, all the eigen-vectors are unit vectors and eigen-values are determined by the elements in "x"
+ */
+static spint speigs_factorize_diag( spint *p, spint *i, double *x, spint n, spint *aiwork,
+                                    double *awork, spint *sn, spint *iwork, spint *liwork,
+                                    double *work, spint *lwork, double *evals, double *evecs,
+                                    spint *rank, double tol ) {
+    
     spint retcode = SP_EIGS_OK, *nnzs = aiwork, j, k;
     double *evec = evecs;
     
@@ -98,76 +244,265 @@ static spint speigs_factorize_diag( spint *p, spint *i, double *x, spint n, spin
     *rank = k; return retcode;
 }
 
-static spint speigs_factorize_two( spint *p, spint *i, double *x, spint n, spint *aiwork, double *awork, spint *sn,
-                                   spint *iwork, spint *liwork, double *work, spint *lwork,
-                                   double *evals, double *evecs, spint *rank ) {
-    /* Factorize a two-two matrix. Possible that diagonal elements exist */
+/** @brief Compute the eigen factorization of a two-two matrix
+ *  @param[in] p  CSC format column pointer
+ *  @param[in] i  CSC format row index
+ *  @param[in] x  CSC format matrix nonzero entries
+ *  @param[in] n  Dimension of the matrix
+ *  @param[in] aiwork Integer working array from the analysis phase
+ *  @param[in] awork Double working array from the analysis phase
+ *  @param[in] sn Dimension of the submatrix
+ *  @param[in] iwork Integer working array for the factorization phase
+ *  @param[in] liwork Length of "iwork"
+ *  @param[in] work Double working array for the factorization phase
+ *  @param[in] lwork Length of "work"
+ *  @param[out] evals Eigen-values after factorization
+ *  @param[out] evecs Eigen-vectors after factorization
+ *  @param[out] rank Rank of the factorized matrix
+ *  @param[in] tol Tolerance to tell if an eigen-value is 0
+ *  @return retcode Status of the factorization
+ *
+ * On exit, "evals" and "evecs" will be overwritten by the eigen-decomposition of the matrix. "rank" is the rank of the matrix
+ * Since the matrix composes of 2 by 2 submatrices, Givens' rotation is employed to factorize the matrixf
+ */
+static spint speigs_factorize_two( spint *p, spint *i, double *x, spint n, spint *aiwork,
+                                   double *awork, spint *sn, spint *iwork, spint *liwork,
+                                   double *work, spint *lwork, double *evals, double *evecs,
+                                   spint *rank, double tol ) {
+    
     spint retcode = SP_EIGS_OK, *nnzs = aiwork, j, k;
-    double *evec = evecs;
+    double *v = evecs, *e = evals;
     
     for ( j = k = 0; j < n; ++j ) {
         if ( nnzs[j] ) {
             if ( i[p[j]] == j ) {
-                evals[k] = x[k]; evecs[j] = 1.0;
-                ++k; evec += n;
+                e[k] = x[k]; v[j] = 1.0;
+                ++k; v += n;
             } else {
-                evals[i[p[j]]] = x[k]; evecs[j] = ROOT;
-                ++k; evecs += n;
-                evals[j] = x[k]; evecs[i[p[j]]] = -ROOT;
-                ++k; evecs += n;
+                v[j] =  ROOT; v[i[p[j]]] = ROOT;
+                e[k] = x[k]; ++k; v += n;
+                v[j] = -ROOT; v[i[p[j]]] = ROOT;
+                e[k] = x[k]; ++k; v += n;
             }
         }
+    }
+    
+    if ( k > n ) {
+        sperr("Invalid rank for two-two matrix. \n");
+        retcode = SP_EIGS_ERR; return retcode;
     }
     
     *rank = k; return retcode;
 }
 
-static spint speigs_factorize_rankone( spint *p, spint *i, double *x, spint n, spint *aiwork, double *awork, spint *sn,
-                                       spint *iwork, spint *liwork, double *work, spint *lwork,
-                                       double *evals, double *evecs, spint *rank ) {
-    /* Factorize a rankone matrix. Reuse information from awork */
+/** @brief Compute the eigen factorization of a rank-one matrix
+ *  @param[in] p  CSC format column pointer
+ *  @param[in] i  CSC format row index
+ *  @param[in] x  CSC format matrix nonzero entries
+ *  @param[in] n  Dimension of the matrix
+ *  @param[in] aiwork Integer working array from the analysis phase
+ *  @param[in] awork Double working array from the analysis phase
+ *  @param[in] sn Dimension of the submatrix
+ *  @param[in] iwork Integer working array for the factorization phase
+ *  @param[in] liwork Length of "iwork"
+ *  @param[in] work Double working array for the factorization phase
+ *  @param[in] lwork Length of "work"
+ *  @param[out] evals Eigen-values after factorization
+ *  @param[out] evecs Eigen-vectors after factorization
+ *  @param[out] rank Rank of the factorized matrix
+ *  @param[in] tol Tolerance to tell if an eigen-value is 0
+ *  @return retcode Status of the factorization
+ *
+ * On exit, "evals" and "evecs" will be overwritten by the eigen-decomposition of the matrix. "rank" is the rank of the matrix
+ * Since the matrix is rank-one, the "awork" array from the analysis phase contains the eigen-decomposition
+ */
+static spint speigs_factorize_rankone( spint *p, spint *i, double *x, spint n, spint *aiwork,
+                                       double *awork, spint *sn, spint *iwork, spint *liwork,
+                                       double *work, spint *lwork, double *evals, double *evecs,
+                                       spint *rank, double tol ) {
+    
     spint retcode = SP_EIGS_OK;
     evals[0] = ( x[0] > 0 ) ? 1.0 : -1.0;
     memcpy(evecs, awork, sizeof(double) * n);
     *rank = 1; return retcode;
 }
 
-static spint speigs_factorize_dense( double *a, double *evals, double *evecs, spint *n, spint *liwork, spint *iwork,
-                                    spint *lwork, double *work ) {
-    /* Wrapper for Lapack dense factorization routine */
-    spint retcode = SP_EIGS_OK;
+/** @brief Compute the eigen factorization of a general full matrix
+ *  @param[in] a Dense array that contains the matrix to factorize
+ *  @param[out] evals Eigen-values after factorization
+ *  @param[out] evecs Eigen-vectors after factorization
+ *  @param[in] n  Dimension of the dense matrix
+ *  @param[in] liwork Length of the integer working array for Lapack
+ *  @param[in] iwork Integer working array for Lapack
+ *  @param[in] lwork Length of double working array for Lapack
+ *  @param[in] work Double working array for Lapack
+ *  @param[in] isuppz Auxiliary placeholder for Lapack parameter
+ *  @return retcode Status of the factorization
+ *
+ * On exit, "evals" and "evecs" will be overwritten by the eigen-decomposition of the matrix. "rank" is the rank of the matrix
+ * The routine is a wrapper of the Lapack dsyevr function
+ */
+static spint speigs_factorize_dense( double *a, double *evals, double *evecs, spint *n,
+                                     spint *liwork, spint *iwork, spint *lwork, double *work,
+                                     spint *isuppz ) {
     
-    
+    spint retcode = SP_EIGS_OK, m, info;
+    dsyevr(&jobz, &range, &uplolow, n, a, n, NULL, NULL, NULL, NULL, &abstol, &m,
+           evals, evecs, n, isuppz, work, lwork, iwork, liwork, &info);
+    if ( info ) { retcode = SP_EIGS_ERR; }
+    sperr("Eigen-decomposition failed \n");
     return retcode;
 }
 
-static spint speigs_factorize_sparse( spint *p, spint *i, double *x, spint n, spint *aiwork, double *awork, spint *sn,
-                                      spint *iwork, spint *liwork, double *work, spint *lwork,
-                                      double *evals, double *evecs, spint *rank ) {
-    /* Factorize a sparse matrix. Use information of the submatrix */
-    spint retcode = SP_EIGS_OK, *perm = aiwork + n, *iperm = aiwork + 2 * n, j, k, s = *sn;
+/** @brief Compute the eigen factorization of a sparse matrix admitting an easier submatrix representation
+ *  @param[in] p  CSC format column pointer
+ *  @param[in] i  CSC format row index
+ *  @param[in] x  CSC format matrix nonzero entries
+ *  @param[in] n  Dimension of the matrix
+ *  @param[in] aiwork Integer working array from the analysis phase
+ *  @param[in] awork Double working array from the analysis phase
+ *  @param[in] sn Dimension of the submatrix
+ *  @param[in] iwork Integer working array for the factorization phase
+ *  @param[in] liwork Length of "iwork"
+ *  @param[in] work Double working array for the factorization phase
+ *  @param[in] lwork Length of "work"
+ *  @param[out] evals Eigen-values after factorization
+ *  @param[out] evecs Eigen-vectors after factorization
+ *  @param[out] rank Rank of the factorized matrix
+ *  @param[in] tol Tolerance to tell if an eigen-value is 0
+ *  @return retcode Status of the factorization
+ *
+ * On exit, "evals" and "evecs" will be overwritten by the eigen-decomposition of the matrix. "rank" is the rank of the matrix
+ * The routine uses the permutation and inverse permutation information collected in the analysis phase to formulate the submatrix,
+ * factorizes the submatrix and finally recovers the decomposition using the inverse permutation
+ */
+static spint speigs_factorize_sparse( spint *p, spint *i, double *x, spint n, spint *aiwork,
+                                      double *awork, spint *sn, spint *iwork, spint *liwork,
+                                      double *work, spint *lwork, double *evals, double *evecs,
+                                      spint *rank, double tol ) {
     
-    for ( j = 0; j < p[n + 1]; ++j ) {
+    spint retcode = SP_EIGS_OK, *perm = aiwork + n, *iperm = aiwork + 2 * n, j, k, q, s = *sn;
+    
+    for ( j = 0; j < n; ++j ) {
         for ( k = p[j]; k < p[j + 1]; ++k ) {
-            work[s * perm[i[k]] + perm[  j ]] = x[k];
-            work[s * perm[  j ] + perm[i[k]]] = x[k];
+            work[s * perm[j] + perm[i[k]]] = x[k]; // work[s * perm[i[k]] + perm[j]] = x[k];
         }
     }
     
-    return retcode;
+    /* a: submatrix; work1: eigen value; work2: eigen vector; work3: Lapack work */
+    double *a = work, *work1 = work + s * s, *work2 = work1 + s, \
+           *work3 = work2 + s * s, *sev, *ev;
+    spint lwork2 = s * LAPACK_LWORK, liwork2 = s * LAPACK_IWORK;
+    spint *isuppz = iwork + liwork2;
+    
+    retcode = speigs_factorize_dense(a, work1, work2, sn, &liwork2,
+                                     iwork, &lwork2, work3, isuppz);
+    if ( retcode != SP_EIGS_OK ) { return retcode; }
+    
+    /* Successfully exits */
+    for ( k = j = 0; j < s; ++j ) {
+        if ( fabs(work1[j]) > tol ) {
+            evals[k] = work1[j];
+            sev = work2 + s * j; ev = evecs + n * k;
+            for ( q = 0; q < s; ++q ) {
+                ev[iperm[q]] = sev[q];
+            }
+            ++k;
+        }
+    }
+    
+    *rank = k; return retcode;
 }
 
-static spint speigs_factorize_general( spint *p, spint *i, double *x, spint n, spint *aiwork, double *awork, spint *sn,
-                                       spint *iwork, spint *liwork, double *work, spint *lwork,
-                                       double *evals, double *evecs, spint *rank ) {
-    spint retcode = SP_EIGS_OK;
-    return retcode;
+/** @brief Compute the eigen factorization of a general dense matrix
+ *  @param[in] p  CSC format column pointer
+ *  @param[in] i  CSC format row index
+ *  @param[in] x  CSC format matrix nonzero entries
+ *  @param[in] n  Dimension of the matrix
+ *  @param[in] aiwork Integer working array from the analysis phase
+ *  @param[in] awork Double working array from the analysis phase
+ *  @param[in] sn Dimension of the submatrix
+ *  @param[in] iwork Integer working array for the factorization phase
+ *  @param[in] liwork Length of "iwork"
+ *  @param[in] work Double working array for the factorization phase
+ *  @param[in] lwork Length of "work"
+ *  @param[out] evals Eigen-values after factorization
+ *  @param[out] evecs Eigen-vectors after factorization
+ *  @param[out] rank Rank of the factorized matrix
+ *  @param[in] tol Tolerance to tell if an eigen-value is 0
+ *  @return retcode Status of the factorization
+ *
+ * On exit, "evals" and "evecs" will be overwritten by the eigen-decomposition of the matrix. "rank" is the rank of the matrix
+ * The routine converts the sparse matrix into a dense array and calls Lapack directly. Slow in general
+ */
+static spint speigs_factorize_general( spint *p, spint *i, double *x, spint n, spint *aiwork,
+                                       double *awork, spint *sn, spint *iwork, spint *liwork,
+                                       double *work, spint *lwork, double *evals, double *evecs,
+                                       spint *rank, double tol ) {
+    
+    spint retcode = SP_EIGS_OK, s = *sn, j, k;
+    
+    if ( n != *sn ) {
+        sperr("Invalid submatrix size for general matrix. \n");
+        retcode = SP_EIGS_ERR; return retcode;
+    }
+    
+    for ( j = 0; j < n; ++j ) {
+        for ( k = p[j]; k < p[j + 1]; ++k ) {
+            work[n * j + i[k]] = x[k];
+        }
+    }
+    
+    /* a: submatrix; work1: eigen value; work2: eigen vector; work3: Lapack work */
+    double *a = work, *work1 = work + s * s, *work2 = work1 + s, \
+           *work3 = work2 + s * s, *sev, *ev;
+    spint lwork2 = s * LAPACK_LWORK, liwork2 = s * LAPACK_IWORK;
+    spint *isuppz = iwork + liwork2;
+    retcode = speigs_factorize_dense(a, work1, work2, &n, &liwork2,
+                                     iwork, &lwork2, work3, isuppz);
+    if ( retcode != SP_EIGS_OK ) { return retcode; }
+    
+    for ( k = j = 0; j < n; ++j ) {
+        if ( fabs(work1[j]) > tol ) {
+            evals[k] = work1[j];
+            sev = work2 + n * j; ev = evecs + n * k;
+            memcpy(ev, sev, sizeof(double) * n); ++k;
+        }
+    }
+    
+    *rank = k; return retcode;
 }
 
+/**
+ *  @brief Perform the analysis phase of sparse eigen-value factorization
+ *  @param[in] Ap  CSC format column pointer
+ *  @param[in] Ai  CSC format row index
+ *  @param[in] Ax  CSC format matrix nonzero entries
+ *  @param[in] dim Dimension of the matrix
+ *  @param[out] iwork Integer working array for the analysis phase
+ *  @param[in] liwork Length of "iwork" or the expected length of integer working array
+ *  @param[out] work Double working array for the analysis phase
+ *  @param[in] lwork Length of "lwork" or the expected length of double working array
+ *  @param[out] type Type of the matrix
+ *  @param[out] sn Size of the submatrix
+ *  @param[in] tol Tolerance to classify if a matrix is rank-one by \f$||A - a a^T||_F \leq tol\f$
+ *  @param[in] gthresh Threshold of (submatrix size / dim) classifying a matrix as general or sparse
+ *  @return retcode Status of the analysis phase
+ *
+ * Perform the analysis phase of the sparse eigen-value factorization.
+ *
+ * If all the necessary memories are allocated, on exit, "work" and "iwork" are filled by the intermediate
+ * information which can be used in the factorization phase; "type" is filled by one of the five types;
+ * "sn" is filled by size of the submatrix.
+ *
+ * If "dim" is supplied and the rest of the working array is incomplete, "lwork" and "work" will be respectively
+ * filled by the expected length of the double and integer working arrays
+ *
+ */
 extern spint speigs_analyze( spint *Ap, spint *Ai, double *Ax, spint *dim,
                              spint *iwork, spint *liwork, double *work, spint *lwork,
                              spint *type, spint *sn, double tol, double gthresh ) {
-    /* Detect the structure of the sparse matrix to accelerate decomposition */
+    
     spint retcode = SP_EIGS_OK;
     
     if ( !liwork || !lwork ) {
@@ -250,10 +585,57 @@ extern spint speigs_analyze( spint *Ap, spint *Ai, double *Ax, spint *dim,
     return retcode;
 }
 
-extern spint speigs_factorize( spint *Ap, spint *Ai, double *Ax, spint *dim, spint *aiwork, double *awork,
-                               spint *type, spint *sn, spint *iwork, spint *liwork, double *work, spint *lwork,
-                               double *evals, double *evecs, spint *rank, double tol ) {
-    /* Factorize the matrix based on the structure */
+/** @brief The jump table for eigen routines
+ *
+ * Currently contains six implementations of eigen routines
+ */
+static spint (*speig_routines[6]) ( spint*, spint*, double*, spint, spint*,
+                                    double*, spint*, spint*, spint*, double*,
+                                    spint*, double*, double*, spint*, double ) =
+{
+    &speigs_factorize_zero,
+    &speigs_factorize_sparse,
+    &speigs_factorize_general,
+    &speigs_factorize_rankone,
+    &speigs_factorize_diag,
+    &speigs_factorize_two
+};
+
+/**
+ *  @brief Perform the analysis phase of sparse eigen-value factorization
+ *  @param[in] Ap  CSC format column pointer
+ *  @param[in] Ai  CSC format row index
+ *  @param[in] Ax  CSC format matrix nonzero entries
+ *  @param[in] dim Dimension of the matrix
+ *  @param[in] aiwork Integer working array from the analysis phase
+ *  @param[in] awork Double working array from the analysis phase
+ *  @param[in] type "type" from the analysis phase
+ *  @param[in] sn "sn" from the analysis phase
+ *  @param[in] iwork Integer working array for the factorization phase
+ *  @param[in] liwork Length of "iwork" or the expected length of integer working array
+ *  @param[in] work Double working array for the factorization phase
+ *  @param[in] lwork Length of "lwork" or the expected length of double working array
+ *  @param[out] evals Eigen-values after factorization
+ *  @param[out] evecs Eigen-vectors after factorization
+ *  @param[out] rank Rank of the factorized matrix
+ *  @param[in] tol Tolerance to tell if an eigen-value is 0
+ *  @return retcode Status of the factorization phase
+ *
+ * Perform the analysis phase of the sparse eigen-value factorization.
+ *
+ * If all the necessary memories are allocated, on exit, "work" and "iwork" are filled by the intermediate
+ * information which can be used in the factorization phase; "type" is filled by one of the five types;
+ * "sn" is filled by size of the submatrix.
+ *
+ * If "dim" is supplied and the rest of the working array is incomplete, "lwork" and "work" will be respectively
+ * filled by the expected length of the double and integer working arrays
+ *
+ */
+extern spint speigs_factorize( spint *Ap, spint *Ai, double *Ax, spint *dim, spint *aiwork,
+                               double *awork, spint *type, spint *sn, spint *iwork, spint *liwork,
+                               double *work, spint *lwork, double *evals, double *evecs,
+                               spint *rank, double tol ) {
+
     spint retcode = SP_EIGS_OK;
     
     if ( !type ) {
@@ -276,59 +658,29 @@ extern spint speigs_factorize( spint *Ap, spint *Ai, double *Ax, spint *dim, spi
         retcode = SP_EIGS_ERR; return retcode;
     }
     
-    
     if ( !Ap || !Ai || !aiwork || !awork || !iwork || !lwork || !evals || !evecs ) {
-        *liwork = (*sn) * LAPACK_IWORK;
-        *lwork = (*sn) * (*sn) + (*sn) * LAPACK_LWORK;
+        speig_get_factorize_space(dim, sn, type, liwork, lwork);
         return retcode;
     }
     
     if ( *liwork <= (*sn) * LAPACK_IWORK ||
-         *lwork <= (*sn) * (*sn) + (*sn) * LAPACK_LWORK ) {
+         *lwork <= 2 * (*sn) * (*sn) + (*sn) * LAPACK_LWORK + (*sn) ) {
         sperr("Insufficient space for factorization phase. \n");
         retcode = SP_EIGS_ERR; return retcode;
     }
     
-    spint *p = Ap, *i = Ai, n = *dim;
-    
-    double *x = Ax;
+    spint *p = Ap, *i = Ai, n = *dim; double *x = Ax;
     memset(evals, 0, sizeof(double) * n);
     memset(evecs, 0, sizeof(double) * n * n);
     
     /* Begin factorize */
-    switch (*type) {
-        case MATRIX_TYPE_ZERO:
-            retcode = speigs_factorize_zero(p, i, x, n, aiwork, awork, sn, iwork,
-                                            liwork, work, lwork, evals, evecs, rank);
-            break;
-        case MATRIX_TYPE_DIAG:
-            retcode = speigs_factorize_diag(p, i, x, n, aiwork, awork, sn, iwork,
-                                            liwork, work, lwork, evals, evecs, rank);
-            break;
-        
-        case MATRIX_TYPE_TWOTWO:
-            retcode = speigs_factorize_two(p, i, x, n, aiwork, awork, sn, iwork,
-                                           liwork, work, lwork, evals, evecs, rank);
-            break;
-            
-        case MATRIX_TYPE_RANKONE:
-            retcode = speigs_factorize_rankone(p, i, x, n, aiwork, awork, sn, iwork,
-                                               liwork, work, lwork, evals, evecs, rank);
-            break;
-            
-        case MATRIX_TYPE_SPARSE:
-            retcode = speigs_factorize_sparse(p, i, x, n, aiwork, awork, sn, iwork,
-                                              liwork, work, lwork, evals, evecs, rank);
-            break;
-            
-        case MATRIX_TYPE_GENERAL:
-            retcode = speigs_factorize_sparse(p, i, x, n, aiwork, awork, sn, iwork,
-                                              liwork, work, lwork, evals, evecs, rank);
-            break;
-        default:
-            sperr("Unknown matrix type. \n");
-            retcode = SP_EIGS_ERR;
+    if ( *type >= 6 && *type <= -1 ) {
+        sperr("Unknown matrix type. \n");
+        retcode = SP_EIGS_ERR;
+    } else {
+        retcode = speig_routines[*type] (p, i, x, n, aiwork, awork, sn, iwork,
+                                         liwork, work, lwork, evals, evecs, rank, tol);
     }
-    
+
     return retcode;
 }
