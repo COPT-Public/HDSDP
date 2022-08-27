@@ -1,8 +1,7 @@
 #include <stdio.h>
+#include "dsdplapack.h"
 #include "rankonemat.h"
 #include "rankkmat.h"
-#include "dsdplapack.h"
-#include "dsdpdata.h"
 
 static char etype[] = "Rank-k matrix computation";
 static char uplolow = DSDP_MAT_LOW;

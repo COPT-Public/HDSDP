@@ -16,8 +16,7 @@ static void speigReset( speigfac *eigfac ) {
 static DSDP_INT speigGetCStats( speigfac *eigfac, DSDP_INT n,
                                 DSDP_INT nnz, DSDP_INT *Ai, DSDP_INT *Aj ) {
     // Count the number of nonzeros for each column
-    DSDP_INT *colnnz = eigfac->colnnz, i, j, k;
-    DSDP_INT diag = TRUE, elem1 = TRUE;
+    DSDP_INT *colnnz = eigfac->colnnz, i, j, k, diag = TRUE, elem1 = TRUE;
     
     for (k = 0; k < nnz; ++k) {
         i = Ai[k]; j = Aj[k]; colnnz[i] += 1;
