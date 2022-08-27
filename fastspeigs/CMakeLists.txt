@@ -4,7 +4,7 @@ set(CMAKE_OSX_ARCHITECTURES x86_64)
 project(SPEIGS C)
 set(CMAKE_C_STANDARD 11)
 
-# Configure MKL paths
+# Configure MKL paths (Or link with other versions of LAPACK/BLAS by modifying the paths below)
 set(ENV{MKL_LIB_PATH} /opt/intel/oneapi/mkl/2021.2.0/lib)
 set(ENV{MKL_OMP_PATH} /opt/intel/oneapi/compiler/2021.2.0/mac/compiler/lib)
 

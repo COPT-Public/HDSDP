@@ -71,7 +71,7 @@ extern void mexFunction( int nlhs, mxArray *plhs[], int nrhs, const mxArray *prh
     
     if ( gthresh <= 0.0 || tol <= 0.0 ) { sperr("Invalid thresholds. \n"); }
     if ( !quiet ) {
-        mexPrintf("\n ");
+        mexPrintf("\n");
         mexPrintf("SPEIGS Parameter is invoked with"
                   " gthresh = %3.3f and tol = %5.2e \n", gthresh, tol);
     }
