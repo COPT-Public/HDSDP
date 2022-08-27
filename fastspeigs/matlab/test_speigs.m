@@ -2,7 +2,7 @@
 clear; clc; close all;
 
 rng(100);
-n = 1000;
+n = 2000;
 opts.gthresh = 0.7;
 opts.tol = 1e-10;
 opts.quiet = false;
@@ -30,7 +30,7 @@ A = sparse(a * a');
 fprintf("Error %e \n", norm(V * diag(e) * V' - A, 'fro'));
 
 % Submatrix
-A = sprandsym(n, 0.001);
+A = sprandsym(n, 0.1 / n);
 Alow = tril(A);
 [V, e] = speigs(Alow, opts);
 fprintf("Error %e \n", norm(V * diag(e) * V' - A, 'fro'));
