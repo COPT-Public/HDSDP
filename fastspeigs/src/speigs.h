@@ -24,7 +24,7 @@
 #include "mex.h"
 typedef mwSize spint;
 #define sperr mexErrMsgTxt
-#define id "%d"
+#define id "%lld"
 #else
 #ifdef SPEIG_64
 typedef int64_t spint;

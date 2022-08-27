@@ -28,9 +28,10 @@ static void print_mtype( spint mtype ) {
 
 /* [V, e] = mex_speigs(A, opts); */
 #define V    plhs[0]
-#define e    prhs[1]
+#define e    plhs[1]
 #define A    prhs[0]
 #define opts prhs[1]
+
 /** @brief Matlab entry function
  *  @param[in] nlhs Number of left-hand-side parameters
  *  @param[out] plhs Pointers for left-hand-side parameters
@@ -45,14 +46,18 @@ static void print_mtype( spint mtype ) {
  */
 extern void mexFunction( int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[] ) {
     
-    spint retcode = SP_EIGS_OK, m, n, lwork, liwork, *aiwork, *fiwork, mtype, sn, rank;
-    double gthresh = 0.8, tol = 1e-10, quiet = 1.0, *awork, *fwork, *Vp, *ep;
+    spint retcode = SP_EIGS_OK, m, n, lwork, liwork, *aiwork = NULL, *fiwork = NULL, mtype, sn, rank;
+    double gthresh = 0.8, tol = 1e-10, quiet = 1.0, *awork = NULL, *fwork = NULL, *Vp, *ep;
     spint *Ap = NULL, *Ai = NULL; double *Ax = NULL;
     mxArray *param = NULL;
     
     /* ------------------- Parameter Extraction ------------------- */
     if ( nrhs <= 0 || nrhs >= 3 ) {
         sperr("Invalid number of entries. \n");
+    }
+    
+    if ( nlhs <= 1 ) {
+        sperr("Invalid number of outputs. \n");
     }
     
     if ( nrhs == 2 ) {
@@ -66,6 +71,7 @@ extern void mexFunction( int nlhs, mxArray *plhs[], int nrhs, const mxArray *prh
     
     if ( gthresh <= 0.0 || tol <= 0.0 ) { sperr("Invalid thresholds. \n"); }
     if ( !quiet ) {
+        mexPrintf("\n ");
         mexPrintf("SPEIGS Parameter is invoked with"
                   " gthresh = %3.3f and tol = %5.2e \n", gthresh, tol);
     }
@@ -83,7 +89,7 @@ extern void mexFunction( int nlhs, mxArray *plhs[], int nrhs, const mxArray *prh
     }
     
     if ( !quiet ) {
-        mexPrintf("Dimension of problem %d, Nnz %d.", m, Ap[n + 1]);
+        mexPrintf("Dimension of problem %lld, Nnz %lld. \n", m, Ap[n]);
     }
     
     /* ------------------- Analysis Phase ------------------- */
@@ -99,7 +105,7 @@ extern void mexFunction( int nlhs, mxArray *plhs[], int nrhs, const mxArray *prh
     
     if ( !quiet ) {
         mexPrintf("Memory needed for analysis: "
-                  "integer array length %d, double array length %d. \n",
+                  "integer array length %lld, double array length %lld. \n",
                   liwork, lwork);
     }
     
@@ -122,7 +128,7 @@ extern void mexFunction( int nlhs, mxArray *plhs[], int nrhs, const mxArray *prh
     if ( !quiet ) {
         mexPrintf("Analysis phase completes. \n");
         print_mtype(mtype);
-        mexPrintf("Submatrix size: %d \n", sn);
+        mexPrintf("Submatrix size: %lld \n", sn);
     }
     
     /* ------------------- Factorization Phase ------------------- */
@@ -140,15 +146,16 @@ extern void mexFunction( int nlhs, mxArray *plhs[], int nrhs, const mxArray *prh
     
     if ( !quiet ) {
         mexPrintf("Memory needed for factorization: "
-                  "integer array length %d, double array length %d. \n",
+                  "integer array length %lld, double array length %lld. \n",
                   liwork, lwork);
     }
     
-    fiwork = (spint *) mxCalloc(liwork, sizeof(spint));
-    fwork = (double *) mxCalloc(lwork, sizeof(double));
-    
-    if ( !fiwork || !fwork ) {
-        sperr("Memory allocation failed in factorization. \n");
+    if ( liwork > 0 || fiwork > 0 ) {
+        fiwork = (spint *) mxCalloc(liwork, sizeof(spint));
+        fwork = (double *) mxCalloc(lwork, sizeof(double));
+        if ( !fiwork || !fwork ) {
+            sperr("Memory allocation failed in factorization. \n");
+        }
     }
     
     if ( !quiet ) {
@@ -169,8 +176,8 @@ extern void mexFunction( int nlhs, mxArray *plhs[], int nrhs, const mxArray *prh
     
     if ( !quiet ) {
         mexPrintf("Factorization phase completes. "
-                  "rank(A) = %d by tol = %5.2e \n", rank, tol);
-        mexPrintf("SPEIGS completes. Cleaning up. \n");
+                  "rank(A) = %lld by tol = %5.2e \n", (long long int) rank, tol);
+        mexPrintf("SPEIGS completes. Cleaning up. \n\n");
     }
     
     /* ------------------- Clean up ------------------- */

@@ -270,29 +270,29 @@ static spint speigs_factorize_two( spint *p, spint *i, double *x, spint n, spint
                                    double *work, spint *lwork, double *evals, double *evecs,
                                    spint *rank, double tol ) {
     
-    spint retcode = SP_EIGS_OK, *nnzs = aiwork, j, k;
+    spint retcode = SP_EIGS_OK, j, k, l = 0;
     double *v = evecs, *e = evals;
     
-    for ( j = k = 0; j < n; ++j ) {
-        if ( nnzs[j] ) {
-            if ( i[p[j]] == j ) {
-                e[k] = x[k]; v[j] = 1.0;
-                ++k; v += n;
+    for ( j = 0; j < n; ++j ) {
+        for ( k = p[j]; k < p[j + 1]; ++k ) {
+            if ( i[k] == j ) {
+                v[j] = 1.0;
+                e[l] = x[k];  v += n; ++l;
             } else {
-                v[j] =  ROOT; v[i[p[j]]] = ROOT;
-                e[k] = x[k]; ++k; v += n;
-                v[j] = -ROOT; v[i[p[j]]] = ROOT;
-                e[k] = x[k]; ++k; v += n;
+                v[j] = ROOT;  v[i[k]] = ROOT;
+                e[l] = x[k];  v += n; ++l;
+                v[j] = -ROOT; v[i[k]] = ROOT;
+                e[l] = -x[k]; v += n; ++l;
             }
         }
     }
     
-    if ( k > n ) {
+    if ( l > n ) {
         sperr("Invalid rank for two-two matrix. \n");
         retcode = SP_EIGS_ERR; return retcode;
     }
     
-    *rank = k; return retcode;
+    *rank = l; return retcode;
 }
 
 /** @brief Compute the eigen factorization of a rank-one matrix
@@ -347,8 +347,10 @@ static spint speigs_factorize_dense( double *a, double *evals, double *evecs, sp
                                      spint *isuppz ) {
     
     spint retcode = SP_EIGS_OK, m, info;
+    
     dsyevr(&jobz, &range, &uplolow, n, a, n, NULL, NULL, NULL, NULL, &abstol, &m,
            evals, evecs, n, isuppz, work, lwork, iwork, liwork, &info);
+    
     if ( info ) {
         retcode = SP_EIGS_ERR;
         sperr("Eigen-decomposition failed \n");
@@ -389,6 +391,7 @@ static spint speigs_factorize_sparse( spint *p, spint *i, double *x, spint n, sp
     for ( j = 0; j < n; ++j ) {
         for ( k = p[j]; k < p[j + 1]; ++k ) {
             work[s * perm[j] + perm[i[k]]] = x[k]; // work[s * perm[i[k]] + perm[j]] = x[k];
+            /* mexPrintf("%d %d => %d %d %5.3f \n", j, k, perm[j], perm[i[k]], x[k]); */
         }
     }
     
@@ -534,7 +537,7 @@ extern spint speigs_analyze( spint *Ap, spint *Ai, double *Ax, spint *dim,
     }
     
     /* Begin analysis */
-    spint *p = Ap, *i = Ai, n = *dim, j;
+    spint *p = Ap, *i = Ai, n = *dim, j, k;
     spint *nnzs = iwork + 0, *perm = iwork + n, *iperm = iwork + 2 * n;
     spint is_diag = TRUE, is_two = TRUE, is_rankone = FALSE;
     double *x = Ax;
@@ -547,7 +550,12 @@ extern spint speigs_analyze( spint *Ap, spint *Ai, double *Ax, spint *dim,
     
     /* Collect column statistics */
     for ( j = 0; j < n; ++j ) {
-        nnzs[j] = p[j + 1] - p[j];
+        for ( k = p[j]; k < p[j + 1]; ++k ) {
+            nnzs[j] += 1;
+            if ( i[k] != j ) {
+                nnzs[i[k]] += 1;
+            }
+        }
         if ( nnzs[j] >= 2 ) {
             is_diag = FALSE; is_two = FALSE;
         }
@@ -570,7 +578,6 @@ extern spint speigs_analyze( spint *Ap, spint *Ai, double *Ax, spint *dim,
     
     /* Case 4: Rank-one */
     speigs_is_rankone(p, i, x, n, &is_rankone, work, tol);
-    
     if ( is_rankone ) {
         *sn = n; *type = MATRIX_TYPE_RANKONE;
         return retcode;
@@ -661,7 +668,7 @@ extern spint speigs_factorize( spint *Ap, spint *Ai, double *Ax, spint *dim, spi
         retcode = SP_EIGS_ERR; return retcode;
     }
     
-    if ( !Ap || !Ai || !aiwork || !awork || !iwork || !lwork || !evals || !evecs ) {
+    if ( !Ap || !Ai || !aiwork || !awork || !evals || !evecs ) {
         speig_get_factorize_space(dim, sn, type, liwork, lwork);
         return retcode;
     }
