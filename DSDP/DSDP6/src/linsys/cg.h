@@ -1,5 +1,5 @@
-#ifndef dsdpcg_h
-#define dsdpcg_h
+#ifndef cg_h
+#define cg_h
 
 #include "structs.h"
 
@@ -38,4 +38,4 @@ extern DSDP_INT dsdpCGSolve       ( CGSolver *cgSolver, vec *b, vec *x0 );
 }
 #endif
 
-#endif /* dsdpcg_h */
+#endif /* cg_h */

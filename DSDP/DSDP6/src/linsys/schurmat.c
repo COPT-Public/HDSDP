@@ -1,7 +1,7 @@
 #include <stdlib.h>
 #include "schurmat.h"
-#include "densemat.h"
-#include "sparsemat.h"
+#include "denseopts.h"
+#include "sparseopts.h"
 
 static DSDP_INT schurMatselectTypeDense( schurMat *sMat ) {
     

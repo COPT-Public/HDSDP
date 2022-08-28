@@ -1,5 +1,5 @@
-#ifndef densemat_h
-#define densemat_h
+#ifndef denseopts_h
+#define denseopts_h
 
 /* Implement the dense matrix data structure for DSDP */
 #include "structs.h"
@@ -60,4 +60,4 @@ extern void denseMatResetFactor  ( dsMat *dMat );
 }
 #endif
 
-#endif /* densemat_h */
+#endif /* denseopts_h */

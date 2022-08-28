@@ -3,7 +3,6 @@
 #include "dsdplog.h"
 
 // Implement the solver statistics interface for DSDP
-static char etype[] = "Solver statistics";
 
 static void printStat( DSDPStats *stats, DSDP_INT sName ) {
     // Print the value of some statistic

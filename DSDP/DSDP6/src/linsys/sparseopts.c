@@ -1,9 +1,9 @@
-#include "sparsemat.h"
+#include "sparseopts.h"
 #include "cs.h"
 #include "dsdplapack.h"
-#include "rankkmat.h"
+#include "rankkopts.h"
 #include "vec.h"
-#include "dsdplanczos.h"
+#include "lanczos.h"
 
 // Enable hash sum check
 #ifdef VERIFY_HASH
@@ -528,6 +528,7 @@ extern void spsMatFnorm( spsMat *sMat, double *fnrm ) {
     // Matrix Fronenius norm
     DSDP_INT i, n = sMat->dim;
     double nrm = 0.0; i = spsMatGetRank(sMat);
+    
     if (i < 0.1 * n) {
         rkMatFnorm(sMat->factor, fnrm); return;
     }
@@ -688,14 +689,14 @@ extern void spsMatGetX( spsMat *S, spsMat *dS, double *LinvSLTinv ) {
 }
 
 /* DSDP routine for computing the stepsize in the SDP cone */
-extern double spsMatGetAlpha( DSDPLanczos *lczSolver, spsMat *S, spsMat *dS, double *alpha ) {
+extern double spsMatGetAlpha( lczstep *lczSolver, spsMat *S, spsMat *dS, double *alpha ) {
     // Get the maximum alpha such that S + alpha * dS is PSD
     double lbd = 0.0, delta = 0.0;
     if (S->dim == 1) {
         *alpha = (dS->x[0] > 0) ? DSDP_INFINITY : -(S->x[0] * S->x[0]) / dS->x[0];
         return *alpha;
     }
-    dsdpLanczosStep(lczSolver, S, dS, &lbd, &delta);
+    lczStepLength(lczSolver, S, dS, &lbd, &delta);
     *alpha = (lbd + delta <= 0) ? DSDP_INFINITY : 1.0 / (lbd + delta);
     return *alpha;
 }

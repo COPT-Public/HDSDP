@@ -2,7 +2,7 @@
 #include "dsdplapack.h"
 #include "dsdplog.h"
 #include "dsdputils.h"
-#include "dsdpcg.h"
+#include "cg.h"
 #include "vec.h"
 
 /*

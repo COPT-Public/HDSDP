@@ -1,5 +1,5 @@
 #include <stdlib.h>
-#include "dsdpcg.h"
+#include "cg.h"
 #include "dsdplapack.h"
 #include "schurmat.h"
 #include "vec.h"

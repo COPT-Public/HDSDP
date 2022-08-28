@@ -91,7 +91,7 @@ struct hdsdp {
     // Step matrix
     spsMat   **dS;        // SDP step matrix
     
-    DSDPLanczos **lczs;   // Lanczos solver
+    lczstep **lczs;   // Lanczos solver
     dsMat    **dsaux;     // Used for Schur matrix setup
     rkMat    **rkaux;     // Use for Schur matrix setup
     spsMat   **Scker;     // Used for checking positive definiteness

@@ -1,4 +1,4 @@
-#include "rankonemat.h"
+#include "rank1opts.h"
 #include "dsdplapack.h"
 
 // Define constants involving Lapack and Blas

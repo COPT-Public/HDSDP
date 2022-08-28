@@ -478,4 +478,8 @@ void packr1update( const char *uplo,
 /* Other utilities */
 #define nsym(x) ((DSDP_INT) (((x) + 1 ) * (x) / 2))
 
+/* Some constants */
+#define LWORK   (30)
+#define IWORK   (12)
+
 #endif /* dsdplapack_h */

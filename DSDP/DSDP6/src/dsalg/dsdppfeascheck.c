@@ -2,7 +2,7 @@
 #include "dsdplapack.h"
 #include "dsdputils.h"
 #include "dsdplog.h"
-#include "sparsemat.h"
+#include "sparseopts.h"
 #include "vec.h"
 
 

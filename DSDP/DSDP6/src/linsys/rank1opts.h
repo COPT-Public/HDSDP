@@ -1,5 +1,5 @@
-#ifndef rankonemat_h
-#define rankonemat_h
+#ifndef rank1opts_h
+#define rank1opts_h
 
 /* Implement the rank one matrix */
 #include "structs.h"
@@ -39,5 +39,5 @@ extern DSDP_INT r1MatView       ( r1Mat *x );
 }
 #endif
 
-#endif /* rankonemat_h */
+#endif /* rank1opts_h */
 

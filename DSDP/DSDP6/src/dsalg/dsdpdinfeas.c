@@ -10,7 +10,6 @@
 #include "dsdplapack.h"
 
 // Implement the phase A of the dual scaling algorithm: Dual infeasibility elimination
-static char etype[] = "DSDP Dual infeasibility elimination";
 
 /* Driver routine for dual infeasibility elimination
  

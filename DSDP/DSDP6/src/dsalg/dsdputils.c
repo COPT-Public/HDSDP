@@ -4,10 +4,10 @@
 #include "dsdplog.h"
 #include "dsdpdata.h"
 #include "schurmat.h"
-#include "sparsemat.h"
-#include "densemat.h"
-#include "rankonemat.h"
-#include "rankkmat.h"
+#include "sparseopts.h"
+#include "denseopts.h"
+#include "rank1opts.h"
+#include "rankkopts.h"
 #include "vec.h"
 
 static char etype[] = "DSDP Conic Utility";

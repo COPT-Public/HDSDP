@@ -1,5 +1,5 @@
-#ifndef sparsemat_h
-#define sparsemat_h
+#ifndef sparseopts_h
+#define sparseopts_h
 
 /* Implement the sparse matrix data structure for DSDP */
 #include "structs.h"
@@ -41,7 +41,7 @@ extern void spsMatVecSolve     ( spsMat *sAMat, vec    *sbVec, double *Ainvb );
 extern void spsMatVecFSolve    ( spsMat *sAmat, vec *sbVec, vec *Ainvb );
 extern void spsMatVecBSolve    ( spsMat *sAmat, vec *sbVec, vec *Ainvb );
 extern void spsMatGetX         ( spsMat *S, spsMat *dS, double *LinvSLTinv   );
-extern double spsMatGetAlpha   ( DSDPLanczos *lczSolver, spsMat *S, spsMat *dS, double *alpha );
+extern double spsMatGetAlpha   ( lczstep *lczSolver, spsMat *S, spsMat *dS, double *alpha );
 
 /* Schur matrix assembly */
 extern double SinvSpSinv       ( const double *Sinv, double *aux, spsMat *A, dsMat *SinvASinv );
@@ -84,4 +84,4 @@ extern void spsMatMinEig       ( spsMat *sMat, double *minEig );
 }
 #endif
 
-#endif /* sparsemat_h */
+#endif /* sparseopts_h */

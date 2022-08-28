@@ -7,12 +7,12 @@
 #include "dsdppfeas.h"
 #include "dsdppsol.h"
 #include "schurmat.h"
-#include "dsdpcg.h"
-#include "dsdplanczos.h"
-#include "sparsemat.h"
-#include "densemat.h"
-#include "rankonemat.h"
-#include "rankkmat.h"
+#include "cg.h"
+#include "lanczos.h"
+#include "sparseopts.h"
+#include "denseopts.h"
+#include "rank1opts.h"
+#include "rankkopts.h"
 #include "vec.h"
 
 static char etype[] = "DSDP Interface";
@@ -172,7 +172,7 @@ static DSDP_INT DSDPIAlloc( HSDSolver *dsdpSolver ) {
     }
     DSDP_INT nblock = dsdpSolver->nBlock;
     dsdpSolver->sdpData  = (sdpMat  **) calloc(nblock, sizeof(sdpMat *));
-    dsdpSolver->lczs     = (DSDPLanczos **) calloc(nblock, sizeof(DSDPLanczos *));
+    dsdpSolver->lczs     = (lczstep **) calloc(nblock, sizeof(lczstep *));
     dsdpSolver->lpData   = (lpMat    *) calloc(1, sizeof(lpMat));
     dsdpSolver->lpObj    = (vec      *) calloc(1, sizeof(vec));
     dsdpSolver->M        = (symM     *) calloc(1, sizeof(symM));
@@ -183,8 +183,8 @@ static DSDP_INT DSDPIAlloc( HSDSolver *dsdpSolver ) {
     for (DSDP_INT i = 0; i < nblock; ++i) {
         dsdpSolver->sdpData[i] = (sdpMat *) calloc(1, sizeof(sdpMat));
         sdpMatInit(dsdpSolver->sdpData[i]);
-        dsdpSolver->lczs[i] = (DSDPLanczos *) calloc(1, sizeof(DSDPLanczos));
-        dsdpLanczosInit(dsdpSolver->lczs[i]);
+        dsdpSolver->lczs[i] = (lczstep *) calloc(1, sizeof(lczstep));
+        lczInit(dsdpSolver->lczs[i]);
     }
     
     return retcode;
@@ -246,7 +246,7 @@ static DSDP_INT DSDPIAllocIter( HSDSolver *dsdpSolver ) {
     
     for (DSDP_INT i = 0; i < nblock; ++i) {
         dim = dsdpSolver->sdpData[i]->dimS;
-        retcode = dsdpLanczosAlloc(dsdpSolver->lczs[i], dim); checkCode;
+        retcode = lczAlloc(dsdpSolver->lczs[i], dim); checkCode;
         dsdpSolver->Scker[i] = (spsMat *) calloc(1, sizeof(spsMat));
         dsdpSolver->dsaux[i] = (dsMat  *) calloc(1, sizeof(dsMat));
         dsdpSolver->rkaux[i] = (rkMat  *) calloc(1, sizeof(rkMat));
@@ -338,6 +338,13 @@ static void DSDPIFreeAlgIter( HSDSolver *dsdpSolver ) {
         DSDP_FREE(dsdpSolver->dS[i]);
     }
     DSDP_FREE(dsdpSolver->dS);
+    
+    // Lanczos
+    for (DSDP_INT i = 0; i < nblock; ++i) {
+        lczFree(dsdpSolver->lczs[i]);
+        DSDP_FREE(dsdpSolver->lczs[i]);
+    }
+    DSDP_FREE(dsdpSolver->lczs);
     
     vec_destroy(dsdpSolver->sl);
     vec_destroy(dsdpSolver->su);

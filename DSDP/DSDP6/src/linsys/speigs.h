@@ -21,10 +21,6 @@
 /* Include headers */
 #include "structs.h"
 
-/* Some constants */
-#define LWORK   (30)
-#define IWORK   (12)
-
 #ifdef __cplusplus
 extern "C" {
 #endif

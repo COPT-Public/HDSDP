@@ -3,11 +3,10 @@
 #include "dsdputils.h"
 #include "dsdplog.h"
 #include "schurmat.h"
-#include "sparsemat.h"
-#include "densemat.h"
+#include "sparseopts.h"
+#include "denseopts.h"
 #include "vec.h"
 
-static char etype[] = "Primal solution extraction";
 
 static double computePres( HSDSolver *dsdpSolver ) {
     // Compute ||A * x - b||

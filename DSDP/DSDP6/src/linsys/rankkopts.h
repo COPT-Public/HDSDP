@@ -1,5 +1,5 @@
-#ifndef rankkmat_h
-#define rankkmat_h
+#ifndef rankkopts_h
+#define rankkopts_h
 
 /* Implement the rank-k matrix based on rank-one matrix */
 #include "structs.h"
@@ -36,4 +36,4 @@ extern void rkMatView               ( rkMat  *R                                )
 }
 #endif
 
-#endif /* rankkmat_h */
+#endif /* rankkopts_h */

@@ -1,5 +1,5 @@
-#ifndef dsdppardiso_h
-#define dsdppardiso_h
+#ifndef pardiso_h
+#define pardiso_h
 
 /* A wrapper for the pardiso linear system solver in terms of CSparse */
 #include "dsdphsd.h"
@@ -26,6 +26,9 @@ static DSDP_INT idummy = 0; // Dummy variable for taking up space
 #define PIVOTING 1
 #define FACTORIZE 0
 
+/** \brief PARDISO parameter array for Cholesky decomposition
+ *
+ */
 static DSDP_INT PARDISO_PARAMS_CHOLESKY[PARDISOINDEX] = {
     
     1, /* Non-default value */ SYMBOLIC, /* P Nested dissection */ 0, /* Reserved          */
@@ -52,6 +55,9 @@ static DSDP_INT PARDISO_PARAMS_CHOLESKY[PARDISOINDEX] = {
     0
 };
 
+/** \brief PARDISO parameter array for LDL decomposition
+ *
+ */
 static DSDP_INT PARDISO_PARAMS_LDL[PARDISOINDEX] = {
     
     1, /* Non-default value */ SYMBOLIC, /* P Nested dissection */ 0, /* Reserved          */
@@ -78,6 +84,9 @@ static DSDP_INT PARDISO_PARAMS_LDL[PARDISOINDEX] = {
     0
 };
 
+/** \brief PARDISO parameter array for in place Cholesky decomposition
+ *
+ */
 static DSDP_INT PARDISO_PARAMS_CHOLESKY_INPLACE[PARDISOINDEX] = {
     
     1, /* Non-default value */ SYMBOLIC, /* P Nested dissection */ 0, /* Reserved          */
@@ -104,6 +113,9 @@ static DSDP_INT PARDISO_PARAMS_CHOLESKY_INPLACE[PARDISOINDEX] = {
     0
 };
 
+/** \brief PARDISO parameter array for verifying positive definiteness of a matrix
+ *
+ */
 static DSDP_INT PARDISO_PARAMS_PSD_CHECK[PARDISOINDEX] = {
     
     1, /* Non-default value */ SYMBOLIC, /* P Nested dissection */ 0, /* Reserved          */
@@ -130,6 +142,9 @@ static DSDP_INT PARDISO_PARAMS_PSD_CHECK[PARDISOINDEX] = {
     0
 };
 
+/** \brief PARDISO parameter array for forward and backward solve
+ *
+ */
 static DSDP_INT PARDISO_PARAMS_FORWARD_BACKWORD[PARDISOINDEX] = {
     
     1, /* Non-default value */ SYMBOLIC, /* P Nested dissection */ 0, /* Reserved          */
@@ -156,13 +171,15 @@ static DSDP_INT PARDISO_PARAMS_FORWARD_BACKWORD[PARDISOINDEX] = {
     0
 };
 
+/** \brief PARDISO parameter array for forward and backward solve arising from Lancsoz method
+ *
+ */
 static DSDP_INT PARDISO_PARAMS_FORWARD_BACKWORD_LANCZOS[PARDISOINDEX] = {
     
     1, /* Non-default value */ SYMBOLIC, /* P Nested dissection */ 0, /* Reserved          */
     0, /* No CG             */ 0, /* No user permutation */ 0, /* Overwriting       */
     0, /* Refinement report */ 0, /* Auto ItRef step     */ 0, /* Reserved          */
-    6
-    , /* Perturb           */ 0, /* Disable scaling     */ 0, /* No transpose      */
+    6, /* Perturb           */ 0, /* Disable scaling     */ 0, /* No transpose      */
     0, /* Disable matching  */ 0, /* Report on pivots    */ 0, /* Output            */
     0, /* Output            */ 0, /* Output              */-1, /* No report         */
     0, /* No report         */ 0, /* Output              */ PIVOTING, /* Pivoting          */
@@ -191,8 +208,6 @@ static DSDP_INT PARDISO_PARAMS_FORWARD_BACKWORD_LANCZOS[PARDISOINDEX] = {
 #ifdef __cplusplus
 extern "C" {
 #endif
-
-extern void pardisoinit ( void *, const DSDP_INT *, DSDP_INT * );
 
 extern void pardiso     ( void     *, DSDP_INT    *, DSDP_INT *, DSDP_INT *, DSDP_INT *, DSDP_INT *,
                           double   *, DSDP_INT    *, DSDP_INT *, DSDP_INT *, DSDP_INT *, DSDP_INT *,

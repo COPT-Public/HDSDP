@@ -5,9 +5,6 @@
 #include "vec.h"
 
 /* Recover the steps to take after solving the Schur system */
-
-static char etype[] = "Stepsize recovery";
-
 static DSDP_INT assemblePhaseAArrs( HSDSolver *dsdpSolver ) {
     // Assemble auxiliary arrays
     /*

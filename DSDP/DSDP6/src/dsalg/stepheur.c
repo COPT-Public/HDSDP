@@ -2,7 +2,7 @@
 #include "dsdplapack.h"
 #include "dsdplog.h"
 #include "dsdputils.h"
-#include "sparsemat.h"
+#include "sparseopts.h"
 #include "vec.h"
 
 /*
@@ -12,8 +12,6 @@
 #ifdef ROUGH_MU
 #undef ROUGH_MU
 #endif
-
-
 
 static char etype[] = "Step size computation";
 

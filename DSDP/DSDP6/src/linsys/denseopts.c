@@ -1,7 +1,7 @@
-#include "densemat.h"
+#include "denseopts.h"
 #include "dsdplapack.h"
 #include "structs.h"
-#include "rankkmat.h"
+#include "rankkopts.h"
 
 // Error type
 static char etype[] = "Dense Operation Error";
