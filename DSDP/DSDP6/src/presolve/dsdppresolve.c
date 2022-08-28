@@ -77,7 +77,7 @@ static DSDP_INT preRankkEvRdcBlock( sdpMat *dataMat, DSDPStats *stat, speigfac *
             case MAT_TYPE_ZERO: break;
             case MAT_TYPE_DENSE: rank = 100000; isDense = TRUE; break; // Do not factorize dense matrices
             case MAT_TYPE_SPARSE: spsdata = (spsMat *) matdata[i]; isSparse = TRUE;
-                status = speigSfac(eigfactor, spsdata, eigvals, eigvecs);
+                status = speigSpFactor(eigfactor, spsdata, eigvals, eigvecs);
                 if (!status) { break; } preGetRank(n, eigvals, 1e-10, &rank); break;
             case MAT_TYPE_RANKK: break;
             default: error(etype, "Unknown matrix type. \n"); break;

@@ -16,7 +16,6 @@ extern DSDP_INT r1MatInit( r1Mat *x ) {
 
 extern DSDP_INT r1MatAlloc( r1Mat *x, const DSDP_INT n ) {
     // Allocate memory for vec
-    assert( x->dim == 0 );
     x->dim = n; x->sign = 1.0;
     x->x = (double *) calloc(n, sizeof(double));
     return DSDP_RETCODE_OK;
@@ -24,7 +23,6 @@ extern DSDP_INT r1MatAlloc( r1Mat *x, const DSDP_INT n ) {
 
 extern DSDP_INT r1MatSetData( r1Mat *x, double eigval, double *array ) {
     // Set rank-one data
-    assert(x->dim > 0);
     memcpy(x->x, array, sizeof(double) * x->dim);
     x->sign = eigval; r1MatCountNnz(x);
     return DSDP_RETCODE_OK;

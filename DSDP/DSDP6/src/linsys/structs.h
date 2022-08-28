@@ -138,7 +138,6 @@ typedef struct {
     DSDP_INT  nmax;    // Maximum possible dimension of matrix to factorize
     DSDP_INT  lwork;   // Length of working space
     DSDP_INT  liwork;  // Length of working space
-    DSDP_INT  factorMethod;
     
     double   *dwork;   // Double working space
     double   *dworkmat;// Double working space
@@ -147,7 +146,7 @@ typedef struct {
     
     DSDP_INT *perm;    // Permutation vector
     DSDP_INT *pinv;    // Inverse of the permutation
-    DSDP_INT *colnnz;  // Column nnz counter
+    DSDP_INT *cnz;     // Column nnz counter
     DSDP_INT *iwork;   // Integer working space
     DSDP_INT *iworkup; // Another integer working space
     
