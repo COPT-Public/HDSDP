@@ -176,9 +176,9 @@ static DSDP_INT DSDPIAlloc( HSDSolver *dsdpSolver ) {
     dsdpSolver->lpData   = (lpMat    *) calloc(1, sizeof(lpMat));
     dsdpSolver->lpObj    = (vec      *) calloc(1, sizeof(vec));
     dsdpSolver->M        = (symM     *) calloc(1, sizeof(symM));
-    dsdpSolver->cgSolver = (CGSolver *) calloc(1, sizeof(CGSolver));
+    dsdpSolver->cgSolver = (cgsol *) calloc(1, sizeof(cgsol));
     dsdpSolver->isSDPset = (DSDP_INT *) calloc(nblock, sizeof(DSDP_INT));
-    dsdpCGinit(dsdpSolver->cgSolver);
+    cgInit(dsdpSolver->cgSolver);
     
     for (DSDP_INT i = 0; i < nblock; ++i) {
         dsdpSolver->sdpData[i] = (sdpMat *) calloc(1, sizeof(sdpMat));
@@ -209,13 +209,13 @@ static DSDP_INT DSDPIAllocIter( HSDSolver *dsdpSolver ) {
     schurMatInit(dsdpSolver->Msdp);
     retcode = schurMatAlloc(dsdpSolver->Msdp, m); checkCode;
     
-    retcode = dsdpCGAlloc(dsdpSolver->cgSolver, m); checkCode;
-    dsdpCGSetTol(dsdpSolver->cgSolver, 1e-05);
-    dsdpCGSetPreReuse(dsdpSolver->cgSolver, CGreuse);
-    dsdpCGSetM(dsdpSolver->cgSolver, dsdpSolver->Msdp);
-    dsdpCGSetCholPre(dsdpSolver->cgSolver, dsdpSolver->Msdp);
+    retcode = cgAlloc(dsdpSolver->cgSolver, m); checkCode;
+    cgSetTol(dsdpSolver->cgSolver, 1e-05);
+    cgSetPreconditionerReuse(dsdpSolver->cgSolver, CGreuse);
+    cgSetM(dsdpSolver->cgSolver, dsdpSolver->Msdp);
+    cgSetCholeskyPreconditioner(dsdpSolver->cgSolver, dsdpSolver->Msdp);
     vec_init_alloc(dsdpSolver->Mdiag, m);
-    dsdpCGSetDPre(dsdpSolver->cgSolver, dsdpSolver->Mdiag);
+    cgSetDiagPreconditioner(dsdpSolver->cgSolver, dsdpSolver->Mdiag);
     
     vec_init_alloc(dsdpSolver->u, m);
     vec_init_alloc(dsdpSolver->b1, m);
@@ -317,7 +317,7 @@ static void DSDPIFreeAlgIter( HSDSolver *dsdpSolver ) {
     schurMatFree(dsdpSolver->Msdp);
     DSDP_FREE(dsdpSolver->Msdp);
     
-    dsdpCGFree(dsdpSolver->cgSolver);
+    cgFree(dsdpSolver->cgSolver);
     DSDP_FREE(dsdpSolver->cgSolver);
     
     

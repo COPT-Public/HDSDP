@@ -22,22 +22,22 @@ add_library(hdsdplinsys SHARED
         $ENV{HDSDP_HOME}/externals/cs.h
         $ENV{HDSDP_HOME}/include/dsdplapack.h
         $ENV{HDSDP_HOME}/interface/dsdphsd.h
-        $ENV{HDSDP_HOME}/src/linsys/densemat.c
-        $ENV{HDSDP_HOME}/src/linsys/densemat.h
-        $ENV{HDSDP_HOME}/src/linsys/dsdpcg.c
-        $ENV{HDSDP_HOME}/src/linsys/dsdpcg.h
+        $ENV{HDSDP_HOME}/src/linsys/denseopts.c
+        $ENV{HDSDP_HOME}/src/linsys/denseopts.h
+        $ENV{HDSDP_HOME}/src/linsys/cg.c
+        $ENV{HDSDP_HOME}/src/linsys/cg.h
         $ENV{HDSDP_HOME}/src/linsys/dsdpfeast.h
-        $ENV{HDSDP_HOME}/src/linsys/dsdplanczos.c
-        $ENV{HDSDP_HOME}/src/linsys/dsdplanczos.h
-        $ENV{HDSDP_HOME}/src/linsys/dsdppardiso.h
-        $ENV{HDSDP_HOME}/src/linsys/rankkmat.c
-        $ENV{HDSDP_HOME}/src/linsys/rankkmat.h
-        $ENV{HDSDP_HOME}/src/linsys/rankonemat.c
-        $ENV{HDSDP_HOME}/src/linsys/rankonemat.h
+        $ENV{HDSDP_HOME}/src/linsys/lanczos.c
+        $ENV{HDSDP_HOME}/src/linsys/lanczos.h
+        $ENV{HDSDP_HOME}/src/linsys/pardiso.h
+        $ENV{HDSDP_HOME}/src/linsys/rankkopts.c
+        $ENV{HDSDP_HOME}/src/linsys/rankkopts.h
+        $ENV{HDSDP_HOME}/src/linsys/rank1opts.c
+        $ENV{HDSDP_HOME}/src/linsys/rank1opts.h
         $ENV{HDSDP_HOME}/src/linsys/schurmat.c
         $ENV{HDSDP_HOME}/src/linsys/schurmat.h
-        $ENV{HDSDP_HOME}/src/linsys/sparsemat.c
-        $ENV{HDSDP_HOME}/src/linsys/sparsemat.h
+        $ENV{HDSDP_HOME}/src/linsys/sparseopts.c
+        $ENV{HDSDP_HOME}/src/linsys/sparseopts.h
         $ENV{HDSDP_HOME}/src/linsys/speigs.c
         $ENV{HDSDP_HOME}/src/linsys/speigs.h
         $ENV{HDSDP_HOME}/src/linsys/structs.h

@@ -54,19 +54,21 @@ static DSDP_INT schurCGSetup( HSDSolver *dsdpSolver ) {
     DSDP_INT retcode = DSDP_RETCODE_OK;
     
     double tol = 0.0; DSDP_INT cgiter;
-    CGSolver *cgsolver = dsdpSolver->cgSolver;
+    cgsol *cgsolver = dsdpSolver->cgSolver;
     
     // Set parameters
-    if (dsdpSolver->mu > 1.0) {
-        tol = 1e-05;
+    if (dsdpSolver->mu > 1000) {
+        tol = 1e-04;
+    } else if (dsdpSolver->mu > 1.0) {
+        tol = 1e-08;
     } else if (dsdpSolver->mu > 1e-02) {
-        tol = 1e-06;
+        tol = 1e-09;
     } else if (dsdpSolver->mu > 1e-05){
-        tol = 5e-07;
+        tol = 5e-10;
     } else if (dsdpSolver->mu > 1e-07) {
-        tol = 1e-07;
+        tol = 1e-10;
     } else {
-        tol = 1e-07;
+        tol = 1e-10;
     }
     
 #ifdef compareMode
@@ -82,9 +84,9 @@ static DSDP_INT schurCGSetup( HSDSolver *dsdpSolver ) {
         cgiter = MAX(dsdpSolver->m / 50, 30);
     }
     
-    dsdpCGSetTol(cgsolver, tol);
-    dsdpCGSetMaxIter(cgsolver, cgiter);
-    dsdpCGprepareP(cgsolver);
+    cgSetTol(cgsolver, tol);
+    cgSetMaxIter(cgsolver, cgiter);
+    cgPreparePreconditioner(cgsolver);
     
     return retcode;
 }
@@ -103,16 +105,16 @@ static DSDP_INT setupPhaseBdvecs( HSDSolver *dsdpSolver ) {
     return DSDP_RETCODE_OK;
 }
 
-static void cgSolveCheck( CGSolver *cgSolver, vec *b, DSDP_INT firstInRound ) {
+static void cgSolveCheck( cgsol *cgSolver, vec *b, DSDP_INT firstInRound ) {
     
     DSDP_INT status;
-    dsdpCGStoreRHS(cgSolver, b);
-    dsdpCGSolve(cgSolver, b, NULL);
-    dsdpCGGetStatus(cgSolver, &status);
+    cgStoreRHS(cgSolver, b);
+    cgsolve(cgSolver, b, NULL);
+    cgGetStatus(cgSolver, &status);
     
     if (status != CG_STATUS_SOLVED && status != CG_STATUS_INDEFINITE) {
         if (cgSolver->pType == CG_PRECOND_DIAG) {
-            dsdpCGSetPType(cgSolver, CG_PRECOND_CHOL);
+            cgSetPreconditionerType(cgSolver, CG_PRECOND_CHOL);
         } else {
             cgSolver->nfailed += 1;
         }
@@ -122,14 +124,14 @@ static void cgSolveCheck( CGSolver *cgSolver, vec *b, DSDP_INT firstInRound ) {
             if (cgSolver->reuse != 50) {
                 printf("| Switch to CG Mode 1. Reuse preconditioner for %d solves. \n", 50);
             }
-            dsdpCGSetPreReuse(cgSolver, 50);
+            cgSetPreconditionerReuse(cgSolver, 50);
         }
 
         if (cgSolver->nfailed == 20) {
             if (cgSolver->reuse != 20) {
                 printf("| Switch to CG Mode 2. Reuse preconditioner for %d solves. \n", 10);
             }
-            dsdpCGSetPreReuse(cgSolver, 10);
+            cgSetPreconditionerReuse(cgSolver, 10);
         }
         
         if (cgSolver->nfailed == 25) {
@@ -137,8 +139,8 @@ static void cgSolveCheck( CGSolver *cgSolver, vec *b, DSDP_INT firstInRound ) {
             cgSolver->M->isillCond = TRUE;
         }
         
-        dsdpCGprepareP(cgSolver); dsdpCGRestoreRHS(cgSolver, b);
-        dsdpCGSolve(cgSolver, b, cgSolver->x);
+        cgPreparePreconditioner(cgSolver); cgRestoreRHS(cgSolver, b);
+        cgsolve(cgSolver, b, cgSolver->x);
     }
 }
 

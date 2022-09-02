@@ -196,8 +196,7 @@ static void arrayTranspose( double *A, DSDP_INT n ) {
 
 static void arraySymmetrize( double *A, DSDP_INT n ) {
     // Symmetrize lower triangular matrix A from Lapack
-    DSDP_INT i;
-    register double *pc, *pr; pc = pr = A;
+    DSDP_INT i; register double *pc, *pr; pc = pr = A;
     for (i = 0; i < n; ++i) {
         dcopy(&i, pr, &n, pc, &one);
         pc += n; pr += 1;
@@ -552,7 +551,6 @@ extern void spsMatFnorm( spsMat *sMat, double *fnrm ) {
 }
 
 extern double spsMatOneNorm( spsMat *sMat ) {
-    
     // Element-wise sum of absolute values
     double nrm = 0.0;
     DSDP_INT i, j, k;

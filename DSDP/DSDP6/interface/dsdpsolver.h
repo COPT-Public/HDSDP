@@ -58,7 +58,7 @@ struct hdsdp {
     
     symM     *M;          // Advanced Schur matrix setup
     schurMat *Msdp;       // Schur matrix for SDP (dense or sparse)
-    CGSolver *cgSolver;   // Internal CG solvers
+    cgsol *cgSolver;   // Internal CG solvers
     vec      *Mdiag;      // Diagonal elements of Schur matrix for pre-conditioning
     double   Mscaler;     // Scaler of Schur complement
     

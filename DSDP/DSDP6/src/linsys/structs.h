@@ -137,9 +137,7 @@ typedef struct {
     DSDP_INT nused;     ///<  Number of  iterations current pre-conditioner is already used
     DSDP_INT nfailed;   ///<  Number of non-successfull solves
     
-} CGSolver;
-
-
+} cgsol;
 
 /** @brief The struct that wraps up SPEIG package
  * The struct contains the necessary workspace to factorize a sequence of SDP coefficient matrices

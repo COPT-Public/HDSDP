@@ -50,6 +50,8 @@ extern void vec_scale( vec *x, double a ) {
 extern void vec_rscale( vec *x, double r ) {
     // Compute x = x / r; No over or under flow.
     if (r == 1.0) return;
+    if (r < 1e-18) { r = 1e-18; }
+    
     DSDP_INT i;
     for (i = 0; i < x->dim - 7; ++i) {
         x->x[i] /= r; ++i; x->x[i] /= r; ++i;
@@ -70,14 +72,13 @@ extern void vec_rscale( vec *x, double r ) {
     if (i < x->dim) {
         x->x[i] /= r;
     }
-    
-    // vecdiv(&x->dim, &r, x->x, &one);
+//    vecdiv(&x->dim, &r, x->x, &one);
 }
 
 extern void vec_vdiv( vec *x, vec *y ) {
     // x = x ./ y
     for (DSDP_INT i = 0; i < x->dim; ++i) {
-        x->x[i] /= y->x[i];
+        x->x[i] = (y->x[i] < 1e-18) ? x->x[i] / (1e-18) : x->x[i] / y->x[i];
     }
     return;
 }

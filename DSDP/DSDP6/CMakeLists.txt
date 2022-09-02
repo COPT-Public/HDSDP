@@ -67,27 +67,29 @@ add_executable(hdsdp
         src/dsalg/stepheur.h
         src/dsalg/symschur.c
         src/dsalg/symschur.h
-        src/linsys/densemat.c
-        src/linsys/densemat.h
-        src/linsys/dsdpcg.c
-        src/linsys/dsdpcg.h
+        src/linsys/denseopts.c
+        src/linsys/denseopts.h
+        src/linsys/cg.c
+        src/linsys/cg.h
         src/linsys/dsdpfeast.h
-        src/linsys/dsdplanczos.c
-        src/linsys/dsdplanczos.h
-        src/linsys/dsdppardiso.h
-        src/linsys/rankkmat.c
-        src/linsys/rankkmat.h
-        src/linsys/rankonemat.c
-        src/linsys/rankonemat.h
+        src/linsys/lanczos.c
+        src/linsys/lanczos.h
+        src/linsys/pardiso.h
+        src/linsys/rankkopts.c
+        src/linsys/rankkopts.h
+        src/linsys/rank1opts.c
+        src/linsys/rank1opts.h
         src/linsys/schurmat.c
         src/linsys/schurmat.h
-        src/linsys/sparsemat.c
-        src/linsys/sparsemat.h
+        src/linsys/sparseopts.c
+        src/linsys/sparseopts.h
         src/linsys/speigs.c
         src/linsys/speigs.h
         src/linsys/structs.h
         src/linsys/vec.c
         src/linsys/vec.h
+        src/linsys/linsysconfig.h
+        src/linsys/linsysconfig.c
         src/presolve/dsdppresolve.c
         src/presolve/dsdppresolve.h)
 
