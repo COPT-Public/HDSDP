@@ -3,10 +3,9 @@
 #include "vec.h"
 
 // Implement the Heuristics
-
 extern void DSDP_HEURS( adjustSolverParams )
 ( HSDSolver *dsdpSolver, double largeblock ) {
-    
+        
     double ds;   DSDPGetStats(&dsdpSolver->dsdpStats, STAT_NUM_DENSE_MAT, &ds);
     double sps;  DSDPGetStats(&dsdpSolver->dsdpStats, STAT_NUM_SPARSE_MAT, &sps);
     double zero; DSDPGetStats(&dsdpSolver->dsdpStats, STAT_NUM_ZERO_MAT, &zero);

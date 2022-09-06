@@ -9,11 +9,14 @@
 #include "vec.h"
 #include "dsdpsort.h"
 
+// Implement the advanced Schur matrix setup in DSDP using M1, M2, M3, M4, M5 techniques
 
+
+#ifndef continue_if_not_in_A_or_not_building_hsd
 #define continue_if_not_in_A_or_not_building_hsd if (!(*M->phaseA) || !(*M->buildhsd) ) { continue; }
 #define return_if_not_in_A_or_not_building_hsd   if ((!(*M->phaseA) || !(*M->buildhsd)) && computeC) { return retcode; }
+#endif
 
-// Implement the advanced Schur matrix setup in DSDP using M1, M2, M3, M4, M5 techniques
 static char etype[] = "Advanced Schur matrix setup";
 
 static DSDP_INT schurBlockContract( sdpMat *sdpData ) {
@@ -1216,143 +1219,8 @@ extern DSDP_INT DSDPSchurSetup( symM *M ) {
      */
     DSDP_INT retcode = DSDP_RETCODE_OK;
     
-#ifdef superDebug
-    DSDP_INT m = M->m, mpack = nsym(m);
-    
-    double *MM1 = (double *) calloc(mpack, sizeof(double));
-    double *MM2 = (double *) calloc(mpack, sizeof(double));
-    double *MM3 = (double *) calloc(mpack, sizeof(double));
-    double *MM4 = (double *) calloc(mpack, sizeof(double));
-    double *MM5 = (double *) calloc(mpack, sizeof(double));
-    double *Mref = M->M->denseM->array;
-    
-    double *asinvMM1 = (double *) calloc(m, sizeof(double));
-    double *asinvMM2 = (double *) calloc(m, sizeof(double));
-    double *asinvMM3 = (double *) calloc(m, sizeof(double));
-    double *asinvMM4 = (double *) calloc(m, sizeof(double));
-    double *asinvMM5 = (double *) calloc(m, sizeof(double));
-    double *asinvref = M->asinv->x;
-    
-    double *d4MM1 = (double *) calloc(m, sizeof(double));
-    double *d4MM2 = (double *) calloc(m, sizeof(double));
-    double *d4MM3 = (double *) calloc(m, sizeof(double));
-    double *d4MM4 = (double *) calloc(m, sizeof(double));
-    double *d4MM5 = (double *) calloc(m, sizeof(double));
-    double *d4ref = M->asinvrysinv->x;
-    
-    schurMatCleanup(M); schurMatGetSinv(M);
-    for (DSDP_INT i = 0; i < M->nblock; ++i) {
-        for (DSDP_INT k = 0; k < M->m + 1; ++k) {
-            M->MX[i][k] = SCHUR_M1;
-        }
-    }
-    for (DSDP_INT i = 0; i < M->nblock; ++i) {
-        schurMatSetupBlock(M, i);
-    }
-    memcpy(MM1, Mref, sizeof(double) * mpack);
-    memcpy(asinvMM1, asinvref, sizeof(double) * m);
-    memcpy(d4MM1, d4ref, sizeof(double) * m);
-    
-    schurMatCleanup(M); schurMatGetSinv(M);
-    for (DSDP_INT i = 0; i < M->nblock; ++i) {
-        for (DSDP_INT k = 0; k < M->m + 1; ++k) {
-            M->MX[i][k] = SCHUR_M2;
-        }
-    }
-    for (DSDP_INT i = 0; i < M->nblock; ++i) {
-        schurMatSetupBlock(M, i);
-    }
-    
-    memcpy(MM2, Mref, sizeof(double) * mpack);
-    memcpy(asinvMM2, asinvref, sizeof(double) * m);
-    memcpy(d4MM2, d4ref, sizeof(double) * m);
-    
-    schurMatCleanup(M); schurMatGetSinv(M);
-    for (DSDP_INT i = 0; i < M->nblock; ++i) {
-        for (DSDP_INT k = 0; k < M->m + 1; ++k) {
-            M->MX[i][k] = SCHUR_M3;
-        }
-    }
-    for (DSDP_INT i = 0; i < M->nblock; ++i) {
-        schurMatSetupBlock(M, i);
-    }
-    
-    memcpy(MM3, Mref, sizeof(double) * mpack);
-    memcpy(asinvMM3, asinvref, sizeof(double) * m);
-    memcpy(d4MM3, d4ref, sizeof(double) * m);
-    
-    schurMatCleanup(M); schurMatGetSinv(M);
-    for (DSDP_INT i = 0; i < M->nblock; ++i) {
-        for (DSDP_INT k = 0; k < M->m + 1; ++k) {
-            M->MX[i][k] = SCHUR_M4;
-        }
-    }
-    for (DSDP_INT i = 0; i < M->nblock; ++i) {
-        schurMatSetupBlock(M, i);
-    }
-    
-    memcpy(MM4, Mref, sizeof(double) * mpack);
-    memcpy(asinvMM4, asinvref, sizeof(double) * m);
-    memcpy(d4MM4, d4ref, sizeof(double) * m);
-    
-    schurMatCleanup(M); schurMatGetSinv(M);
-    for (DSDP_INT i = 0; i < M->nblock; ++i) {
-        for (DSDP_INT k = 0; k < M->m + 1; ++k) {
-            M->MX[i][k] = SCHUR_M5;
-        }
-    }
-    for (DSDP_INT i = 0; i < M->nblock; ++i) {
-        schurMatSetupBlock(M, i);
-    }
-    
-    memcpy(MM5, Mref, sizeof(double) * mpack);
-    memcpy(asinvMM5, asinvref, sizeof(double) * m);
-    memcpy(d4MM5, d4ref, sizeof(double) * m);
-    
-    double diff12 = 0.0, diff13 = 0.0, diff23 = 0.0, diff25 = 0.0, diff35 = 0.0, diff34 = 0.0, diff45 = 0.0, diff24 = 0.0, tmp;
-    double asinv35 = 0.0, asinv45 = 0.0, asinv34 = 0.0, asinv12 = 0.0, asinv23 = 0.0;
-    double d435 = 0.0, d445 = 0.0, d434 = 0.0, d412 = 0.0, d423 = 0.0;
-    
-    for (DSDP_INT i = 0; i < mpack; ++i) {
-        tmp = MM1[i] - MM2[i]; diff12 += tmp * tmp;
-        tmp = MM1[i] - MM3[i]; diff13 += tmp * tmp;
-        tmp = MM2[i] - MM3[i]; diff23 += tmp * tmp;
-        tmp = MM2[i] - MM5[i]; diff25 += tmp * tmp;
-        tmp = MM3[i] - MM5[i]; diff35 += tmp * tmp;
-        tmp = MM3[i] - MM4[i]; diff34 += tmp * tmp;
-        tmp = MM4[i] - MM5[i]; diff45 += tmp * tmp;
-        tmp = MM2[i] - MM4[i]; diff24 += tmp * tmp;
-    }
-    
-    for (DSDP_INT i = 0; i < m; ++i) {
-        tmp = asinvMM1[i] - asinvMM2[i]; asinv12 += tmp * tmp;
-        tmp = d4MM1[i] - d4MM2[i]; d412 += tmp * tmp;
-        tmp = asinvMM3[i] - asinvMM5[i]; asinv35 += tmp * tmp;
-        tmp = d4MM3[i] - d4MM5[i]; d435 += tmp * tmp;
-        tmp = asinvMM3[i] - asinvMM4[i]; asinv34 += tmp * tmp;
-        tmp = d4MM3[i] - d4MM2[i]; d434 += tmp * tmp;
-        tmp = asinvMM4[i] - asinvMM5[i]; asinv45 += tmp * tmp;
-        tmp = d4MM4[i] - d4MM5[i]; d445 += tmp * tmp;
-        tmp = asinvMM2[i] - asinvMM3[i]; asinv23 += tmp * tmp;
-        tmp = d4MM2[i] - d4MM3[i]; d423 += tmp * tmp;
-    }
-    
-    printf("--------------------------------------------"
-           "---------------------------------------------------------\n");
-    printf("| <A * S^-1>: 12 %e  35 %e  34 %e  45 %e  23 %e \n", asinv12, asinv35, asinv34, asinv45, asinv23);
-    printf("| d4        : 12 %e  35 %e  34 %e  45 %e  23 %e \n", d412, d435, d434, d445, d423);
-    printf("| Difference: 12 %e  13 %e  23 %e  25 %e   \n", diff12, diff13, diff23, diff25);
-    printf("| Difference: 35 %e  34 %e  45 %e  24 %e   \n", diff35, diff34, diff45, diff24);
-    printf("--------------------------------------------"
-           "---------------------------------------------------------\n");
-    
-    DSDP_FREE(MM1); DSDP_FREE(MM2); DSDP_FREE(MM3); DSDP_FREE(MM4); DSDP_FREE(MM5);
-    
-#else
-    
     // Clean up current values and invert blocks
-    schurMatCleanup(M);
-    schurMatGetSinv(M);
+    schurMatCleanup(M); schurMatGetSinv(M);
     
     if (M->M->stype == SCHUR_TYPE_DENSE) {
         for (DSDP_INT i = 0; i < M->nblock; ++i) {
@@ -1364,11 +1232,6 @@ extern DSDP_INT DSDPSchurSetup( symM *M ) {
         }
     }
     
-    // spsMatView(M->M->spsM);
-    // schurtime += (double) (clock() - t_start) / CLOCKS_PER_SEC;
-    // printf("| Schur time: %f \n", schurtime);
-    
-#endif
     return retcode;
 }
 

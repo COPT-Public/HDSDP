@@ -167,7 +167,7 @@ extern void lczStepLength( lczstep *lcz, spsMat *S, spsMat *dS, double *lbd, dou
         vec_norm(w, &nrm2); // nrm2 = norm(w)
         H[k * mH + k] = - alp; // H(k, k) = - alp;
         
-        if (nrm2 < 0.8 * nrm) {
+        if (nrm2 < 0.8 * nrm && FALSE) {
             for (i = 0; i < k + 1; ++i) {
                 Vp = V + i * n;
                 alpha = - ddot(&n, Vp, &one, w->x, &one);

@@ -4,7 +4,6 @@
 #include "dsdplog.h"
 #include "dsdpdata.h"
 
-
 // A simple SDPA reader for HDSDP
 static char etype[] = "SDPA File Reader";
 
@@ -29,7 +28,7 @@ static DSDP_INT DSDPPrepareSDPData( char     *filename,    // 'xxx.dat-s'
     // Adapted from readsdpa.c of DSDP5.8
     DSDP_INT retcode = DSDP_RETCODE_OK;
     FILE *file; char chartmp, thisline[BFSIZE] = "*";
-    DSDP_INT i, j, ngot, blockid, constrid, m, n, line = 0, tline = 0, lpidx = -1, memerr = FALSE;
+    DSDP_INT i, j, k, ngot, blockid, constrid, m, n, line = 0, tline = 0, lpidx = -1, memerr = FALSE;
     DSDP_INT nblock = 0, *blocksizes = NULL, nvars = 0, nlpvars = 0, nconstr = 0, nnz = 0, lpexist;
     double *dObj = NULL, *c = NULL, val = 0.0; cs **sdpAs = NULL, *lpA = NULL;
     file = fopen(filename, "r");
@@ -144,6 +143,12 @@ static DSDP_INT DSDPPrepareSDPData( char     *filename,    // 'xxx.dat-s'
             thisline[0] = '\0'; blockid = constrid = -1; i = j = -1; val = 0.0;
             fgets(thisline, BFSIZE, file); ++line;
             ngot = sscanf(thisline, "%d %d %d %d %lg", &constrid, &blockid, &i, &j, &val);
+            
+            if (i > j) {
+                printf("| Warning: non-upper triangular element detected. \n");
+                k = i; i = j; j = k;
+            }
+            
             if (ngot != 5) {
                 if (feof(file)) {
                     break;
@@ -178,6 +183,11 @@ static DSDP_INT DSDPPrepareSDPData( char     *filename,    // 'xxx.dat-s'
             thisline[0] = '\0'; blockid = constrid = -1; i = j = -1; val = 0.0;
             fgets(thisline, BFSIZE, file); ++line;
             ngot = sscanf(thisline, "%d %d %d %d %lg", &constrid, &blockid, &i, &j, &val);
+            if (i > j) {
+                printf("| Warning: non-upper triangular element detected. \n");
+                k = i; i = j; j = k;
+            }
+            
             if (ngot != 5) {
                 if (feof(file)) {
                     break;
@@ -436,25 +446,6 @@ extern DSDP_INT DSDPSolveSDPA(int argc, char *argv[]) {
     if (retcode != DSDP_RETCODE_OK) {
         printf("| Optimization failed. \n");
     }
-    
-    
-#ifdef OPT_PRECOND
-    retcode = DSDPExport(hsdSolver, DSDP_EXPORT_YSOL, export);
-    if (retcode != DSDP_RETCODE_OK) {
-        printf("| Export failed. \n");
-    }
-    showBeautifulDashlines();
-#endif
-    
-//    double *y = NULL;
-//    y = (double *) calloc(sizeof(double), nConstrs);
-//    DSDPGetDual(hsdSolver, y, NULL);
-//
-//    for (i = 0; i < nConstrs; ++i) {
-//        printf("%10.6e, ", y[i]);
-//    }
-//
-//    DSDP_FREE(y);
     
 exit_cleanup:
     DSDPDestroy(hsdSolver);

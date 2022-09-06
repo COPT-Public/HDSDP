@@ -127,7 +127,8 @@ extern void DSDPDIMACErrorPrint( DSDPStats *stat ) {
     showBeautifulDashlines();
     printf("| Err1: %-6.2e | Err2: %-6.1e | Err3: %-6.1e | Err4: %-6.1e | Err5: %-8.1e | Err6: %-8.1e \n",
            err1, err2, err3, err4, err5, err6);
-    showBeautifulDashlines(); printSolFlag(err); showBeautifulDashlines();
+    showBeautifulDashlines();
+    // printSolFlag(err); showBeautifulDashlines();
 }
 
 extern void DSDPBProfilerPrint( DSDPStats *stat ) {

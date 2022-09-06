@@ -133,7 +133,7 @@ static DSDP_INT cg_decision( adpcg *cg ) {
     if ( cg->latesttime > 1.5 * cg->avgsvtime + 0.3 * cg->avgfctime ) {
 #ifdef CG_DEBUG
         printf("| Current pre-conditioner is considered out-dated with %3.3f > %3.3f. \n",
-               cg->latesttime, 0.1 * (cg->avgsvtime + cg->avgfctime));
+               cg->latesttime, 1.5 * cg->avgsvtime + 0.3 * cg->avgfctime);
 #endif
         return CG_TRUE;
     }
@@ -532,6 +532,11 @@ extern void cg_finish( adpcg *cg ) {
         cg->status = CG_STATUS_DIRECT;
     }
     
+    if ( cg->latesttime > 2.0 * cg->avgfctime && cg->nfactors > 0 ) {
+        printf("| ADP-CG Warning: No longer re-using pre-conditioners. \n");
+        cg->status = CG_STATUS_DIRECT;
+    }
+    
     return;
 }
 
@@ -546,9 +551,6 @@ extern DSDP_INT cg_solve( adpcg *cg, vec *b, vec *x0 ) {
     
     DSDP_INT retcode = CG_OK, status, warm = CG_FALSE;
     double t;
-#ifdef CG_DEBUG
-    cg_logging(cg);
-#endif
     cg->niter = 0;
     
     if ( cg->status == CG_STATUS_DIRECT ) {

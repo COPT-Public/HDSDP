@@ -2,7 +2,7 @@
 #include "dsdplapack.h"
 #include "dsdplog.h"
 #include "dsdputils.h"
-#include "cg.h"
+#include "adpcg.h"
 #include "vec.h"
 
 /*
@@ -48,7 +48,8 @@ extern DSDP_INT dInfeasCorrectorStep( HSDSolver *dsdpSolver, DSDP_INT isfinal ) 
     // Corrector step in Phase A.
     DSDP_INT retcode = DSDP_RETCODE_OK;
     DSDP_INT nall = dsdpSolver->nall;
-    cgsol *cg = dsdpSolver->cgSolver; cgSetMaxIter(cg, 300); cgSetTol(cg, 1e-04);
+    
+    adpcg *cg = dsdpSolver->cg;
     vec *d4 = dsdpSolver->M->asinvrysinv; // asinvrysinv is directly solved using CG
     vec *d2 = dsdpSolver->M->asinv; // asinv is directly solved using CG
     vec *d1 = dsdpSolver->d1, *ynew = dsdpSolver->d4; // d4 is reused for storing ynew
@@ -74,8 +75,10 @@ extern DSDP_INT dInfeasCorrectorStep( HSDSolver *dsdpSolver, DSDP_INT isfinal ) 
         }
         
         DSDPConic( COPS_GET_SCHURVEC )(dsdpSolver, (DSDP_INT) (dratemax != 0));
-        cgsolve(cg, d2, NULL);
-        if (dratemax) { cgsolve(cg, d4, NULL); }
+        cg_solve(cg, d2, NULL);
+        if (dratemax) {
+            cg_solve(cg, d4, NULL);
+        }
         vec_zaxpby(dycorr, 0.0, d1, -1.0, d2);
 
         if (i == 0) {
@@ -84,9 +87,10 @@ extern DSDP_INT dInfeasCorrectorStep( HSDSolver *dsdpSolver, DSDP_INT isfinal ) 
         } else {
             oldbarrier = newbarrier;
         }
-         dsdpSolver->drate = 0.0;
-         DSDPConic( COPS_STEPDIRECTION )(dsdpSolver);
-         step = DSDPConic( COPS_GET_MAXSTEP )(dsdpSolver, DUALVAR);
+         
+        dsdpSolver->drate = 0.0;
+        DSDPConic( COPS_STEPDIRECTION )(dsdpSolver);
+        step = DSDPConic( COPS_GET_MAXSTEP )(dsdpSolver, DUALVAR);
         
         step = (isfinal) ? MIN(step, 1.0) : MIN(0.8 * step, 1.0); // 0.75 ? 0.8 ?
         // First line search
@@ -185,6 +189,7 @@ extern DSDP_INT dInfeasCorrectorStep( HSDSolver *dsdpSolver, DSDP_INT isfinal ) 
         vec_uslack(ynow, su, bound);
     }
 
+    cg_finish(cg);
     dsdpSolver->iterProgress[ITER_CORRECTOR] = TRUE;
     return retcode;
 }
@@ -196,8 +201,7 @@ extern DSDP_INT dualCorrectorStep( HSDSolver *dsdpSolver ) {
     retcode = checkIterProgress(dsdpSolver, ITER_CORRECTOR);
     
     // Prepare CG solver
-    cgsol *cg = dsdpSolver->cgSolver; cgSetMaxIter(cg, 300); cgSetTol(cg, 1e-04);
-    
+    adpcg *cg = dsdpSolver->cg;
     DSDP_INT nall = dsdpSolver->nall;
     vec *d2 = dsdpSolver->M->asinv; // asinv is directed solved using CG
     vec *d1 = dsdpSolver->d1, *b = dsdpSolver->dObj, *ynew = dsdpSolver->d4; // d4 is reused for storing ynew
@@ -214,8 +218,7 @@ extern DSDP_INT dualCorrectorStep( HSDSolver *dsdpSolver ) {
         if (dsdpSolver->mu < 1e-05) { break; }
         
         DSDPConic( COPS_GET_SCHURVEC )(dsdpSolver, FALSE);
-        cgsolve(cg, d2, NULL); // Compute corrector step
-        vec_dot(b, d2, &bTd2);
+        cg_solve(cg, d2, NULL); vec_dot(b, d2, &bTd2);
         if (bTd1 > 0 && bTd2 > 0) {
             dsdpSolver->mu = bTd1 / bTd2; // MIN(dsdpSolver->mu, bTd1 / bTd2);
         }
@@ -300,6 +303,7 @@ extern DSDP_INT dualCorrectorStep( HSDSolver *dsdpSolver ) {
         }
     }
     
+    cg_finish(cg);
     dsdpSolver->iterProgress[ITER_CORRECTOR] = TRUE;
     return retcode;
 }

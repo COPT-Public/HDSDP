@@ -85,7 +85,7 @@ extern void schurMatAdddiag( schurMat *sMat, double d ) {
     }
 }
 
-extern void schurMatFactorize( schurMat *sMat ) {
+extern DSDP_INT schurMatFactorize( schurMat *sMat ) {
     // Factorize the schur matrix
     if (sMat->stype == SCHUR_TYPE_DENSE) {
         denseMatFactorize(sMat->denseM);
@@ -104,6 +104,8 @@ extern void schurMatFactorize( schurMat *sMat ) {
         assert( FALSE );
     }
     sMat->isFactorized = TRUE;
+    
+    return DSDP_RETCODE_OK;
 }
 
 extern void schurMatSolve( schurMat *sMat, DSDP_INT nrhs, double *B, double *aux ) {

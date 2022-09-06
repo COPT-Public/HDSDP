@@ -48,10 +48,10 @@ static cgint cg_prepare_preconditioner( adpcg *cg ) {
         retcode = cg->A_chol(cg->A);
         cg->avgfctime = (cg->nfactors * cg->avgfctime + \
                          t - my_clock()) / (cg->nfactors + 1);
-        cg->nfactors += 1; cg->nused = 0;
+        cg->nfactors += 1;
     }
     
-    return retcode;
+    cg->nused = 0; return retcode;
 }
 
 /** @brief Apply pre-conditioning
@@ -86,7 +86,7 @@ static cgint cg_decision( adpcg *cg ) {
         return CG_TRUE;
     }
     
-    if ( cg->latesttime > 1.5 * cg->avgsvtime ) {
+    if ( cg->latesttime > 1.5 * cg->avgsvtime + 0.3 * cg->avgfctime ) {
         return CG_TRUE;
     }
     
@@ -141,7 +141,7 @@ extern cgint cg_iteration( adpcg *cg, void *b, cgint warm ) {
     
     if ( alpha == 0.0 ) {
         status = CG_STATUS_SOLVED;
-        return status;
+        cg->status = status; return status;
     }
  
     alpha = MIN(100, alpha);
@@ -151,7 +151,7 @@ extern cgint cg_iteration( adpcg *cg, void *b, cgint warm ) {
     retcode = cg_precondition(cg, d);
     if ( retcode != CG_OK ) {
         status = CG_STATUS_FAILED;
-        return status;
+        cg->status = status; return status;
     }
     
     cg->Av(A, d, Ad); cg->v_copy(d, pinvr);
@@ -172,7 +172,8 @@ extern cgint cg_iteration( adpcg *cg, void *b, cgint warm ) {
             
             retcode = cg_precondition(cg, d);
             if ( retcode != CG_OK ) {
-                status = CG_STATUS_FAILED; break;
+                status = CG_STATUS_FAILED;
+                cg->status = status; break;
             }
             
             cg->Av(A, d, Ad);
@@ -180,7 +181,8 @@ extern cgint cg_iteration( adpcg *cg, void *b, cgint warm ) {
             
             retcode = cg_precondition(cg, pinvr);
             if ( retcode != CG_OK ) {
-                status = CG_STATUS_FAILED; break;
+                status = CG_STATUS_FAILED;
+                cg->status = status; break;
             }
             continue;
         }
@@ -190,7 +192,8 @@ extern cgint cg_iteration( adpcg *cg, void *b, cgint warm ) {
         retcode = cg_precondition(cg, pinvr);
         
         if ( retcode != CG_OK ) {
-            status = CG_STATUS_FAILED; break;
+            status = CG_STATUS_FAILED;
+            cg->status = status; break;
         }
         
         cg->v_dot(rnew, pinvr, &beta);
@@ -201,11 +204,13 @@ extern cgint cg_iteration( adpcg *cg, void *b, cgint warm ) {
         cg->v_norm(r, &rnrm);
         
         if ( rnrm != rnrm ) {
-            status = CG_STATUS_FAILED; break;
+            status = CG_STATUS_FAILED;
+            cg->status = status; break;
         }
         
         if ( rnrm < tol ) {
-            status = CG_STATUS_SOLVED; break;
+            status = CG_STATUS_SOLVED;
+            cg->status = status; break;
         }
     }
     
@@ -217,7 +222,8 @@ extern cgint cg_iteration( adpcg *cg, void *b, cgint warm ) {
         status = CG_STATUS_MAXITER;
     }
     
-    return status;
+    cg->niter = i; cg->rnrm = rnrm;
+    cg->status = status; return status;
 }
 
 /** @brief Initialize the conjugate gradient solver
@@ -231,7 +237,7 @@ extern void cg_init( adpcg *cg ) {
     memset(cg, 0, sizeof(adpcg));
     cg->ptype = CG_PRECOND_DIAG;    cg->maxiter = -1;
     cg->status = CG_STATUS_UNKNOWN; cg->reuse = -1;
-    cg->restart = -1;
+    cg->restart = -1; cg->tol = 1e-08;
     
     /* Link CG methods */
     
@@ -293,7 +299,7 @@ extern cgint cg_alloc( adpcg *cg, cgint n, cgint vsize ) {
     cg->r = (void *) calloc(1, vsize); cg->rnew = (void *) calloc(1, vsize);
     cg->d = (void *) calloc(1, vsize); cg->pinvr = (void *) calloc(1, vsize);
     cg->Ad = (void *) calloc(1, vsize); cg->x = (void *) calloc(1, vsize);
-    cg->aux = (void *) calloc(1, vsize);
+    cg->aux = (void *) calloc(1, vsize); cg->btmp = (void *) calloc(1, vsize);
     
     if ( !cg->r || !cg->rnew || !cg->d ||
          !cg->pinvr || !cg->Ad || !cg->x || !cg->aux ) {
@@ -301,7 +307,7 @@ extern cgint cg_alloc( adpcg *cg, cgint n, cgint vsize ) {
     }
     
     init(cg->r); init(cg->rnew); init(cg->d); init(cg->pinvr);
-    init(cg->Ad); init(cg->x); init(cg->aux);
+    init(cg->Ad); init(cg->x); init(cg->aux); init(cg->btmp);
     
     retcode = alloc(cg->r, n);     if ( retcode != CG_OK ) { return retcode; }
     retcode = alloc(cg->rnew, n);  if ( retcode != CG_OK ) { return retcode; }
@@ -310,6 +316,7 @@ extern cgint cg_alloc( adpcg *cg, cgint n, cgint vsize ) {
     retcode = alloc(cg->Ad, n);    if ( retcode != CG_OK ) { return retcode; }
     retcode = alloc(cg->x, n);     if ( retcode != CG_OK ) { return retcode; }
     retcode = alloc(cg->aux, n);   if ( retcode != CG_OK ) { return retcode; }
+    retcode = alloc(cg->btmp, n);  if ( retcode != CG_OK ) { return retcode; }
     
     return retcode;
 }
@@ -344,11 +351,11 @@ extern void cg_free( adpcg *cg ) {
     
     v_free(cg->r); v_free(cg->rnew); v_free(cg->d);
     v_free(cg->pinvr); v_free(cg->Ad); v_free(cg->x);
-    v_free(cg->aux);
+    v_free(cg->aux); v_free(cg->btmp);
 
     adpcg_free(cg->r); adpcg_free(cg->rnew); adpcg_free(cg->d);
     adpcg_free(cg->pinvr); adpcg_free(cg->Ad); adpcg_free(cg->x);
-    adpcg_free(cg->aux);
+    adpcg_free(cg->aux); adpcg_free(cg->btmp);
 
     memset(cg, 0, sizeof(adpcg));
     
@@ -441,8 +448,8 @@ extern cgint cg_start( adpcg *cg ) {
  */
 extern void cg_finish( adpcg *cg ) {
     
-    cg->nused += 1; cg->latesttime = cg->currenttime / cg->nsolverd;
-    cg->currenttime = 0.0; cg->nsolverd = 0;
+    cg->nused += 1; cg->latesttime = ( cg->nsolverd ) ? cg->currenttime / cg->nsolverd : 0.0;
+    cg->currenttime = 0.0; cg->nsolverd = 0; cg->nrounds += 1;
     
     if ( cg->nmaxiter > 20 ) {
         cg->status = CG_STATUS_DIRECT;
@@ -463,6 +470,8 @@ extern cgint cg_solve( adpcg *cg, void *b, void *x0 ) {
     cgint retcode = CG_OK, status, warm = CG_FALSE;
     double t;
     
+    cg->niter = 0;
+    
     if ( cg->status == CG_STATUS_DIRECT ) {
         return cg->Ainv(cg->A, b, cg->aux);
     }
@@ -472,8 +481,7 @@ extern cgint cg_solve( adpcg *cg, void *b, void *x0 ) {
         return cg->Ainv(cg->A, b, cg->aux);
     }
     
-    t = my_clock();
-    cg->v_copy(b, cg->aux);
+    t = my_clock(); cg->v_copy(b, cg->btmp);
     
     if ( x0 ) {
         cg->v_copy(x0, cg->x); warm = CG_TRUE;
@@ -495,7 +503,9 @@ extern cgint cg_solve( adpcg *cg, void *b, void *x0 ) {
         }
     }
     
-    cg->currenttime += my_clock() - t;
-    cg->nsolverd += 1; cg->nsolves += 1;
+    t = my_clock() - t; cg->currenttime += t; cg->nsolverd += 1;
+    cg->avgsvtime = (cg->avgsvtime * cg->nsolves + t) / (cg->nsolves + 1);
+    cg->nsolves += 1;
+    
     return retcode;
 }

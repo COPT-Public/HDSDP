@@ -58,7 +58,7 @@ extern DSDP_INT dsdpgetPhaseAProxMeasure( HSDSolver *dsdpSolver, double newmu ) 
     DSDP_INT ispfeas = FALSE;
     
     // Use b1 as auxiliary
-    vec *dydelta = dsdpSolver->b1, *vecaux = dsdpSolver->cgSolver->aux;
+    vec *dydelta = dsdpSolver->b1, *vecaux = dsdpSolver->cg->aux;
     vec_zaxpby(dydelta, dsdpSolver->tau / dsdpSolver->mu,
                dsdpSolver->d2, -1.0, dsdpSolver->d3);
     
@@ -156,11 +156,7 @@ extern DSDP_INT dsdpgetPhaseBProxMeasure( HSDSolver *dsdpSolver, double *muub, d
             dsdpSolver->mumaker2 = dsdpSolver->mu;
             vec_copy(dsdpSolver->y, dsdpSolver->ymaker2);
             vec_copy(dsdpSolver->b1, dsdpSolver->dymaker2);
-#ifdef OPT_PRECOND
-        } else if (gap >= 1e-10 * denominator){
-#else
-        } else if (gap >= 5e-06 * denominator){
-#endif
+        } else if (gap >= 5e-07 * denominator){
             dsdpSolver->mumaker = dsdpSolver->mu;
             vec_copy(dsdpSolver->y, dsdpSolver->ymaker);
             vec_copy(dsdpSolver->b1, dsdpSolver->dymaker);

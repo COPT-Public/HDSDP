@@ -308,7 +308,7 @@ extern double sdpMatGetCFnorm( sdpMat *sdpData ) {
 }
 
 extern double sdpMatGetAOneNorm( sdpMat *sdpData ) {
-    // TODO: Refractor the garbage code.
+    
     double onenorm = 0.0; DSDP_INT i, j, m = sdpData->dimy;
     if (sdpData->schurspIdx) {
         if (sdpData->nspsMat) {

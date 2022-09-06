@@ -15,7 +15,6 @@
 #define adpcg_h
 
 
-#include <sys/_types/_int32_t.h>
 #include <stddef.h>
 
 #ifdef ADPCG_64
@@ -92,6 +91,7 @@ typedef struct {
     void *Ad;        ///<  Workspace array
     void *x;         ///<  CG solution vector
     void *aux;       ///<  CG auxiliary array
+    void *btmp;      ///<  CG temporary RHS array
     
     cgint ptype;     ///<  Pre-conditioner type
     void *chol;      ///<  Cholesky pre-conditioner

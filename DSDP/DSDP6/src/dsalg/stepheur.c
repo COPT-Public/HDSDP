@@ -149,7 +149,8 @@ extern void computeAdaptivedRate( HSDSolver *dsdpSolver ) {
     alphac = DSDPConic( COPS_GET_MAXSTEP )(dsdpSolver, DUALVAR);
     alphac = MIN(alphac * 0.98, 1.0);
     DSDP_INT incone = FALSE, j;
-    vec *aux = dsdpSolver->cgSolver->aux, *y = dsdpSolver->y;
+    
+    vec *aux = dsdpSolver->cg->aux, *y = dsdpSolver->y;
     for (j = 0; ; ++j) {
         vec_zaxpby(aux, -alphac, dsdpSolver->d3, 1.0, y);
         getPhaseACheckerS(dsdpSolver, aux, 1.0); getPhaseALpCheckers(dsdpSolver, aux, 1.0);
@@ -208,7 +209,7 @@ extern void selectMu( HSDSolver *dsdpSolver, double *newmu ) {
     */
         
     double alpha = DSDP_INFINITY, alphap = 0.0, tmp = 1000, tmp2;
-    vec *aux = dsdpSolver->cgSolver->aux;
+    vec *aux = dsdpSolver->cg->aux;
     
     if (dsdpSolver->eventMonitor[EVENT_PFEAS_FOUND]) {
         // IMPORTANT: Is it correct ?

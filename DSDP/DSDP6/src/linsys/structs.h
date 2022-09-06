@@ -139,6 +139,95 @@ typedef struct {
     
 } cgsol;
 
+
+/** @brief Working struct for the adaptive CG solver
+ *
+ * To make the CG solver more general, the operations on
+ *  1. vector 2. matrix 3. matrix-vector
+ * are presented in abstract function pointers and users can define their own implementations for various purposes
+ *
+ * More details: the following operations are expected
+ * Vector:
+ * 1. v_init(v) Initialize a vector struct
+ * 2. v_alloc(v) Allocate internal memory for a vector struct
+ * 3. v_free(v) Free the internal memory for a vector struct
+ * 4. v_copy(s, t) Copy content from vector s to vector t
+ * 5. v_reset(v) Set the content of vector 0
+ * 6. v_norm(v, &nrm) Compute norm of v
+ * 7. v_axpy(a, x, y)    Compute y = y + a * x
+ * 8. v_zaxpby(z, a, x, b, y) Compute z = a * x + b * y
+ * 9. v_dot(x, y, &dot) Compute x' * y
+ *
+ * Matrix:
+ * 1. A_chol(A) Perform Cholesky decomposition
+ * 2. is_illcond = A_cond(A) Get a boolean variable reflecting the conditioning of A
+ *
+ * Matrix-vector:
+ * 1. diagpcd(diag, v) Perform diagonal pre-conditioning
+ * 2. cholpcf(chol, v) Perform Cholesky pre-conditioning
+ */
+typedef struct {
+    
+    schurMat *A;         ///<  LHS data
+    vec *r;         ///<  Residual
+    vec *rnew;      ///<  Workspace array
+    vec *d;         ///<  Workspace array
+    vec *pinvr;     ///<  Workspace array
+    vec *Ad;        ///<  Workspace array
+    vec *x;         ///<  CG solution vector
+    vec *aux;       ///<  CG auxiliary array
+    vec *btmp;      ///<  Buffer for b
+    
+    DSDP_INT ptype;     ///<  Pre-conditioner type
+    schurMat *chol;      ///<  Cholesky pre-conditioner
+    vec *diag;      ///<  Diagonal pre-conditioner
+        
+    double tol;      ///< Relative tolerance of CG
+    double rnrm;     ///< Residual norm
+    double avgsvtime;  ///< Averate solution time of previous CG solves
+    double avgfctime;  ///< Average factorization time of previous CG solves
+    double currenttime; ///< Buffer of solution time in the current round
+    double latesttime; ///< Time for the latest solve
+    
+    DSDP_INT  n;        ///<  Dimension of linear system
+    DSDP_INT  niter;    ///<  Number of iterations in most recent solve
+    DSDP_INT  maxiter;  ///<  Maximum number of iterations
+    DSDP_INT  status;   ///<  Solution status
+    DSDP_INT  reuse;    ///<  Reuse Cholesky pre-conditioner
+    DSDP_INT  nused;    ///<  Number of rounds current Cholesky pre-conditioner is already used
+    DSDP_INT  nmaxiter;  ///<  Number of non-successfull solves
+    DSDP_INT  restart;  ///< Restart frequency
+    DSDP_INT  nfactors; ///< Number of factorizes performed so far
+    DSDP_INT  nrounds;  ///< Number of rounds of solves
+    DSDP_INT  nsolverd; ///< Number of solves in a round
+    DSDP_INT  nsolves;  ///< Number of linear systems solved
+    
+    /* Vector operations */
+    void  (*v_init)   (vec *v); ///< Initialize vector
+    DSDP_INT (*v_alloc)  (vec *v, DSDP_INT n); ///< Allocate memory for v
+    void  (*v_free)   (vec *v);          ///< Free the internal memory of vector
+    void  (*v_copy)   (vec *s, vec *t); ///< Copy s to t
+    void  (*v_reset)  (vec *v);          ///< Reset vector to 0
+    void  (*v_norm)   (vec *v, double *nrm); ///< nrm = norm(v)
+    void  (*v_axpy)   (double a, vec *x, vec *y); ///< y = y + a * x
+    void  (*v_axpby)  (double a, vec *x, double b, vec *y); ///< y = a * x + b * y
+    void  (*v_zaxpby) (vec *z, double a, vec *x, double b, vec *y); ///< z = a * x + b * y
+    void  (*v_dot)    (vec *x, vec *y, double *xTy); ///<  xTy = x' * y
+    
+    /* Matrix operations */
+    DSDP_INT (*A_chol) (schurMat *A); ///< Compute Cholesky of A
+    DSDP_INT (*A_cond) (schurMat *A); ///< Evaluate conditioning of A
+    void  (*A_getdiag) (schurMat *A, vec *diag); ///< Compute diagonal pre-conditioner diag = diag(A)
+    
+    /* Matrix-vector operations */
+    DSDP_INT (*diagpcd)(vec *diag, vec *v); ///< Diagonal Preconditioning operation v = P \ v
+    DSDP_INT (*cholpcd)(schurMat *chol, vec *v, vec *aux); ///< Cholesky Preconditioning operation v = P \ v
+    void  (*Av) (schurMat *A, vec *v, vec *Av); ///< Compute Av = A * v
+    DSDP_INT (*Ainv) (schurMat *A, vec *v, vec *aux); ///< Solve Ainvv = A \ v
+    
+} adpcg;
+
+
 /** @brief The struct that wraps up SPEIG package
  * The struct contains the necessary workspace to factorize a sequence of SDP coefficient matrices
  */

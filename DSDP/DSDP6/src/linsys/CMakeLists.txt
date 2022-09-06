@@ -24,8 +24,8 @@ add_library(hdsdplinsys SHARED
         $ENV{HDSDP_HOME}/interface/dsdphsd.h
         $ENV{HDSDP_HOME}/src/linsys/denseopts.c
         $ENV{HDSDP_HOME}/src/linsys/denseopts.h
-        $ENV{HDSDP_HOME}/src/linsys/cg.c
-        $ENV{HDSDP_HOME}/src/linsys/cg.h
+        $ENV{HDSDP_HOME}/src/linsys/adpcg.c
+        $ENV{HDSDP_HOME}/src/linsys/adpcg.h
         $ENV{HDSDP_HOME}/src/linsys/dsdpfeast.h
         $ENV{HDSDP_HOME}/src/linsys/lanczos.c
         $ENV{HDSDP_HOME}/src/linsys/lanczos.h

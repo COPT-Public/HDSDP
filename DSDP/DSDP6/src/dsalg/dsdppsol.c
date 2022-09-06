@@ -85,13 +85,14 @@ extern DSDP_INT computeDIMACS( HSDSolver *dsdpSolver ) {
     dInf = sqrt(dsdpSolver->n) * dsdpSolver->dperturb;
     pObj = DSDPConic( COPS_GET_CX )(dsdpSolver); pObj *= dsdpSolver->cScaler;
     
-    if (pInf / (1 + bnrm) > 1e-02 && dsdpSolver->mumaker2 > 0) {
+    if (pInf / (1 + bnrm) > 1e-02 && dsdpSolver->mumaker > 0) {
         printf("| Bad primal objective value. Trying backup Newton step. \n");
         dsdpSolver->mumaker = dsdpSolver->mumaker2;
         vec_copy(dsdpSolver->ymaker2, dsdpSolver->ymaker);
         vec_copy(dsdpSolver->dymaker2, dsdpSolver->dymaker);
         retcode = computePrimalX(dsdpSolver);
-        dsdpSolver->mumaker = -1.0; computeDIMACS(dsdpSolver);
+        dsdpSolver->mumaker = -1.0;
+        computeDIMACS(dsdpSolver);
         return retcode;
     }
     

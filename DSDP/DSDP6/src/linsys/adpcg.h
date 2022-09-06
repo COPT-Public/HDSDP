@@ -15,7 +15,8 @@
 #define adpcg_h
 
 #include "structs.h"
-#include "cg.h"
+#include "dsdphsd.h"
+
 
 #define cgerr(x) printf(x); fatal_error;
 

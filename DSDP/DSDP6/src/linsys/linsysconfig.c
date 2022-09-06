@@ -1,4 +1,5 @@
 #include "linsysconfig.h"
+#include "dsdphsd.h"
 // Config the MKL package
 
 int MKL_Get_Max_Threads(void);
@@ -17,7 +18,7 @@ void setUpMKL(void) {
     else if (max_threads >= 12) { nthreads = 12; }
     else if (max_threads >= 8)  { nthreads = 8;  }
     else                        { nthreads = max_threads; }
-    nthreads = 1;
+//    nthreads = 1;
     printf(" Optimizing over %d threads. \n", nthreads);
     MKL_Set_Num_Threads(nthreads);
 }

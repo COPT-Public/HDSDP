@@ -7,7 +7,7 @@
 #include "dsdppfeas.h"
 #include "dsdppsol.h"
 #include "schurmat.h"
-#include "cg.h"
+#include "adpcg.h"
 #include "lanczos.h"
 #include "sparseopts.h"
 #include "denseopts.h"
@@ -68,7 +68,8 @@ static DSDP_INT DSDPIInit( HSDSolver *dsdpSolver ) {
     
     dsdpSolver->M        = NULL;
     dsdpSolver->Msdp     = NULL;
-    dsdpSolver->cgSolver = NULL;
+    
+    dsdpSolver->cg       = NULL;
     dsdpSolver->Mdiag    = NULL;
     dsdpSolver->Mscaler  = 0.0;
     
@@ -176,9 +177,12 @@ static DSDP_INT DSDPIAlloc( HSDSolver *dsdpSolver ) {
     dsdpSolver->lpData   = (lpMat    *) calloc(1, sizeof(lpMat));
     dsdpSolver->lpObj    = (vec      *) calloc(1, sizeof(vec));
     dsdpSolver->M        = (symM     *) calloc(1, sizeof(symM));
-    dsdpSolver->cgSolver = (cgsol *) calloc(1, sizeof(cgsol));
+    
+    dsdpSolver->cg       = (adpcg *) calloc(1, sizeof(adpcg));
+    
     dsdpSolver->isSDPset = (DSDP_INT *) calloc(nblock, sizeof(DSDP_INT));
-    cgInit(dsdpSolver->cgSolver);
+    
+    cg_init(dsdpSolver->cg);
     
     for (DSDP_INT i = 0; i < nblock; ++i) {
         dsdpSolver->sdpData[i] = (sdpMat *) calloc(1, sizeof(sdpMat));
@@ -208,14 +212,10 @@ static DSDP_INT DSDPIAllocIter( HSDSolver *dsdpSolver ) {
     dsdpSolver->Msdp = (schurMat *) calloc(1, sizeof(schurMat));
     schurMatInit(dsdpSolver->Msdp);
     retcode = schurMatAlloc(dsdpSolver->Msdp, m); checkCode;
-    
-    retcode = cgAlloc(dsdpSolver->cgSolver, m); checkCode;
-    cgSetTol(dsdpSolver->cgSolver, 1e-05);
-    cgSetPreconditionerReuse(dsdpSolver->cgSolver, CGreuse);
-    cgSetM(dsdpSolver->cgSolver, dsdpSolver->Msdp);
-    cgSetCholeskyPreconditioner(dsdpSolver->cgSolver, dsdpSolver->Msdp);
     vec_init_alloc(dsdpSolver->Mdiag, m);
-    cgSetDiagPreconditioner(dsdpSolver->cgSolver, dsdpSolver->Mdiag);
+    retcode = cg_alloc(dsdpSolver->cg, m, sizeof(vec)); checkCode;
+    cg_register(dsdpSolver->cg, dsdpSolver->Msdp,
+                dsdpSolver->Mdiag, dsdpSolver->Msdp);
     
     vec_init_alloc(dsdpSolver->u, m);
     vec_init_alloc(dsdpSolver->b1, m);
@@ -317,9 +317,8 @@ static void DSDPIFreeAlgIter( HSDSolver *dsdpSolver ) {
     schurMatFree(dsdpSolver->Msdp);
     DSDP_FREE(dsdpSolver->Msdp);
     
-    cgFree(dsdpSolver->cgSolver);
-    DSDP_FREE(dsdpSolver->cgSolver);
-    
+    cg_free(dsdpSolver->cg);
+    DSDP_FREE(dsdpSolver->cg);
     
     vec_destroy(dsdpSolver->Mdiag);
     vec_destroy(dsdpSolver->u);
@@ -451,11 +450,12 @@ static DSDP_INT DSDPIPresolve( HSDSolver *dsdpSolver ) {
     DSDPStatUpdate(stat, STAT_SCHURORD_TIME, t);
     
     tnow = my_clock();
-#ifndef compareMode
+    
+#if defined(compareMode) || defined(ROTSOLVE)
+    dsdpSolver->cScaler = 1.0;
+#else
     retcode = preSDPPrimal(dsdpSolver);
     retcode = preSDPMatCScale(dsdpSolver);
-#else
-    dsdpSolver->cScaler = 1.0;
 #endif
     t = my_clock() - tnow;
     printf("| - Scaling completes in %3.3f seconds \n", t);
@@ -671,11 +671,13 @@ extern DSDP_INT DSDPOptimize( HSDSolver *dsdpSolver ) {
     printf("| DSDP Ends. %86s \n", "");
     showBeautifulDashlines();
     
+#ifndef ROTSOLVE
     // Compute solution and get DIMACS errors
     computePrimalX(dsdpSolver);
     printf("| Primal solution is extracted.                      "
            "                                              \n");
     computeDIMACS(dsdpSolver);
+#endif
     
     // Post-solving
     DSDPIPostsolve(dsdpSolver);
@@ -683,7 +685,11 @@ extern DSDP_INT DSDPOptimize( HSDSolver *dsdpSolver ) {
     // Summary statistics
     DSDPBProfilerPrint(stat);
     showBeautifulDashlines();
+    
+#ifndef ROTSOLVE
     DSDPDIMACErrorPrint(stat);
+#endif
+    
     dsdpSolver->insStatus = DSDP_STATUS_SOLVED;
     
     return retcode;
@@ -766,5 +772,5 @@ extern DSDP_INT DSDPDestroy( HSDSolver *dsdpSolver ) {
     DSDP_INT retcode = DSDP_RETCODE_OK;
     DSDPIFreeLPData (dsdpSolver); DSDPIFreeSDPData(dsdpSolver);
     DSDPIFreeAlgIter(dsdpSolver); DSDPIFreeCleanUp(dsdpSolver);
-    DSDP_FREE(dsdpSolver); return retcode;
+    return retcode;
 }

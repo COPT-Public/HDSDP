@@ -9,16 +9,7 @@
     Gwz,      Shanghai University of Finance and Economics
  
 */
-#ifdef superDebug
-#undef superDebug
-#endif
 
-// #define superDebug
-//#define compareMode
-//
-//#ifndef OPT_PRECOND
-//#define OPT_PRECOND
-//#endif
 
 #ifdef RELEASE
 #define assert(x) if (!(x)) { printf("Fatal error. \n"); exit(0); };
@@ -26,13 +17,8 @@
 #include <assert.h>
 #endif
 
-// #define DSDP64
-
-#ifdef COMPMEX
+#ifdef MATLAB_MEX_FILE
 #include "mex.h"
-#endif
-
-#ifdef mex_h
 #define calloc mxCalloc
 #define printf mexPrintf
 #define free mxFree
@@ -40,6 +26,7 @@
 typedef mwSignedIndex DSDP_INT;
 #else
 #include <stdint.h>
+#include <stdio.h>
 #ifdef DSDP64
 typedef long int DSDP_INT;
 #define ID "%ld"
@@ -48,7 +35,6 @@ typedef int DSDP_INT;
 #define ID "%d"
 #endif
 #endif
-
 
 // Memory handler
 #define DSDP_FREE(var) do {free((var)); (var) = NULL;} while (0)
@@ -112,11 +98,11 @@ typedef int DSDP_INT;
 
 #define VERSION_MAJOR           0
 #define VERSION_MINOR           9
-#define VERSION_TECHNICAL       3
+#define VERSION_TECHNICAL       4
 
 #define BUILD_DATE_YEAR         2022
-#define BUILD_DATE_MONTH        7
-#define BUILD_DATE_DAY          26
+#define BUILD_DATE_MONTH        9
+#define BUILD_DATE_DAY          2
 
 typedef struct hdsdp HSDSolver;
 
@@ -159,7 +145,7 @@ extern void DSDPGetDblParam  ( HSDSolver *dsdpSolver, DSDP_INT pName, double   *
 extern void DSDPGetIntParam  ( HSDSolver *dsdpSolver, DSDP_INT pName, DSDP_INT *intVal );
 extern DSDP_INT DSDPDestroy  ( HSDSolver *dsdpSolver );
 
-extern void     DSDPPrintVersion (void);
+extern void DSDPPrintVersion (void);
 
 #ifdef __cplusplus
 }

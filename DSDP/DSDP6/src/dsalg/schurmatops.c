@@ -1,7 +1,7 @@
 #include "schurmatops.h"
 #include "dsdplapack.h"
 #include "dsdplog.h"
-#include "cg.h"
+#include "adpcg.h"
 #include "dsdputils.h"
 #include "schurmat.h"
 #include "vec.h"
@@ -54,26 +54,25 @@ static DSDP_INT schurCGSetup( HSDSolver *dsdpSolver ) {
     DSDP_INT retcode = DSDP_RETCODE_OK;
     
     double tol = 0.0; DSDP_INT cgiter;
-    cgsol *cgsolver = dsdpSolver->cgSolver;
+    adpcg *cg = dsdpSolver->cg;
+    
+    retcode = cg_start(cg);
     
     // Set parameters
     if (dsdpSolver->mu > 1000) {
-        tol = 1e-04;
+        tol = 1e-05;
     } else if (dsdpSolver->mu > 1.0) {
-        tol = 1e-08;
+        tol = 1e-07;
     } else if (dsdpSolver->mu > 1e-02) {
-        tol = 1e-09;
+        tol = 1e-08;
     } else if (dsdpSolver->mu > 1e-05){
-        tol = 5e-10;
+        tol = 1e-09;
     } else if (dsdpSolver->mu > 1e-07) {
         tol = 1e-10;
     } else {
-        tol = 1e-10;
+        tol = 1e-12;
     }
     
-#ifdef compareMode
-    cgsolver->status = CG_STATUS_INDEFINITE;
-#endif
     if (dsdpSolver->m > 20000) {
         cgiter = 500; tol *= 10.0;
     } else if (dsdpSolver->m > 15000) {
@@ -84,10 +83,7 @@ static DSDP_INT schurCGSetup( HSDSolver *dsdpSolver ) {
         cgiter = MAX(dsdpSolver->m / 50, 30);
     }
     
-    cgSetTol(cgsolver, tol);
-    cgSetMaxIter(cgsolver, cgiter);
-    cgPreparePreconditioner(cgsolver);
-    
+    cg_setparam(cg, tol, -1, cgiter, -1);
     return retcode;
 }
 
@@ -103,45 +99,6 @@ static DSDP_INT setupPhaseBdvecs( HSDSolver *dsdpSolver ) {
     vec_copy(dsdpSolver->dObj,  dsdpSolver->d1);
     vec_copy(dsdpSolver->asinv, dsdpSolver->d2);
     return DSDP_RETCODE_OK;
-}
-
-static void cgSolveCheck( cgsol *cgSolver, vec *b, DSDP_INT firstInRound ) {
-    
-    DSDP_INT status;
-    cgStoreRHS(cgSolver, b);
-    cgsolve(cgSolver, b, NULL);
-    cgGetStatus(cgSolver, &status);
-    
-    if (status != CG_STATUS_SOLVED && status != CG_STATUS_INDEFINITE) {
-        if (cgSolver->pType == CG_PRECOND_DIAG) {
-            cgSetPreconditionerType(cgSolver, CG_PRECOND_CHOL);
-        } else {
-            cgSolver->nfailed += 1;
-        }
-        cgSolver->nused = 1000;
-        
-        if (cgSolver->nfailed == 10) {
-            if (cgSolver->reuse != 50) {
-                printf("| Switch to CG Mode 1. Reuse preconditioner for %d solves. \n", 50);
-            }
-            cgSetPreconditionerReuse(cgSolver, 50);
-        }
-
-        if (cgSolver->nfailed == 20) {
-            if (cgSolver->reuse != 20) {
-                printf("| Switch to CG Mode 2. Reuse preconditioner for %d solves. \n", 10);
-            }
-            cgSetPreconditionerReuse(cgSolver, 10);
-        }
-        
-        if (cgSolver->nfailed == 25) {
-            printf("| CG is turned off due to ill-conditioning. Schur matrix might be indefinite. \n");
-            cgSolver->M->isillCond = TRUE;
-        }
-        
-        cgPreparePreconditioner(cgSolver); cgRestoreRHS(cgSolver, b);
-        cgsolve(cgSolver, b, cgSolver->x);
-    }
 }
 
 extern DSDP_INT setupFactorize( HSDSolver *dsdpSolver ) {
@@ -165,12 +122,20 @@ extern DSDP_INT schurPhaseAMatSolve( HSDSolver *dsdpSolver ) {
     // After this routine, d1, d12, d3 and d4 will be filled
     DSDP_INT retcode = DSDP_RETCODE_OK;
     checkIterProgress(dsdpSolver, ITER_SCHUR_SOLVE);
-    cgSolveCheck(dsdpSolver->cgSolver, dsdpSolver->d2, TRUE);
-    if (dsdpSolver->eventMonitor[EVENT_HSD_UPDATE]) {
-        cgSolveCheck(dsdpSolver->cgSolver, dsdpSolver->d12, FALSE);
+    retcode = cg_solve(dsdpSolver->cg, dsdpSolver->d2, NULL);
+    if ( retcode != DSDP_RETCODE_OK ) {
+        return retcode;
     }
-    cgSolveCheck(dsdpSolver->cgSolver, dsdpSolver->d3, FALSE);
-    cgSolveCheck(dsdpSolver->cgSolver, dsdpSolver->d4, FALSE);
+    
+    retcode = cg_solve(dsdpSolver->cg, dsdpSolver->d3, NULL);
+    if ( retcode != DSDP_RETCODE_OK ) {
+        return retcode;
+    }
+    
+    retcode = cg_solve(dsdpSolver->cg, dsdpSolver->d4, NULL);
+    if ( retcode != DSDP_RETCODE_OK ) {
+        return retcode;
+    }
     dsdpSolver->iterProgress[ITER_SCHUR_SOLVE] = TRUE;
     return retcode;
 }
@@ -180,8 +145,8 @@ extern DSDP_INT schurPhaseBMatSolve( HSDSolver *dsdpSolver ) {
     // After this routine, d1 and d2 will be filled
     DSDP_INT retcode = DSDP_RETCODE_OK;
     checkIterProgress(dsdpSolver, ITER_SCHUR_SOLVE);
-    cgSolveCheck(dsdpSolver->cgSolver, dsdpSolver->d1, TRUE);
-    cgSolveCheck(dsdpSolver->cgSolver, dsdpSolver->d2, FALSE);
+    cg_solve(dsdpSolver->cg, dsdpSolver->d1, NULL);
+    cg_solve(dsdpSolver->cg, dsdpSolver->d2, NULL);
     dsdpSolver->iterProgress[ITER_SCHUR_SOLVE] = TRUE;
     return retcode;
 }
