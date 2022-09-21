@@ -1,0 +1,214 @@
+%%
+% Please see https://bitbucket.org/rivanvx/beamer/wiki/Home for obtaining beamer.
+%%
+\documentclass{beamer}
+
+% Include packages
+\usepackage[latin1]{inputenc}
+\usepackage{mathrsfs,color, mathtools}
+\usepackage[]{algorithmicx}
+\usepackage{bm}
+\usepackage{graphicx}
+\usepackage{mwe, multirow,bigdelim}
+\usepackage{caption, subcaption}
+\usepackage{booktabs}
+\usepackage{enumerate, verbatim}
+\usepackage{xcolor}
+\usepackage[authoryear, round]{natbib}
+\newtheorem{claim}[theorem]{Claim}
+\newtheorem{conjecture}[theorem]{Conjecture}
+\newtheorem{heuristic}[theorem]{Heuristic}
+\newtheorem{boxText}[theorem]{}
+\newtheorem{proposition}[theorem]{Proposition}
+\newtheorem{result}[theorem]{Result}
+\newtheorem{remark}[theorem]{Remark}
+\numberwithin{equation}{section}
+\usepackage[absolute,overlay]{textpos}
+\usepackage[mathscr]{eucal}
+\newtheorem{assumption}[theorem]{Assumption}
+\usepackage{amsmath}
+\usepackage{tikz}
+\usepackage{wallpaper}
+\usetikzlibrary{automata,arrows,positioning,calc}
+\usepackage[absolute,overlay]{textpos}
+  \setlength{\TPHorizModule}{1mm}
+  \setlength{\TPVertModule}{1mm}
+
+% Define macros
+\def\E{\mathbb{E}}
+\def\Var{{\rm Var}}
+\def\Cov{{\rm Cov}}
+\def\pr{\mathbb{P}}
+\def\ud{\mathrm{d}}
+\def\C{\mathscr{C}}
+\def\T{\mathscr{T}}
+\def\P{\mathscr{P}}
+\newcommand{\A}{\mathbf{A}}
+\newcommand{\tmb}{\mathbf{b}}
+\newcommand{\tmc}{\bm{c}}
+\newcommand{\x}{\bm{x}}
+\newcommand{\y}{\bm{y}}
+\newcommand{\p}{\bm{p}}
+\newcommand{\s}{\bm{s}}
+\newcommand{\e}{\bm{e}}
+\newcommand{\Bb}{\bm{b}}
+\newcommand{\Dd}{\bm{d}}
+\newcommand{\Aa}{\bm{a}}
+\newcommand{\uu}{\bm{u}}
+\newcommand{\z}{\bm{z}}
+\newcommand{\M}{\bm{M}}
+\newcommand{\B}{\bm{B}}
+\newcommand{\R}{\mathbb{R}}
+\newcommand{\prob}{\mathbb{P}}
+\newcommand{\Z}{\mathcal{Z}}
+\newcommand{\red}[1]{\textcolor{red}{#1}}
+\newcommand{\tree}[1]{\textcolor[RGB]{38, 29, 162}{#1}}
+
+\DeclareMathOperator*{\argmax}{arg\,max}
+\DeclareMathOperator*{\argmin}{arg\,min}
+
+% Set template
+% \usetheme{CambridgeUS}
+\setbeamertemplate{footline}[frame number]
+
+\makeatother
+\setbeamertemplate{footline}
+{
+  \leavevmode%
+  \hbox{%
+  \begin{beamercolorbox}[wd=.6\paperwidth,ht=2.25ex,dp=1ex,center]{title in head/foot}%
+    \usebeamerfont{title in head/foot}\insertshorttitle\hspace*{3em}
+    %\insertframenumber{} / \inserttotalframenumber\hspace*{1ex}
+  \end{beamercolorbox}}%
+	\insertframenumber/\inserttotalframenumber
+  \vskip0pt%f
+}
+\makeatletter
+
+\makeatletter
+\patchcmd{\beamer@sectionintoc}
+  {\ifnum\beamer@tempcount>0}
+  {\ifnum\beamer@tempcount>-1}
+  {}
+  {}
+\beamer@tocsectionnumber=0
+\makeatother
+
+% set the toc to be using the number
+\setbeamertemplate{section in toc}[sections numbered]
+\setbeamertemplate{subsection in toc}[subsections numbered]
+
+\hypersetup{pdfstartview={Fit}}
+
+ \AtBeginSection[]
+ {
+   \begin{frame}
+     \frametitle{Table of Contents}
+     \tableofcontents[        currentsection,         currentsubsection,         subsectionstyle=show/shaded/hide,]
+   \end{frame}
+ }
+ 
+
+\defbeamertemplate{section page}{mine}[1][]{%
+  \begin{centering}
+    \vskip1em\par
+    \begin{beamercolorbox}[sep=12pt, center]{part title}
+      \usebeamerfont{section title}\insertsection\par
+    \end{beamercolorbox}
+  \end{centering}
+}
+
+\defbeamertemplate{subsection page}{mine}[1][]
+{
+    \begingroup
+        \begin{beamercolorbox}[sep=8pt, center]{subsection title}
+        \usebeamerfont{subsection title}\insertsubsection\par
+    \end{beamercolorbox}
+    \endgroup
+}
+
+
+\setbeamertemplate{section page}[mine]
+\setbeamertemplate{subsection page}[mine]
+
+\begin{document}
+\subsection{DRSOM for linearly-constrained smooth optimization}
+% Theoretical topics of column generation
+\begin{frame}{Linearly-constrained smooth optimization}
+\small
+DRSOM can be generalized to smooth linearly constrained optimization
+\begin{eqnarray*}
+  \min_{x} & f(x)\\
+  \text{subject to} & A x = b & \\
+\end{eqnarray*}
+by projecting directions to null-space
+$$P_{A^\bot}[x] = (I_n - A^\top(A A^\top)^{-1}A)x$$
+and 
+\begin{eqnarray*}
+  d^k & \leftarrow & \alpha^g P_{A^\bot}[g^k] +\alpha^m ( \x^k - \x^{k - 1} )\\
+  x^k & \leftarrow & \x^k + d^k
+\end{eqnarray*}
+Also possible to add inequality constraint $x\geq0$.
+\end{frame}
+
+\begin{frame}{Application: Linear programming}
+\small
+We can apply the above framework to solve LPs.
+\begin{tiny}
+\begin{table}[h]
+  {\tiny{\begin{tabular}{cccc|c|ccc}
+    \hline
+    Problem & PInfeas & DInfeas. & Compl. & Problem & PInfeas & DInfeas. &
+    Compl.\\
+    \hline
+    DLITTLE & 1.347e-10 & 2.308e-10 & 2.960e-09 & KB2 & 5.455e-11 & 6.417e-10
+    & 7.562e-11\\
+    \hline
+    AFIRO & 7.641e-11 & 7.375e-11 & 3.130e-10 & LOTFI & 2.164e-09 & 4.155e-09
+    & 8.663e-08\\
+    \hline
+    AGG2 & 3.374e-08 & 4.859e-08 & 6.286e-07 & MODSZK1 & 1.527e-06 & 5.415e-05
+    & 2.597e-04\\
+    \hline
+    AGG3 & 2.248e-05 & 1.151e-06 & 1.518e-05 & RECIPELP & 5.868e-08 &
+    6.300e-08 & 1.285e-07\\
+    \hline
+    BANDM & 2.444e-09 & 4.886e-09 & 3.769e-08 & SC105 & 7.315e-11 & 5.970e-11
+    & 2.435e-10\\
+    \hline
+    BEACONFD & 5.765e-12 & 9.853e-12 & 1.022e-10 & SC205 & 6.392e-11 &
+    5.710e-11 & 2.650e-10\\
+    \hline
+    BLEND & 2.018e-10 & 3.729e-10 & 1.179e-09 & SC50A & 1.078e-05 & 6.098e-06
+    & 4.279e-05\\
+    \hline
+    BOEING2 & 1.144e-07 & 1.110e-08 & 2.307e-07 & SC50B & 4.647e-11 &
+    3.269e-11 & 1.747e-10\\
+    \hline
+    BORE3D & 2.389e-08 & 5.013e-08 & 1.165e-07 & SCAGR25 & 1.048e-07 &
+    5.298e-08 & 1.289e-06\\
+    \hline
+    BRANDY & 2.702e-05 & 7.818e-06 & 1.849e-05 & SCAGR7 & 1.087e-07 &
+    1.173e-08 & 2.601e-07\\
+    \hline
+    CAPRI & 7.575e-05 & 4.488e-05 & 4.880e-05 & SCFXM1 & 4.323e-06 & 5.244e-06
+    & 8.681e-06\\
+    \hline
+    E226 & 2.656e-06 & 4.742e-06 & 2.512e-05 & SCORPION & 1.674e-09 &
+    1.892e-09 & 1.737e-08\\
+    \hline
+    FINNIS & 8.577e-07 & 8.367e-07 & 1.001e-05 & SCTAP1 & 5.567e-07 &
+    8.430e-07 & 5.081e-06\\
+    \hline
+  \end{tabular}}}
+\end{table}
+\end{tiny}
+
+\begin{itemize}
+	\item Solving LPs to $10^{-6}$ accuracy
+	\item Matrix-free and scalable to dimension
+	\item Applicable to other types of problems	
+\end{itemize}
+\end{frame}
+
+\end{document}
