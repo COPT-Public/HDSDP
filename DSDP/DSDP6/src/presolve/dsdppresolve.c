@@ -1,3 +1,4 @@
+#include "dsdphsd.h"
 #include "dsdppresolve.h"
 #include "dsdplapack.h"
 #include "dsdputils.h"

@@ -4,27 +4,6 @@
 /* Implement the parameter interface for DSDP */
 #include "dsdphsd.h"
 
-#define DBL_PARAM_RHO            0
-#define DBL_PARAM_RHON           1
-#define DBL_PARAM_INIT_POBJ      2
-#define DBL_PARAM_INIT_BETA      3
-#define DBL_PARAM_INIT_MU        4
-#define DBL_PARAM_INFEAS_THRESH  5
-#define DBL_PARAM_ABS_OPTTOL     6
-#define DBL_PARAM_REL_OPTTOL     7
-#define DBL_PARAM_ABS_FEASTOL    8
-#define DBL_PARAM_REL_FEASTOL    9
-#define DBL_PARAM_PRLX_PENTALTY 10
-#define DBL_PARAM_BOUND_X       11
-#define DBL_PARAM_TIMELIMIT     12
-
-#define INT_PARAM_ACORRECTOR     0
-#define INT_PARAM_BCORRECTOR     1
-#define INT_PARAM_CG_REUSE       2
-#define INT_PARAM_AMAXITER       3
-#define INT_PARAM_BMAXITER       4
-#define INT_PARAM_GOLDSEARCH     5
-
 #define NUM_DBL_PARAM  (DBL_PARAM_TIMELIMIT  + 1)
 #define NUM_INT_PARAM  (INT_PARAM_GOLDSEARCH + 1)
 

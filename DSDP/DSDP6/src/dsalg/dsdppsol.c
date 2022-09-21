@@ -85,7 +85,7 @@ extern DSDP_INT computeDIMACS( HSDSolver *dsdpSolver ) {
     dInf = sqrt(dsdpSolver->n) * dsdpSolver->dperturb;
     pObj = DSDPConic( COPS_GET_CX )(dsdpSolver); pObj *= dsdpSolver->cScaler;
     
-    if (pInf / (1 + bnrm) > 1e-02 && dsdpSolver->mumaker > 0) {
+    if (pInf / (1 + bnrm) > 1e-02 && dsdpSolver->mumaker >= 0) {
         printf("| Bad primal objective value. Trying backup Newton step. \n");
         dsdpSolver->mumaker = dsdpSolver->mumaker2;
         vec_copy(dsdpSolver->ymaker2, dsdpSolver->ymaker);
@@ -105,7 +105,7 @@ extern DSDP_INT computeDIMACS( HSDSolver *dsdpSolver ) {
 
     /*  DIMACS Error 5    */
     gap = pObj - dObj;
-    if ((fabs(gap) / (1 + fabs(pObj) + fabs(dObj)) > 1e-02) && dsdpSolver->mumaker > 0) {
+    if ((fabs(gap) / (1 + fabs(pObj) + fabs(dObj)) > 1e-02) && dsdpSolver->mumaker >= 0) {
         printf("| Bad gap. Trying backup Newton step. \n");
         dsdpSolver->mumaker = dsdpSolver->mumaker2;
         vec_copy(dsdpSolver->ymaker2, dsdpSolver->ymaker);

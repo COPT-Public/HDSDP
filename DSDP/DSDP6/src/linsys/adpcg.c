@@ -18,7 +18,7 @@
 #include "vec.h"
 #include "schurmat.h"
 
-//#define CG_DEBUG
+// #define CG_DEBUG
 
 /* Wrapper for the internal methods */
 static void cg_dummy_diag( schurMat *A, vec *d ) {

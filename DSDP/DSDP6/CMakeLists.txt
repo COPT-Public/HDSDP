@@ -69,8 +69,84 @@ add_executable(hdsdp
         src/dsalg/symschur.h
         src/linsys/denseopts.c
         src/linsys/denseopts.h
-        src/linsys/cg.c
-        src/linsys/cg.h
+        src/linsys/adpcg.c
+        src/linsys/adpcg.h
+        src/linsys/dsdpfeast.h
+        src/linsys/lanczos.c
+        src/linsys/lanczos.h
+        src/linsys/pardiso.h
+        src/linsys/rankkopts.c
+        src/linsys/rankkopts.h
+        src/linsys/rank1opts.c
+        src/linsys/rank1opts.h
+        src/linsys/schurmat.c
+        src/linsys/schurmat.h
+        src/linsys/sparseopts.c
+        src/linsys/sparseopts.h
+        src/linsys/speigs.c
+        src/linsys/speigs.h
+        src/linsys/structs.h
+        src/linsys/vec.c
+        src/linsys/vec.h
+        src/linsys/linsysconfig.h
+        src/linsys/linsysconfig.c
+        src/presolve/dsdppresolve.c
+        src/presolve/dsdppresolve.h)
+
+add_library(lhdsdp SHARED
+        externals/config.c
+        externals/config.h
+        externals/cs.c
+        externals/cs.h
+        include/dsdplapack.h
+        interface/dsdphsd.c
+        interface/dsdphsd.h
+        interface/dsdplog.c
+        interface/dsdplog.h
+        interface/dsdpoutput.c
+        interface/dsdpoutput.h
+        interface/dsdpparam.c
+        interface/dsdpparam.h
+        interface/dsdpreadsdpa.c
+        interface/dsdpreadsdpa.h
+        interface/dsdpsolver.h
+        interface/dsdpstats.c
+        interface/dsdpstats.h
+        interface/main.c
+        src/data/dsdpdata.c
+        src/data/dsdpdata.h
+        src/data/dsdpsort.c
+        src/data/dsdpsort.h
+        src/dsalg/dsdpcorrector.c
+        src/dsalg/dsdpcorrector.h
+        src/dsalg/dsdpdinfeas.c
+        src/dsalg/dsdpdinfeas.h
+        src/dsalg/dsdpinitializer.c
+        src/dsalg/dsdpinitializer.h
+        src/dsalg/dsdppfeas.c
+        src/dsalg/dsdppfeas.h
+        src/dsalg/dsdppfeascheck.c
+        src/dsalg/dsdppfeascheck.h
+        src/dsalg/dsdpproxmeasure.c
+        src/dsalg/dsdpproxmeasure.h
+        src/dsalg/dsdppsol.c
+        src/dsalg/dsdppsol.h
+        src/dsalg/dsdputils.c
+        src/dsalg/dsdputils.h
+        src/dsalg/heurpool.c
+        src/dsalg/heurpool.h
+        src/dsalg/schurmatops.c
+        src/dsalg/schurmatops.h
+        src/dsalg/stepdirection.c
+        src/dsalg/stepdirection.h
+        src/dsalg/stepheur.c
+        src/dsalg/stepheur.h
+        src/dsalg/symschur.c
+        src/dsalg/symschur.h
+        src/linsys/denseopts.c
+        src/linsys/denseopts.h
+        src/linsys/adpcg.c
+        src/linsys/adpcg.h
         src/linsys/dsdpfeast.h
         src/linsys/lanczos.c
         src/linsys/lanczos.h
@@ -97,3 +173,9 @@ target_link_libraries(hdsdp $ENV{MKL_LIB_PATH}/libmkl_core.a)
 target_link_libraries(hdsdp $ENV{MKL_LIB_PATH}/libmkl_intel_lp64.a)
 target_link_libraries(hdsdp $ENV{MKL_LIB_PATH}/libmkl_intel_thread.a)
 target_link_libraries(hdsdp $ENV{MKL_OMP_PATH}/libiomp5.dylib)
+
+target_link_libraries(lhdsdp $ENV{MKL_LIB_PATH}/libmkl_core.a)
+target_link_libraries(lhdsdp $ENV{MKL_LIB_PATH}/libmkl_intel_lp64.a)
+target_link_libraries(lhdsdp $ENV{MKL_LIB_PATH}/libmkl_intel_thread.a)
+target_link_libraries(lhdsdp $ENV{MKL_OMP_PATH}/libiomp5.dylib)
+

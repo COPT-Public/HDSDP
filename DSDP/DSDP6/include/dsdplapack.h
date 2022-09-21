@@ -5,7 +5,9 @@
 #include "Accelerate/Accelerate.h"
 #endif
 
+#include <math.h>
 #include "dsdphsd.h"
+
 
 /*
 #ifdef UNDERBLAS
