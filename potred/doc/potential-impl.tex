@@ -1,0 +1,799 @@
+\documentclass{article}
+\usepackage[english]{babel}
+\usepackage{amsmath,amssymb,xcolor}
+\usepackage{geometry}[scale=0.8]
+
+%%%%%%%%%% Start TeXmacs macros
+\newcommand{\assign}{:=}
+\newcommand{\backassign}{=:}
+\newcommand{\cdummy}{\cdot}
+\newcommand{\tmaffiliation}[1]{\\ #1}
+\newcommand{\tmcolor}[2]{{\color{#1}{#2}}}
+\newcommand{\tmop}[1]{\ensuremath{\operatorname{#1}}}
+\newcommand{\tmstrong}[1]{\textbf{#1}}
+\newcommand{\tmtextbf}[1]{\text{{\bfseries{#1}}}}
+%%%%%%%%%% End TeXmacs macros
+
+%
+
+\newcommand{\x}{\mathbf{x}}
+\newcommand{\A}{\mathbf{A}}
+\newcommand{\0}{\textbf{0}}
+\newcommand{\e}{\mathbf{e}}
+\newcommand{\n}{\nabla}
+\newcommand{\X}{\mathbf{X}}
+\newcommand{\tmi}{\ensuremath{\mathbf{I}}}
+\newcommand{\I}{\mathbf{I}}
+\newcommand{\tmH}{\mathbf{H}}
+\newcommand{\h}{\mathbf{h}}
+\newcommand{\tmP}{\mathbf{P}}
+\newcommand{\m}{\mathbf{m}}
+\newcommand{\g}{\mathbf{g}}
+\newcommand{\M}{\mathbf{M}}
+\newcommand{\tmd}{\mathbf{d}}
+\newcommand{\G}{\mathbf{G}}
+\newcommand{\tma}{\mathbf{a}}
+\newcommand{\tmb}{\mathbf{b}}
+\newcommand{\tmc}{\mathbf{c}}
+\newcommand{\y}{\mathbf{y}}
+\newcommand{\s}{\mathbf{s}}
+\newcommand{\tmu}{\mathbf{u}}
+\newcommand{\HA}{\^{\mathbf{A}}}
+\newcommand{\bs}{\mathbf{S}}
+\newcommand{\tmr}{\mathbf{r}}
+\newcommand{\Y}{\mathbf{Y}}
+\newcommand{\p}{\mathbf{p}}
+\newcommand{\V}{\mathbf{V}}
+\newcommand{\tmv}{\mathbf{v}}
+\newcommand{\D}{\mathbf{D}}
+\newcommand{\w}{\mathbf{w}}
+
+\begin{document}
+
+\title{First-order Potential Reduction Method \vspace{10pt}}
+
+\author{
+Project Notes \vspace{10pt}
+}
+
+\maketitle
+
+\section{Dimension-reduced Method for Potential Reduction}
+
+In this section, we discuss the application of dimension-reduced method to
+potential reduction. For brevity, we for now only consider the primal
+potential reduction and focus on the simplex-constrained QP.
+\begin{eqnarray*}
+  \min_{\x} & \frac{1}{2} \left\| \A \x \right\|^2 & \backassign f \left( \x
+  \right)\\
+  \text{subject to} & \e^{\top} \x = 1 & \\
+  & \x \geq \0 & 
+\end{eqnarray*}
+and we adopt the potential function
+\[ \varphi \left( \x \right) \assign \rho \log \left( f \left( \x \right)
+   \right) - \sum_{i = 1}^n \log x_i, \]
+whose gradient is given by
+\[ \n \varphi \left( \x \right) = \frac{\rho \n f \left( \x \right)}{f \left(
+   \x \right)} - \X^{- 1} \e . \]
+At each iteration, we evaluate the gradient $\n \varphi \left( \x^k \right)$,
+let $\Delta \assign \x^{k + 1} - \x^k$ and solve following subproblem
+\begin{eqnarray*}
+  \min_{\Delta} & \left\langle \n \varphi \left( \x^k \right), \Delta
+  \right\rangle & \\
+  \text{subject to} & \e^{\top} \Delta = 0 & \\
+  & \left\| \left( \X^k \right)^{- 1} \Delta \right\| \leq \beta . & 
+\end{eqnarray*}
+Starting from the basic potential reduction, we extend it by incorporating
+momentum term for faster convergence.
+
+\subsection{Two directions}
+
+In this section, we consider two direction extension of the potential
+reduction framework. In a word, by keeping track of one recent history
+iterate, we update
+\begin{eqnarray*}
+  \tmd^k & \leftarrow & \alpha^g \tmP_{\Delta} \left[ \nabla \varphi \left(
+  \x^k \right) \right] + \alpha^m \left( \x^k - \x^{k - 1} \right)\\
+  \x^k & \leftarrow & \x^k + \tmd^k
+\end{eqnarray*}
+where $\tmP_{\Delta} [\cdummy]$ is the orthogonal projection onto $\e^{\top}
+\x = 0$. Note that we compute $\alpha^g, \alpha^d$ through the following model
+\begin{eqnarray*}
+  \min_{\tmd, \alpha^g, \alpha^m} & \frac{1}{2} \tmd^{\top} \tmH \tmd +
+  \h^{\top} \tmd & \\
+  \text{subject to} & \left\| \X^{- 1} \tmd \right\| \leq \Delta & \\
+  & \tmd = \alpha^g \g^k + \alpha^m \m^k & 
+\end{eqnarray*}
+where $\g^k \assign \tmP_{\Delta} \left[ \nabla \varphi \left( \x^k \right)
+\right]$, $\m^k \assign \x^k - \x^{k - 1}$. Alternatively, we define $\G
+\assign \left(\begin{array}{cc}
+  | & |\\
+  \g^k & \m^k\\
+  | & |
+\end{array}\right), \alpha = \left(\begin{array}{c}
+  \alpha^g\\
+  \alpha^m
+\end{array}\right)$ and $\tmd = \G \alpha$, giving
+\begin{eqnarray*}
+  \min_{\alpha} & \frac{1}{2} \alpha^{\top} \G^{\top} \tmH \G^{\top} \alpha +
+  \h^{\top} \G \alpha & \\
+  \text{subject to} & \left\| \X^{- 1} \G \alpha \right\| \leq \Delta, & 
+\end{eqnarray*}
+or
+\begin{eqnarray*}
+  \min_{\alpha} & \frac{1}{2} \alpha^{\top} \widetilde{\tmH} \alpha +
+  \widetilde{\h} \alpha & \backassign m (\alpha)\\
+  \text{subject to} & \left\| \M \alpha \right\| \leq \Delta & 
+\end{eqnarray*}
+for
+\begin{eqnarray*}
+  \widetilde{\tmH} & \assign & \left(\begin{array}{cc}
+    \left\langle \g^k, \nabla^2_{\x, \x} \varphi \left( \x^k \right) \g^k
+    \right\rangle & \left\langle \g^k, \nabla^2_{\x, \x} \varphi \left( \x^k
+    \right) \m^k \right\rangle\\
+    \left\langle \m^k, \nabla^2_{\x, \x} \varphi \left( \x^k \right) \g^k
+    \right\rangle & \left\langle \m^k, \nabla^2_{\x, \x} \varphi \left( \x^k
+    \right) \m^k \right\rangle
+  \end{array}\right)\\
+  \widetilde{\h} & \assign & \left(\begin{array}{c}
+    \left\| \g^k \right\|^2\\
+    \left\langle \g^k, \m^k \right\rangle
+  \end{array}\right)\\
+  \M & \assign & \left(\begin{array}{cc}
+    \left\| \left( \X^k \right)^{- 1} \g^k \right\|^2 & \left\langle \g^k,
+    \left( \X^k \right)^{- 2} \m^k \right\rangle\\
+    \left\langle \m^k, \left( \X^k \right)^{- 2} \g^k \right\rangle & \left\|
+    \left( \X^k \right)^{- 1} \m^k \right\|^2
+  \end{array}\right) .
+\end{eqnarray*}
+
+
+Note that $\nabla^2_{\x, \x} \varphi \left( \x^k \right) = - \frac{\rho \n f
+\left( \x^k \right) \n f \left( \x^k \right)^{\top}}{f \left( \x^k \right)^2}
++ \rho \frac{\A^{\top} \A}{f \left( \x^k \right)} + \left( \X^k \right)^{- 2}$
+and we evaluate the above relations via
+\begin{eqnarray*}
+  \left\langle \tma, \nabla^2_{\x, \x} \varphi \left( \x^k \right) \tma
+  \right\rangle & = & \left\langle \tma, - \frac{\rho \n f \left( \x^k \right)
+  \n f \left( \x^k \right)^{\top} \tma}{f \left( \x^k \right)^2} \right\rangle
+  + \frac{\left\| \A \tma \right\|^2}{f \left( \x^k \right)} + \left\| \left(
+  \X^k \right)^{- 1} \tma \right\|^2\\
+  & = & - \rho \left( \frac{\n f \left( \x^k \right)^{\top} \tma}{f \left(
+  \x^k \right)} \right)^2 + \frac{\left\| \A \tma \right\|^2}{f \left( \x^k
+  \right)} + \left\| \left( \X^k \right)^{- 1} \tma \right\|^2\\
+  \left\langle \tma, \nabla^2_{\x, \x} \varphi \left( \x^k \right) \tmb
+  \right\rangle & = & \left\langle \tma, - \frac{\rho \n f \left( \x^k \right)
+  \n f \left( \x^k \right)^{\top} \tmb}{f \left( \x^k \right)^2} \right\rangle
+  + \frac{\left\langle \A \tma, \A \tmb \right\rangle}{f \left( \x^k \right)}
+  + \left\langle \tma, \left( \X^k \right)^{- 2} \tmb \right\rangle\\
+  & = & - \rho \left( \frac{\n f \left( \x^k \right)^{\top} \tma}{f \left(
+  \x^k \right)} \right) \left( \frac{\n f \left( \x^k \right)^{\top} \tmb}{f
+  \left( \x^k \right)} \right) + \frac{\left\langle \A \tma, \A \tmb
+  \right\rangle}{f \left( \x^k \right)} + \left\langle \tma, \left( \X^k
+  \right)^{- 2} \tmb \right\rangle .
+\end{eqnarray*}
+To ensure feasibility, we always choose $\Delta \leq 1$ and adjust it based on
+the trust-region rule.
+
+\section{Potential Reduction for LP}
+
+In this section, we discuss the potential reduction method on LP HSD model.
+\begin{eqnarray*}
+  \min_{\x \in \mathbb{R}^n} & \tmc^{\top} \x & \\
+  \text{subject to} & \A \x = \tmb & \\
+  & \x \geq \0 & \\
+  &  & \\
+  \max_{\y \in \mathbb{R}^m} & \tmb^{\top} \y & \\
+  \text{subject to} & \A^{\top} \y + \s = \tmc & \\
+  & \s \geq \0 & 
+\end{eqnarray*}
+and
+\begin{eqnarray*}
+  \A \x - \tmb \tau & = & \0\\
+  - \A^{\top} \y - \s + \tmc \tau & = & \0\\
+  \tmb^{\top} \y - \tmc^{\top} \x - \kappa & = & 0\\
+  \e_n^{\top} \x + \e_n^{\top} \s + \kappa + \tau & = & 1
+\end{eqnarray*}
+
+\subsection{Potential Reduction for HSD}
+
+In this section we consider the original HSD formulation
+\begin{eqnarray*}
+  \A \x - \tmb \tau & = & \0\\
+  - \A^{\top} \y - \s + \tmc \tau & = & \0\\
+  \tmb^{\top} \y - \tmc^{\top} \x - \kappa & = & 0\\
+  \e_n^{\top} \x + \e_n^{\top} \s + \kappa + \tau & = & 1
+\end{eqnarray*}
+and we have
+\begin{eqnarray*}
+  \left(\begin{array}{ccccc}
+    \0_{m \times m} & \A & \0_{m \times n} & \0_{m \times 1} & - \tmb\\
+    - \A^{\top} & \0_{n \times n} & - \I_{n \times n} & \0_{n \times 1} &
+    \tmc\\
+    \tmb^{\top} & - \tmc^{\top} & \0_{1 \times n} & - 1 & 0
+  \end{array}\right) \left(\begin{array}{c}
+    \y\\
+    \x\\
+    \s\\
+    \kappa\\
+    \tau
+  \end{array}\right) & = & \0\\
+  \e_n^{\top} \x + \e_n^{\top} \s + \kappa + \tau & = & 1.
+\end{eqnarray*}
+In this method, the dual variable $\y$ is free and needs special treatment.
+First we consider the potential function
+\begin{eqnarray*}
+  f \left( \x, \y, \s, \kappa, \tau \right) & \assign & \frac{1}{2} \left\|
+  \widetilde{\A} \tmu \right\|^2\\
+  \varphi \left( \x, \y, \s, \kappa, \tau \right) & \assign & \rho \log \left(
+  f \left( \tmu \right) \right) - B \left( \x \right) - B \left( \s \right) -
+  \log \kappa - \log \tau
+\end{eqnarray*}
+and
+\begin{eqnarray*}
+  &  & \nabla f \left( \x, \y, \s, \kappa, \tau \right)\\
+  & = & \widetilde{\A}^{\top} \widetilde{\A} \tmu\\
+  & = & \left(\begin{array}{ccccc}
+    \0_{m \times m} & \A & \0_{m \times n} & \0_{m \times 1} & - \tmb\\
+    - \A^{\top} & \0_{n \times n} & - \I_{n \times n} & \0_{n \times 1} &
+    \tmc\\
+    \tmb^{\top} & - \tmc^{\top} & \0_{1 \times n} & - 1 & 0
+  \end{array}\right)^{\top} \left(\begin{array}{cc}
+    \A \x - \tmb \tau & \backassign \tmr_1\\
+    - \A^{\top} \y - \s + \tmc \tau & \backassign \tmr_2\\
+    \tmb^{\top} \y - \tmc^{\top} \x - \kappa & \backassign r_3
+  \end{array}\right)\\
+  & = & \left(\begin{array}{ccc}
+    \0_{m \times m} & - \A & \tmb\\
+    \A^{\top} & \0_{n \times n} & - \tmc\\
+    \0_{n \times m} & - \I_{n \times n} & \0_{n \times 1}\\
+    \0_{1 \times m} & \0_{1 \times n} & - 1\\
+    - \tmb^{\top} & \tmc^{\top} & 0
+  \end{array}\right) \left(\begin{array}{c}
+    \tmr_1\\
+    \tmr_2\\
+    r_3
+  \end{array}\right) = \left(\begin{array}{c}
+    - \A \tmr_2 + \tmb r_3\\
+    \A^{\top} \tmr_1 - \tmc r_3\\
+    - \tmr_2\\
+    - r_3\\
+    - \tmb^{\top} \tmr_1 + \tmc^{\top} \tmr_2
+  \end{array}\right) .
+\end{eqnarray*}
+\begin{eqnarray*}
+  \nabla \varphi \left( \tmu \right) & = & \frac{\rho \n f \left( \tmu
+  \right)}{f \left( \tmu \right)} - \left(\begin{array}{c}
+    \0_m\\
+    \X^{- 1} \e\\
+    \bs^{- 1} \e\\
+    \kappa^{- 1}\\
+    \tau^{- 1}
+  \end{array}\right)\\
+  \nabla^2_{\tmu, \tmu} \varphi \left( \tmu \right) & = & - \frac{\rho \n f
+  \left( \tmu \right) \n f \left( \tmu \right)^{\top}}{f \left( \tmu
+  \right)^2} + \rho \frac{\widetilde{\A}^{\top} \widetilde{\A}}{f \left( \tmu
+  \right)} + \tmop{diag} \left(\begin{array}{c}
+    \0_m\\
+    \X^{- 2} \e\\
+    \bs^{- 2} \e\\
+    \kappa^{- 2}\\
+    \tau^{- 2}
+  \end{array}\right) .
+\end{eqnarray*}
+
+\subsection{Acceleration by negative curvature}
+
+In this section, we discuss how to find the negative curvature of the Hessian
+to help accelerate algorithm convergence. More specifically, we consider the
+following problem
+\[ \lambda_{\min} \left\{ \nabla^2 \varphi \left( \tmu = \left( \x, \y \right)
+   \right) = \frac{2 \rho \A^{\top} \A}{\left\| \A \tmu \right\|^2} - \frac{4
+   \rho \A^{\top} \A \tmu \tmu^{\top} \A^{\top} \A}{\left\| \A \tmu
+   \right\|^4} + \small{\left(\begin{array}{cc}
+     \0_m & \\
+     & \X^{- 2}
+   \end{array}\right)} \right\} . \]
+And we wish to solve the eigen-problem
+\begin{eqnarray*}
+  \min_{\left\| \tmv \right\| = 1} & \tmv^{\top} \left\{ \frac{2 \rho
+  \A^{\top} \A}{\left\| \A \tmu \right\|^2} - \frac{4 \rho \A^{\top} \A \tmu
+  \tmu^{\top} \A^{\top} \A}{\left\| \A \tmu \right\|^4} +
+  \small{\left(\begin{array}{cc}
+    \0_m & \\
+    & \X^{- 2}
+  \end{array}\right)} \right\} \tmv & \\
+  \text{subject to} & \e^{\top} \tmv_{\x} = 0. & 
+\end{eqnarray*}
+In general there are two ways to compute a valid direction. The first method
+approaches the problem directly and uses Lanczos iteration to find the
+negative eigen-value of $\n^2 \varphi$. As for the second approach, we apply
+the scaling matrix $\bs \assign \left(\begin{array}{cc}
+  \I_m & \\
+  & \X
+\end{array}\right)$ and solve
+\begin{eqnarray*}
+  \min_{\left\| \bs \tmv \right\| = 1} & \tmv^{\top}
+  \small{\left(\begin{array}{cc}
+    \I_m & \\
+    & \X
+  \end{array}\right)} \left\{ \frac{2 \rho \A^{\top} \A}{\left\| \A \tmu
+  \right\|^2} - \frac{4 \rho \A^{\top} \A \tmu \tmu^{\top} \A^{\top}
+  \A}{\left\| \A \tmu \right\|^4} + \small{\left(\begin{array}{cc}
+    \0_m & \\
+    & \X^{- 2}
+  \end{array}\right)} \right\} \small{\left(\begin{array}{cc}
+    \I_m & \\
+    & \X
+  \end{array}\right)} \tmv & \\
+  \text{subject to} & \x^{\top} \tmv_{\x} = 0. & 
+\end{eqnarray*}
+To improve the conditioning of the Hessian, we replace $\left\| \bs \tmv
+\right\| = 1$ by $\left\| \tmv \right\| = 1$ and arrive at
+\begin{eqnarray*}
+  \min_{\left\| \tmv \right\| = 1} & \tmv^{\top}
+  \small{\left(\begin{array}{cc}
+    \I_m & \\
+    & \X
+  \end{array}\right)} \left\{ \frac{2 \rho \A^{\top} \A}{\left\| \A \tmu
+  \right\|^2} - \frac{4 \rho \A^{\top} \A \tmu \tmu^{\top} \A^{\top}
+  \A}{\left\| \A \tmu \right\|^4} + \small{\left(\begin{array}{cc}
+    \0_m & \\
+    & \X^{- 2}
+  \end{array}\right)} \right\} \small{\left(\begin{array}{cc}
+    \I_m & \\
+    & \X
+  \end{array}\right)} \tmv & \\
+  \text{subject to} & \x^{\top} \tmv_{\x} = 0. & 
+\end{eqnarray*}
+Another trick we apply is to ignore the variables which are predicted to be
+nonbasic in the optimal solution so that the Hessian computation can be
+greatly simplified.
+
+\subsection{Direct computation}
+
+When evaluating the Hessian, it is possible that the matrix is
+ill-conditioned. Hence we need to consider the following relation
+\[ \small{\left(\begin{array}{cc}
+     \I_m & \\
+     & \I_n - \e_n \e_n^{\top} / n
+   \end{array}\right)} \left[ \frac{2 \rho \A^{\top} \A}{\left\| \A \tmu
+   \right\|^2} - \frac{4 \rho \A^{\top} \A \tmu \tmu^{\top} \A^{\top}
+   \A}{\left\| \A \tmu \right\|^4} + \small{\left(\begin{array}{cc}
+     \0_m & \\
+     & \X^{- 2}
+   \end{array}\right)} \right] \small{\left(\begin{array}{cc}
+     \I_m & \\
+     & \I_n - \e_n \e_n^{\top} / n
+   \end{array}\right)} \]
+$\left( \I_n - \e_n \e_n^{\top} / n \right) \X^{- 2} \left( \I_n - \e_n
+\e_n^{\top} / n \right) = \X^{- 2} \tmv - \frac{\X^{- 1} \e_n^{\top}}{n} \tmv
+- \frac{\e_n \e_n^{\top}}{n} \X^{- 1} \tmv + \frac{\e_n \e_n^{\top}}{n^2}
+\e_n^{\top} \X^{- 2} \e_n$
+\begin{eqnarray*}
+  \tmv & \leftarrow & \left(\begin{array}{c}
+    \tmv_{\y}\\
+    \tmv_{\x} - \left( \e_n^{\top} \tmv \right) \tmv / n
+  \end{array}\right)\\
+  \tmu_1 & \leftarrow & \left(\begin{array}{c}
+    \0\\
+    \tmv_{\x} - \e_n \e_n^{\top} / n
+  \end{array}\right)\\
+  \tmu_2 & \leftarrow & \left(\begin{array}{cc}
+    \I_m & \\
+    & \I_n - \e_n \e_n^{\top} / n
+  \end{array}\right) \A^{\top} \A \tmv\\
+  \tmu_3 & \leftarrow & \left( \g^{\top} \tmv \right) \left(\begin{array}{cc}
+    \I_m & \\
+    & \I_n - \e_n \e_n^{\top} / n
+  \end{array}\right) \g\\
+  \frac{1}{4} \left\| \A \tmu \right\|^4 \M \tmv & \leftarrow & f^2 \tmu_1 + 2
+  \rho f \tmu_2 - 4 \rho \tmu_3
+\end{eqnarray*}
+
+\subsection{Scaled Hessian}
+
+\[ \M \assign \small{\left(\begin{array}{cc}
+     \I_m & \\
+     & \I_n - \x \x^{\top} / \left\| \x \right\|^2
+   \end{array}\right)} \left[ \frac{2 \rho \bs \A^{\top} \A \bs}{\left\| \A
+   \tmu \right\|^2} - \frac{4 \rho \bs \A^{\top} \A \tmu \tmu^{\top} \A^{\top}
+   \A \bs}{\left\| \A \tmu \right\|^4} + \small{\left(\begin{array}{cc}
+     \0_m & \\
+     & \I_n
+   \end{array}\right)} \right] \small{\left(\begin{array}{cc}
+     \I_m & \\
+     & \I_n - \x \x^{\top} / \left\| \x \right\|^2
+   \end{array}\right)} \]
+In the computation of scaled Hessian, we implement matrix-vector product $\M
+\tmv$ as follows
+\begin{eqnarray*}
+  \x' & \leftarrow & \frac{\x}{\left\| \x \right\|}\\
+  \tmv & \leftarrow & \left(\begin{array}{c}
+    \tmv_{\y}\\
+    \tmv_{\x} - \left( {\x'}^{\top} \tmv_{\x} \right) \x'
+  \end{array}\right)\\
+  \tmu_1 & \leftarrow & \left(\begin{array}{c}
+    \0\\
+    \tmv_{\x} - \left( {\x'}^{\top} \tmv_{\x} \right) \x'
+  \end{array}\right)\\
+  \tmu_2 & \leftarrow & \small{\left(\begin{array}{cc}
+    \I_m & \\
+    & \I_n - \x' {\x'}^{\top}
+  \end{array}\right)} \left(\begin{array}{cc}
+    \I_m & \\
+    & \X
+  \end{array}\right) \A^{\top} \A \left(\begin{array}{cc}
+    \I_m & \\
+    & \X
+  \end{array}\right) \tmv\\
+  \tmu_3 & \leftarrow & \g^{\top} \left(\begin{array}{cc}
+    \I_m & \\
+    & \X
+  \end{array}\right) \tmv \left(\begin{array}{cc}
+    \I_m & \\
+    & \I_n - \x' {\x'}^{\top}
+  \end{array}\right) \left(\begin{array}{cc}
+    \I_m & \\
+    & \X
+  \end{array}\right) \g\\
+  \left\| \A \tmu \right\|^4 \M \tmv & \leftarrow & f^2 \tmu_1 + \rho f \tmu_2
+  - \rho \tmu_3
+\end{eqnarray*}
+
+\subsection{Further simplification}
+
+There are some basic operations to implement
+
+{\tmstrong{Residual setup}}
+\begin{eqnarray*}
+  \tmr_1 & = & \A \x - \tmb \tau\\
+  \tmr_2 & = & - \A^{\top} \y - \s + \tmc \tau\\
+  r_3 & = & \tmb^{\top} \y - \tmc^{\top} \x - \kappa .
+\end{eqnarray*}
+{\tmstrong{Objective value}}
+\[ f = \frac{1}{2} \left[ \left\| \tmr_1 \right\|^2 + \left\| \tmr_2
+   \right\|^2 + r_3^2 \right] \]
+{\tmstrong{Gradient setup}}
+\[ \nabla f = \left(\begin{array}{c}
+     - \A \tmr_2 + \tmb r_3\\
+     \A^{\top} \tmr_1 - \tmc r_3\\
+     - \tmr_2\\
+     - r_3\\
+     - \tmb^{\top} \tmr_1 + \tmc^{\top} \tmr_2
+   \end{array}\right) \]
+\[ \nabla \varphi = \frac{\rho \n f}{f} - \left(\begin{array}{c}
+     \X^{- 1} \e\\
+     \0_m\\
+     \bs^{- 1} \e\\
+     \kappa^{- 1}\\
+     \tau^{- 1}
+   \end{array}\right) \]
+{\tmstrong{Hessian (no actual setup)}}
+\begin{eqnarray*}
+  \widetilde{\A}^{\top} \widetilde{\A} & = & \left(\begin{array}{ccc}
+    \0_{m \times m} & - \A & \tmb\\
+    \A^{\top} & \0_{n \times n} & - \tmc\\
+    \0_{n \times m} & - \I_{n \times n} & \0_{n \times 1}\\
+    \0_{1 \times m} & \0_{1 \times n} & - 1\\
+    - \tmb^{\top} & \tmc^{\top} & 0
+  \end{array}\right) \left(\begin{array}{ccccc}
+    \0_{m \times m} & \A & \0_{m \times n} & \0_{m \times 1} & - \tmb\\
+    - \A^{\top} & \0_{n \times n} & - \I_{n \times n} & \0_{n \times 1} &
+    \tmc\\
+    \tmb^{\top} & - \tmc^{\top} & \0_{1 \times n} & - 1 & 0
+  \end{array}\right)\\
+  & = & \left(\begin{array}{ccccc}
+    \A \A^{\top} + \tmb \tmb^{\top} & - \tmb \tmc^{\top} & \A & - \tmb & - \A
+    \tmc\\
+    - \tmc \tmb^{\top} & \A^{\top} \A & \0_{n \times n} & \tmc & - \A^{\top}
+    \tmb\\
+    \A^{\top} & \0_{n \times n} & \I_{n \times n} & \0_{n \times 1} & - \tmc\\
+    - \tmb^{\top} & \tmc^{\top} & \0_{1 \times n} & \0_{1 \times 1} & \0_{1
+    \times 1}\\
+    - \tmc^{\top} \A^{\top} & - \tmb^{\top} \A & - \tmc^{\top} & \0_{1 \times
+    1} & \left\| \tmb \right\|^2 + \left\| \tmc \right\|^2
+  \end{array}\right)
+\end{eqnarray*}
+\[ \n^2 \varphi = - \frac{\rho \n f \n f^{\top}}{f^2} + \frac{\rho
+   \widetilde{\A}^{\top} \widetilde{\A}}{f} +
+   \small{\left(\begin{array}{ccccc}
+     \X^{- 2} &  &  &  & \\
+     & \0_m &  &  & \\
+     &  & \bs^{- 2} &  & \\
+     &  &  & \kappa^{- 2} & \\
+     &  &  &  & \tau^{- 2}
+   \end{array}\right)} . \]
+{\tmstrong{Hessian-vector (with projection)}}
+\begin{eqnarray*}
+  \tmu & = & \x - \frac{\e^{\top} \x}{n} \cdummy \e\\
+  \n^2 \varphi \tmu & = & - \frac{\rho \left( \n f^{\top} \tmu \right)}{f^2}
+  \n f + \frac{\rho}{f} \widetilde{\A}^{\top} \left( \widetilde{\A} \tmu
+  \right) + \small{\left(\begin{array}{ccccc}
+    \X^{- 2} &  &  &  & \\
+    & \0_{m \times m} &  &  & \\
+    &  & \bs^{- 2} &  & \\
+    &  &  & \kappa^{- 2} & \\
+    &  &  &  & \tau^{- 2}
+  \end{array}\right)} \tmu .
+\end{eqnarray*}
+{\tmstrong{Minimal eigenvalue}}
+
+To evaluate the minimum eigen-value of $\tmP_{\Delta} \n^2 \varphi
+\tmP_{\Delta}$ and the corresponding eigen-vector
+
+
+\[ \X \n^2 \varphi \X = - \frac{4 \rho \X \A^{\top} \A \x \x^{\top} \A^{\top}
+   \A \X}{\left\| \A \x \right\|^4} + \frac{2 \rho \X \A^{\top} \A \X}{\left\|
+   \A \x \right\|^2} + \I \]
+Note that
+\begin{eqnarray*}
+  &  & \X \n^2 \varphi \left( \tmu \right) \X\\
+  & = & - \frac{\rho \X \n f \left( \tmu \right) \n f \left( \tmu
+  \right)^{\top} \X}{f \left( \tmu \right)^2} + \frac{\rho \X \A^{\top} \A
+  \X}{f \left( \tmu \right)} + \D .
+\end{eqnarray*}
+\begin{eqnarray*}
+  \min_{\tmv} & \left\langle \X \tmv, \n^2 \varphi \left( \tmu \right) \X \tmv
+  \right\rangle & \\
+  \text{subject to} & \e^{\top} \X \tmv = 0 & \\
+  & \left\| \X \tmv \right\| = 1 & 
+\end{eqnarray*}
+\begin{eqnarray*}
+  \min_{\tmv} & \left\langle \tmv, \left( \I - \frac{\x \x^{\top}}{\left\| \x
+  \right\|^2} \right) \left( \X \n^2 \varphi \left( \tmu \right) \X \right)
+  \left( \I - \frac{\x \x^{\top}}{\left\| \x \right\|^2} \right) \tmv
+  \right\rangle & \\
+  \text{subject to} & \left\| \X \tmv \right\| = 1 & 
+\end{eqnarray*}
+\begin{eqnarray*}
+  &  & \left( \I - \frac{\x \x^{\top}}{\left\| \x \right\|^2} \right) \tmH
+  \left( \I - \frac{\x \x^{\top}}{\left\| \x \right\|^2} \right)\\
+  & = & \tmH - \frac{\x \x^{\top}}{\left\| \x \right\|^2} \tmH - \tmH
+  \frac{\x \x^{\top}}{\left\| \x \right\|^2} + \x^{\top} \tmH \x \frac{\x
+  \x^{\top}}{\left\| \x \right\|^4}
+\end{eqnarray*}
+
+\section{Numerical Experiments}
+
+\begin{table}[h]
+  {\small{\begin{tabular}{cccc|c|ccc}
+    \hline
+    Problem & PInfeas & DInfeas. & Compl. & Problem & PInfeas & DInfeas. &
+    Compl.\\
+    \hline
+    DLITTLE & 1.347e-10 & 2.308e-10 & 2.960e-09 & KB2 & 5.455e-11 & 6.417e-10
+    & 7.562e-11\\
+    \hline
+    AFIRO & 7.641e-11 & 7.375e-11 & 3.130e-10 & LOTFI & 2.164e-09 & 4.155e-09
+    & 8.663e-08\\
+    \hline
+    AGG2 & 3.374e-08 & 4.859e-08 & 6.286e-07 & MODSZK1 & 1.527e-06 & 5.415e-05
+    & 2.597e-04\\
+    \hline
+    AGG3 & 2.248e-05 & 1.151e-06 & 1.518e-05 & RECIPELP & 5.868e-08 &
+    6.300e-08 & 1.285e-07\\
+    \hline
+    BANDM & 2.444e-09 & 4.886e-09 & 3.769e-08 & SC105 & 7.315e-11 & 5.970e-11
+    & 2.435e-10\\
+    \hline
+    BEACONFD & 5.765e-12 & 9.853e-12 & 1.022e-10 & SC205 & 6.392e-11 &
+    5.710e-11 & 2.650e-10\\
+    \hline
+    BLEND & 2.018e-10 & 3.729e-10 & 1.179e-09 & SC50A & 1.078e-05 & 6.098e-06
+    & 4.279e-05\\
+    \hline
+    BOEING2 & 1.144e-07 & 1.110e-08 & 2.307e-07 & SC50B & 4.647e-11 &
+    3.269e-11 & 1.747e-10\\
+    \hline
+    BORE3D & 2.389e-08 & 5.013e-08 & 1.165e-07 & SCAGR25 & 1.048e-07 &
+    5.298e-08 & 1.289e-06\\
+    \hline
+    BRANDY & 2.702e-05 & 7.818e-06 & 1.849e-05 & SCAGR7 & 1.087e-07 &
+    1.173e-08 & 2.601e-07\\
+    \hline
+    CAPRI & 7.575e-05 & 4.488e-05 & 4.880e-05 & SCFXM1 & 4.323e-06 & 5.244e-06
+    & 8.681e-06\\
+    \hline
+    E226 & 2.656e-06 & 4.742e-06 & 2.512e-05 & SCORPION & 1.674e-09 &
+    1.892e-09 & 1.737e-08\\
+    \hline
+    FINNIS & 8.577e-07 & 8.367e-07 & 1.001e-05 & SCTAP1 & 5.567e-07 &
+    8.430e-07 & 5.081e-06\\
+    \hline
+    FORPLAN & 5.874e-07 & 2.084e-07 & 4.979e-06 & SEBA & 2.919e-11 & 5.729e-11
+    & 1.448e-10\\
+    \hline
+    GFRD-PNC & 4.558e-05 & 1.052e-05 & 4.363e-05 & SHARE1B & 3.367e-07 &
+    1.339e-06 & 3.578e-06\\
+    \hline
+    GROW7 & 1.276e-04 & 4.906e-06 & 1.024e-04 & SHARE2B & 2.142e-04 &
+    2.014e-05 & 6.146e-05\\
+    \hline
+    ISRAEL & 1.422e-06 & 1.336e-06 & 1.404e-05 & STAIR & 5.549e-04 & 8.566e-06
+    & 2.861e-05\\
+    \hline
+    STANDATA & 5.645e-08 & 2.735e-07 & 5.130e-06 & STANDGUB & 2.934e-08 &
+    1.467e-07 & 2.753e-06\\
+    \hline
+    STOCFOR1 & 6.633e-09 & 9.701e-09 & 4.811e-08 & VTP-BASE & 1.349e-10 &
+    5.098e-11 & 2.342e-10\\
+    \hline
+  \end{tabular}}}
+  \caption{Solving NETLIB LPs in \tmcolor{red}{\tmtextbf{1000}} iterations}
+\end{table}
+
+\
+
+\section{Analysis}
+
+\begin{eqnarray*}
+  \nabla^2 \varphi \left( \x \right) & = & - \frac{\rho \n f \left( \x \right)
+  \n f \left( \x \right)^{\top}}{f \left( \x \right)^2} + \rho \frac{\A^{\top}
+  \A}{f \left( \x \right)} + \X^{- 2}\\
+  \n \varphi \left( \x \right) & = & \frac{\rho \n f \left( \x \right)}{f
+  \left( \x \right)} - \X^{- 1} \e
+\end{eqnarray*}
+\begin{eqnarray*}
+  \left(\begin{array}{ccccc}
+    \0_{m \times m} & \A & \0_{m \times n} & \0_{m \times 1} & - \tmb\\
+    - \A^{\top} & \0_{n \times n} & - \I_{n \times n} & \0_{n \times 1} &
+    \tmc\\
+    \tmb^{\top} & - \tmc^{\top} & \0_{1 \times n} & - 1 & 0
+  \end{array}\right) \left(\begin{array}{c}
+    \y\\
+    \x\\
+    \s\\
+    \kappa\\
+    \tau
+  \end{array}\right) & = & \0\\
+  \e_n^{\top} \x + \e_n^{\top} \s + \kappa + \tau & = & 1.
+\end{eqnarray*}
+\[ \nabla^2 \varphi \left( \x \right) = - \frac{4 \rho \A^{\top} \A \x
+   \x^{\top} \A^{\top} \A}{\left\| \A \x \right\|^4} + \frac{2 \rho \A^{\top}
+   \A}{\left\| \A \x \right\|^2} + \X^{- 2} \]
+\[ \X \n^2 \varphi \left( \x \right) \X = - \frac{4 \rho \X \A^{\top} \A \x
+   \x^{\top} \A^{\top} \A \X}{\left\| \A \x \right\|^4} + \frac{2 \rho \X
+   \A^{\top} \A \X}{\left\| \A \x \right\|^2} + \I \]
+
+
+\section{General Potential Method}
+
+\begin{eqnarray*}
+  \min_{\x} & f \left( \x \right) & \\
+  \text{subject to} & \e^{\top} \x = 1 & \\
+  & \x \geq \0 & 
+\end{eqnarray*}
+\begin{eqnarray*}
+  \phi \left( \x \right) & = & \log \left( f \left( \x \right) \right) +
+  \sum_{i = 1}^n \log x_i\\
+  \n \phi \left( \x \right) & = & \frac{\rho \n f \left( \x \right)}{f \left(
+  \x \right)} - \X^{- 1} \e\\
+  \nabla^2 \phi \left( \x \right) & = & - \frac{\rho \n f \left( \x \right) \n
+  f \left( \x \right)^{\top}}{f \left( \x \right)^2} + \rho \frac{\n^2 f
+  \left( \x \right)}{f \left( \x \right)} + \X^{- 2}\\
+  f \left( \x \right) & \leq & f \left( \y \right) + \left\langle \n f \left(
+  \y \right), \x - \y \right\rangle + \frac{L_1}{2} \left\| \x - \y
+  \right\|^2\\
+  f \left( \x \right) & \leq & f \left( \y \right) + \left\langle \n f \left(
+  \y \right), \x - \y \right\rangle + \frac{1}{2} \left\langle \left( \x - \y
+  \right) \n^2 f \left( \y \right), \x - \y \right\rangle + \frac{L_2}{6}
+  \left\| \x - \y \right\|^3\\
+  f \left( \x \right) & \geq & f \left( \y \right) + \left\langle \n f \left(
+  \y \right), \x - \y \right\rangle
+\end{eqnarray*}
+
+\subsection{Second-order Potential Reduction}
+
+In this section, we consider the second order potential reduction method,
+where we update the iterates by
+\begin{eqnarray*}
+  \tmd^k & = & \underset{\left\| \tmd \right\| \leq \beta, \x^{\top} \tmd =
+  0}{\arg \min}  \left\{ \left\langle \X^k \n \phi \left( \x^k \right), \tmd
+  \right\rangle + \frac{1}{2} \left\langle \tmd, \X^k \nabla^2 \phi \left(
+  \x^k \right) \X^k \tmd \right\rangle \right\}\\
+  \x^{k + 1} & = & \x^k + \X^k \tmd^k
+\end{eqnarray*}
+First, by the optimality condition of the trust region subproblem, we have,
+for some $\lambda^k \geq 0, \mu^k$ that
+\begin{eqnarray*}
+  \left( \X^k \nabla^2 \phi \left( \x^k \right) \X^k + \lambda^k \I \right)
+  \tmd^k - \mu \x^k & = & - \X^k \n \phi \left( \x^k \right)\\
+  \mu^k \left( \left\| \tmd^k \right\| - \beta \right) & = & 0\\
+  \x^{\top} \tmd^k & = & 0\\
+  \X^k \nabla^2 \phi \left( \x^k \right) \X^k + \lambda^k \I & \succeq_{\x} &
+  \0
+\end{eqnarray*}
+Assume that $\left\| \tmd^k \right\| = \beta$ and define
+\begin{eqnarray*}
+  p \left( \x, \mu \right) & \assign & \X^k \nabla^2 \phi \left( \x^k \right)
+  \X^k \tmd^k + \X^k \n \phi \left( \x^k \right) - \mu^k \x^k .
+\end{eqnarray*}
+Then it follows that
+\begin{eqnarray*}
+  \lambda^k \tmd^k & = & - p \left( \x^k, \mu^k \right)
+\end{eqnarray*}
+and we successively deduce that
+\begin{eqnarray*}
+  &  & \left\langle \X^k \n \phi \left( \x^k \right), \tmd^k \right\rangle +
+  \frac{1}{2} \left\langle \tmd^k, \X^k \nabla^2 \phi \left( \x^k \right) \X^k
+  \tmd^k \right\rangle\\
+  & = & \left\langle - \lambda^k \tmd^k - \X^k \nabla^2 \phi \left( \x^k
+  \right) \X^k \tmd^k + \mu^k \x^k, \tmd^k \right\rangle + \frac{1}{2}
+  \left\langle \tmd^k, \X^k \nabla^2 \phi \left( \x^k \right) \X^k \tmd^k
+  \right\rangle\\
+  & = & - \lambda^k \left\| \tmd^k \right\|^2 - \frac{1}{2} \left\langle \X^k
+  \nabla^2 \phi \left( \x^k \right) \X^k \tmd^k, \tmd^k \right\rangle .
+\end{eqnarray*}
+Since $\X^k \nabla^2 \phi \left( \x^k \right) \X^k \succeq_{\x} - \lambda^k
+\I$, we have
+\[ \left\langle \X^k \nabla^2 \phi \left( \x^k \right) \X^k \tmd^k, \tmd^k
+   \right\rangle \geq - \left\| \tmd^k \right\|^2 \]
+and that
+\[ \left\langle \X^k \n \phi \left( \x^k \right), \tmd^k \right\rangle +
+   \frac{1}{2} \left\langle \tmd^k, \X^k \nabla^2 \phi \left( \x^k \right)
+   \X^k \tmd^k \right\rangle \leq - \frac{\lambda^k}{2} \left\| \tmd^k
+   \right\|^2 = - \frac{\lambda^k \beta^2}{2} . \]
+Next we derive the reduction of the potential function. It follows naturally
+that
+\[ \sum_{i = 1}^n \log x_i - \sum_{i = 1}^n \log (x_i + x_i d_i) \leq -
+   \left\langle \e, \tmd \right\rangle + \frac{\beta^2}{2 (1 - \beta)} \]
+
+
+First we bound the reduction in $\rho \log \left( f \left( \x \right) \right)$
+by
+
+
+\begin{eqnarray*}
+  \log \left( \frac{f \left( \x + \X \tmd \right)}{f \left( \x \right)}
+  \right) & \leq & \log \left( 1 + \frac{\left\langle \n f \left( \x \right),
+  \X \tmd \right\rangle + \frac{L_1}{2} \left\| \X \tmd \right\|^2}{f \left(
+  \x \right)} \right)\\
+  & \leq & \frac{\left\langle \n f \left( \x \right), \X \tmd \right\rangle +
+  \frac{L_1}{2} \left\| \X \tmd \right\|^2}{f \left( \x \right)} - \frac{1}{2}
+  \left( \frac{\left\langle \n f \left( \x \right), \X \tmd \right\rangle +
+  \frac{L_1}{6} \left\| \X \tmd \right\|^2}{f \left( \x \right)} \right)^2\\
+  &  & + \frac{1}{3} \left( \frac{\left\langle \n f \left( \x \right), \X
+  \tmd \right\rangle + \frac{L_1}{6} \left\| \X \tmd \right\|^2}{f \left( \x
+  \right)} \right)^3,
+\end{eqnarray*}
+
+
+or, alternatively,
+\begin{eqnarray*}
+  \rho \log \left( \frac{f \left( \x + \X \tmd \right)}{f \left( \x \right)}
+  \right) & \leq & \rho \log \left( 1 + \frac{\left\langle \n f \left( \x
+  \right), \X \tmd \right\rangle + \frac{1}{2} \left\langle \tmd^{\top} \X
+  \n^2 f \left( \x \right), \X \tmd \right\rangle + \frac{L_2}{6} \left\| \X
+  \tmd \right\|^3}{f \left( \x \right)} \right)\\
+  & \leq & \rho \frac{\left\langle \n f \left( \x \right), \X \tmd
+  \right\rangle + \frac{1}{2} \left\langle \tmd^{\top} \X \n^2 f \left( \x
+  \right), \X \tmd \right\rangle + \frac{L_2}{6} \left\| \X \tmd \right\|^3}{f
+  \left( \x \right)}\\
+  & = & \left\langle \X \n \phi \left( \x \right), \tmd \right\rangle +
+  \frac{1}{2} \left\langle \tmd^{\top} \X \nabla^2 \phi \left( \x \right) \X,
+  \tmd \right\rangle\\
+  &  & + \left\langle \e, \tmd \right\rangle - \left\| \tmd \right\|^2 +
+  \frac{\rho \tmd^{\top} \X \n f \left( \x \right) \n f \left( \x
+  \right)^{\top} \X \tmd}{2 f \left( \x \right)^2} + \frac{\rho L_2}{6 f
+  \left( \x \right)} \left\| \X \tmd \right\|^3 .
+\end{eqnarray*}
+and
+\begin{eqnarray*}
+  &  & \phi \left( \x + \X \tmd \right) - \phi \left( \x \right)\\
+  & = & \rho \log \left( \frac{f \left( \x + \X \tmd \right)}{f \left( \x
+  \right)} \right) + \sum_{i = 1}^n \log x_i - \sum_{i = 1}^n \log (x_i + x_i
+  d_i)\\
+  & = & \left\langle \X \n \phi \left( \x \right), \tmd \right\rangle +
+  \frac{1}{2} \left\langle \tmd^{\top} \X \nabla^2 \phi \left( \x \right) \X,
+  \tmd \right\rangle\\
+  &  & + \left\langle \e, \tmd \right\rangle - \left\| \tmd \right\|^2 -
+  \left\langle \e, \tmd \right\rangle + \frac{\beta^2}{2 (1 - \beta)} +
+  \frac{\rho \tmd^{\top} \X \n f \left( \x \right) \n f \left( \x
+  \right)^{\top} \X \tmd}{2 f \left( \x \right)^2}\\
+  & \leq & - \frac{\lambda}{2} \left\| \tmd \right\|^2 - \left\| \tmd
+  \right\|^2 + \frac{\beta^2}{2 (1 - \beta)} + \frac{2 \rho \gamma \beta^2}{n}
+\end{eqnarray*}
+
+
+\end{document}

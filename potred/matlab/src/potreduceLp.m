@@ -49,7 +49,7 @@ for i = 1:maxiter
             logstar = "*";
             % Consider negative curvature of Hessian
             % Hess = rho * (- (g * g') / f + ATA) + diag(f * d);
-            method = "direct";
+            method = "scaled";
             mk = findnegacurv(x_pres, m, coneidx, rho, g, f, ATA, AT, A, method);
             usecurvature = false;
         end % End if 

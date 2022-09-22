@@ -67,6 +67,8 @@
     <assign|D|<macro|<math-bf|D>>>
 
     <assign|w|<macro|<math-bf|w>>>
+
+    <assign|B|<macro|<math|<math-bf|B>>>>
   </hide-preamble>
 
   <doc-data|<doc-title|First-order Potential Reduction
@@ -286,7 +288,95 @@
     <tformat|<table|<row|<cell|<x><rprime|'>>|<cell|\<leftarrow\>>|<cell|<frac|<x>|<around*|\<\|\|\>|<x>|\<\|\|\>>>>>|<row|<cell|<v>>|<cell|\<leftarrow\>>|<cell|<matrix|<tformat|<table|<row|<cell|<v><rsub|<y>>>>|<row|<cell|<v><rsub|<x>>-<around*|(|<x><rprime|'><rsup|\<top\>><v><rsub|<x>>|)><x><rprime|'>>>>>>>>|<row|<cell|<u><rsub|1>>|<cell|\<leftarrow\>>|<cell|<matrix|<tformat|<table|<row|<cell|<0>>>|<row|<cell|<v><rsub|<x>>-<around*|(|<x><rprime|'><rsup|\<top\>><v><rsub|<x>>|)><x><rprime|'>>>>>>>>|<row|<cell|<u><rsub|2>>|<cell|\<leftarrow\>>|<cell|<small|<matrix|<tformat|<table|<row|<cell|<I><rsub|m>>|<cell|>>|<row|<cell|>|<cell|<I><rsub|n>-<x><rprime|'><x><rprime|'><rsup|\<top\>>>>>>>><matrix|<tformat|<table|<row|<cell|<I><rsub|m>>|<cell|>>|<row|<cell|>|<cell|<X>>>>>><A><rsup|\<top\>><A><matrix|<tformat|<table|<row|<cell|<I><rsub|m>>|<cell|>>|<row|<cell|>|<cell|<X>>>>>><v>>>|<row|<cell|<u><rsub|3>>|<cell|\<leftarrow\>>|<cell|<g><rsup|\<top\>><matrix|<tformat|<table|<row|<cell|<I><rsub|m>>|<cell|>>|<row|<cell|>|<cell|<X>>>>>><v><matrix|<tformat|<table|<row|<cell|<I><rsub|m>>|<cell|>>|<row|<cell|>|<cell|<I><rsub|n>-<x><rprime|'><x><rprime|'><rsup|\<top\>>>>>>><matrix|<tformat|<table|<row|<cell|<I><rsub|m>>|<cell|>>|<row|<cell|>|<cell|<X>>>>>><g>>>|<row|<cell|<around*|\<\|\|\>|<A><u>|\<\|\|\>><rsup|4><M><v>>|<cell|\<leftarrow\>>|<cell|f<rsup|2><u><rsub|1>+\<rho\>f<u><rsub|2>-\<rho\><u><rsub|3>>>>>
   </eqnarray*>
 
-  <subsection|Further simplification>
+  <section|Numerical Experiments>
+
+  <big-table|<small|<block|<tformat|<cwith|2|13|1|4|cell-valign|c>|<cwith|1|-1|1|-1|cell-halign|c>|<cwith|1|13|5|8|cell-halign|c>|<cwith|2|7|6|8|cell-valign|c>|<cwith|2|7|5|5|cell-valign|c>|<cwith|14|18|1|4|cell-halign|c>|<cwith|14|18|1|4|cell-halign|c>|<cwith|14|18|2|4|cell-valign|c>|<cwith|14|18|1|1|cell-valign|c>|<cwith|2|3|5|8|cell-halign|c>|<cwith|2|3|5|8|cell-halign|c>|<cwith|2|2|6|8|cell-valign|c>|<cwith|2|2|5|5|cell-valign|c>|<cwith|4|13|5|5|cell-halign|c>|<cwith|4|8|5|5|cell-halign|c>|<cwith|4|13|5|5|cell-valign|c>|<cwith|4|13|6|8|cell-valign|c>|<cwith|14|21|5|5|cell-rborder|0ln>|<cwith|14|21|5|5|cell-valign|c>|<cwith|14|18|6|8|cell-valign|c>|<cwith|19|20|1|4|cell-valign|c>|<cwith|19|19|5|8|cell-halign|c>|<cwith|19|19|5|8|cell-valign|c>|<cwith|20|20|1|4|cell-valign|c>|<cwith|20|20|5|8|cell-valign|c>|<cwith|1|-1|1|-1|cell-tborder|1ln>|<cwith|1|-1|1|-1|cell-bborder|1ln>|<cwith|1|-1|1|-1|cell-lborder|0ln>|<cwith|1|-1|1|-1|cell-rborder|0ln>|<cwith|1|-1|5|5|cell-tborder|1ln>|<cwith|1|-1|5|5|cell-bborder|1ln>|<cwith|1|-1|5|5|cell-lborder|1ln>|<cwith|1|-1|5|5|cell-rborder|1ln>|<cwith|1|-1|4|4|cell-rborder|1ln>|<cwith|1|-1|6|6|cell-lborder|1ln>|<table|<row|<cell|Problem>|<cell|PInfeas>|<cell|DInfeas.>|<cell|Compl.>|<cell|Problem>|<cell|PInfeas>|<cell|DInfeas.>|<cell|Compl.>>|<row|<cell|DLITTLE>|<cell|1.347e-10>|<cell|2.308e-10>|<cell|2.960e-09>|<cell|KB2>|<cell|5.455e-11>|<cell|6.417e-10>|<cell|7.562e-11>>|<row|<cell|AFIRO>|<cell|7.641e-11>|<cell|7.375e-11>|<cell|3.130e-10>|<cell|LOTFI>|<cell|2.164e-09>|<cell|4.155e-09>|<cell|8.663e-08>>|<row|<cell|AGG2>|<cell|3.374e-08>|<cell|4.859e-08>|<cell|6.286e-07>|<cell|MODSZK1>|<cell|1.527e-06>|<cell|5.415e-05>|<cell|2.597e-04>>|<row|<cell|AGG3>|<cell|2.248e-05>|<cell|1.151e-06>|<cell|1.518e-05>|<cell|RECIPELP>|<cell|5.868e-08>|<cell|6.300e-08>|<cell|1.285e-07>>|<row|<cell|BANDM>|<cell|2.444e-09>|<cell|4.886e-09>|<cell|3.769e-08>|<cell|SC105>|<cell|7.315e-11>|<cell|5.970e-11>|<cell|2.435e-10>>|<row|<cell|BEACONFD>|<cell|5.765e-12>|<cell|9.853e-12>|<cell|1.022e-10>|<cell|SC205>|<cell|6.392e-11>|<cell|5.710e-11>|<cell|2.650e-10>>|<row|<cell|BLEND>|<cell|2.018e-10>|<cell|3.729e-10>|<cell|1.179e-09>|<cell|SC50A>|<cell|1.078e-05>|<cell|6.098e-06>|<cell|4.279e-05>>|<row|<cell|BOEING2>|<cell|1.144e-07>|<cell|1.110e-08>|<cell|2.307e-07>|<cell|SC50B>|<cell|4.647e-11>|<cell|3.269e-11>|<cell|1.747e-10>>|<row|<cell|BORE3D>|<cell|2.389e-08>|<cell|5.013e-08>|<cell|1.165e-07>|<cell|SCAGR25>|<cell|1.048e-07>|<cell|5.298e-08>|<cell|1.289e-06>>|<row|<cell|BRANDY>|<cell|2.702e-05>|<cell|7.818e-06>|<cell|1.849e-05>|<cell|SCAGR7>|<cell|1.087e-07>|<cell|1.173e-08>|<cell|2.601e-07>>|<row|<cell|CAPRI>|<cell|7.575e-05>|<cell|4.488e-05>|<cell|4.880e-05>|<cell|SCFXM1>|<cell|4.323e-06>|<cell|5.244e-06>|<cell|8.681e-06>>|<row|<cell|E226>|<cell|2.656e-06>|<cell|4.742e-06>|<cell|2.512e-05>|<cell|SCORPION>|<cell|1.674e-09>|<cell|1.892e-09>|<cell|1.737e-08>>|<row|<cell|FINNIS>|<cell|8.577e-07>|<cell|8.367e-07>|<cell|1.001e-05>|<cell|SCTAP1>|<cell|5.567e-07>|<cell|8.430e-07>|<cell|5.081e-06>>|<row|<cell|FORPLAN>|<cell|5.874e-07>|<cell|2.084e-07>|<cell|4.979e-06>|<cell|SEBA>|<cell|2.919e-11>|<cell|5.729e-11>|<cell|1.448e-10>>|<row|<cell|GFRD-PNC>|<cell|4.558e-05>|<cell|1.052e-05>|<cell|4.363e-05>|<cell|SHARE1B>|<cell|3.367e-07>|<cell|1.339e-06>|<cell|3.578e-06>>|<row|<cell|GROW7>|<cell|1.276e-04>|<cell|4.906e-06>|<cell|1.024e-04>|<cell|SHARE2B>|<cell|2.142e-04>|<cell|2.014e-05>|<cell|6.146e-05>>|<row|<cell|ISRAEL>|<cell|1.422e-06>|<cell|1.336e-06>|<cell|1.404e-05>|<cell|STAIR>|<cell|5.549e-04>|<cell|8.566e-06>|<cell|2.861e-05>>|<row|<cell|STANDATA>|<cell|5.645e-08>|<cell|2.735e-07>|<cell|5.130e-06>|<cell|STANDGUB>|<cell|2.934e-08>|<cell|1.467e-07>|<cell|2.753e-06>>|<row|<cell|STOCFOR1>|<cell|6.633e-09>|<cell|9.701e-09>|<cell|4.811e-08>|<cell|VTP-BASE>|<cell|1.349e-10>|<cell|5.098e-11>|<cell|2.342e-10>>>>>>|Solving
+  NETLIB LPs in <with|color|red|<with|font-series|bold|1000>> iterations>
+
+  \;
+
+  <section|Algorithm Design>
+
+  In this section, we discuss the design of the potential-reduction based
+  solver. To allow further extension, we design the solver to solve general
+  problem
+
+  <\eqnarray*>
+    <tformat|<table|<row|<cell|min<rsub|<x>>>|<cell|f<around*|(|<x>|)>>|<cell|>>|<row|<cell|<text|subject
+    to>>|<cell|<A><x>=<b>>|<cell|>>|<row|<cell|>|<cell|<x>\<geq\><0>>|<cell|>>>>
+  </eqnarray*>
+
+  using potential reduction
+
+  <\eqnarray*>
+    <tformat|<table|<row|<cell|\<phi\><around*|(|<x>|)>>|<cell|\<assign\>>|<cell|\<rho\>log<around*|(|f<around*|(|<x>|)>-z|)>+log
+    <big|sum><rsub|i=1><rsup|n>x<rsub|i>>>>>
+  </eqnarray*>
+
+  over Null space of <math|<A>>. To drive the method to work, the following
+  methods should be provided by <math|f>.
+
+  <\itemize>
+    <item>Gradient evaluation <math|\<nabla\>f<around*|(|<x>|)>>
+
+    <item>Hessian vector product <math|<n><rsup|2>f<around*|(|<x>|)><u>>
+
+    <item>Progress monitor (Optional)
+
+    Used for problem solving.
+  </itemize>
+
+  The potential reduction framework requries <math|<A>> and maintains
+  <math|<x>,z,\<rho\>> to run\ 
+
+  <\itemize>
+    <item>Potential gradient evaluation\ 
+
+    <\equation*>
+      <n>\<phi\><around*|(|<x>|)>=<frac|\<rho\>|f<around*|(|<x>|)>-z><n>f<around*|(|<x>|)>-<X><rsup|-1><e>
+    </equation*>
+
+    <item>Potential (scaled) Hessian-vector product
+
+    <\eqnarray*>
+      <tformat|<table|<row|<cell|<n><rsup|2>\<phi\><around*|(|<x>|)>>|<cell|=>|<cell|-<frac|\<rho\><n>f<around*|(|<x>|)><n>f<around*|(|<x>|)><rsup|\<top\>>|<around*|(|f<around*|(|<x>|)>-z|)><rsup|2>>+<frac|<n><rsup|2>f<around*|(|<x>|)>|f<around*|(|<x>|)>-z>+<X><rsup|-2>>>|<row|<cell|<X><n><rsup|2>\<phi\><around*|(|<x>|)><X>>|<cell|=>|<cell|-<frac|\<rho\><X><n>f<around*|(|<x>|)><n>f<around*|(|<x>|)><rsup|\<top\>><X><u>|<around*|(|f<around*|(|<x>|)>-z|)><rsup|2>>+<frac|<X><n><rsup|2>f<around*|(|<x>|)><X><u>|f<around*|(|<x>|)>-z>+<u>>>>>
+    </eqnarray*>
+
+    <item>(Scaled) projection onto Null space
+
+    <\equation*>
+      <around*|(|<I>-<A><rsup|\<top\>><around*|(|<A><A><rsup|\<top\>>|)><rsup|-1><A>|)><u>
+    </equation*>
+
+    <\equation*>
+      <around*|(|<I>-<X><A><rsup|\<top\>><around*|(|<A><X><rsup|2><A><rsup|\<top\>>|)><rsup|-1><A><X>|)><u>
+    </equation*>
+
+    <item>Scaled projected gradient and negative curvature\ 
+
+    <item>Trust-region subproblem
+
+    <\eqnarray*>
+      <tformat|<table|<row|<cell|min<rsub|\<alpha\>>>|<cell|<frac|1|2>\<alpha\><rsup|\<top\>><H>\<alpha\>+<g><rsup|\<top\>>\<alpha\>>|<cell|>>|<row|<cell|<text|subject
+      to>>|<cell|\<alpha\><rsup|\<top\>><G>\<alpha\>\<leq\>\<beta\>>|<cell|>>>>
+    </eqnarray*>
+
+    <item>Heuristic routines
+
+    Line search, Curvature frequency, lower bound update
+  </itemize>
+
+  \;
+
+  <\eqnarray*>
+    <tformat|<table|<row|<cell|<A><x>-<b>\<tau\>>|<cell|=>|<cell|<0>>>|<row|<cell|-<A><rsup|\<top\>><y>-<s>+<c>\<tau\>>|<cell|=>|<cell|<0>>>|<row|<cell|<b><rsup|\<top\>><y>-<c><rsup|\<top\>><x>-\<kappa\>>|<cell|=>|<cell|0>>|<row|<cell|<e><rsub|n><rsup|\<top\>><x>+<e><rsub|n><rsup|\<top\>><s>+\<kappa\>+\<tau\>>|<cell|=>|<cell|2n+2>>>>
+  </eqnarray*>
+
+  and we have
+
+  <\eqnarray*>
+    <tformat|<table|<row|<cell|<matrix|<tformat|<table|<row|<cell|<0><rsub|m\<times\>m>>|<cell|<A>>|<cell|<0><rsub|m\<times\>n>>|<cell|<0><rsub|m\<times\>1>>|<cell|-<b>>>|<row|<cell|-<A><rsup|\<top\>>>|<cell|<0><rsub|n\<times\>n>>|<cell|-<I><rsub|n\<times\>n>>|<cell|<0><rsub|n\<times\>1>>|<cell|<c>>>|<row|<cell|<b><rsup|\<top\>>>|<cell|-<c><rsup|\<top\>>>|<cell|<0><rsub|1\<times\>n>>|<cell|-1>|<cell|0>>>>><matrix|<tformat|<table|<row|<cell|<y>>>|<row|<cell|<x>>>|<row|<cell|<s>>>|<row|<cell|\<kappa\>>>|<row|<cell|\<tau\>>>>>>>|<cell|=>|<cell|<0>>>|<row|<cell|<e><rsub|n><rsup|\<top\>><x>+<e><rsub|n><rsup|\<top\>><s>+\<kappa\>+\<tau\>>|<cell|=>|<cell|1.>>>>
+  </eqnarray*>
 
   There are some basic operations to implement
 
@@ -359,13 +449,6 @@
     <tformat|<table|<row|<cell|>|<cell|>|<cell|<around*|(|<I>-<frac|<x><x><rsup|\<top\>>|<around*|\<\|\|\>|<x>|\<\|\|\>><rsup|2>>|)><H><around*|(|<I>-<frac|<x><x><rsup|\<top\>>|<around*|\<\|\|\>|<x>|\<\|\|\>><rsup|2>>|)>>>|<row|<cell|>|<cell|=>|<cell|<H>-<frac|<x><x><rsup|\<top\>>|<around*|\<\|\|\>|<x>|\<\|\|\>><rsup|2>><H>-<H><frac|<x><x><rsup|\<top\>>|<around*|\<\|\|\>|<x>|\<\|\|\>><rsup|2>>+<x><rsup|\<top\>><H><x><frac|<x><x><rsup|\<top\>>|<around*|\<\|\|\>|<x>|\<\|\|\>><rsup|4>>>>>>
   </eqnarray*>
 
-  <section|Numerical Experiments>
-
-  <big-table|<small|<block|<tformat|<cwith|2|13|1|4|cell-valign|c>|<cwith|1|-1|1|-1|cell-halign|c>|<cwith|1|13|5|8|cell-halign|c>|<cwith|2|7|6|8|cell-valign|c>|<cwith|2|7|5|5|cell-valign|c>|<cwith|14|18|1|4|cell-halign|c>|<cwith|14|18|1|4|cell-halign|c>|<cwith|14|18|2|4|cell-valign|c>|<cwith|14|18|1|1|cell-valign|c>|<cwith|2|3|5|8|cell-halign|c>|<cwith|2|3|5|8|cell-halign|c>|<cwith|2|2|6|8|cell-valign|c>|<cwith|2|2|5|5|cell-valign|c>|<cwith|4|13|5|5|cell-halign|c>|<cwith|4|8|5|5|cell-halign|c>|<cwith|4|13|5|5|cell-valign|c>|<cwith|4|13|6|8|cell-valign|c>|<cwith|14|21|5|5|cell-rborder|0ln>|<cwith|14|21|5|5|cell-valign|c>|<cwith|14|18|6|8|cell-valign|c>|<cwith|19|20|1|4|cell-valign|c>|<cwith|19|19|5|8|cell-halign|c>|<cwith|19|19|5|8|cell-valign|c>|<cwith|20|20|1|4|cell-valign|c>|<cwith|20|20|5|8|cell-valign|c>|<cwith|1|-1|1|-1|cell-tborder|1ln>|<cwith|1|-1|1|-1|cell-bborder|1ln>|<cwith|1|-1|1|-1|cell-lborder|0ln>|<cwith|1|-1|1|-1|cell-rborder|0ln>|<cwith|1|-1|5|5|cell-tborder|1ln>|<cwith|1|-1|5|5|cell-bborder|1ln>|<cwith|1|-1|5|5|cell-lborder|1ln>|<cwith|1|-1|5|5|cell-rborder|1ln>|<cwith|1|-1|4|4|cell-rborder|1ln>|<cwith|1|-1|6|6|cell-lborder|1ln>|<table|<row|<cell|Problem>|<cell|PInfeas>|<cell|DInfeas.>|<cell|Compl.>|<cell|Problem>|<cell|PInfeas>|<cell|DInfeas.>|<cell|Compl.>>|<row|<cell|DLITTLE>|<cell|1.347e-10>|<cell|2.308e-10>|<cell|2.960e-09>|<cell|KB2>|<cell|5.455e-11>|<cell|6.417e-10>|<cell|7.562e-11>>|<row|<cell|AFIRO>|<cell|7.641e-11>|<cell|7.375e-11>|<cell|3.130e-10>|<cell|LOTFI>|<cell|2.164e-09>|<cell|4.155e-09>|<cell|8.663e-08>>|<row|<cell|AGG2>|<cell|3.374e-08>|<cell|4.859e-08>|<cell|6.286e-07>|<cell|MODSZK1>|<cell|1.527e-06>|<cell|5.415e-05>|<cell|2.597e-04>>|<row|<cell|AGG3>|<cell|2.248e-05>|<cell|1.151e-06>|<cell|1.518e-05>|<cell|RECIPELP>|<cell|5.868e-08>|<cell|6.300e-08>|<cell|1.285e-07>>|<row|<cell|BANDM>|<cell|2.444e-09>|<cell|4.886e-09>|<cell|3.769e-08>|<cell|SC105>|<cell|7.315e-11>|<cell|5.970e-11>|<cell|2.435e-10>>|<row|<cell|BEACONFD>|<cell|5.765e-12>|<cell|9.853e-12>|<cell|1.022e-10>|<cell|SC205>|<cell|6.392e-11>|<cell|5.710e-11>|<cell|2.650e-10>>|<row|<cell|BLEND>|<cell|2.018e-10>|<cell|3.729e-10>|<cell|1.179e-09>|<cell|SC50A>|<cell|1.078e-05>|<cell|6.098e-06>|<cell|4.279e-05>>|<row|<cell|BOEING2>|<cell|1.144e-07>|<cell|1.110e-08>|<cell|2.307e-07>|<cell|SC50B>|<cell|4.647e-11>|<cell|3.269e-11>|<cell|1.747e-10>>|<row|<cell|BORE3D>|<cell|2.389e-08>|<cell|5.013e-08>|<cell|1.165e-07>|<cell|SCAGR25>|<cell|1.048e-07>|<cell|5.298e-08>|<cell|1.289e-06>>|<row|<cell|BRANDY>|<cell|2.702e-05>|<cell|7.818e-06>|<cell|1.849e-05>|<cell|SCAGR7>|<cell|1.087e-07>|<cell|1.173e-08>|<cell|2.601e-07>>|<row|<cell|CAPRI>|<cell|7.575e-05>|<cell|4.488e-05>|<cell|4.880e-05>|<cell|SCFXM1>|<cell|4.323e-06>|<cell|5.244e-06>|<cell|8.681e-06>>|<row|<cell|E226>|<cell|2.656e-06>|<cell|4.742e-06>|<cell|2.512e-05>|<cell|SCORPION>|<cell|1.674e-09>|<cell|1.892e-09>|<cell|1.737e-08>>|<row|<cell|FINNIS>|<cell|8.577e-07>|<cell|8.367e-07>|<cell|1.001e-05>|<cell|SCTAP1>|<cell|5.567e-07>|<cell|8.430e-07>|<cell|5.081e-06>>|<row|<cell|FORPLAN>|<cell|5.874e-07>|<cell|2.084e-07>|<cell|4.979e-06>|<cell|SEBA>|<cell|2.919e-11>|<cell|5.729e-11>|<cell|1.448e-10>>|<row|<cell|GFRD-PNC>|<cell|4.558e-05>|<cell|1.052e-05>|<cell|4.363e-05>|<cell|SHARE1B>|<cell|3.367e-07>|<cell|1.339e-06>|<cell|3.578e-06>>|<row|<cell|GROW7>|<cell|1.276e-04>|<cell|4.906e-06>|<cell|1.024e-04>|<cell|SHARE2B>|<cell|2.142e-04>|<cell|2.014e-05>|<cell|6.146e-05>>|<row|<cell|ISRAEL>|<cell|1.422e-06>|<cell|1.336e-06>|<cell|1.404e-05>|<cell|STAIR>|<cell|5.549e-04>|<cell|8.566e-06>|<cell|2.861e-05>>|<row|<cell|STANDATA>|<cell|5.645e-08>|<cell|2.735e-07>|<cell|5.130e-06>|<cell|STANDGUB>|<cell|2.934e-08>|<cell|1.467e-07>|<cell|2.753e-06>>|<row|<cell|STOCFOR1>|<cell|6.633e-09>|<cell|9.701e-09>|<cell|4.811e-08>|<cell|VTP-BASE>|<cell|1.349e-10>|<cell|5.098e-11>|<cell|2.342e-10>>>>>>|Solving
-  NETLIB LPs in <with|color|red|<with|font-series|bold|1000>> iterations>
-
-  \;
-
   <section|Analysis>
 
   <\eqnarray*>
@@ -387,16 +470,6 @@
   <new-page*>
 
   <section|General Potential Method>
-
-  <\eqnarray*>
-    <tformat|<table|<row|<cell|min<rsub|<x>>>|<cell|f<around*|(|<x>|)>>|<cell|>>|<row|<cell|<text|subject
-    to>>|<cell|<e><rsup|\<top\>><x>=1>|<cell|>>|<row|<cell|>|<cell|<x>\<geq\><0>>|<cell|>>>>
-  </eqnarray*>
-
-  <\eqnarray*>
-    <tformat|<table|<row|<cell|\<phi\><around*|(|<x>|)>>|<cell|=>|<cell|log<around*|(|f<around*|(|<x>|)>|)>+<big|sum><rsub|i=1><rsup|n>log
-    x<rsub|i>>>|<row|<cell|<n>\<phi\><around*|(|<x>|)>>|<cell|=>|<cell|<frac|\<rho\><n>f<around*|(|<x>|)>|f<around*|(|<x>|)>>-<X><rsup|-1><e>>>|<row|<cell|\<nabla\><rsup|2>\<phi\><around*|(|<x>|)>>|<cell|=>|<cell|-<frac|\<rho\><n>f<around*|(|<x>|)><n>f<around*|(|<x>|)><rsup|\<top\>>|f<around*|(|<x>|)><rsup|2>>+\<rho\><frac|<n><rsup|2>f<around*|(|<x>|)>|f<around*|(|<x>|)>>+<X><rsup|-2>>>|<row|<cell|f<around*|(|<x>|)>>|<cell|\<leq\>>|<cell|f<around*|(|<y>|)>+<around*|\<langle\>|<n>f<around*|(|<y>|)>,<x>-<y>|\<rangle\>>+<frac|L<rsub|1>|2><around*|\<\|\|\>|<x>-<y>|\<\|\|\>><rsup|2>>>|<row|<cell|f<around*|(|<x>|)>>|<cell|\<leq\>>|<cell|f<around*|(|<y>|)>+<around*|\<langle\>|<n>f<around*|(|<y>|)>,<x>-<y>|\<rangle\>>+<frac|1|2><around*|\<langle\>|<around*|(|<x>-<y>|)><n><rsup|2>f<around*|(|<y>|)>,<x>-<y>|\<rangle\>>+<frac|L<rsub|2>|6><around*|\<\|\|\>|<x>-<y>|\<\|\|\>><rsup|3>>>|<row|<cell|f<around*|(|<x>|)>>|<cell|\<geq\>>|<cell|f<around*|(|<y>|)>+<around*|\<langle\>|<n>f<around*|(|<y>|)>,<x>-<y>|\<rangle\>>>>>>
-  </eqnarray*>
 
   <subsection|Second-order Potential Reduction>
 
@@ -453,74 +526,30 @@
 
   <\equation*>
     <big|sum><rsub|i=1><rsup|n>log x<rsub|i>-<big|sum><rsub|i=1><rsup|n>log
-    <around*|(|x<rsub|i>+x<rsub|i>d<rsub|i>|)>\<leq\>-<around*|\<langle\>|<e>,<d>|\<rangle\>>+<frac|\<beta\><rsup|2>|2<around*|(|1-\<beta\>|)>>
+    <around*|(|x<rsub|i>+x<rsub|i>d<rsub|i>|)>\<leq\>-<around*|\<langle\>|<e>,<d>|\<rangle\>>+<frac|\<beta\><rsup|2>|2<around*|(|1-\<beta\>|)>>.
   </equation*>
 
   \;
 
-  First we bound the reduction in <math|\<rho\>log<around*|(|f<around*|(|<x>|)>|)>>
+  Then we bound the reduction in <math|log<around*|(|f<around*|(|<x>|)>|)>>
   by
 
-  \;
-
   <\eqnarray*>
-    <tformat|<table|<row|<cell|log<around*|(|<frac|f<around*|(|<x>+<X><d>|)>|f<around*|(|<x>|)>>|)>>|<cell|\<leq\>>|<cell|log
-    <around*|(|1+<frac|<around*|\<langle\>|<n>f<around*|(|<x>|)>,<X><d>|\<rangle\>>+<frac|L<rsub|1>|2><around*|\<\|\|\>|<X><d>|\<\|\|\>><rsup|2>|f<around*|(|<x>|)>>|)>>>|<row|<cell|>|<cell|\<leq\>>|<cell|<frac|<around*|\<langle\>|<n>f<around*|(|<x>|)>,<X><d>|\<rangle\>>+<frac|L<rsub|1>|2><around*|\<\|\|\>|<X><d>|\<\|\|\>><rsup|2>|f<around*|(|<x>|)>>-<frac|1|2><around*|(|<frac|<around*|\<langle\>|<n>f<around*|(|<x>|)>,<X><d>|\<rangle\>>+<frac|L<rsub|1>|6><around*|\<\|\|\>|<X><d>|\<\|\|\>><rsup|2>|f<around*|(|<x>|)>>|)><rsup|2>>>|<row|<cell|>|<cell|>|<cell|+<frac|1|3><around*|(|<frac|<around*|\<langle\>|<n>f<around*|(|<x>|)>,<X><d>|\<rangle\>>+<frac|L<rsub|1>|6><around*|\<\|\|\>|<X><d>|\<\|\|\>><rsup|2>|f<around*|(|<x>|)>>|)><rsup|3>,>>>>
+    <tformat|<table|<row|<cell|>|<cell|>|<cell|log<around*|(|<frac|f<around*|(|<x>+<X><d>|)>|f<around*|(|<x>|)>>|)>>>|<row|<cell|>|<cell|\<leq\>>|<cell|log
+    <around*|(|1+<frac|<around*|\<langle\>|<n>f<around*|(|<x>|)>,<X><d>|\<rangle\>>+<frac|1|2><around*|\<langle\>|<d><rsup|\<top\>><X><n><rsup|2>f<around*|(|<x>|)>,<X><d>|\<rangle\>>|f<around*|(|<x>|)>>|)>>>|<row|<cell|>|<cell|\<leq\>>|<cell|<frac|<around*|\<langle\>|<n>f<around*|(|<x>|)>,<X><d>|\<rangle\>>+<frac|1|2><around*|\<langle\>|<d><rsup|\<top\>><X><n><rsup|2>f<around*|(|<x>|)>,<X><d>|\<rangle\>>|f<around*|(|<x>|)>>>>|<row|<cell|>|<cell|=>|<cell|<around*|\<langle\>|<X><n>\<phi\><around*|(|<x>|)>,<d>|\<rangle\>>+<frac|1|2><around*|\<langle\>|<d><rsup|\<top\>><X>\<nabla\><rsup|2>\<phi\><around*|(|<x>|)><X>,<d>|\<rangle\>>+<around*|\<langle\>|<e>,<d>|\<rangle\>>-<around*|\<\|\|\>|<d>|\<\|\|\>><rsup|2>+<frac|\<rho\><d><rsup|\<top\>><X><n>f<around*|(|<x>|)><n>f<around*|(|<x>|)><rsup|\<top\>><X><d>|2f<around*|(|<x>|)><rsup|2>>.>>>>
   </eqnarray*>
 
-  \;
-
-  or, alternatively,
-
-  <\eqnarray*>
-    <tformat|<table|<row|<cell|\<rho\>log<around*|(|<frac|f<around*|(|<x>+<X><d>|)>|f<around*|(|<x>|)>>|)>>|<cell|\<leq\>>|<cell|\<rho\>log
-    <around*|(|1+<frac|<around*|\<langle\>|<n>f<around*|(|<x>|)>,<X><d>|\<rangle\>>+<frac|1|2><around*|\<langle\>|<d><rsup|\<top\>><X><n><rsup|2>f<around*|(|<x>|)>,<X><d>|\<rangle\>>+<frac|L<rsub|2>|6><around*|\<\|\|\>|<X><d>|\<\|\|\>><rsup|3>|f<around*|(|<x>|)>>|)>>>|<row|<cell|>|<cell|\<leq\>>|<cell|\<rho\><frac|<around*|\<langle\>|<n>f<around*|(|<x>|)>,<X><d>|\<rangle\>>+<frac|1|2><around*|\<langle\>|<d><rsup|\<top\>><X><n><rsup|2>f<around*|(|<x>|)>,<X><d>|\<rangle\>>+<frac|L<rsub|2>|6><around*|\<\|\|\>|<X><d>|\<\|\|\>><rsup|3>|f<around*|(|<x>|)>>>>|<row|<cell|>|<cell|=>|<cell|<around*|\<langle\>|<X><n>\<phi\><around*|(|<x>|)>,<d>|\<rangle\>>+<frac|1|2><around*|\<langle\>|<d><rsup|\<top\>><X>\<nabla\><rsup|2>\<phi\><around*|(|<x>|)><X>,<d>|\<rangle\>>>>|<row|<cell|>|<cell|>|<cell|+<around*|\<langle\>|<e>,<d>|\<rangle\>>-<around*|\<\|\|\>|<d>|\<\|\|\>><rsup|2>+<frac|\<rho\><d><rsup|\<top\>><X><n>f<around*|(|<x>|)><n>f<around*|(|<x>|)><rsup|\<top\>><X><d>|2f<around*|(|<x>|)><rsup|2>>+<frac|\<rho\>L<rsub|2>|6f<around*|(|<x>|)>><around*|\<\|\|\>|<X><d>|\<\|\|\>><rsup|3>.>>>>
-  </eqnarray*>
-
-  and
+  Combining the above relations, we deduce that
 
   <\eqnarray*>
     <tformat|<table|<row|<cell|>|<cell|>|<cell|\<phi\><around*|(|<x>+<X><d>|)>-\<phi\><around*|(|<x>|)>>>|<row|<cell|>|<cell|=>|<cell|\<rho\>log<around*|(|<frac|f<around*|(|<x>+<X><d>|)>|f<around*|(|<x>|)>>|)>+<big|sum><rsub|i=1><rsup|n>log
     x<rsub|i>-<big|sum><rsub|i=1><rsup|n>log
-    <around*|(|x<rsub|i>+x<rsub|i>d<rsub|i>|)>>>|<row|<cell|>|<cell|=>|<cell|<around*|\<langle\>|<X><n>\<phi\><around*|(|<x>|)>,<d>|\<rangle\>>+<frac|1|2><around*|\<langle\>|<d><rsup|\<top\>><X>\<nabla\><rsup|2>\<phi\><around*|(|<x>|)><X>,<d>|\<rangle\>>>>|<row|<cell|>|<cell|>|<cell|+<around*|\<langle\>|<e>,<d>|\<rangle\>>-<around*|\<\|\|\>|<d>|\<\|\|\>><rsup|2>-<around*|\<langle\>|<e>,<d>|\<rangle\>>+<frac|\<beta\><rsup|2>|2<around*|(|1-\<beta\>|)>>+<frac|\<rho\><d><rsup|\<top\>><X><n>f<around*|(|<x>|)><n>f<around*|(|<x>|)><rsup|\<top\>><X><d>|2f<around*|(|<x>|)><rsup|2>>>>|<row|<cell|>|<cell|\<leq\>>|<cell|-<frac|\<lambda\>|2><around*|\<\|\|\>|<d>|\<\|\|\>><rsup|2>-<around*|\<\|\|\>|<d>|\<\|\|\>><rsup|2>+<frac|\<beta\><rsup|2>|2<around*|(|1-\<beta\>|)>>+<frac|2\<rho\>\<gamma\>\<beta\><rsup|2>|n>>>>>
+    <around*|(|x<rsub|i>+x<rsub|i>d<rsub|i>|)>>>|<row|<cell|>|<cell|=>|<cell|<around*|\<langle\>|<X><n>\<phi\><around*|(|<x>|)>,<d>|\<rangle\>>+<frac|1|2><around*|\<langle\>|<d><rsup|\<top\>><X>\<nabla\><rsup|2>\<phi\><around*|(|<x>|)><X>,<d>|\<rangle\>>>>|<row|<cell|>|<cell|>|<cell|+<around*|\<langle\>|<e>,<d>|\<rangle\>>-<around*|\<\|\|\>|<d>|\<\|\|\>><rsup|2>-<around*|\<langle\>|<e>,<d>|\<rangle\>>+<frac|\<beta\><rsup|2>|2<around*|(|1-\<beta\>|)>>+<frac|\<rho\><d><rsup|\<top\>><X><n>f<around*|(|<x>|)><n>f<around*|(|<x>|)><rsup|\<top\>><X><d>|2f<around*|(|<x>|)><rsup|2>>>>|<row|<cell|>|<cell|\<leq\>>|<cell|-<frac|\<lambda\>|2><around*|\<\|\|\>|<d>|\<\|\|\>><rsup|2>-<around*|\<\|\|\>|<d>|\<\|\|\>><rsup|2>+<frac|\<beta\><rsup|2>|2<around*|(|1-\<beta\>|)>>+<frac|2\<rho\>\<beta\><rsup|2>|f<around*|(|<x>|)>>>>|<row|<cell|>|<cell|\<leq\>>|<cell|<around*|(|-<frac|\<lambda\>|2>-1+<frac|1|2<around*|(|1-\<beta\>|)>>+<frac|2\<rho\>|n>|)>\<beta\><rsup|2>,>>>>
   </eqnarray*>
 
-  <\lemma>
-    (Informal) The spectrum of <math|><math|<X>\<nabla\><rsup|2>\<phi\><around*|(|<x>|)><X>>
-    satisfies\ 
+  \;
 
-    <\equation*>
-      -<frac|4\<rho\>|n><I>\<preceq\><X>\<nabla\><rsup|2>\<phi\><around*|(|<x>|)><X>\<preceq\><around*|(|<frac|\<rho\>\<gamma\>|f<around*|(|<x>|)>>+1|)><I>.
-    </equation*>
-
-    <\em>
-      <\proof>
-        Recall that\ 
-
-        <\eqnarray*>
-          <tformat|<table|<row|<cell|<X>\<nabla\><rsup|2>\<phi\><around*|(|<x>|)><X>>|<cell|=>|<cell|-<frac|\<rho\><X><n>f<around*|(|<x>|)><n>f<around*|(|<x>|)><rsup|\<top\>><X>|f<around*|(|<x>|)><rsup|2>>+<frac|\<rho\><X><n><rsup|2>f<around*|(|<x>|)><X>|f<around*|(|<x>|)>>+<I>>>|<row|<cell|>|<cell|\<succeq\>>|<cell|-<frac|\<rho\><X><n>f<around*|(|<x>|)><n>f<around*|(|<x>|)><rsup|\<top\>><X>|f<around*|(|<x>|)><rsup|2>>>>>>
-        </eqnarray*>
-
-        and\ 
-
-        <\eqnarray*>
-          <tformat|<table|<row|<cell|>|<cell|>|<cell|max<rsub|<around*|\<\|\|\>|<u>|\<\|\|\>>=1><frac|<u><rsup|\<top\>><X><n>f<around*|(|<x>|)><n>f<around*|(|<x>|)><rsup|\<top\>><X><u>|f<around*|(|<x>|)><rsup|2>>>>|<row|<cell|>|<cell|=>|<cell|<frac|1|f<around*|(|<x>|)><rsup|2>>\<cdummy\><around*|{|max<rsub|<around*|\<\|\|\>|<u>|\<\|\|\>>=1><around*|(|<u><rsup|\<top\>><X><A><rsup|\<top\>><A><x>|)><rsup|2>|}>>>|<row|<cell|>|<cell|\<leq\>>|<cell|<frac|1|f<around*|(|<x>|)><rsup|2>>\<cdummy\><around*|{|max<rsub|<around*|\<\|\|\>|<u>|\<\|\|\>>=1,<v>=<X><u>><around*|\<langle\>|<A><v>,<A><x>|\<rangle\>><rsup|2>|}>>>|<row|<cell|>|<cell|\<leq\>>|<cell|<frac|1|n
-          f<around*|(|<x>|)><rsup|2>>\<cdummy\><around*|\<langle\>|<A><x>,<A><x>|\<rangle\>><rsup|2>=<frac|4|n>.>>>>
-        </eqnarray*>
-
-        Thus we have <math|-<frac|\<rho\><X><n>f<around*|(|<x>|)><n>f<around*|(|<x>|)><rsup|\<top\>><X>|f<around*|(|<x>|)><rsup|2>>\<succeq\>-<frac|4\<rho\>|n>>.
-        On the other hand,
-
-        <\eqnarray*>
-          <tformat|<table|<row|<cell|<X>\<nabla\><rsup|2>\<phi\><around*|(|<x>|)><X>>|<cell|\<preceq\>>|<cell|<frac|\<rho\><X><n><rsup|2>f<around*|(|<x>|)><X>|f<around*|(|<x>|)>>+<I>>>|<row|<cell|>|<cell|\<preceq\>>|<cell|<around*|(|<frac|\<rho\>\<gamma\><around*|\<\|\|\>|<X>|\<\|\|\>><rsup|2>|f<around*|(|<x>|)>>+1|)><I>>>|<row|<cell|>|<cell|\<preceq\>>|<cell|<around*|(|<frac|\<rho\>\<gamma\>|f<around*|(|<x>|)>>+1|)><I>>>>>
-        </eqnarray*>
-
-        \ 
-
-        \;
-      </proof>
-    </em>
-  </lemma>
+  where the first inequality is by <math|<frac|\<rho\><X><n>f<around*|(|<x>|)><n>f<around*|(|<x>|)><rsup|\<top\>><X>|f<around*|(|<x>|)><rsup|2>>\<preceq\><frac|4\<rho\>|n><I>>.
 </body>
 
 <\initial>
@@ -532,18 +561,19 @@
 <\references>
   <\collection>
     <associate|auto-1|<tuple|1|1>>
-    <associate|auto-10|<tuple|1|7>>
-    <associate|auto-11|<tuple|4|7>>
-    <associate|auto-12|<tuple|5|8>>
-    <associate|auto-13|<tuple|5.1|8>>
+    <associate|auto-10|<tuple|4|5>>
+    <associate|auto-11|<tuple|5|8>>
+    <associate|auto-12|<tuple|6|9>>
+    <associate|auto-13|<tuple|6.1|9>>
+    <associate|auto-14|<tuple|6.2|?>>
     <associate|auto-2|<tuple|1.1|1>>
     <associate|auto-3|<tuple|2|2>>
     <associate|auto-4|<tuple|2.1|3>>
     <associate|auto-5|<tuple|2.2|4>>
     <associate|auto-6|<tuple|2.3|4>>
     <associate|auto-7|<tuple|2.4|5>>
-    <associate|auto-8|<tuple|2.5|5>>
-    <associate|auto-9|<tuple|3|7>>
+    <associate|auto-8|<tuple|3|5>>
+    <associate|auto-9|<tuple|1|5>>
   </collection>
 </references>
 
@@ -552,7 +582,7 @@
     <\associate|table>
       <tuple|normal|<surround|<hidden-binding|<tuple>|1>||Solving NETLIB LPs
       in <with|color|<quote|red>|<with|font-series|<quote|bold>|1000>>
-      iterations>|<pageref|auto-10>>
+      iterations>|<pageref|auto-9>>
     </associate>
     <\associate|toc>
       <vspace*|1fn><with|font-series|<quote|bold>|math-font-series|<quote|bold>|1<space|2spc>Dimension-reduced
@@ -583,23 +613,23 @@
       <datoms|<macro|x|<repeat|<arg|x>|<with|font-series|medium|<with|font-size|1|<space|0.2fn>.<space|0.2fn>>>>>|<htab|5mm>>
       <no-break><pageref|auto-7>>
 
-      <with|par-left|<quote|1tab>|2.5<space|2spc>Further simplification
-      <datoms|<macro|x|<repeat|<arg|x>|<with|font-series|medium|<with|font-size|1|<space|0.2fn>.<space|0.2fn>>>>>|<htab|5mm>>
-      <no-break><pageref|auto-8>>
-
       <vspace*|1fn><with|font-series|<quote|bold>|math-font-series|<quote|bold>|3<space|2spc>Numerical
       Experiments> <datoms|<macro|x|<repeat|<arg|x>|<with|font-series|medium|<with|font-size|1|<space|0.2fn>.<space|0.2fn>>>>>|<htab|5mm>>
-      <no-break><pageref|auto-9><vspace|0.5fn>
+      <no-break><pageref|auto-8><vspace|0.5fn>
 
-      <vspace*|1fn><with|font-series|<quote|bold>|math-font-series|<quote|bold>|4<space|2spc>Analysis>
+      <vspace*|1fn><with|font-series|<quote|bold>|math-font-series|<quote|bold>|4<space|2spc>Algorithm
+      Design> <datoms|<macro|x|<repeat|<arg|x>|<with|font-series|medium|<with|font-size|1|<space|0.2fn>.<space|0.2fn>>>>>|<htab|5mm>>
+      <no-break><pageref|auto-10><vspace|0.5fn>
+
+      <vspace*|1fn><with|font-series|<quote|bold>|math-font-series|<quote|bold>|5<space|2spc>Analysis>
       <datoms|<macro|x|<repeat|<arg|x>|<with|font-series|medium|<with|font-size|1|<space|0.2fn>.<space|0.2fn>>>>>|<htab|5mm>>
       <no-break><pageref|auto-11><vspace|0.5fn>
 
-      <vspace*|1fn><with|font-series|<quote|bold>|math-font-series|<quote|bold>|5<space|2spc>General
+      <vspace*|1fn><with|font-series|<quote|bold>|math-font-series|<quote|bold>|6<space|2spc>General
       Potential Method> <datoms|<macro|x|<repeat|<arg|x>|<with|font-series|medium|<with|font-size|1|<space|0.2fn>.<space|0.2fn>>>>>|<htab|5mm>>
       <no-break><pageref|auto-12><vspace|0.5fn>
 
-      <with|par-left|<quote|1tab>|5.1<space|2spc>Second-order Potential
+      <with|par-left|<quote|1tab>|6.1<space|2spc>Second-order Potential
       Reduction <datoms|<macro|x|<repeat|<arg|x>|<with|font-series|medium|<with|font-size|1|<space|0.2fn>.<space|0.2fn>>>>>|<htab|5mm>>
       <no-break><pageref|auto-13>>
     </associate>

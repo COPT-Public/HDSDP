@@ -10,7 +10,7 @@ n = size(AT, 1);
 maxiter = n;
 
 if scale
-    v = x;
+    v = zeros(n, 1);
     v(coneidx) = 1.0;
 else
     v = x;

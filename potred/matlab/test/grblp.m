@@ -2,7 +2,7 @@ clear;
 % clc;
 close all;
 
-fname = fullfile('data', 'p_BLEND.SIF.mps');
+fname = fullfile('data', 'p_AFIRO.SIF.mps');
 data = preprocess(fname);
 
 rng(24);
@@ -32,7 +32,7 @@ HSDAA = [sparse(m, m), A, sparse(m, n), sparse(m, 1), -b;
      
 % HSDAA = HSDAA' * inv(HSDAA * HSDAA') * HSDAA; 
 [D, E, HSDA] = ruizscale(HSDAA, 30);
-lpsol = potreduceLp(HSDA, m, 10000, true, linesearch, neweigs, 1);
+lpsol = potreduceLp(HSDA, m, 1000, true, linesearch, neweigs, 1);
 sol = lpsol .* E;
 
 kappa = sol(end - 1);
