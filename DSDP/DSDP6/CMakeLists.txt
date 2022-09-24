@@ -18,10 +18,8 @@ include_directories(src/linsys)
 include_directories(src/presolve)
 
 add_executable(hdsdp
-        externals/config.c
-        externals/config.h
-        externals/cs.c
-        externals/cs.h
+        externals/dsdpcs.c
+        externals/dsdpcs.h
         include/dsdplapack.h
         interface/dsdphsd.c
         interface/dsdphsd.h
@@ -94,10 +92,8 @@ add_executable(hdsdp
         src/presolve/dsdppresolve.h)
 
 add_library(lhdsdp SHARED
-        externals/config.c
-        externals/config.h
-        externals/cs.c
-        externals/cs.h
+        externals/dsdpcs.c
+        externals/dsdpcs.h
         include/dsdplapack.h
         interface/dsdphsd.c
         interface/dsdphsd.h

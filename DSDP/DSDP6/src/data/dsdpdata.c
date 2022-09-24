@@ -2,7 +2,7 @@
 #include "dsdplapack.h"
 #include "dsdpdata.h"
 #include "dsdpsort.h"
-#include "cs.h"
+#include "dsdpcs.h"
 #include "sparseopts.h"
 #include "denseopts.h"
 #include "rank1opts.h"
@@ -187,9 +187,9 @@ extern void lpMatFree( lpMat *lpData ) {
 
 extern void lpMatView( lpMat *lpData ) {
     
-    cs mat; mat.p = lpData->Ap; mat.i = lpData->Ai; mat.x = lpData->Ax;
+    dcs mat; mat.p = lpData->Ap; mat.i = lpData->Ai; mat.x = lpData->Ax;
     mat.nz = -1; mat.nzmax = lpData->nnz; mat.n = lpData->dimy;
-    mat.m = lpData->dims; cs_print(&mat, FALSE);
+    mat.m = lpData->dims; dcs_print(&mat, FALSE);
 }
 
 /* SDP public methods */

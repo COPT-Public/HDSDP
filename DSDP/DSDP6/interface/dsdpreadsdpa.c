@@ -1,6 +1,6 @@
 #include "dsdpreadsdpa.h"
 #include "dsdplapack.h"
-#include "cs.h"
+#include "dsdpcs.h"
 #include "dsdplog.h"
 #include "dsdpdata.h"
 
@@ -30,7 +30,7 @@ static DSDP_INT DSDPPrepareSDPData( char     *filename,    // 'xxx.dat-s'
     FILE *file; char chartmp, thisline[BFSIZE] = "*";
     DSDP_INT i, j, k, ngot, blockid, constrid, m, n, line = 0, tline = 0, lpidx = -1, memerr = FALSE;
     DSDP_INT nblock = 0, *blocksizes = NULL, nvars = 0, nlpvars = 0, nconstr = 0, nnz = 0, lpexist;
-    double *dObj = NULL, *c = NULL, val = 0.0; cs **sdpAs = NULL, *lpA = NULL;
+    double *dObj = NULL, *c = NULL, val = 0.0; dcs **sdpAs = NULL, *lpA = NULL;
     file = fopen(filename, "r");
     printf("| Reading data from %s \n", filename);
     if (!file) { printf("| Failed to open file. \n"); fatal_error_msg(etype); }
@@ -106,24 +106,24 @@ static DSDP_INT DSDPPrepareSDPData( char     *filename,    // 'xxx.dat-s'
     }
     
     // Read data
-    sdpAs = (cs **) calloc(nblock, sizeof(cs *));
+    sdpAs = (dcs **) calloc(nblock, sizeof(dcs *));
     n = nconstr;
     for (i = 0; i < nblock; ++i) {
         m = nsym(blocksizes[i]);
-        sdpAs[i] = cs_spalloc(m, n + 1, 1000, TRUE, TRUE); // Triplet matrix with value
+        sdpAs[i] = dcs_spalloc(m, n + 1, 1000, TRUE, TRUE); // Triplet matrix with value
         if (!sdpAs) { memerr = TRUE; }
     }
     
     if (memerr) {
-        printf("| Failed to allocate space for SDP cs entry matrix. \n");
+        printf("| Failed to allocate space for SDP dcs entry matrix. \n");
         fatal_error_msg(etype);
     }
     
     // Allocate LP data
     if (lpexist) {
-        lpA = cs_spalloc(nlpvars, nconstr, 1000, TRUE, TRUE);
+        lpA = dcs_spalloc(nlpvars, nconstr, 1000, TRUE, TRUE);
         if (!lpA) {
-            printf("| Failed to allocate space for LP cs entry matrix. \n");
+            printf("| Failed to allocate space for LP dcs entry matrix. \n");
             fatal_error_msg(etype);
         }
         c = (double *) calloc(nlpvars, sizeof(double));
@@ -163,16 +163,16 @@ static DSDP_INT DSDPPrepareSDPData( char     *filename,    // 'xxx.dat-s'
                     if (constrid == 0) {
                         c[i - 1] = -val;
                     } else {
-                        cs_entry(lpA, i - 1, constrid - 1, val);
+                        dcs_entry(lpA, i - 1, constrid - 1, val);
                     }
                 } else {
                     if (blockid > lpidx + 1) { blockid -= 1; }
                     n = blocksizes[blockid - 1];
                     i = (DSDP_INT) ((2 * n - i) * (i - 1) / 2) + (j - 1); // Transform upper into lower
                     if (constrid == 0) {
-                        cs_entry(sdpAs[blockid - 1], i, nconstr, -val);
+                        dcs_entry(sdpAs[blockid - 1], i, nconstr, -val);
                     } else {
-                        cs_entry(sdpAs[blockid - 1], i, constrid - 1, val);
+                        dcs_entry(sdpAs[blockid - 1], i, constrid - 1, val);
                     }
                 }
                 nnz += 1;
@@ -201,9 +201,9 @@ static DSDP_INT DSDPPrepareSDPData( char     *filename,    // 'xxx.dat-s'
                 n = blocksizes[blockid - 1];
                 i = (DSDP_INT) ((2 * n - i) * (i - 1) / 2) + (j - 1); // Transform upper into lower
                 if (constrid == 0) {
-                    cs_entry(sdpAs[blockid - 1], i, nconstr, -val);
+                    dcs_entry(sdpAs[blockid - 1], i, nconstr, -val);
                 } else {
-                    cs_entry(sdpAs[blockid - 1], i, constrid - 1, val);
+                    dcs_entry(sdpAs[blockid - 1], i, constrid - 1, val);
                 }
                 nnz += 1;
             }
@@ -216,29 +216,29 @@ static DSDP_INT DSDPPrepareSDPData( char     *filename,    // 'xxx.dat-s'
     *sdpAx = (double   **) calloc(nblock, sizeof(double *));
     
     if (!sdpAp || !sdpAi || !sdpAx) {
-        printf("| Failed to allocate space for SDP input cs array \n");
+        printf("| Failed to allocate space for SDP input dcs array \n");
         fatal_error_msg(etype);
     }
     
-    cs *tmp = NULL;
+    dcs *tmp = NULL;
     
     for (i = 0; i < nblock; ++i) {
-        tmp = cs_compress(sdpAs[i]); cs_spfree(sdpAs[i]); sdpAs[i] = tmp;
+        tmp = dcs_compress(sdpAs[i]); dcs_spfree(sdpAs[i]); sdpAs[i] = tmp;
         (*sdpAp)[i] = (DSDP_INT *) calloc(tmp->n + 1, sizeof(DSDP_INT));
         (*sdpAi)[i] = (DSDP_INT *) calloc(tmp->p[tmp->n], sizeof(DSDP_INT));
         (*sdpAx)[i] = (double   *) calloc(tmp->p[tmp->n], sizeof(double));
         if (!(*sdpAp)[i] || !(*sdpAp)[i] || !(*sdpAp)[i]) {
-            printf("| Failed to allocate space for SDP input cs matrix \n");
+            printf("| Failed to allocate space for SDP input dcs matrix \n");
             fatal_error_msg(etype);
         }
         memcpy((*sdpAp)[i], tmp->p, sizeof(DSDP_INT) * (tmp->n + 1));
         memcpy((*sdpAi)[i], tmp->i, sizeof(DSDP_INT) * tmp->p[tmp->n]);
         memcpy((*sdpAx)[i], tmp->x, sizeof(double)   * tmp->p[tmp->n]);
-        cs_spfree(tmp);
+        dcs_spfree(tmp);
     }
     
     if (lpexist) {
-        tmp = cs_compress(lpA); cs_spfree(lpA);
+        tmp = dcs_compress(lpA); dcs_spfree(lpA);
         *lpAp  = (DSDP_INT *) calloc(tmp->n + 1, sizeof(DSDP_INT));
         *lpAi  = (DSDP_INT *) calloc(tmp->p[tmp->n], sizeof(DSDP_INT));
         *lpAx  = (double   *) calloc(tmp->p[tmp->n], sizeof(double));
@@ -251,7 +251,7 @@ static DSDP_INT DSDPPrepareSDPData( char     *filename,    // 'xxx.dat-s'
         memcpy(*lpAi, tmp->i, sizeof(DSDP_INT) * tmp->p[tmp->n]);
         memcpy(*lpAx, tmp->x, sizeof(double) * tmp->p[tmp->n]);
         memcpy(*lpObj, c, sizeof(double) * tmp->m);
-        cs_spfree(tmp);
+        dcs_spfree(tmp);
     }
     
     *dObjVec = (double *) calloc(nconstr, sizeof(double));

@@ -16,10 +16,8 @@ include_directories($ENV{HDSDP_HOME}/interface)
 include_directories($ENV{HDSDP_HOME}/src/linsys)
 
 add_library(hdsdplinsys SHARED
-        $ENV{HDSDP_HOME}/externals/config.c
-        $ENV{HDSDP_HOME}/externals/config.h
-        $ENV{HDSDP_HOME}/externals/cs.c
-        $ENV{HDSDP_HOME}/externals/cs.h
+        $ENV{HDSDP_HOME}/externals/dsdpcs.c
+        $ENV{HDSDP_HOME}/externals/dsdpcs.h
         $ENV{HDSDP_HOME}/include/dsdplapack.h
         $ENV{HDSDP_HOME}/interface/dsdphsd.h
         $ENV{HDSDP_HOME}/src/linsys/denseopts.c

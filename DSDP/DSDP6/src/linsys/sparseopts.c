@@ -1,5 +1,5 @@
 #include "sparseopts.h"
-#include "cs.h"
+#include "dsdpcs.h"
 #include "dsdplapack.h"
 #include "rankkopts.h"
 #include "vec.h"
@@ -1058,9 +1058,9 @@ extern void spsMatView( spsMat *sMat ) {
     if (sMat->nominalsps) {
         printf("Matrix is dense. \n"); return;
     }
-    cs mat; mat.p = sMat->p; mat.i = sMat->i; mat.x = sMat->x;
+    dcs mat; mat.p = sMat->p; mat.i = sMat->i; mat.x = sMat->x;
     mat.nz = -1; mat.nzmax = sMat->nnz; mat.m = sMat->dim;
-    mat.n = sMat->dim; cs_print(&mat, FALSE);
+    mat.n = sMat->dim; dcs_print(&mat, FALSE);
 }
 
 extern void spsMatLinvView( spsMat *S ) {

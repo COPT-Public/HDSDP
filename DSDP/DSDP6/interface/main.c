@@ -7,7 +7,7 @@ int main (int argc, char **argv) {
     // intel_cpu_patch(); intel_mkl_patch();
     setUpMKL();
     int argc2 = 2; char *argv2[10];
-    argv2[0] = argv[0];
     argv2[1] = "/Users/gaowenzhi/Desktop/gwz/DSDP/DSDP6/matlab/test/sdplib/gpp500-1.dat-s";
+    
     return DSDPSolveSDPA(argc2, argv2);
 }
