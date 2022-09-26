@@ -16,8 +16,11 @@
 #include "vec.h"
 
 static char etype[] = "DSDP Interface";
-#define vec_init_alloc(v, n) vecIter = (vec *) calloc(1, sizeof(vec)); (v) = vecIter; \
-                             vec_init(vecIter); retcode = vec_alloc(vecIter, (n)); checkCode;
+#define vec_init_alloc(v, n) vecIter = (vec *) calloc(1, sizeof(vec)); \
+                             (v) = vecIter;                            \
+                             vec_init(vecIter);                        \
+                             retcode = vec_alloc(vecIter, (n));        \
+                             checkCode;
 #define vec_destroy(v) vec_free(v); DSDP_FREE(v);
 
 /* DSDP internal methods */
@@ -169,7 +172,6 @@ static DSDP_INT DSDPIAlloc( HSDSolver *dsdpSolver ) {
     DSDP_INT retcode = DSDP_RETCODE_OK;
     if (dsdpSolver->insStatus != DSDP_STATUS_INIT_UNSET) {
         error(etype, "| Incorrect solver instance status. \n");
-        retcode = DSDP_RETCODE_FAILED; return retcode;
     }
     DSDP_INT nblock = dsdpSolver->nBlock;
     dsdpSolver->sdpData  = (sdpMat  **) calloc(nblock, sizeof(sdpMat *));
@@ -198,7 +200,7 @@ static DSDP_INT DSDPIAllocIter( HSDSolver *dsdpSolver ) {
     // Invoked after the getIdx routine is called
     // Allocate memory for the iterates
     DSDP_INT retcode = DSDP_RETCODE_OK;
-    DSDP_INT nblock = dsdpSolver->nBlock, dim = 0, m = dsdpSolver->m, CGreuse;
+    DSDP_INT nblock = dsdpSolver->nBlock, m = dsdpSolver->m, CGreuse;
     DSDP_INT lpdim = dsdpSolver->lpDim; vec *vecIter = NULL;
     
     DSDPGetIntParam(dsdpSolver, INT_PARAM_CG_REUSE, &CGreuse);
@@ -245,7 +247,7 @@ static DSDP_INT DSDPIAllocIter( HSDSolver *dsdpSolver ) {
     dsdpSolver->rkaux = (rkMat  **) calloc(nblock, sizeof(rkMat *));
     
     for (DSDP_INT i = 0; i < nblock; ++i) {
-        dim = dsdpSolver->sdpData[i]->dimS;
+        DSDP_INT dim = dsdpSolver->sdpData[i]->dimS;
         retcode = lczAlloc(dsdpSolver->lczs[i], dim); checkCode;
         dsdpSolver->Scker[i] = (spsMat *) calloc(1, sizeof(spsMat));
         dsdpSolver->dsaux[i] = (dsMat  *) calloc(1, sizeof(dsMat));
@@ -298,13 +300,15 @@ static void DSDPIFreeAlgIter( HSDSolver *dsdpSolver ) {
     DSDP_INT nblock = dsdpSolver->nBlock, i;
     // S
     for (i = 0; i < nblock; ++i) {
+        if (!dsdpSolver->S) { break; }
         spsMatFree(dsdpSolver->S[i]);
         DSDP_FREE(dsdpSolver->S[i]);
     }
     DSDP_FREE(dsdpSolver->S);
     
     // Ssym
-    for (DSDP_INT i = 0; i < nblock; ++i) {
+    for (i = 0; i < nblock; ++i) {
+        if (!dsdpSolver->symS) { break; }
         DSDP_FREE(dsdpSolver->symS[i]);
     }
     DSDP_FREE(dsdpSolver->symS);
@@ -332,14 +336,16 @@ static void DSDPIFreeAlgIter( HSDSolver *dsdpSolver ) {
     vec_destroy(dsdpSolver->y);
 
     // dS
-    for (DSDP_INT i = 0; i < nblock; ++i) {
+    for (i = 0; i < nblock; ++i) {
+        if (!dsdpSolver->dS) { break; }
         spsMatFree(dsdpSolver->dS[i]);
         DSDP_FREE(dsdpSolver->dS[i]);
     }
     DSDP_FREE(dsdpSolver->dS);
     
     // Lanczos
-    for (DSDP_INT i = 0; i < nblock; ++i) {
+    for (i = 0; i < nblock; ++i) {
+        if (!dsdpSolver->lczs) { break; }
         lczFree(dsdpSolver->lczs[i]);
         DSDP_FREE(dsdpSolver->lczs[i]);
     }
@@ -359,21 +365,24 @@ static void DSDPIFreeAlgIter( HSDSolver *dsdpSolver ) {
     vec_destroy(dsdpSolver->pScaler);
     
     // Scker
-    for (DSDP_INT i = 0; i < nblock; ++i) {
+    for (i = 0; i < nblock; ++i) {
+        if (!dsdpSolver->Scker) { break; }
         spsMatFree(dsdpSolver->Scker[i]);
         DSDP_FREE(dsdpSolver->Scker[i]);
     }
     DSDP_FREE(dsdpSolver->Scker);
     
     // dsaux
-    for (DSDP_INT i = 0; i < nblock; ++i) {
+    for (i = 0; i < nblock; ++i) {
+        if (!dsdpSolver->dsaux) { break; }
         denseMatFree(dsdpSolver->dsaux[i]);
         DSDP_FREE(dsdpSolver->dsaux[i]);
     }
     DSDP_FREE(dsdpSolver->dsaux);
     
     // rkaux
-    for (DSDP_INT i = 0; i < nblock; ++i) {
+    for (i = 0; i < nblock; ++i) {
+        if (!dsdpSolver->rkaux) { break; }
         rkMatFree(dsdpSolver->rkaux[i]);
         DSDP_FREE(dsdpSolver->rkaux[i]);
     }
@@ -454,8 +463,8 @@ static DSDP_INT DSDPIPresolve( HSDSolver *dsdpSolver ) {
 #if defined(compareMode) || defined(ROTSOLVE)
     dsdpSolver->cScaler = 1.0;
 #else
-    retcode = preSDPPrimal(dsdpSolver);
-    retcode = preSDPMatCScale(dsdpSolver);
+    retcode = preSDPPrimal(dsdpSolver); checkCode;
+    retcode = preSDPMatCScale(dsdpSolver); checkCode;
 #endif
     t = my_clock() - tnow;
     printf("| - Scaling completes in %3.3f seconds \n", t);
@@ -469,7 +478,7 @@ static DSDP_INT DSDPIPresolve( HSDSolver *dsdpSolver ) {
     
     tnow = my_clock();
     printf("| - Detecting special structures \n");
-    retcode = preStructureDetect(dsdpSolver);
+    retcode = preStructureDetect(dsdpSolver); checkCode;
     t = my_clock() - tnow;
     printf("| - Special structure detection completes in %3.3f seconds \n", t);
     DSDPStatUpdate(stat, STAT_SPECIAL_DETECT, t);
@@ -765,6 +774,11 @@ extern void DSDPGetDblParam( HSDSolver *dsdpSolver, DSDP_INT pName, double *dblV
 extern void DSDPGetIntParam( HSDSolver *dsdpSolver, DSDP_INT pName, DSDP_INT *intVal ) {
     // Get double parameter
     getIntParam(dsdpSolver->param, pName, intVal);
+}
+
+extern void DSDPGetStatistic( HSDSolver *dsdpSolver, DSDP_INT sName, double *sVal ) {
+    // Get statistic
+    DSDPGetStats(&dsdpSolver->dsdpStats, sName, sVal);
 }
 
 extern DSDP_INT DSDPDestroy( HSDSolver *dsdpSolver ) {

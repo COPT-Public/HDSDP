@@ -111,7 +111,7 @@ static DSDP_INT DSDPPrepareSDPData( char     *filename,    // 'xxx.dat-s'
     for (i = 0; i < nblock; ++i) {
         m = nsym(blocksizes[i]);
         sdpAs[i] = dcs_spalloc(m, n + 1, 1000, TRUE, TRUE); // Triplet matrix with value
-        if (!sdpAs) { memerr = TRUE; }
+        if (!sdpAs[i]) { memerr = TRUE; }
     }
     
     if (memerr) {
@@ -389,7 +389,8 @@ extern DSDP_INT DSDPSolveSDPA(int argc, char *argv[]) {
     
     retcode = DSDPCreate(phsdSolver, NULL);
     if (retcode != DSDP_RETCODE_OK) {
-        printf("| Failed to invoke solver. \n"); return retcode;
+        printf("| Failed to invoke solver. \n");
+        fatal_error;
     }
     
     strncpy(filename, argv[1], 90);

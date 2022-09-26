@@ -960,7 +960,7 @@ static DSDP_INT schurMatSpsReorder( symM *M ) {
     DSDP_INT *start = M->useTwo, i, j, k, maxblock = 0;
     sdpMat **Adata = M->Adata;
     memset(start, 0, sizeof(DSDP_INT) * nblock);
-    DSDP_INT *Mp, *Mi, *colNnz, schurNnz = 0, memNnz = MAX(2 * m, SCHUR_BUFFER);
+    DSDP_INT *Mp, *Mi, *Mitmp, *colNnz, schurNnz = 0, memNnz = MAX(2 * m, SCHUR_BUFFER);
     
     colNnz = (DSDP_INT *) calloc(m + 1, sizeof(DSDP_INT));
     Mp = (DSDP_INT *) calloc(m + 1, sizeof(DSDP_INT));
@@ -993,7 +993,10 @@ static DSDP_INT schurMatSpsReorder( symM *M ) {
         // Count nnzs
         schurNnz += colNnz[m - 1];
         if (memNnz <= schurNnz + m) {
-            memNnz += m; Mi = (DSDP_INT *) realloc(Mi, sizeof(DSDP_INT) * memNnz);
+            memNnz += m; Mitmp = Mi;
+            Mi = (DSDP_INT *) realloc(Mi, sizeof(DSDP_INT) * memNnz);
+            printf("Memory allocation failed when allocating memory for sparse Schur matrix. \n");
+            if (!Mi) { fatal_error; }
         }
         Mp[i + 1] = schurNnz;
     }
@@ -1183,7 +1186,7 @@ extern DSDP_INT DSDPCheckSchurType( symM *M ) {
         }
         retcode = schurMatselectType(M->M, SCHUR_TYPE_DENSE);
     } else {
-        printf("| - Found many blocks. Trying sparse Schur Matrix \n");
+        printf("| - Found many blocks. Trying sparse Schur matrix \n");
         DSDP_INT minblknnz = M->m, i; sdpMat *data;
         for (i = 0; i < M->nblock; ++i) {
             data = (sdpMat *) M->Adata[i];
