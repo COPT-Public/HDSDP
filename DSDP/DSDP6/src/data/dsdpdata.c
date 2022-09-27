@@ -59,7 +59,7 @@ static DSDP_INT sdpMatIAllocByType( sdpMat *sdpData, DSDP_INT k, DSDP_INT *Ai,
     } else if (((nnz <= denseThresh * nsym(n)) && (sdpData->types[k] == MAT_TYPE_UNKNOWN)) ||
                (sdpData->types[k] == MAT_TYPE_SPARSE)) {
         
-        DSDP_INT ordered = (nnz > 1000) ? FALSE : checkIsOrdered(Ai, nnz);
+        DSDP_INT ordered = (nnz < 1000) ? FALSE : checkIsOrdered(Ai, nnz);
         if (!ordered) {
             idxsort(Ai, Ax, nnz);
         }
