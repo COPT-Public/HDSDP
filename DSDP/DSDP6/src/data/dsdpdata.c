@@ -59,8 +59,11 @@ static DSDP_INT sdpMatIAllocByType( sdpMat *sdpData, DSDP_INT k, DSDP_INT *Ai,
     } else if (((nnz <= denseThresh * nsym(n)) && (sdpData->types[k] == MAT_TYPE_UNKNOWN)) ||
                (sdpData->types[k] == MAT_TYPE_SPARSE)) {
         
-        // May be put in earlier parts
-        idxsort(Ai, Ax, nnz);
+        DSDP_INT ordered = (nnz > 1000) ? FALSE : checkIsOrdered(Ai, nnz);
+        if (!ordered) {
+            idxsort(Ai, Ax, nnz);
+        }
+        
         // Sparse
         sdpData->types[k] = MAT_TYPE_SPARSE; sdpData->nspsMat += 1;
         spsMat *data = (spsMat *) calloc(1, sizeof(spsMat)); spsMatInit(data);

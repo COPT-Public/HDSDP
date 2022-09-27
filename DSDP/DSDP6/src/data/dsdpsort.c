@@ -17,13 +17,6 @@ static DSDP_INT partition( double *data, DSDP_INT *idxbase, DSDP_INT low, DSDP_I
     return low;
 }
 
-extern void dsdpSort( double *data, DSDP_INT *idxbase, DSDP_INT low, DSDP_INT high ) {
-    if (low < high) {
-        DSDP_INT pl = partition(data, idxbase, low, high);
-        dsdpSort(data, idxbase, low, pl - 1); dsdpSort(data, idxbase, pl + 1, high);
-    }
-}
-
 // Implement sorting in Schur block analysis
 static DSDP_INT partition2( DSDP_INT *data, DSDP_INT *idxbase, DSDP_INT low, DSDP_INT high ) {
     
@@ -42,6 +35,27 @@ static DSDP_INT partition2( DSDP_INT *data, DSDP_INT *idxbase, DSDP_INT low, DSD
     tmp2 = idxbase[low]; idxbase[low] = idxbase[tmp]; idxbase[tmp] = tmp2;
     tmp3 = data[low]; data[low] = data[tmp]; data[tmp] = tmp3;
     return low;
+}
+
+extern DSDP_INT checkIsOrdered( DSDP_INT *idx, DSDP_INT n ) {
+    
+    DSDP_INT ordered = TRUE;
+    
+    for (DSDP_INT i = 0; i < n - 1; ++i) {
+        if (idx[i] > idx[i + 1]) {
+            ordered = FALSE;
+            break;
+        }
+    }
+    
+    return ordered;
+}
+
+extern void dsdpSort( double *data, DSDP_INT *idxbase, DSDP_INT low, DSDP_INT high ) {
+    if (low < high) {
+        DSDP_INT pl = partition(data, idxbase, low, high);
+        dsdpSort(data, idxbase, low, pl - 1); dsdpSort(data, idxbase, pl + 1, high);
+    }
 }
 
 extern void dsdpSort2( DSDP_INT *data, DSDP_INT *idxbase, DSDP_INT low, DSDP_INT high ) {
