@@ -9,6 +9,8 @@
 #define potlp_h
 
 #include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
 
 #ifdef MATLAB_MEX_FILE
 #include "mex.h"
@@ -23,17 +25,18 @@ typedef mwSignedIndex DSDP_INT;
 typedef long int potlp_int;
 #define ID "%ld"
 #else
-typedef int potlp_int;
+typedef int pot_int;
 #define ID "%d"
 #endif
 #endif
 
 // Memory handler
 #define POTLP_FREE(var) do {free((var)); (var) = NULL;} while (0)
+#define POTLP_INIT(var, type, size) (var) = (type *) calloc(size, sizeof(type))
 
 // Return code
-#define POTLP_STATUS_OK     (0)
-#define POTLP_STATUS_FAILED (1)
+#define RETCODE_OK     (0)
+#define RETCODE_FAILED (1)
 
 // Algorithm statuss
 #define POTLP_UNKNOWN                (99)
