@@ -45,7 +45,7 @@ extern void potVecCopy( pot_vec *srcVec, pot_vec *dstVec ) {
     return;
 }
 
-extern void potVecDestroy( pot_vec *pVec ) {
+extern void potVecClear( pot_vec *pVec ) {
     
     if (!pVec) {
         return;
@@ -53,6 +53,18 @@ extern void potVecDestroy( pot_vec *pVec ) {
     
     pVec->n = 0; pVec->ncone = 0; pVec->nrm = -1.0;
     POTLP_FREE(pVec->x);
+    
+    return;
+}
+
+extern void potVecDestroy( pot_vec **ppVec ) {
+    
+    if (!ppVec) {
+        return;
+    }
+    
+    potVecClear(*ppVec);
+    POTLP_FREE(*ppVec);
     
     return;
 }

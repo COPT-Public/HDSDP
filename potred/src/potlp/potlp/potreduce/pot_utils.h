@@ -9,4 +9,8 @@
 
 #include "potlp.h"
 
+#define POT_CALL(func) if ((func) != RETCODE_OK) {     \
+                            retcode = RETCODE_FAILED;  \
+                            goto exit_cleanup;         \
+                        }
 #endif /* pot_utils_h */

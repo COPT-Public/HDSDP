@@ -80,21 +80,20 @@ typedef struct {
     double  *HessMat; ///< Hessian
     
     pot_constr_mat *AMat;
-    void (*AMatProj) ( pot_constr_mat *, pot_vec * );
     
     double  rhoVal;
     double  potVal;
     double  betaRadius;
     
-    double  *projHessMat[4];
-    double  *projGMat[4];
-    double  *projgVec[2];
+    double  projHessMat[4];
+    double  projGMat[4];
+    double  projgVec[2];
     
     pot_vec *auxVec1;
     pot_vec *auxVec2;
     
-    pot_int *intParams[NUM_INT_PARAM];
-    pot_int *dblParams[NUM_DBL_PARAM];
+    int *intParams[NUM_INT_PARAM];
+    int *dblParams[NUM_DBL_PARAM];
     
     
 } pot_solver;
