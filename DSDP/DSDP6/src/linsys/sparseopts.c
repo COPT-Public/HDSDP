@@ -14,6 +14,11 @@ static double done = 1.0, dzero = 0.0;
 static char uplolow = 'L', trans = 'T', notrans = 'N';
 static DSDP_INT phaseSolve = PARDISO_SOLVE, one = 1, errorSolve;
 
+#ifdef MYPARDISO
+#define pardiso copt_pardiso
+#define pardiso_getdiag copt_pardiso_getdiag
+#endif
+
 /* Internal Pardiso Wrapper */
 static void pardisoSymFactorize( spsMat *S ) {
     /* Factorize the spsMat matrix */

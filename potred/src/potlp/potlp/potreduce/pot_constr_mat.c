@@ -15,8 +15,9 @@ extern pot_int potConstrMatInit( pot_constr_mat *potConstrMat, pot_int nRows, po
         goto exit_cleanup;
     }
     
-    /* Initialize methods */
     potConstrMat->AMatData = NULL;
+    
+    /* Initialize methods */
     potConstrMat->AMatInit = NULL;
     potConstrMat->AMatPrepareX = NULL;
     potConstrMat->AMatProject = NULL;
@@ -66,6 +67,7 @@ extern void potConstrMatDestroy( pot_constr_mat *potConstrMat ) {
     if ( !potConstrMat ) {
         return;
     }
+    
     potConstrMat->AMatDestroy(&potConstrMat->AMatData);
     memset(potConstrMat, 0, sizeof(pot_constr_mat));
     

@@ -45,6 +45,12 @@ typedef int pot_int;
 #define POTLP_INFEAS_OR_UNBOUNDED   (102)
 #define POTLP_TIMELIMIT             (103)
 
+// Integer Parameters
+#define INT_PARAM_MAXITER       0
+
+// Double Parameters
+#define DBL_PARAM_ABSFEASTOL    0
+#define DBL_PARAM_ABSOPTTOL     1
 
 // Version information
 #define VERSION_MAJOR           0
@@ -53,8 +59,7 @@ typedef int pot_int;
 
 #define BUILD_DATE_YEAR         2022
 #define BUILD_DATE_MONTH        9
-#define BUILD_DATE_DAY          22
-
+#define BUILD_DATE_DAY          28
 
 
 #endif /* potlp_h */

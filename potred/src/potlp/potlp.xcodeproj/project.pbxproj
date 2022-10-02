@@ -10,6 +10,10 @@
 		19DCD82628DB5662006B6B01 /* main.c in Sources */ = {isa = PBXBuildFile; fileRef = 19DCD82528DB5662006B6B01 /* main.c */; };
 		19DCD83228DB587A006B6B01 /* potlp.c in Sources */ = {isa = PBXBuildFile; fileRef = 19DCD83128DB587A006B6B01 /* potlp.c */; };
 		19DCD83528DB6148006B6B01 /* lpdata.c in Sources */ = {isa = PBXBuildFile; fileRef = 19DCD83428DB6148006B6B01 /* lpdata.c */; };
+		19F175CD28E41874004265A0 /* pot_utils.c in Sources */ = {isa = PBXBuildFile; fileRef = 19F175CC28E41874004265A0 /* pot_utils.c */; };
+		19F9A0A928E3B8AE00C7710E /* pot_vector.c in Sources */ = {isa = PBXBuildFile; fileRef = 19F9A0A828E3B8AE00C7710E /* pot_vector.c */; };
+		19F9A0B328E3BDD300C7710E /* pot_constr_mat.c in Sources */ = {isa = PBXBuildFile; fileRef = 19F9A0B228E3BDD300C7710E /* pot_constr_mat.c */; };
+		19F9A0B628E3C4D700C7710E /* pot_objfunc.c in Sources */ = {isa = PBXBuildFile; fileRef = 19F9A0B528E3C4D700C7710E /* pot_objfunc.c */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXCopyFilesBuildPhase section */
@@ -31,6 +35,16 @@
 		19DCD83128DB587A006B6B01 /* potlp.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = potlp.c; sourceTree = "<group>"; };
 		19DCD83328DB6148006B6B01 /* lpdata.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = lpdata.h; sourceTree = "<group>"; };
 		19DCD83428DB6148006B6B01 /* lpdata.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = lpdata.c; sourceTree = "<group>"; };
+		19F175CA28E4155B004265A0 /* pot_param.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = pot_param.h; sourceTree = "<group>"; };
+		19F175CB28E41874004265A0 /* pot_utils.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = pot_utils.h; sourceTree = "<group>"; };
+		19F175CC28E41874004265A0 /* pot_utils.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = pot_utils.c; sourceTree = "<group>"; };
+		19F9A0A628E3AB0600C7710E /* pot_structs.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = pot_structs.h; sourceTree = "<group>"; };
+		19F9A0A728E3B8AE00C7710E /* pot_vector.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = pot_vector.h; sourceTree = "<group>"; };
+		19F9A0A828E3B8AE00C7710E /* pot_vector.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = pot_vector.c; sourceTree = "<group>"; };
+		19F9A0B128E3BDD300C7710E /* pot_constr_mat.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = pot_constr_mat.h; sourceTree = "<group>"; };
+		19F9A0B228E3BDD300C7710E /* pot_constr_mat.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = pot_constr_mat.c; sourceTree = "<group>"; };
+		19F9A0B428E3C4D700C7710E /* pot_objfunc.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = pot_objfunc.h; sourceTree = "<group>"; };
+		19F9A0B528E3C4D700C7710E /* pot_objfunc.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = pot_objfunc.c; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -76,6 +90,7 @@
 			isa = PBXGroup;
 			children = (
 				19DCD83128DB587A006B6B01 /* potlp.c */,
+				19F175CA28E4155B004265A0 /* pot_param.h */,
 			);
 			path = interface;
 			sourceTree = "<group>";
@@ -83,6 +98,15 @@
 		19DCD82D28DB57CB006B6B01 /* potreduce */ = {
 			isa = PBXGroup;
 			children = (
+				19F9A0B428E3C4D700C7710E /* pot_objfunc.h */,
+				19F9A0B528E3C4D700C7710E /* pot_objfunc.c */,
+				19F9A0A728E3B8AE00C7710E /* pot_vector.h */,
+				19F9A0A828E3B8AE00C7710E /* pot_vector.c */,
+				19F9A0B128E3BDD300C7710E /* pot_constr_mat.h */,
+				19F9A0B228E3BDD300C7710E /* pot_constr_mat.c */,
+				19F9A0A628E3AB0600C7710E /* pot_structs.h */,
+				19F175CB28E41874004265A0 /* pot_utils.h */,
+				19F175CC28E41874004265A0 /* pot_utils.c */,
 			);
 			path = potreduce;
 			sourceTree = "<group>";
@@ -161,8 +185,12 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				19F9A0B328E3BDD300C7710E /* pot_constr_mat.c in Sources */,
 				19DCD83528DB6148006B6B01 /* lpdata.c in Sources */,
 				19DCD82628DB5662006B6B01 /* main.c in Sources */,
+				19F9A0B628E3C4D700C7710E /* pot_objfunc.c in Sources */,
+				19F175CD28E41874004265A0 /* pot_utils.c in Sources */,
+				19F9A0A928E3B8AE00C7710E /* pot_vector.c in Sources */,
 				19DCD83228DB587A006B6B01 /* potlp.c in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;

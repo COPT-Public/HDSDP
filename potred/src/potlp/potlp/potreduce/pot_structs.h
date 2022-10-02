@@ -8,6 +8,7 @@
 #define pot_structs_h
 
 #include "potlp.h"
+#include "pot_param.h"
 
 
 /** @brief Struture that contains vector implementations
@@ -26,6 +27,7 @@ typedef struct {
 typedef struct {
     pot_int  m;
     pot_int  n;
+    
     void *AMatData;
     
     /* Abstract implementation */
@@ -43,15 +45,18 @@ typedef struct {
 typedef struct {
     
     pot_int n;    ///< Dimension of x
-    void *objFdata; ///< Data that formulates \f$ f(x) \f$
+    
+    pot_vec *xVec; ///< Pointer to x
+    void *objFData; ///< Data that formulates \f$ f(x) \f$
     
     /* Abstract implementation */
-    pot_int (*objFInit) ( void *, const void * ); ///< Method of initialization
-    void (*objFGrad) ( void *, pot_vec * ); ///< Method of computing gradient
-    void (*objFHess) ( void *, double * ); ///< Method of computing Hessian
-    void (*objFHVec) ( void *, double *, double * ); ///< Method of Hessian-vector product
+    pot_int (*objFInit) ( void **, const void * ); ///< Method of initialization
+    double (*objFVal) ( void *, pot_vec * ); ///< Method of computing objective
+    void (*objFGrad)  ( void *, pot_vec *, pot_vec * ); ///< Method of computing gradient
+    void (*objFHess)  ( void *, pot_vec *, double * ); ///< Method of computing Hessian
+    void (*objFHVec)  ( void *, pot_vec *, double * ); ///< Method of Hessian-vector product
     void (*objFMonitor) ( void *, pot_int * ); ///< Method of internal progress monitor
-    void (*objFDestroy) ( void * ); ///< Method of destroy
+    void (*objFDestroy) ( void ** ); ///< Method of destroy
     
 } pot_fx;
 
@@ -87,6 +92,9 @@ typedef struct {
     
     pot_vec *auxVec1;
     pot_vec *auxVec2;
+    
+    pot_int *intParams[NUM_INT_PARAM];
+    pot_int *dblParams[NUM_DBL_PARAM];
     
     
 } pot_solver;
