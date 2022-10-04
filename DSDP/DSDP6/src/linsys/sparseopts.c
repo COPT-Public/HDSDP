@@ -1003,6 +1003,25 @@ extern void spsMatFillLower2( spsMat *sMat, dsMat *lowMat ) {
     }
 }
 
+extern void spsMatFillLowerData( spsMat *sMat, double *lowData ) {
+    
+    DSDP_INT n = sMat->dim, *Ap = sMat->p, *Ai = sMat->i, i, j;
+    double *Ax = sMat->x;
+    if (sMat->nominalsps) {
+        double *p1 = Ax, *p2 = lowData;
+        for (i = 0; i < n; ++i) {
+            memcpy(p2, p1, sizeof(double) * (n - i));
+            p1 += n + 1; p2 += n - i;
+        }
+    } else {
+        for (i = 0; i < n; ++i) {
+            for (j = Ap[i]; j < Ap[i + 1]; ++j) {
+                packIdx(lowData, n, Ai[j], i) = Ax[j];
+            }
+        }
+    }
+}
+
 extern void spsMatFill( spsMat *sMat, double *fulldMat ) {
     // Fill sparse matrix to full (there is no structure for symmetric full dense matrix)
     DSDP_INT n = sMat->dim, *Ap = sMat->p, *Ai = sMat->i, i, j;

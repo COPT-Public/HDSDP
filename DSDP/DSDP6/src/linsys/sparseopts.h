@@ -65,6 +65,7 @@ extern rkMat* spsMatGetFactor  ( spsMat *sMat );
 extern DSDP_INT spsMatGetRank  ( spsMat *sMat );
 extern void spsMatFillLower    ( spsMat *sMat, double *lowFullMat );
 extern void spsMatFillLower2   ( spsMat *sMat, dsMat *lowMat    );
+extern void spsMatFillLowerData( spsMat *sMat, double *lowData );
 extern void spsMatFill         ( spsMat *sMat, double *fulldMat );
 extern void spsMatReset        ( spsMat *sMat );
 extern void spsMatGetSymbolic  ( spsMat *sMat, DSDP_INT *hash, DSDP_INT *firstNnz, DSDP_INT *nnzs );

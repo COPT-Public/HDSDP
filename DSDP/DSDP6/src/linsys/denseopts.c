@@ -476,6 +476,15 @@ extern void denseMatFillLow( dsMat *dMat, double *fulldMat ) {
     }
 }
 
+extern void denseMatFillLow2( dsMat *dMat, double *lowData ) {
+    
+    if (!lowData || !dMat || !dMat->array) {
+        return;
+    }
+    
+    memcpy(lowData, dMat->array, sizeof(double) * nsym(dMat->dim));
+}
+
 extern void denseMatFill( dsMat *dMat, double *fulldMat ) {
     // Fill packed matrix to full (there is no structure for symmetric full dense matrix)
     DSDP_INT n = dMat->dim, idx, i, k; double *x = NULL;

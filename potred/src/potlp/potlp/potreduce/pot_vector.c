@@ -5,6 +5,7 @@
  */
 
 #include "pot_vector.h"
+#include "vec_mat.h"
 
 extern pot_int potVecInit( pot_vec *pVec, pot_int vDim, pot_int vConeDim ) {
     
@@ -38,9 +39,32 @@ exit_cleanup:
     return retcode;
 }
 
+extern void potVecDiff( pot_vec *pVecOut, pot_vec *pVecInPrev, pot_vec *pVecInPres ) {
+    
+    assert( pVecOut->n == pVecInPres->n );
+    assert( pVecInPres->n == pVecInPrev->n );
+    
+    for ( int i = 0; i < pVecOut->n; ++i ) {
+        pVecOut->x[i] = pVecInPres->x[i] - pVecInPrev->x[i];
+    }
+    
+    pVecOut->nrm = -1.0;
+}
+
+extern void potVecNormalize( pot_vec *pVec ) {
+    
+    assert( pVec->nrm == -1.0 );
+    pVec->nrm = nrm2(&pVec->n, pVec->x, &potIntConstantOne);
+    rscl(&pVec->n, pVec->x, &pVec->nrm, &potIntConstantOne);
+    
+}
+
 extern void potVecCopy( pot_vec *srcVec, pot_vec *dstVec ) {
     
+    assert( srcVec->n == dstVec->n );
     memcpy(dstVec->x, srcVec->x, sizeof(double) * srcVec->n);
+    
+    dstVec->nrm = srcVec->nrm;
     
     return;
 }

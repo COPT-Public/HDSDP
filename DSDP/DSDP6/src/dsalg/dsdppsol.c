@@ -125,17 +125,18 @@ extern DSDP_INT computeDIMACS( HSDSolver *dsdpSolver ) {
     
     /*  DIMACS Error 2    */
     minEigS = DSDP_INFINITY;
+    minEigS = dsdpSolver->dperturb;
+#if 0
     for (DSDP_INT i = 0; i < dsdpSolver->nBlock; ++i) {
         denseMatReset(dsdpSolver->dsaux[i]);
         spsMatFillLower2(dsdpSolver->S[i], dsdpSolver->dsaux[i]);
         denseMatMinEig(dsdpSolver->dsaux[i], &tmp);
         minEigS = MIN(minEigS, tmp);
     }
-    
     if (minEigS > 0) {
         dInf -= minEigS * sqrt(dsdpSolver->n); dInf = MAX(dInf, 0.0);
     }
-    
+#endif
     // Collect errors
     DSDPStatUpdate(stat, STAT_DIMACS_ERR1, pInf / (1 + bnrm));
     DSDPStatUpdate(stat, STAT_DIMACS_ERR2, MAX(0.0, -minEigX) / (1 + bnrm));
@@ -143,6 +144,8 @@ extern DSDP_INT computeDIMACS( HSDSolver *dsdpSolver ) {
     DSDPStatUpdate(stat, STAT_DIMACS_ERR4, MAX(0.0, -minEigS) * dsdpSolver->cScaler / (1 + Cnrm));
     DSDPStatUpdate(stat, STAT_DIMACS_ERR5, gap / (1 + fabs(pObj) + fabs(dObj)));
     DSDPStatUpdate(stat, STAT_DIMACS_ERR6, compslack / (1 + fabs(pObj) + fabs(dObj)));
+    
+    dsdpSolver->pObjVal = pObj;
     
     printf("| Final pObj: %10.5e   dObj: %10.5e \n", pObj, dObj);
     showBeautifulDashlines();

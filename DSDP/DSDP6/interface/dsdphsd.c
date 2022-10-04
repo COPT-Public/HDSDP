@@ -704,6 +704,14 @@ extern DSDP_INT DSDPOptimize( HSDSolver *dsdpSolver ) {
     return retcode;
 }
 
+extern void DSDPGetObjVal( HSDSolver *dsdpSolver, double *pObjVal, double *dObjVal ) {
+    
+    *pObjVal = dsdpSolver->pObjVal;
+    *dObjVal = dsdpSolver->dObjVal;
+    
+    return;
+}
+
 extern DSDP_INT DSDPGetDual( HSDSolver *dsdpSolver, double *y, double **S ) {
     // Extract dual solution y and S
     DSDP_INT retcode = DSDP_RETCODE_OK;
@@ -715,6 +723,41 @@ extern DSDP_INT DSDPGetDual( HSDSolver *dsdpSolver, double *y, double **S ) {
             spsMatFill(dsdpSolver->S[i], S[i]);
         }
     }
+    return retcode;
+}
+
+extern void DSDPGetLPConePrimal( HSDSolver *dsdpSolver, double *x ) {
+    
+    vec *lpSolx = dsdpSolver->x;
+    if (x) {
+        memcpy(x, lpSolx->x, sizeof(double) * lpSolx->dim);
+    }
+    
+    return;
+}
+
+extern void DSDPGetLPConeDual( HSDSolver *dsdpSolver, double *s ) {
+    
+    vec *lpSols = dsdpSolver->s;
+    if (s) {
+        memcpy(s, lpSols->x, sizeof(double) * lpSols->dim);
+    }
+    
+    return;
+}
+
+extern DSDP_INT DSDPGetDualMatBlk( HSDSolver *dsdpSolver, DSDP_INT k, double *S ) {
+    // Extract dual matrix S of some block
+    DSDP_INT retcode = DSDP_RETCODE_OK;
+    
+    if (k > dsdpSolver->nBlock || k < 0) {
+        return DSDP_RETCODE_FAILED;
+    }
+    
+    if (S) {
+        spsMatFillLowerData(dsdpSolver->S[k], S);
+    }
+ 
     return retcode;
 }
 
@@ -731,6 +774,21 @@ extern DSDP_INT DSDPGetPrimal( HSDSolver *dsdpSolver, double **X ) {
     for (DSDP_INT i = 0; i < dsdpSolver->nBlock; ++i) {
         denseMatFill(dsdpSolver->dsaux[i], X[i]);
     }
+    return retcode;
+}
+
+extern DSDP_INT DSDPGetPrimalMatBlk( HSDSolver *dsdpSolver, DSDP_INT k, double *X ) {
+    // Extract primal solution X of some block
+    DSDP_INT retcode = DSDP_RETCODE_OK;
+    
+    if (k > dsdpSolver->nBlock || k < 0) {
+        return DSDP_RETCODE_FAILED;
+    }
+    
+    if (X) {
+        denseMatFillLow2(dsdpSolver->dsaux[k], X);
+    }
+    
     return retcode;
 }
 
@@ -779,6 +837,10 @@ extern void DSDPGetIntParam( HSDSolver *dsdpSolver, DSDP_INT pName, DSDP_INT *in
 extern void DSDPGetStatistic( HSDSolver *dsdpSolver, DSDP_INT sName, double *sVal ) {
     // Get statistic
     DSDPGetStats(&dsdpSolver->dsdpStats, sName, sVal);
+}
+
+extern DSDP_INT DSDPGetStatus( HSDSolver *dsdpSolver ) {
+    return dsdpSolver->solStatus;
 }
 
 extern DSDP_INT DSDPDestroy( HSDSolver *dsdpSolver ) {

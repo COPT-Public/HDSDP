@@ -61,6 +61,36 @@ typedef struct {
 } pot_fx;
 
 
+/** @brief Structure that hosts Lanczos computation
+ *
+ *
+ */
+typedef struct {
+    
+    pot_int n; ///< Dimension of x
+    pot_int maxIter; /// Maximum subspace dimension
+     
+    void *MMat;  ///< Abstract Matrix
+    
+    pot_vec *vVec; ///< Auxiliary array v
+    pot_vec *wVec; ///< Auxiliary array w
+    pot_vec *z1Vec; ///< Auxiliary array z1
+    pot_vec *z2Vec; ///< Auxiliary array z2
+    pot_vec *vaVec; ///< Auxiliary array va
+    
+    double *VMat; ///< Auxiliary matrix V
+    double *HMat; ///< Auxiliary matrix H
+    double *YMat; ///< Auxiliary matrix Y
+    double *dVec; ///< Auxiliary array d
+    
+    double  *eiDblMat; ///< Eigen double workspace
+    pot_int *eiIntMat; ///< Auxiliary int workspace
+    
+    void (*lczMatVec) (void *, pot_vec *, pot_vec *);
+    
+} pot_lanczos;
+
+
 /** @brief Struture that hosts the potential reduction framwork
  *
  */
@@ -74,8 +104,9 @@ typedef struct {
     double   zVal; ///< Lower bound
     pot_vec *xVec; ///< Variable
     pot_vec *xVecOld; ///< Old x
-    pot_vec *gVec; ///< Gradient
-    pot_vec *mVec; ///< Momentum
+    pot_vec *gVec; ///< Gradient of f
+    pot_vec *gkVec; ///< Gradient of potential function
+    pot_vec *mkVec; ///< Momentum
     pot_vec *xStepVec; ///< Step direction
     double  *HessMat; ///< Hessian
     
@@ -95,6 +126,7 @@ typedef struct {
     int *intParams[NUM_INT_PARAM];
     int *dblParams[NUM_DBL_PARAM];
     
+    pot_int useCurvature;
     
 } pot_solver;
 

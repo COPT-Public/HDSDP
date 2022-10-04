@@ -48,6 +48,7 @@ extern void denseMatStoreFactor  ( dsMat *dMat, rkMat *factor );
 extern rkMat* denseMatGetFactor  ( dsMat *dMat );
 extern void denseMatGetRank      ( dsMat *dMat, DSDP_INT *rank );
 extern void denseMatFillLow      ( dsMat *dMat, double *fulldMat );
+extern void denseMatFillLow2     ( dsMat *dMat, double *lowData );
 extern void denseMatFill         ( dsMat *dMat, double *fulldMat );
 extern void denseMatReflex       ( dsMat *dMat );
 extern void denseMatGetdiag      ( dsMat *dMat, vec *diag );
