@@ -4,7 +4,13 @@
 #include "pot_objfunc.h"
 #include "pot_param.h"
 
-static pot_int potReductionFindNegativeCurvature( pot_solver *pot, vec * )
+static pot_int potReductionFindNegativeCurvature( pot_solver *pot, pot_vec *negCurv ) {
+    
+    pot_int retcode = RETCODE_OK;
+    
+    
+    return retcode;
+}
 
 static pot_int potReductionOneStep( pot_solver *pot ) {
     
