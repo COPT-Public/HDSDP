@@ -1,4 +1,4 @@
-/** @file potlp.h
+/** @file pot_solver.h
  *  @brief The header file for the user interface of potential reduction algorithm for linear programming
  *  @author Wenzhi Gao, Shanghai University of Finance and Economics
  *  @date Sep 22th, 2022

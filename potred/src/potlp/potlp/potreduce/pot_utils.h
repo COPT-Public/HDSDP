@@ -7,7 +7,7 @@
 #ifndef pot_utils_h
 #define pot_utils_h
 
-#include "potlp.h"
+#include "pot_solver.h"
 
 #define POT_CALL(func) if ((func) != RETCODE_OK) {     \
                             retcode = RETCODE_FAILED;  \

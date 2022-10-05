@@ -1,4 +1,4 @@
-#include "potlp.h"
+#include "pot_solver.h"
 #include "pot_param.h"
 #include "pot_structs.h"
 #include "pot_vector.h"
@@ -33,17 +33,33 @@ extern pot_int potLPSetDim( pot_solver *pot, pot_int vDim, pot_int vConeDim ) {
     pot_int retcode = RETCODE_OK;
     
     if ( pot->fVal != POTLP_INFINITY || pot->xVec || pot->xVecOld ||
-         pot->gVec || pot->mVec || pot->xStepVec || pot->HessMat ||
+         pot->gVec || pot->mkVec || pot->xStepVec || pot->HessMat ||
          pot->auxVec1 || pot->auxVec2 ) {
         goto exit_cleanup;
     }
 
+    POT_CALL(potVecCreate(&pot->xVec));
     POT_CALL(potVecInit(pot->xVec, vDim, vConeDim));
+    
+    POT_CALL(potVecCreate(&pot->xVecOld));
     POT_CALL(potVecInit(pot->xVecOld, vDim, vConeDim));
+    
+    POT_CALL(potVecCreate(&pot->gVec));
     POT_CALL(potVecInit(pot->gVec, vDim, vConeDim));
-    POT_CALL(potVecInit(pot->mVec, vDim, vConeDim));
+    
+    POT_CALL(potVecCreate(&pot->gkVec));
+    POT_CALL(potVecInit(pot->gkVec, vDim, vConeDim));
+    
+    POT_CALL(potVecCreate(&pot->mkVec));
+    POT_CALL(potVecInit(pot->mkVec, vDim, vConeDim));
+    
+    POT_CALL(potVecCreate(&pot->xStepVec));
     POT_CALL(potVecInit(pot->xStepVec, vDim, vConeDim));
+    
+    POT_CALL(potVecCreate(&pot->auxVec1));
     POT_CALL(potVecInit(pot->auxVec1, vDim, vConeDim));
+    
+    POT_CALL(potVecCreate(&pot->auxVec2));
     POT_CALL(potVecInit(pot->auxVec2, vDim, vConeDim));
     
 #ifdef POT_DEBUG
@@ -100,7 +116,7 @@ extern void potLPClear( pot_solver *pot ) {
     potVecDestroy(&pot->xVec);
     potVecDestroy(&pot->xVecOld);
     potVecDestroy(&pot->gVec);
-    potVecDestroy(&pot->mVec);
+    potVecDestroy(&pot->mkVec);
     potVecDestroy(&pot->xStepVec);
     potVecDestroy(&pot->auxVec1);
     potVecDestroy(&pot->auxVec2);

@@ -18,26 +18,13 @@ extern pot_int potConstrMatInit( pot_constr_mat *potConstrMat, pot_int nRows, po
     potConstrMat->AMatData = NULL;
     
     /* Initialize methods */
-    potConstrMat->AMatInit = NULL;
     potConstrMat->AMatPrepareX = NULL;
     potConstrMat->AMatProject = NULL;
+    potConstrMat->AMatScalProject = NULL;
     potConstrMat->AMatMonitor = NULL;
-    potConstrMat->AMatDestroy = NULL;
-    
-    if ( !potConstrMat->AMatData || !potConstrMat->AMatInit ||
-         !potConstrMat->AMatPrepareX || !potConstrMat->AMatProject ||
-         !potConstrMat->AMatMonitor || !potConstrMat->AMatDestroy ) {
-        retcode = RETCODE_FAILED;
-        goto exit_cleanup;
-    }
     
 exit_cleanup:
     return retcode;
-}
-
-extern pot_int potConstrMatInitData( pot_constr_mat *potConstrMat, void *inputData ) {
-    
-    return potConstrMat->AMatInit(&potConstrMat->AMatData, inputData);
 }
 
 extern void potConstrMatPrepareX( pot_constr_mat *potConstrMat, pot_vec *xVec ) {
@@ -45,30 +32,48 @@ extern void potConstrMatPrepareX( pot_constr_mat *potConstrMat, pot_vec *xVec ) 
     potConstrMat->AMatPrepareX(potConstrMat->AMatData, xVec);
 }
 
-extern void potConstrMatProj( pot_constr_mat *potConstrMat, pot_vec *xVec, pot_vec *yVec ) {
+extern void potConstrMatProj( pot_constr_mat *potConstrMat, pot_vec *xVec, pot_vec *xVecP ) {
     
-    if ( !yVec ) {
+    if ( !xVecP ) {
         potConstrMat->AMatProject(potConstrMat->AMatData, xVec);
     } else {
-        potVecCopy(xVec, yVec);
-        potConstrMat->AMatProject(potConstrMat->AMatData, yVec);
+        potVecCopy(xVec, xVecP);
+        potConstrMat->AMatProject(potConstrMat->AMatData, xVecP);
     }
     
     return;
 }
 
-extern void potConstrMatMonitor( pot_constr_mat *potConstrMat ) {
+extern void potConstrMatScalProj( pot_constr_mat *potConstrMat, pot_vec *xVec, pot_vec *yVec, pot_vec *yVecP ) {
+    
+    if ( !yVecP ) {
+        potConstrMat->AMatScalProject(potConstrMat->AMatData, xVec, yVec);
+    } else {
+        potVecCopy(yVec, yVecP);
+        potConstrMat->AMatScalProject(potConstrMat->AMatData, xVec, yVecP);
+    }
     
     return;
 }
 
-extern void potConstrMatDestroy( pot_constr_mat *potConstrMat ) {
+extern void potConstrMatMonitor( pot_constr_mat *potConstrMat, void *info ) {
+    
+    potConstrMat->AMatMonitor(potConstrMat->AMatData, info);
+}
+
+extern void potConstrMatClear( pot_constr_mat *potConstrMat ) {
+    
+    memset(potConstrMat, 0, sizeof(pot_constr_mat));
+    
+    return;
+}
+
+extern void potConstrMatDestroy( pot_constr_mat **potConstrMat ) {
     
     if ( !potConstrMat ) {
         return;
     }
     
-    potConstrMat->AMatDestroy(&potConstrMat->AMatData);
     memset(potConstrMat, 0, sizeof(pot_constr_mat));
     
     return;

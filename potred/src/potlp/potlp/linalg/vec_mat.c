@@ -14,6 +14,30 @@ extern double nrm2( pot_int *n, double *x, pot_int *incx ) {
     return sqrt(nrm);
 }
 
+extern void axpy( pot_int *n, double *a, double *x, pot_int *incx, double *y, pot_int *incy ) {
+    
+    assert( *incx == 1 && *incy == 1 );
+    
+    for ( int i = 0; i < *n; ++i ) {
+        y[i] += (*a) * x[i];
+    }
+    
+    return;
+}
+
+extern double dot( pot_int *n, double *x, pot_int *incx, double *y, pot_int *incy ) {
+    
+    assert( *incx == 1 && *incy == 1 );
+    
+    double dres = 0.0;
+    
+    for ( int i = 0; i < *n; ++i ) {
+        dres += x[i] * y[i];
+    }
+    
+    return dres;
+}
+
 extern void rscl( pot_int *n, double *sa, double *sx, pot_int *incx ) {
     
     assert( *incx == 1 );
@@ -31,4 +55,14 @@ extern void rscl( pot_int *n, double *sa, double *sx, pot_int *incx ) {
     }
     
     return;
+}
+
+extern double sumlogdet( pot_int *n, double *x ) {
+    
+    double logdet = 0.0;
+    for ( int i = 0; i < *n; ++i ) {
+        logdet += logl(x[i]);
+    }
+    
+    return logdet;
 }

@@ -1,6 +1,8 @@
 #ifndef lpdata_h
 #define lpdata_h
 
-#include <stdio.h>
+#include "pot_solver.h"
+
+
 
 #endif /* lpdata_h */

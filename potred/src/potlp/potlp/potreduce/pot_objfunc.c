@@ -1,5 +1,25 @@
 #include "pot_objfunc.h"
 
+extern pot_int potObjFCreate( pot_fx **ppotObjF ) {
+    
+    pot_int retcode = RETCODE_OK;
+    
+    if ( !ppotObjF ) {
+        retcode = RETCODE_FAILED;
+        goto exit_cleanup;
+    }
+    
+    POTLP_INIT(*ppotObjF, pot_fx, 1);
+    
+    if ( !*ppotObjF ) {
+        retcode = RETCODE_FAILED;
+        goto exit_cleanup;
+    }
+    
+exit_cleanup:
+    return retcode;
+}
+
 extern pot_int potObjFInit( pot_fx *potObjF, pot_int nCols ) {
     
     pot_int retcode = RETCODE_OK;
@@ -14,42 +34,17 @@ extern pot_int potObjFInit( pot_fx *potObjF, pot_int nCols ) {
         goto exit_cleanup;
     }
     
+    potObjF->n = nCols;
     potObjF->objFData = NULL;
-    potObjF->xVec = NULL;
     
     /* Initialize methods */
-    potObjF->objFInit = NULL;
     potObjF->objFGrad = NULL;
     potObjF->objFHess = NULL;
     potObjF->objFHVec = NULL;
     potObjF->objFMonitor = NULL;
-    potObjF->objFDestroy = NULL;
-    
-    if ( !potObjF->objFInit || !potObjF->objFGrad ||
-         !potObjF->objFHess || !potObjF->objFHVec ||
-         !potObjF->objFMonitor || !potObjF->objFDestroy ) {
-        retcode = RETCODE_FAILED;
-        goto exit_cleanup;
-    }
     
 exit_cleanup:
     return retcode;
-}
-
-extern void potObjFSetX( pot_fx *potObjF, pot_vec *xVec ) {
-    
-    if ( potObjF->xVec ) {
-        return;
-    }
-    
-    potObjF->xVec = xVec;
-    
-    return;
-}
-
-extern pot_int potObjFInitData( pot_fx *potObjF, void *inputData ) {
-    
-    return potObjF->objFInit(&potObjF->objFData, inputData);
 }
 
 extern double potObjFVal( pot_fx *potObjF, pot_vec *xVec ) {
@@ -71,26 +66,35 @@ extern void potObjFHess( pot_fx *potObjF, pot_vec *xVec, double *fHess ) {
     return;
 }
 
-extern void potObjFHVec( pot_fx *potObjF, pot_vec *xVec, pot_vec *fHVec ) {
+extern void potObjFHVec( pot_fx *potObjF, pot_vec *vVec, pot_vec *fHvVec ) {
     
-    potObjF->objFGrad(potObjF->objFData, xVec, fHVec);
+    potObjF->objFGrad(potObjF->objFData, vVec, fHvVec);
     
     return;
 }
 
-extern void potObjFMonitor( pot_fx *potObjF, pot_int *info ) {
+extern void potObjFMonitor( pot_fx *potObjF, void *info ) {
     
     potObjF->objFMonitor(potObjF->objFData, info);
+    
+    return;
 }
 
-extern void potObjFDestroy( pot_fx *potObjF ) {
+extern void potObjFClear( pot_fx *potObjF ) {
     
-    if ( !potObjF ) {
+    memset(potObjF, 0, sizeof(pot_fx));
+    
+    return;
+}
+
+extern void potObjFDestroy( pot_fx **ppotObjF ) {
+    
+    if ( !ppotObjF ) {
         return;
     }
     
-    potObjF->objFDestroy(&potObjF->objFData);
-    memset(potObjF, 0, sizeof(pot_fx));
+    potObjFClear(*ppotObjF);
+    POTLP_FREE(*ppotObjF);
     
     return;
 }

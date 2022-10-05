@@ -7,7 +7,7 @@
 #ifndef pot_structs_h
 #define pot_structs_h
 
-#include "potlp.h"
+#include "pot_solver.h"
 #include "pot_param.h"
 
 
@@ -31,11 +31,10 @@ typedef struct {
     void *AMatData;
     
     /* Abstract implementation */
-    pot_int (*AMatInit) ( void **, const void * );
     void (*AMatPrepareX) ( void *, pot_vec * );
     void (*AMatProject) ( void *, pot_vec * );
-    void (*AMatMonitor) ( void *, pot_int * );
-    void (*AMatDestroy) ( void ** );
+    void (*AMatScalProject) ( void *, pot_vec *, pot_vec * );
+    void (*AMatMonitor) ( void *, void * );
     
 } pot_constr_mat;
 
@@ -46,17 +45,14 @@ typedef struct {
     
     pot_int n;    ///< Dimension of x
     
-    pot_vec *xVec; ///< Pointer to x
     void *objFData; ///< Data that formulates \f$ f(x) \f$
     
     /* Abstract implementation */
-    pot_int (*objFInit) ( void **, const void * ); ///< Method of initialization
     double (*objFVal) ( void *, pot_vec * ); ///< Method of computing objective
     void (*objFGrad)  ( void *, pot_vec *, pot_vec * ); ///< Method of computing gradient
     void (*objFHess)  ( void *, pot_vec *, double * ); ///< Method of computing Hessian
-    void (*objFHVec)  ( void *, pot_vec *, double * ); ///< Method of Hessian-vector product
-    void (*objFMonitor) ( void *, pot_int * ); ///< Method of internal progress monitor
-    void (*objFDestroy) ( void ** ); ///< Method of destroy
+    void (*objFHVec)  ( void *, pot_vec *, pot_vec * ); ///< Method of Hessian-vector product
+    void (*objFMonitor) ( void *, void * ); ///< Method of internal progress monitor
     
 } pot_fx;
 
@@ -81,7 +77,8 @@ typedef struct {
     double *VMat; ///< Auxiliary matrix V
     double *HMat; ///< Auxiliary matrix H
     double *YMat; ///< Auxiliary matrix Y
-    double *dVec; ///< Auxiliary array d
+    double *UMat; ///< Auxiliary matrix U
+    double *dArray; ///< Auxiliary array d
     
     double  *eiDblMat; ///< Eigen double workspace
     pot_int *eiIntMat; ///< Auxiliary int workspace
@@ -112,6 +109,8 @@ typedef struct {
     
     pot_constr_mat *AMat;
     
+    pot_lanczos *lczTool;
+    
     double  rhoVal;
     double  potVal;
     double  betaRadius;
@@ -123,8 +122,8 @@ typedef struct {
     pot_vec *auxVec1;
     pot_vec *auxVec2;
     
-    int *intParams[NUM_INT_PARAM];
-    int *dblParams[NUM_DBL_PARAM];
+    int intParams[NUM_INT_PARAM];
+    int dblParams[NUM_DBL_PARAM];
     
     pot_int useCurvature;
     
