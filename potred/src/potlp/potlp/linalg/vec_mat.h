@@ -1,7 +1,7 @@
 #ifndef vec_mat_h
 #define vec_mat_h
 
-#include "pot_solver.h"
+#include "pot_def.h"
 
 static double potDblConstantOne = 1.0;
 static double potDblConstantZero = 0.0;

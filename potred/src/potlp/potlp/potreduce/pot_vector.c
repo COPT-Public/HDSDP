@@ -128,8 +128,17 @@ extern void potVecAxinvpBy( double alpha1, double alpha2, pot_vec *pVecX, double
 
 extern void potVecAxpy( double alpha, pot_vec *pVecX, pot_vec *pVecY ) {
     
-    assert( pVecX->ncone == pVecY->ncone );
+    assert( pVecX->n == pVecY->n );
     axpy(&pVecX->n, &alpha, pVecX->x, &potIntConstantOne, pVecY->x, &potIntConstantOne);
+    pVecY->nrm = -1.0;
+    
+    return;
+}
+
+extern void potVecConeAxpy( double alpha, pot_vec *pVecX, pot_vec *pVecY ) {
+    
+    assert( pVecX->ncone == pVecY->ncone );
+    axpy(&pVecX->ncone, &alpha, pVecX->x, &potIntConstantOne, pVecY->x, &potIntConstantOne);
     pVecY->nrm = -1.0;
     
     return;
@@ -138,6 +147,36 @@ extern void potVecAxpy( double alpha, pot_vec *pVecX, pot_vec *pVecY ) {
 extern double potVecLogDet( pot_vec *pVecX ) {
     
     return sumlogdet(&pVecX->ncone, pVecX->x + pVecX->ncone);
+}
+
+extern double potVecSumCone( pot_vec *pVecX ) {
+    
+    double eTx = 0.0;
+    for ( int i = pVecX->n - pVecX->ncone; i < pVecX->n; ++i ) {
+        eTx += pVecX->x[i];
+    }
+    
+    return eTx;
+}
+
+extern double potVecSumScalCone( pot_vec *pVecX, pot_vec *pVecY ) {
+    
+    double xTy = 0.0;
+    for ( int i = pVecX->n - pVecX->ncone; i < pVecX->n; ++i ) {
+        xTy += pVecX->x[i] * pVecY->x[i];
+    }
+    
+    return xTy;
+}
+
+extern void potVecConeAddConstant( pot_vec *pVecX, double cVal ) {
+    
+    for ( int i = pVecX->n - pVecX->ncone; i < pVecX->n; ++i ) {
+        pVecX->x[i] += cVal;
+    }
+    
+    pVecX->nrm = -1.0;
+    return;
 }
 
 extern void potVecCopy( pot_vec *srcVec, pot_vec *dstVec ) {

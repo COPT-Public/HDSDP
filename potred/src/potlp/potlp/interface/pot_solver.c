@@ -1,7 +1,8 @@
-#include "pot_solver.h"
+#include "pot_def.h"
 #include "pot_param.h"
 #include "pot_structs.h"
 #include "pot_vector.h"
+#include "pot_lanczos.h"
 #include "pot_utils.h"
 
 extern pot_int potLPCreate( pot_solver **ppot ) {
@@ -22,13 +23,16 @@ extern pot_int potLPCreate( pot_solver **ppot ) {
     
     pot->potVal = POTLP_INFINITY;
     pot->zVal = -POTLP_INFINITY;
+    
+    POT_CALL(potLanczosCreate(&pot->lczTool));
+    
     *ppot = pot;
     
 exit_cleanup:
     return retcode;
 }
 
-extern pot_int potLPSetDim( pot_solver *pot, pot_int vDim, pot_int vConeDim ) {
+extern pot_int potLPInit( pot_solver *pot, pot_int vDim, pot_int vConeDim ) {
     
     pot_int retcode = RETCODE_OK;
     
@@ -61,6 +65,8 @@ extern pot_int potLPSetDim( pot_solver *pot, pot_int vDim, pot_int vConeDim ) {
     
     POT_CALL(potVecCreate(&pot->auxVec2));
     POT_CALL(potVecInit(pot->auxVec2, vDim, vConeDim));
+    
+    POT_CALL(potLanczosInit(pot->lczTool, vDim));
     
 #ifdef POT_DEBUG
     POTLP_INIT(pot->HessMat, double, vDim * vDim);
@@ -123,6 +129,8 @@ extern void potLPClear( pot_solver *pot ) {
     
     pot->objFunc = NULL;
     pot->AMat = NULL;
+    
+    potLanczosDestroy(&pot->lczTool);
     
     POTLP_FREE(pot->HessMat);
     memset(pot, 0, sizeof(pot_solver));

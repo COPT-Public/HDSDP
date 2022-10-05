@@ -7,7 +7,7 @@
 #ifndef pot_structs_h
 #define pot_structs_h
 
-#include "pot_solver.h"
+#include "pot_def.h"
 #include "pot_param.h"
 
 
@@ -128,6 +128,5 @@ typedef struct {
     pot_int useCurvature;
     
 } pot_solver;
-
 
 #endif /* pot_structs_h */

@@ -1,6 +1,29 @@
 #include "pot_constr_mat.h"
 #include "pot_vector.h"
 
+extern pot_int potConstrMatCreate( pot_constr_mat **ppotConstrMat ) {
+    
+    pot_int retcode = RETCODE_OK;
+    
+    if ( !ppotConstrMat ) {
+        retcode = RETCODE_FAILED;
+        goto exit_cleanup;
+    }
+    
+    pot_constr_mat *potConstrMat = NULL;
+    POTLP_INIT(potConstrMat, pot_constr_mat, 1);
+    
+    memset(potConstrMat, 0, sizeof(pot_constr_mat));
+    
+    if ( !potConstrMat ) {
+        retcode = RETCODE_FAILED;
+        goto exit_cleanup;
+    }
+    
+exit_cleanup:
+    return retcode;
+}
+
 extern pot_int potConstrMatInit( pot_constr_mat *potConstrMat, pot_int nRows, pot_int nCols ) {
     
     pot_int retcode = RETCODE_OK;

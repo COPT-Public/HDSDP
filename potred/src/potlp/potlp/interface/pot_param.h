@@ -1,7 +1,7 @@
 #ifndef pot_param_h
 #define pot_param_h
 
-#include "pot_solver.h"
+#include "pot_def.h"
 
 #define NUM_INT_PARAM (10)
 #define NUM_DBL_PARAM (10)

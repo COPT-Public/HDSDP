@@ -1,4 +1,4 @@
-/** @file pot_solver.h
+/** @file pot\_def.h
  *  @brief The header file for the user interface of potential reduction algorithm for linear programming
  *  @author Wenzhi Gao, Shanghai University of Finance and Economics
  *  @date Sep 22th, 2022
@@ -19,11 +19,11 @@
 #define printf mexPrintf
 #define free mxFree
 // Define data type
-typedef mwSignedIndex DSDP_INT;
+typedef mwSignedIndex pot_int;
 #else
 #include <stdint.h>
 #ifdef POTLP64
-typedef long int potlp_int;
+typedef long int pot_int;
 #define ID "%ld"
 #else
 typedef int pot_int;
@@ -63,4 +63,4 @@ typedef int pot_int;
 #define BUILD_DATE_DAY          28
 
 
-#endif /* potlp_h */
+#endif /* pot_def_h */
