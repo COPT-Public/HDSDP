@@ -5,6 +5,8 @@
 #include "pot_lanczos.h"
 #include "pot_utils.h"
 
+#include <math.h>
+
 extern pot_int potLPCreate( pot_solver **ppot ) {
     
     pot_int retcode = RETCODE_OK;
@@ -17,12 +19,12 @@ extern pot_int potLPCreate( pot_solver **ppot ) {
         goto exit_cleanup;
     }
     
-    memset(pot, 0, sizeof(pot_int));
+    memset(pot, 0, sizeof(pot_solver));
     memcpy(pot->dblParams, defaultDblParam, sizeof(double) * NUM_DBL_PARAM);
     memcpy(pot->intParams, defaultIntParam, sizeof(int) * NUM_INT_PARAM);
     
     pot->potVal = POTLP_INFINITY;
-    pot->zVal = -POTLP_INFINITY;
+    pot->zVal = 0.0;
     
     POT_CALL(potLanczosCreate(&pot->lczTool));
     
@@ -36,7 +38,7 @@ extern pot_int potLPInit( pot_solver *pot, pot_int vDim, pot_int vConeDim ) {
     
     pot_int retcode = RETCODE_OK;
     
-    if ( pot->fVal != POTLP_INFINITY || pot->xVec || pot->xVecOld ||
+    if ( pot->potVal != POTLP_INFINITY || pot->xVec || pot->xVecOld ||
          pot->gVec || pot->mkVec || pot->xStepVec || pot->HessMat ||
          pot->auxVec1 || pot->auxVec2 ) {
         goto exit_cleanup;
@@ -66,6 +68,7 @@ extern pot_int potLPInit( pot_solver *pot, pot_int vDim, pot_int vConeDim ) {
     POT_CALL(potVecCreate(&pot->auxVec2));
     POT_CALL(potVecInit(pot->auxVec2, vDim, vConeDim));
     
+    pot->rhoVal = vConeDim + sqrt(vConeDim);
     POT_CALL(potLanczosInit(pot->lczTool, vDim));
     
 #ifdef POT_DEBUG

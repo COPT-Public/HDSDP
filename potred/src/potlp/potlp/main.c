@@ -1,11 +1,23 @@
 #include <stdio.h>
 
-#include "pot_structs.h"
-#include "pot_vector.h"
-#include "pot_constr_mat.h"
+#include "lp_solver.h"
+#include "data.h"
 
 int main(int argc, const char * argv[]) {
-    // insert code here...
-    printf("Hello, World!\n");
-    return 0;
+    
+    int retcode = RETCODE_OK;
+    potlp_solver *potlp = NULL;
+    retcode = LPSolverCreate(&potlp);
+    
+    if ( retcode != RETCODE_OK ) {
+        retcode = RETCODE_FAILED;
+    }
+    
+    retcode = LPSolverInit(potlp, nCol, nRow);
+    retcode = LPSolverSetData(potlp, Ap, Ai, Ax, obj, rhs);
+    retcode = LPSolverOptimize(potlp);
+    
+exit_cleanup:
+    LPSolverDestroy(&potlp);
+    return retcode;
 }

@@ -14,7 +14,7 @@ extern void potConstrMatProj( pot_constr_mat *potConstrMat, pot_vec *xVec, pot_v
 extern void potConstrMatScalProj( pot_constr_mat *potConstrMat, pot_vec *xVec, pot_vec *yVec, pot_vec *yVecP );
 extern void potConstrMatMonitor( pot_constr_mat *potConstrMat, void *info );
 extern void potConstrMatClear( pot_constr_mat *potConstrMat );
-extern void potConstrMatDestroy( pot_constr_mat **potConstrMat );
+extern void potConstrMatDestroy( pot_constr_mat **ppotConstrMat );
 
 #ifdef __cplusplus
 }

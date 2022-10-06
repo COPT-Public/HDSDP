@@ -69,7 +69,7 @@ static double quadform2by2( double projH[4], double projh[2], double alpha[2] ) 
     }
     if ( projH ) {
         quadObj += 0.5 * projH[0] * alpha[0] * alpha[0] + projH[1] * alpha[0] * alpha[1];
-        quadObj += 0.5 * projH[2] * alpha[1] * alpha[1];
+        quadObj += 0.5 * projH[3] * alpha[1] * alpha[1];
     }
     
     return quadObj + linObj;
@@ -103,7 +103,7 @@ static double potReductionTrustRegionSolve( double alpha[2], double projH[4], do
     
     if ( projH[3] == 0.0 ) {
         
-        double G11 = projG[3];
+        double G11 = projG[0];
         double alpha11 = sqrt(2.0 * trustRadius / G11);
         
         double modelVal = 0.5 * alpha11 * alpha11 * projH[0] + projh[0] * alpha11;
@@ -143,10 +143,12 @@ static double potReductionTrustRegionSolve( double alpha[2], double projH[4], do
         HplusLamG[3] = projH[3] + lamUpBound * projG[3];
         
         slv2by2(HplusLamG, projh, alpha);
+        alpha[0] = -alpha[0]; alpha[1] = -alpha[1];
+        
         double alphaMalpha = quadform2by2(projG, NULL, alpha);
         
-        if ( alphaMalpha - 2.0 * trustRadius <= 0 ) {
-            lamLowBound = lamLowBound * 0.5;
+        if ( alphaMalpha - trustRadius <= 0 ) {
+            lamLowBound = lamUpBound * 0.5;
             break;
         }
     }
@@ -163,8 +165,10 @@ static double potReductionTrustRegionSolve( double alpha[2], double projH[4], do
         HplusLamG[3] = projH[3] + lamCurrent * projG[3];
         
         slv2by2(HplusLamG, projh, alpha);
+        alpha[0] = -alpha[0]; alpha[1] = -alpha[1];
+        
         double alphaMalpha = quadform2by2(projG, NULL, alpha);
-        double normDiff = alphaMalpha - 2.0 * trustRadius;
+        double normDiff = alphaMalpha - trustRadius;
         
         if ( normDiff > tol ) {
             lamLowBound = lamCurrent;
@@ -213,12 +217,12 @@ static pot_int potReductionOneStep( pot_solver *pot ) {
     potAssembleGrad(rhoVal, fVal, gkVec, gVec, xPres);
     
     /* Prepare the second direction */
-    if ( pot->useCurvature ) {
+    if ( 0 ) {
         /* Use negative curvature */
         POT_CALL(potLanczosSolve(pot->lczTool, mkVec));
     } else {
         /* Use momentum mk = x_pres - x_prev; */
-        potVecDiff(mkVec, xPres, xPrev);
+        potVecDiff(mkVec, xPrev, xPres);
     }
     
     /* Gradient projection */
@@ -227,6 +231,8 @@ static pot_int potReductionOneStep( pot_solver *pot ) {
     
     /* Normalize */
     double gkNorm = potVecNormalize(gkVec);
+    gkNorm = gkNorm * rhoVal / fVal;
+    potVecNormalize(mkVec);
     
     /* Scaled norm */
     double gkXXgk = potVecScaledDot(xPres, gkVec, gkVec);
@@ -277,9 +283,10 @@ static pot_int potReductionOneStep( pot_solver *pot ) {
         
         double alphaStep[2] = {0.0};
         double modelVal = potReductionTrustRegionSolve(alphaStep, pot->projHessMat, pot->projgVec,
-                                                       pot->projGMat, pot->betaRadius, 1e-08);
+                                                       pot->projGMat, pot->betaRadius * pot->betaRadius / 4,
+                                                       1e-08);
         
-        if ( modelVal > -1e-04 ) {
+        if ( modelVal > 0.0 ) {
             retcode = RETCODE_FAILED;
             goto exit_cleanup;
         }
@@ -340,10 +347,20 @@ extern pot_int potReductionSolve( pot_solver *pot ) {
     int maxIter = pot->intParams[INT_PARAM_MAXITER];
     pot_int info = 0;
     
+    /* Initialize */
+    potConstrMatPrepareX(pot->AMat, pot->xVec);
+    potConstrMatPrepareX(pot->AMat, pot->xVecOld);
+    
+    printf("Iteration log. \n");
+    printf("%10s  %10s  %10s  %10s  %10s \n", "pObj", "dObj", "pInf", "dInf", "k/t");
+    
     for ( int i = 0; i < maxIter; ++i ) {
         
         retcode = potReductionOneStep(pot);
-        potObjFMonitor(pot->objFunc, &info);
+        
+        if ( i % 1000 == 1) {
+            potObjFMonitor(pot->objFunc, &info);
+        }
         
         if ( retcode != RETCODE_OK ) {
             break;

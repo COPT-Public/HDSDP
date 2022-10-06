@@ -16,6 +16,7 @@ extern pot_int potVecCreate( pot_vec **ppVec ) {
         return RETCODE_FAILED;
     }
     
+    *ppVec = pVec;
     return RETCODE_OK;
 }
 
@@ -46,6 +47,7 @@ extern pot_int potVecInit( pot_vec *pVec, pot_int vDim, pot_int vConeDim ) {
     }
     
     pVec->n = vDim; pVec->ncone = vConeDim;
+    pVec->nrm = -1.0;
     
 exit_cleanup:
     return retcode;
@@ -82,7 +84,7 @@ extern double potVecNormalize( pot_vec *pVec ) {
     pVec->nrm = nrm2(&pVec->n, pVec->x, &potIntConstantOne);
     
     if ( pVec->nrm ) {
-        rscl(&pVec->n, pVec->x, &pVec->nrm, &potIntConstantOne);
+        rscl(&pVec->n, &pVec->nrm, pVec->x, &potIntConstantOne);
     }
     
     return pVec->nrm;
@@ -146,7 +148,7 @@ extern void potVecConeAxpy( double alpha, pot_vec *pVecX, pot_vec *pVecY ) {
 
 extern double potVecLogDet( pot_vec *pVecX ) {
     
-    return sumlogdet(&pVecX->ncone, pVecX->x + pVecX->ncone);
+    return sumlogdet(&pVecX->ncone, pVecX->x + pVecX->n - pVecX->ncone);
 }
 
 extern double potVecSumCone( pot_vec *pVecX ) {

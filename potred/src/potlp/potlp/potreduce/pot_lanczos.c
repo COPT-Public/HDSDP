@@ -7,14 +7,26 @@
 
 extern pot_int potLanczosCreate( pot_lanczos **ppotLanczos ) {
     
+    pot_int retcode = RETCODE_OK;
+    
+    if ( !ppotLanczos ) {
+        retcode = RETCODE_FAILED;
+        goto exit_cleanup;
+    }
+    
     pot_lanczos *potLanczos = NULL;
     POTLP_INIT(potLanczos, pot_lanczos, 1);
     
     if ( !potLanczos ) {
-        return RETCODE_FAILED;
+        retcode = RETCODE_FAILED;
+        goto exit_cleanup;
     }
     
-    return RETCODE_OK;
+    memset(potLanczos, 0, sizeof(pot_lanczos));
+    *ppotLanczos = potLanczos;
+    
+exit_cleanup:
+    return retcode;
 }
 
 extern pot_int potLanczosInit( pot_lanczos *potLanczos, pot_int nCols ) {
@@ -40,7 +52,7 @@ extern pot_int potLanczosInit( pot_lanczos *potLanczos, pot_int nCols ) {
     POT_CALL(potVecInit(potLanczos->wVec, nCols, 0));
     
     POT_CALL(potVecCreate(&potLanczos->z1Vec));
-    POT_CALL(potVecInit(potLanczos->z2Vec, nCols, 0));
+    POT_CALL(potVecInit(potLanczos->z1Vec, nCols, 0));
     
     POT_CALL(potVecCreate(&potLanczos->z2Vec));
     POT_CALL(potVecInit(potLanczos->z2Vec, nCols, 0));

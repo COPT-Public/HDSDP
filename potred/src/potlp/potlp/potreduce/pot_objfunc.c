@@ -9,12 +9,17 @@ extern pot_int potObjFCreate( pot_fx **ppotObjF ) {
         goto exit_cleanup;
     }
     
-    POTLP_INIT(*ppotObjF, pot_fx, 1);
+    pot_fx *potObjF = NULL;
     
-    if ( !*ppotObjF ) {
+    POTLP_INIT(potObjF, pot_fx, 1);
+    
+    if ( !potObjF ) {
         retcode = RETCODE_FAILED;
         goto exit_cleanup;
     }
+    
+    memset(potObjF, 0, sizeof(pot_fx));
+    *ppotObjF = potObjF;
     
 exit_cleanup:
     return retcode;
@@ -68,7 +73,7 @@ extern void potObjFHess( pot_fx *potObjF, pot_vec *xVec, double *fHess ) {
 
 extern void potObjFHVec( pot_fx *potObjF, pot_vec *vVec, pot_vec *fHvVec ) {
     
-    potObjF->objFGrad(potObjF->objFData, vVec, fHvVec);
+    potObjF->objFHVec(potObjF->objFData, vVec, fHvVec);
     
     return;
 }

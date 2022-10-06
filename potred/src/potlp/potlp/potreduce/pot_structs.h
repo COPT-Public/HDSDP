@@ -123,7 +123,7 @@ typedef struct {
     pot_vec *auxVec2;
     
     int intParams[NUM_INT_PARAM];
-    int dblParams[NUM_DBL_PARAM];
+    double dblParams[NUM_DBL_PARAM];
     
     pot_int useCurvature;
     

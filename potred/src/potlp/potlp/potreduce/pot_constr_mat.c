@@ -13,12 +13,13 @@ extern pot_int potConstrMatCreate( pot_constr_mat **ppotConstrMat ) {
     pot_constr_mat *potConstrMat = NULL;
     POTLP_INIT(potConstrMat, pot_constr_mat, 1);
     
-    memset(potConstrMat, 0, sizeof(pot_constr_mat));
-    
     if ( !potConstrMat ) {
         retcode = RETCODE_FAILED;
         goto exit_cleanup;
     }
+    
+    memset(potConstrMat, 0, sizeof(pot_constr_mat));
+    *ppotConstrMat = potConstrMat;
     
 exit_cleanup:
     return retcode;
@@ -91,13 +92,13 @@ extern void potConstrMatClear( pot_constr_mat *potConstrMat ) {
     return;
 }
 
-extern void potConstrMatDestroy( pot_constr_mat **potConstrMat ) {
+extern void potConstrMatDestroy( pot_constr_mat **ppotConstrMat ) {
     
-    if ( !potConstrMat ) {
+    if ( !ppotConstrMat ) {
         return;
     }
     
-    memset(potConstrMat, 0, sizeof(pot_constr_mat));
+    POTLP_FREE(*ppotConstrMat);
     
     return;
 }

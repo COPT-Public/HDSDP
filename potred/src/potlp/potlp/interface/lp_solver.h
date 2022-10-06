@@ -3,11 +3,53 @@
 
 #include "pot_structs.h"
 
-extern pot_int potLPCreate( pot_solver **ppot );
-extern pot_int potLPInit( pot_solver *pot, pot_int vDim, pot_int vConeDim );
-extern pot_int potLPSetObj( pot_solver *pot, pot_fx *objFunc );
-extern pot_int potLPSetLinearConstrs( pot_solver *pot, pot_constr_mat *AMat );
-extern void potLPClear( pot_solver *pot );
+typedef struct {
+    
+    pot_int nCol; ///< Number of LP variables
+    pot_int nConstr; ///< Number of constraints
+    
+    pot_int *colMatBeg;
+    pot_int *colMatIdx;
+    double  *colMatVal;
+    
+    double *lpRHS;
+    double *lpObj;
+    
+    double lpRHSNorm;
+    double lpObjNorm;
+    
+    double *ruizCol;
+    double *ruizRow;
+    
+    double *pdcRes;
+    double *pRes;
+    double *dRes;
+    double *cplRes;
+    
+    double pObjVal;
+    double dObjVal;
+    
+    double pInfeas;
+    double dInfeas;
+    double complInfeas;
+    double complGap;
+    
+    double kappa;
+    double tau;
+    
+    double *auxArray;
+    
+    pot_solver *potIterator;
+    pot_constr_mat *potConstrMat;
+    pot_fx *potObjF;
+    
+} potlp_solver;
 
+extern pot_int LPSolverCreate( potlp_solver **ppotlp );
+extern pot_int LPSolverInit( potlp_solver *potlp, pot_int nCol, pot_int nRow );
+extern pot_int LPSolverSetData( potlp_solver *potlp, pot_int *Ap, pot_int *Ai,
+                                double *Ax, double *lpObj, double *lpRHS );
+extern pot_int LPSolverOptimize( potlp_solver *potlp );
+extern void LPSolverDestroy( potlp_solver **ppotlp );
 
 #endif /* lpdata_h */
