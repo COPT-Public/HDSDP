@@ -11,6 +11,7 @@
 #include "pot_vector.h"
 #include "pot_constr_mat.h"
 #include "pot_objfunc.h"
+#include "vec_mat.h"
 
 #include <math.h>
 
@@ -37,9 +38,18 @@ typedef struct {
     double *dRes;
     double *cplRes;
     
+    double pObjVal;
+    double dObjVal;
+    
     double pInfeas;
     double dInfeas;
+    double complInfeas;
     double complGap;
+    
+    double kappa;
+    double tau;
+    
+    double *auxArray;
     
     pot_solver *potIterator;
     pot_constr_mat *potConstrMat;
@@ -82,29 +92,229 @@ static void potLpConstrMatImplMonitor( void *AMatData, void *info ) {
     return;
 }
 
-/* Objective methods */
-static double potLpObjFImplVal( void *ObjFData, pot_vec *xVec ) {
+static void potLpObjFISetupRes( potlp_solver *potlp, pot_vec *xVec ) {
     
+    pot_int nRow = potlp->nCol;
+    pot_int nCol = potlp->nCol;
     
-    return 0.0;
+    double *rowDual = xVec->x;
+    double *colVal = rowDual + nRow;
+    double *colSlack = colVal + nCol;
+    double *kappaVar = colSlack + 1;
+    double *tauVar = kappaVar + 1;
+    
+    double *lpObj = potlp->lpObj;
+    double *lpRHS = potlp->lpRHS;
+    
+    double *pRes = potlp->pRes;
+    double *dRes = potlp->dRes;
+    double *compl = potlp->cplRes;
+    
+    pot_int *Ap = potlp->colMatBeg;
+    pot_int *Ai = potlp->colMatIdx;
+    double  *Ax = potlp->colMatVal;
+    
+    /* Primal and dual objective */
+    potlp->pObjVal = dot(&nCol, colVal, &potIntConstantOne, potlp->lpObj, &potIntConstantOne);
+    potlp->dObjVal = dot(&nRow, rowDual, &potIntConstantOne, potlp->lpRHS, &potIntConstantOne);
+    
+    for ( int i = 0; i < nRow; ++i ) {
+        pRes[i] = -lpRHS[i] * tauVar[0];
+    }
+    
+    for ( int i = 0; i < nCol; ++i ) {
+        dRes[i] = lpObj[i] * tauVar[0];
+    }
+    
+    /* Primal infeasibility */
+    for ( int i = 0, j; i < nCol; ++i ) {
+        for ( j = Ap[i]; j < Ap[i + 1]; ++j ) {
+            pRes[Ai[j]] += colVal[i] * Ax[j];
+        }
+    }
+    
+    /* Dual infeasibility */
+    for ( int i = 0, j; i < nCol; ++i ) {
+        double aTy = 0.0;
+        for ( j = Ap[i]; j < Ap[i + 1]; ++j ) {
+            aTy += rowDual[Ai[j]] * Ax[j];
+        }
+        dRes[i] -= aTy;
+        dRes[i] -= colSlack[i];
+    }
+    
+    /* Complementarity */
+    potlp->kappa = *kappaVar;
+    potlp->tau = *tauVar;
+    *compl = potlp->dObjVal - potlp->pObjVal - *kappaVar;
+    
+    /* Get statistics */
+    potlp->pInfeas = nrm2(&nRow, pRes, &potIntConstantOne);
+    potlp->dInfeas = nrm2(&nCol, dRes, &potIntConstantOne);
+    potlp->complInfeas = *compl;
+    potlp->complGap = potlp->pObjVal - potlp->dObjVal;
+    
+    return;
 }
 
-static void potLpObjFImplGrad( void *ObjFData, pot_vec *xVec, pot_vec *fGrad ) {
+static void potLpObjFISetupGrad( potlp_solver *potlp, pot_vec *gVec ) {
+    
+    pot_int nRow = potlp->nCol;
+    pot_int nCol = potlp->nCol;
+        
+    double *gRowDual = gVec->x;
+    double *gColVal = gRowDual + nRow;
+    double *gColSlack = gColVal + nCol;
+    double *gKappaVar = gColSlack + 1;
+    double *gTauVar = gKappaVar + 1;
+    
+    double *lpObj = potlp->lpObj;
+    double *lpRHS = potlp->lpRHS;
+    
+    double *pRes = potlp->pRes;
+    double *dRes = potlp->dRes;
+    double compl = potlp->complInfeas;
+    
+    pot_int *Ap = potlp->colMatBeg;
+    pot_int *Ai = potlp->colMatIdx;
+    double  *Ax = potlp->colMatVal;
+    
+    /* Gradient of row dual */
+    axpy(&nRow, &compl, lpRHS, &potIntConstantOne, gRowDual, &potIntConstantOne);
+    
+    for ( int i = 0, j; i < nCol; ++i ) {
+        for ( j = Ap[i]; j < Ap[i + 1]; ++j ) {
+            gRowDual[Ai[j]] -= dRes[i] * Ax[j];
+        }
+    }
+    
+    /* Gradient of column value */
+    double ncompl = -compl;
+    axpy(&nCol, &ncompl, lpObj, &potIntConstantOne, gColVal, &potIntConstantOne);
+    for ( int i = 0, j; i < nCol; ++i ) {
+        double aTp = 0.0;
+        for ( j = Ap[i]; j < Ap[i + 1]; ++j ) {
+            aTp += pRes[Ai[j]] * Ax[j];
+        }
+        gColVal[i] += aTp;
+    }
+    
+    /* Gradient of column slack */
+    for ( int i = 0; i < nCol; ++i ) {
+        gColSlack[i] = - dRes[i];
+    }
+    
+    /* Gradient of kappa */
+    gKappaVar[0] = - compl;
+    
+    /* Gradient of tau */
+    gTauVar[0] = dot(&nCol, lpObj, &potIntConstantOne, dRes, &potIntConstantOne);
+    gTauVar[0] -= dot(&nRow, lpRHS, &potIntConstantOne, pRes, &potIntConstantOne);
+    
+    return;
+}
+
+static void potLpObjFISetupHVec( potlp_solver *potlp, pot_vec *xVec, pot_vec *fHvec ) {
+    
+    /* TODO: Unify the three methods */
+    pot_int nRow = potlp->nCol;
+    pot_int nCol = potlp->nCol;
+    
+    double *rowDual = xVec->x;
+    double *colVal = rowDual + nRow;
+    double *colSlack = colVal + nCol;
+    double *kappaVar = colSlack + 1;
+    double *tauVar = kappaVar + 1;
+    
+    double *lpObj = potlp->lpObj;
+    double *lpRHS = potlp->lpRHS;
+    
+    double *pRes = potlp->pRes;
+    double *dRes = potlp->dRes;
+    double *compl = potlp->cplRes;
+    
+    pot_int *Ap = potlp->colMatBeg;
+    pot_int *Ai = potlp->colMatIdx;
+    double  *Ax = potlp->colMatVal;
+    
+    double pObjVal = dot(&nCol, colVal, &potIntConstantOne, potlp->lpObj, &potIntConstantOne);
+    double dObjVal = dot(&nRow, rowDual, &potIntConstantOne, potlp->lpRHS, &potIntConstantOne);
+    
+    for ( int i = 0; i < nRow; ++i ) {
+        pRes[i] = -lpRHS[i] * tauVar[0];
+    }
+    
+    for ( int i = 0; i < nCol; ++i ) {
+        dRes[i] = lpObj[i] * tauVar[0];
+    }
+    
+    /* Primal infeasibility */
+    for ( int i = 0, j; i < nCol; ++i ) {
+        for ( j = Ap[i]; j < Ap[i + 1]; ++j ) {
+            pRes[Ai[j]] += colVal[i] * Ax[j];
+        }
+    }
+    
+    /* Dual infeasibility */
+    for ( int i = 0, j; i < nCol; ++i ) {
+        double aTy = 0.0;
+        for ( j = Ap[i]; j < Ap[i + 1]; ++j ) {
+            aTy += rowDual[Ai[j]] * Ax[j];
+        }
+        dRes[i] -= aTy;
+    }
+    
+    *compl = dObjVal - pObjVal - *kappaVar;
+    potLpObjFISetupGrad(potlp, fHvec);
+
+    return;
+}
+
+/* Objective methods */
+static double potLpObjFImplVal( void *objFData, pot_vec *xVec ) {
+    
+    potlp_solver *potlp = (potlp_solver *) objFData;
+    potLpObjFISetupRes(potlp, xVec);
+    
+    double pInfeas = potlp->pInfeas;
+    double dInfeas = potlp->dInfeas;
+    double complInfeas = potlp->complInfeas;
+    
+    double objFVal = pInfeas * pInfeas + dInfeas * dInfeas + complInfeas * complInfeas;
+    
+    return 0.5 * objFVal;
+}
+
+static void potLpObjFImplGrad( void *objFData, pot_vec *xVec, pot_vec *fGrad ) {
+    
+    potVecReset(fGrad);
+    potlp_solver *potlp = (potlp_solver *) objFData;
+    potLpObjFISetupGrad(potlp, fGrad);
     
     return;
 }
 
 static void potLpObjFImplHess( void *objFData, pot_vec *xVec, double *fHess ) {
     
+    assert( 0 );
     return;
 }
 
 static void potLpObjFImplHVec( void *objFData, pot_vec *xVec, pot_vec *fHvec ) {
+
+    potVecReset(fHvec);
+    potlp_solver *potlp = (potlp_solver *) objFData;
+    potLpObjFISetupHVec(potlp, xVec, fHvec);
     
     return;
 }
 
 static void potLpObjFImplMonitor( void *objFData, void *info ) {
+    
+    potlp_solver *potlp = (potlp_solver *) objFData;
+    printf("%5.3e  %5.3e  %5.3e  %5.3e  %5.3e \n",
+           potlp->pObjVal, potlp->dObjVal, potlp->pInfeas / potlp->tau,
+           potlp->dInfeas / potlp->tau, potlp->kappa / potlp->tau);
     
     return;
 }
@@ -233,6 +443,8 @@ extern pot_int LPSolverSetData( potlp_solver *potlp, pot_int *Ap, pot_int *Ai, d
     POTLP_INIT(potlp->lpRHS, double, nRow);
     POTLP_INIT(potlp->pdcRes, double, nCol + nRow + 1);
     
+    POTLP_INIT(potlp->auxArray, double, nCol + 2 * nRow + 2);
+    
     potlp->pRes = potlp->pdcRes;
     potlp->dRes = potlp->pRes + nRow;
     potlp->cplRes = potlp->pRes + nCol;
@@ -260,6 +472,7 @@ extern void LPSolverDestroy( potlp_solver **ppotlp ) {
     POTLP_FREE(potlp->ruizRow);
     
     POTLP_FREE(potlp->pdcRes);
+    POTLP_FREE(potlp->auxArray);
     
     potConstrMatDestroy(&potlp->potConstrMat);
     potObjFDestroy(&potlp->potObjF);
