@@ -286,7 +286,7 @@ static pot_int potReductionOneStep( pot_solver *pot ) {
                                                        pot->projGMat, pot->betaRadius * pot->betaRadius / 4,
                                                        1e-08);
         
-        if ( modelVal > 0.0 ) {
+        if ( modelVal > 0.0 || pot->betaRadius < 1e-05 ) {
             retcode = RETCODE_FAILED;
             goto exit_cleanup;
         }
@@ -352,15 +352,12 @@ extern pot_int potReductionSolve( pot_solver *pot ) {
     potConstrMatPrepareX(pot->AMat, pot->xVecOld);
     
     printf("Iteration log. \n");
-    printf("%10s  %10s  %10s  %10s  %10s \n", "pObj", "dObj", "pInf", "dInf", "k/t");
+    printf("%8s  %10s  %10s  %10s  %10s  %10s  %10s \n", "nIter", "pObj", "dObj", "rGap", "pInf", "dInf", "k/t");
     
     for ( int i = 0; i < maxIter; ++i ) {
         
         retcode = potReductionOneStep(pot);
-        
-        if ( i % 1000 == 1) {
-            potObjFMonitor(pot->objFunc, &info);
-        }
+        potObjFMonitor(pot->objFunc, &info);
         
         if ( retcode != RETCODE_OK ) {
             break;

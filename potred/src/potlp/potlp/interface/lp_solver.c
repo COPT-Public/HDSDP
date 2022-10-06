@@ -14,8 +14,15 @@
 #include "pot_objfunc.h"
 #include "vec_mat.h"
 
+#include <sys/time.h>
 #include <math.h>
 
+static double my_clock( void ) {
+    
+    struct timeval t;
+    gettimeofday(&t, NULL);
+    return (1.0e-6 * t.tv_usec + t.tv_sec);
+}
 
 /* Constraint methods */
 static void potLpConstrMatImplPrepareX( void *AMatData, pot_vec *xInit ) {
@@ -272,9 +279,17 @@ static void potLpObjFImplHVec( void *objFData, pot_vec *xVec, pot_vec *fHvec ) {
 static void potLpObjFImplMonitor( void *objFData, void *info ) {
     
     potlp_solver *potlp = (potlp_solver *) objFData;
-    printf("%10.3e  %10.3e  %10.3e  %10.3e  %10.3e \n",
-           potlp->pObjVal, potlp->dObjVal, potlp->pInfeas / potlp->tau,
-           potlp->dInfeas / potlp->tau, potlp->kappa / potlp->tau);
+    potlp->nIter += 1;
+    
+    double relGap = fabs(potlp->pObjVal - potlp->dObjVal);
+    relGap = relGap / (1.0 + fabs(potlp->pObjVal) + fabs(potlp->dObjVal));
+    
+    if ( potlp->nIter % 1000 == 0 || potlp->nIter == 1 ) {
+        printf("%8lld  %10.3e  %10.3e  %10.3e  %10.3e  %10.3e  %10.3e |%5.2f [s] \n",
+               potlp->nIter, potlp->pObjVal, potlp->dObjVal, relGap, potlp->pInfeas / potlp->tau,
+               potlp->dInfeas / potlp->tau, potlp->kappa / potlp->tau,
+               my_clock() - potlp->startT );
+    }
     
     return;
 }
@@ -338,6 +353,9 @@ extern pot_int LPSolverCreate( potlp_solver **ppotlp ) {
     POT_CALL(potLPCreate(&potlp->potIterator));
     POT_CALL(potConstrMatCreate(&potlp->potConstrMat));
     POT_CALL(potObjFCreate(&potlp->potObjF));
+    
+    potlp->nIter = 0;
+    potlp->startT = my_clock();
     
     *ppotlp = potlp;
     

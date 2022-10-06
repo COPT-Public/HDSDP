@@ -43,6 +43,9 @@ typedef struct {
     pot_constr_mat *potConstrMat;
     pot_fx *potObjF;
     
+    int64_t nIter; ///< Number of iterations
+    double  startT; ///< Start time
+    
 } potlp_solver;
 
 extern pot_int LPSolverCreate( potlp_solver **ppotlp );
