@@ -90,3 +90,53 @@ extern void spMatATxpy( int n, int *Ap, int *Ai, double *Ax, double a, double *x
     
     return;
 }
+
+extern void spMatMaxRowAbs( int n, int *Ap, int *Ai, double *Ax, double *row ) {
+    
+    double x = 0.0;
+    for ( int i = 0, j; i < n; ++i ) {
+        for ( j = Ap[i]; j < Ap[i + 1]; ++j ) {
+            x = fabs(Ax[j]);
+            row[Ai[j]] = ( x > row[Ai[j]] ) ? x : row[Ai[j]];
+        }
+    }
+    
+    return;
+}
+
+extern void spMatMaxColAbs( int n, int *Ap, int *Ai, double *Ax, double *col ) {
+    
+    double cmax = 0.0, x = 0.0;
+    for ( int i = 0, j; i < n; ++i ) {
+        cmax = 0.0;
+        for ( j = Ap[i]; j < Ap[i + 1]; ++j ) {
+            x = fabs(Ax[j]);
+            cmax = ( x > cmax ) ? x : cmax;
+        }
+        col[i] = ( cmax > col[i] ) ? cmax : col[i];
+    }
+    
+    return;
+}
+
+extern void spMatRowScal( int n, int *Ap, int *Ai, double *Ax, double *row ) {
+    
+    for ( int i = 0, j; i < n; ++i ) {
+        for ( j = Ap[i]; j < Ap[i + 1]; ++j ) {
+            Ax[j] = Ax[j] / row[Ai[j]];
+        }
+    }
+    
+    return;
+}
+
+extern void spMatColScal( int n, int *Ap, int *Ai, double *Ax, double *col ) {
+    
+    for ( int i = 0, j; i < n; ++i ) {
+        for ( j = Ap[i]; j < Ap[i + 1]; ++j ) {
+            Ax[j] = Ax[j] / col[i];
+        }
+    }
+
+    return;
+}

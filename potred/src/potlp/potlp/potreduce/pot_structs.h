@@ -122,9 +122,6 @@ typedef struct {
     pot_vec *auxVec1;
     pot_vec *auxVec2;
     
-    int intParams[NUM_INT_PARAM];
-    double dblParams[NUM_DBL_PARAM];
-    
     pot_int useCurvature;
     
 } pot_solver;

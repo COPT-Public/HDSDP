@@ -24,6 +24,80 @@ static double my_clock( void ) {
     return (1.0e-6 * t.tv_usec + t.tv_sec);
 }
 
+static void potLpRuizGetColMaxElem( potlp_solver *potlp ) {
+    
+    
+    
+    return;
+}
+
+/* Abstract Ruiz scaling */
+static pot_int potLpRuizScale( potlp_solver *potlp ) {
+    
+    pot_int retcode = RETCODE_OK;
+    
+    pot_int nCol = potlp->nCol;
+    pot_int nRow = potlp->nConstr;
+    pot_int nColMatElem = potlp->colMatBeg[nCol];
+    
+    double *ruizWorkDiagRow = NULL;
+    double *ruizWorkDiagCol = NULL;
+    double *ruizWorkColMatElem = NULL;
+    double *ruizWorkColMatElemTrans = NULL;
+    double *ruizWorkColVal = NULL;
+    double *ruizWorkColValTrans = NULL;
+    double *ruizWorkRhs = NULL;
+    double *ruizWorkRhsTrans = NULL;
+    
+    double *ruizScalDiagRow = potlp->ruizRow;
+    double *ruizScalDiagCol = potlp->ruizCol;
+    
+    /* Allocate memory for ruiz */
+    POTLP_INIT(ruizWorkColMatElem, double, nColMatElem);
+    POTLP_INIT(ruizWorkColMatElemTrans, double, nColMatElem);
+    POTLP_INIT(ruizWorkColVal, double, nCol);
+    POTLP_INIT(ruizWorkColValTrans, double, nCol);
+    POTLP_INIT(ruizWorkRhs, double, nRow);
+    POTLP_INIT(ruizWorkRhsTrans, double, nRow);
+    
+    if ( !ruizScalDiagRow || !ruizScalDiagCol ||
+         !ruizWorkColMatElem || !ruizWorkColMatElemTrans || !ruizWorkColVal || !ruizWorkColValTrans ||
+         !ruizWorkRhs || !ruizWorkRhsTrans || !ruizWorkDiagCol || !ruizWorkDiagRow ) {
+        retcode = RETCODE_FAILED;
+        goto exit_cleanup;
+    }
+    
+    POTLP_MEMCPY(ruizWorkColMatElem, potlp->colMatElem, double, nColMatElem);
+    POTLP_MEMCPY(ruizWorkColMatElemTrans, potlp->colMatElem, double, nColMatElem);
+    POTLP_MEMCPY(ruizWorkColVal, potlp->lpObj, double, nCol);
+    POTLP_MEMCPY(ruizWorkColValTrans, potlp->lpObj, double, nCol);
+    POTLP_MEMCPY(ruizWorkRhs, potlp->lpRHS, double, nRow);
+    POTLP_MEMCPY(ruizWorkRhsTrans, potlp->lpRHS, double, nRow);
+    
+    /* Start ruiz scaling */
+    int maxRuizIter = potlp->intParams[INT_PARAM_MAXRUIZITER];
+    
+    for ( int i = 0; i < maxRuizIter; ++i ) {
+        
+        
+        
+        
+        
+        
+    }
+    
+exit_cleanup:
+    
+    POTLP_FREE(ruizWorkColMatElem);
+    POTLP_FREE(ruizWorkColMatElemTrans);
+    POTLP_FREE(ruizWorkColVal);
+    POTLP_FREE(ruizWorkColValTrans);
+    POTLP_FREE(ruizWorkRhs);
+    POTLP_FREE(ruizWorkRhsTrans);
+    
+    return retcode;
+}
+
 /* Constraint methods */
 static void potLpConstrMatImplPrepareX( void *AMatData, pot_vec *xInit ) {
     
@@ -78,7 +152,7 @@ static void potLpObjFISetupRes( potlp_solver *potlp, pot_vec *xVec ) {
     
     pot_int *Ap = potlp->colMatBeg;
     pot_int *Ai = potlp->colMatIdx;
-    double  *Ax = potlp->colMatVal;
+    double  *Ax = potlp->colMatElem;
     
     /* Primal and dual objective */
     potlp->pObjVal = dot(&nCol, colVal, &potIntConstantOne, potlp->lpObj, &potIntConstantOne);
@@ -133,7 +207,7 @@ static void potLpObjFISetupGrad( potlp_solver *potlp, pot_vec *gVec ) {
     
     pot_int *Ap = potlp->colMatBeg;
     pot_int *Ai = potlp->colMatIdx;
-    double  *Ax = potlp->colMatVal;
+    double  *Ax = potlp->colMatElem;
     
     /* Gradient of row dual */
     axpy(&nRow, &compl, lpRHS, &potIntConstantOne, gRowDual, &potIntConstantOne);
@@ -180,7 +254,7 @@ static void potLpObjFISetupHVec( potlp_solver *potlp, pot_vec *xVec, pot_vec *fH
     
     pot_int *Ap = potlp->colMatBeg;
     pot_int *Ai = potlp->colMatIdx;
-    double  *Ax = potlp->colMatVal;
+    double  *Ax = potlp->colMatElem;
     
     double pObjVal = dot(&nCol, colVal, &potIntConstantOne, potlp->lpObj, &potIntConstantOne);
     double dObjVal = dot(&nRow, rowDual, &potIntConstantOne, potlp->lpRHS, &potIntConstantOne);
@@ -250,14 +324,36 @@ static void potLpObjFImplMonitor( void *objFData, void *info ) {
     potlp_solver *potlp = (potlp_solver *) objFData;
     potlp->nIter += 1;
     
-    double relGap = fabs(potlp->pObjVal - potlp->dObjVal);
-    relGap = relGap / (1.0 + fabs(potlp->pObjVal) + fabs(potlp->dObjVal));
+    if ( potlp->nIter == 1 ) {
+        printf("Iteration log. \n");
+        printf("%8s  %10s  %10s  %10s  %10s  %10s  %10s \n", "nIter", "pObj", "dObj", "rGap", "pInf", "dInf", "k/t");
+    }
+    
+    double absGap = fabs(potlp->pObjVal - potlp->dObjVal);
+    double relGap = absGap / (1.0 + fabs(potlp->pObjVal) + fabs(potlp->dObjVal));
+    double pInfeas = potlp->pInfeas / potlp->tau;
+    double dInfeas = potlp->dInfeas / potlp->tau;
     
     if ( potlp->nIter % 500 == 0 || potlp->nIter == 1 ) {
         printf("%8lld  %10.3e  %10.3e  %10.3e  %10.3e  %10.3e  %10.3e |%5.2f [s] \n",
-               potlp->nIter, potlp->pObjVal, potlp->dObjVal, relGap, potlp->pInfeas / potlp->tau,
-               potlp->dInfeas / potlp->tau, potlp->kappa / potlp->tau,
-               my_clock() - potlp->startT );
+               potlp->nIter, potlp->pObjVal, potlp->dObjVal, relGap, pInfeas,
+               dInfeas, potlp->kappa / potlp->tau,
+               my_clock() - potlp->startT);
+    }
+    
+    double absFeasTol = 1e-04;
+//    double relFeasTol = 1e-03;
+    double absOptTol = 1e-04;
+    double relOptTol = 1e-03;
+    
+    if ( absGap < absOptTol && relGap < relOptTol && pInfeas < absFeasTol && dInfeas < absFeasTol ) {
+        int *intInfo = (int *) info;
+        *intInfo = 1;
+    }
+    
+    if ( potlp->nIter >= potlp->intParams[INT_PARAM_MAXITER]) {
+        int *intInfo = (int *) info;
+        *intInfo = 1;
     }
     
     return;
@@ -318,6 +414,9 @@ extern pot_int LPSolverCreate( potlp_solver **ppotlp ) {
     }
     
     memset(potlp, 0, sizeof(potlp_solver));
+    
+    memcpy(potlp->dblParams, defaultDblParam, sizeof(double) * NUM_DBL_PARAM);
+    memcpy(potlp->intParams, defaultIntParam, sizeof(int) * NUM_INT_PARAM);
     
     POT_CALL(potLPCreate(&potlp->potIterator));
     POT_CALL(potConstrMatCreate(&potlp->potConstrMat));
@@ -384,16 +483,18 @@ extern pot_int LPSolverSetData( potlp_solver *potlp, pot_int *Ap, pot_int *Ai, d
     
     POTLP_INIT(potlp->colMatBeg, pot_int, nCol + 1);
     POTLP_INIT(potlp->colMatIdx, pot_int, nNz);
-    POTLP_INIT(potlp->colMatVal, double, nNz);
+    POTLP_INIT(potlp->colMatElem, double, nNz);
     
     POTLP_INIT(potlp->lpObj, double, nCol);
     POTLP_INIT(potlp->lpRHS, double, nRow);
-    POTLP_INIT(potlp->pdcRes, double, nCol + nRow + 1);
+    POTLP_INIT(potlp->pdcRes, double, nRow + nCol + 1);
     
-    POTLP_INIT(potlp->auxArray, double, nCol + 2 * nRow + 2);
+    POTLP_INIT(potlp->ruizCol, double, nRow + nCol + 1);
+    POTLP_INIT(potlp->ruizRow, double, nRow + nCol + 1);
     
-    if ( !potlp->colMatBeg || !potlp->colMatIdx || !potlp->colMatVal ||
-         !potlp->lpObj || !potlp->lpRHS || !potlp->pdcRes || !potlp->auxArray ) {
+    if ( !potlp->colMatBeg || !potlp->colMatIdx || !potlp->colMatElem ||
+         !potlp->lpObj || !potlp->lpRHS || !potlp->pdcRes ||
+         !potlp->ruizCol || !potlp->ruizRow ) {
         retcode = RETCODE_FAILED;
         goto exit_cleanup;
     }
@@ -405,7 +506,7 @@ extern pot_int LPSolverSetData( potlp_solver *potlp, pot_int *Ap, pot_int *Ai, d
     /* Copy data */
     memcpy(potlp->colMatBeg, Ap, sizeof(pot_int) * (nCol + 1));
     memcpy(potlp->colMatIdx, Ai, sizeof(pot_int) * nNz);
-    memcpy(potlp->colMatVal, Ax, sizeof(double) * nNz);
+    memcpy(potlp->colMatElem, Ax, sizeof(double) * nNz);
     memcpy(potlp->lpObj, lpObj, sizeof(double) * nCol);
     memcpy(potlp->lpRHS, lpRHS, sizeof(double) * nRow);
     
@@ -427,17 +528,15 @@ exit_cleanup:
     return retcode;
 }
 
-extern void LPSolverDestroy( potlp_solver **ppotlp ) {
+extern void LPSolverClear( potlp_solver *potlp ) {
     
-    if ( !ppotlp ) {
+    if ( !potlp ) {
         return;
     }
     
-    potlp_solver *potlp = *ppotlp;
-    
     POTLP_FREE(potlp->colMatBeg);
     POTLP_FREE(potlp->colMatIdx);
-    POTLP_FREE(potlp->colMatVal);
+    POTLP_FREE(potlp->colMatElem);
     
     POTLP_FREE(potlp->lpRHS);
     POTLP_FREE(potlp->lpObj);
@@ -446,12 +545,24 @@ extern void LPSolverDestroy( potlp_solver **ppotlp ) {
     POTLP_FREE(potlp->ruizRow);
     
     POTLP_FREE(potlp->pdcRes);
-    POTLP_FREE(potlp->auxArray);
     
     potConstrMatDestroy(&potlp->potConstrMat);
     potObjFDestroy(&potlp->potObjF);
     potLPDestroy(&potlp->potIterator);
     
     memset(potlp, 0, sizeof(potlp_solver));
+    
+    return;
+}
+
+extern void LPSolverDestroy( potlp_solver **ppotlp ) {
+    
+    if ( !ppotlp ) {
+        return;
+    }
+    
+    LPSolverClear(*ppotlp);
+    POTLP_FREE(*ppotlp);
+    
     return;
 }

@@ -14,7 +14,12 @@ extern void axpy( pot_int *n, double *a, double *x, pot_int *incx, double *y, po
 extern double dot( pot_int *n, double *x, pot_int *incx, double *y, pot_int *incy );
 extern void rscl( pot_int *n, double *sa, double *sx, pot_int *incx );
 extern double sumlogdet( pot_int *n, double *x );
+
 extern void spMatAxpy( int n, int *Ap, int *Ai, double *Ax, double a, double *x, double *y );
 extern void spMatATxpy( int n, int *Ap, int *Ai, double *Ax, double a, double *x, double *y );
+extern void spMatMaxRowAbs( int n, int *Ap, int *Ai, double *Ax, double *row );
+extern void spMatMaxColAbs( int n, int *Ap, int *Ai, double *Ax, double *col );
+extern void spMatRowScal( int n, int *Ap, int *Ai, double *Ax, double *row );
+extern void spMatRowScal( int n, int *Ap, int *Ai, double *Ax, double *row );
 
 #endif /* vec_mat_h */

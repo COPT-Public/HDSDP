@@ -344,17 +344,13 @@ extern pot_int potReductionSolve( pot_solver *pot ) {
     potVecReset(pot->auxVec1);
     potVecReset(pot->auxVec2);
     
-    int maxIter = pot->intParams[INT_PARAM_MAXITER];
     pot_int info = 0;
     
     /* Initialize */
     potConstrMatPrepareX(pot->AMat, pot->xVec);
     potConstrMatPrepareX(pot->AMat, pot->xVecOld);
     
-    printf("Iteration log. \n");
-    printf("%8s  %10s  %10s  %10s  %10s  %10s  %10s \n", "nIter", "pObj", "dObj", "rGap", "pInf", "dInf", "k/t");
-    
-    for ( int i = 0; i < maxIter; ++i ) {
+    for ( int i = 0; ; ++i ) {
         
         retcode = potReductionOneStep(pot);
         potObjFMonitor(pot->objFunc, &info);

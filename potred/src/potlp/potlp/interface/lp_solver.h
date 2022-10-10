@@ -10,7 +10,7 @@ typedef struct {
     
     pot_int *colMatBeg;
     pot_int *colMatIdx;
-    double  *colMatVal;
+    double  *colMatElem;
     
     double *lpRHS;
     double *lpObj;
@@ -36,12 +36,13 @@ typedef struct {
     
     double kappa;
     double tau;
-    
-    double *auxArray;
-    
+        
     pot_solver *potIterator;
     pot_constr_mat *potConstrMat;
     pot_fx *potObjF;
+    
+    int intParams[NUM_INT_PARAM];
+    double dblParams[NUM_DBL_PARAM];
     
     int64_t nIter; ///< Number of iterations
     double  startT; ///< Start time

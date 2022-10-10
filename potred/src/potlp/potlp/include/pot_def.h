@@ -34,6 +34,7 @@ typedef int pot_int;
 // Memory handler
 #define POTLP_FREE(var) do {free((var)); (var) = NULL;} while (0)
 #define POTLP_INIT(var, type, size) (var) = (type *) calloc(size, sizeof(type))
+#define POTLP_MEMCPY(dst, src, type, size) memcpy(dst, src, sizeof(type) * size)
 
 // Return code
 #define RETCODE_OK     (0)
@@ -48,6 +49,7 @@ typedef int pot_int;
 
 // Integer Parameters
 #define INT_PARAM_MAXITER       0
+#define INT_PARAM_MAXRUIZITER   1
 
 // Double Parameters
 #define DBL_PARAM_ABSFEASTOL    0

@@ -20,8 +20,6 @@ extern pot_int potLPCreate( pot_solver **ppot ) {
     }
     
     memset(pot, 0, sizeof(pot_solver));
-    memcpy(pot->dblParams, defaultDblParam, sizeof(double) * NUM_DBL_PARAM);
-    memcpy(pot->intParams, defaultIntParam, sizeof(int) * NUM_INT_PARAM);
     
     pot->potVal = POTLP_INFINITY;
     pot->zVal = 0.0;

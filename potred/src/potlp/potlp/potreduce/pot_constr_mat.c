@@ -98,6 +98,7 @@ extern void potConstrMatDestroy( pot_constr_mat **ppotConstrMat ) {
         return;
     }
     
+    potConstrMatClear(*ppotConstrMat);
     POTLP_FREE(*ppotConstrMat);
     
     return;
