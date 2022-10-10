@@ -10,11 +10,14 @@ n = size(AT, 1);
 maxiter = n;
 
 if scale
-    v = zeros(n, 1);
-    v(coneidx) = 1.0;
+    v = z
+    % v = g;
+    % v(coneidx) = v(coneidx) .* x(coneidx);
 else
     v = x;
 end % End if
+
+
 % v = randn(n, 1);
 V = zeros(n, maxiter + 1);
 H = zeros(maxiter + 1, maxiter);

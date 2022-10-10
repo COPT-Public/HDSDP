@@ -15,6 +15,7 @@ int main(int argc, const char * argv[]) {
     
     retcode = LPSolverInit(potlp, nCol, nRow);
     retcode = LPSolverSetData(potlp, Ap, Ai, Ax, obj, rhs);
+    potlp->potIterator->intParams[INT_PARAM_MAXITER] = 5000;
     retcode = LPSolverOptimize(potlp);
     
 exit_cleanup:
