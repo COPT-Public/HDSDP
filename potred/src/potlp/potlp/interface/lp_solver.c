@@ -93,21 +93,11 @@ static void potLpObjFISetupRes( potlp_solver *potlp, pot_vec *xVec ) {
     }
     
     /* Primal infeasibility */
-    for ( int i = 0, j; i < nCol; ++i ) {
-        for ( j = Ap[i]; j < Ap[i + 1]; ++j ) {
-            pRes[Ai[j]] += colVal[i] * Ax[j];
-        }
-    }
+    spMatAxpy(nCol, Ap, Ai, Ax, 1.0, colVal, pRes);
     
     /* Dual infeasibility */
-    for ( int i = 0, j; i < nCol; ++i ) {
-        double aTy = 0.0;
-        for ( j = Ap[i]; j < Ap[i + 1]; ++j ) {
-            aTy += rowDual[Ai[j]] * Ax[j];
-        }
-        dRes[i] -= aTy;
-        dRes[i] -= colSlack[i];
-    }
+    spMatATxpy(nCol, Ap, Ai, Ax, -1.0, rowDual, dRes);
+    axpy(&nCol, &potDblConstantMinusOne, colSlack, &potIntConstantOne, dRes, &potIntConstantOne);
     
     /* Complementarity */
     potlp->kappa = *kappaVar;
@@ -147,23 +137,12 @@ static void potLpObjFISetupGrad( potlp_solver *potlp, pot_vec *gVec ) {
     
     /* Gradient of row dual */
     axpy(&nRow, &compl, lpRHS, &potIntConstantOne, gRowDual, &potIntConstantOne);
-    
-    for ( int i = 0, j; i < nCol; ++i ) {
-        for ( j = Ap[i]; j < Ap[i + 1]; ++j ) {
-            gRowDual[Ai[j]] -= dRes[i] * Ax[j];
-        }
-    }
+    spMatAxpy(nCol, Ap, Ai, Ax, -1.0, dRes, gRowDual);
     
     /* Gradient of column value */
     double ncompl = -compl;
     axpy(&nCol, &ncompl, lpObj, &potIntConstantOne, gColVal, &potIntConstantOne);
-    for ( int i = 0, j; i < nCol; ++i ) {
-        double aTp = 0.0;
-        for ( j = Ap[i]; j < Ap[i + 1]; ++j ) {
-            aTp += pRes[Ai[j]] * Ax[j];
-        }
-        gColVal[i] += aTp;
-    }
+    spMatATxpy(nCol, Ap, Ai, Ax, 1.0, pRes, gColVal);
     
     /* Gradient of column slack */
     for ( int i = 0; i < nCol; ++i ) {
@@ -215,21 +194,11 @@ static void potLpObjFISetupHVec( potlp_solver *potlp, pot_vec *xVec, pot_vec *fH
     }
     
     /* Primal infeasibility */
-    for ( int i = 0, j; i < nCol; ++i ) {
-        for ( j = Ap[i]; j < Ap[i + 1]; ++j ) {
-            pRes[Ai[j]] += colVal[i] * Ax[j];
-        }
-    }
+    spMatAxpy(nCol, Ap, Ai, Ax, 1.0, colVal, pRes);
     
     /* Dual infeasibility */
-    for ( int i = 0, j; i < nCol; ++i ) {
-        double aTy = 0.0;
-        for ( j = Ap[i]; j < Ap[i + 1]; ++j ) {
-            aTy += rowDual[Ai[j]] * Ax[j];
-        }
-        dRes[i] -= aTy;
-        dRes[i] -= colSlack[i];
-    }
+    spMatATxpy(nCol, Ap, Ai, Ax, -1.0, rowDual, dRes);
+    axpy(&nCol, &potDblConstantMinusOne, colSlack, &potIntConstantOne, dRes, &potIntConstantOne);
     
     *compl = dObjVal - pObjVal - *kappaVar;
     potLpObjFISetupGrad(potlp, fHvec);
@@ -284,7 +253,7 @@ static void potLpObjFImplMonitor( void *objFData, void *info ) {
     double relGap = fabs(potlp->pObjVal - potlp->dObjVal);
     relGap = relGap / (1.0 + fabs(potlp->pObjVal) + fabs(potlp->dObjVal));
     
-    if ( potlp->nIter % 1000 == 0 || potlp->nIter == 1 ) {
+    if ( potlp->nIter % 500 == 0 || potlp->nIter == 1 ) {
         printf("%8lld  %10.3e  %10.3e  %10.3e  %10.3e  %10.3e  %10.3e |%5.2f [s] \n",
                potlp->nIter, potlp->pObjVal, potlp->dObjVal, relGap, potlp->pInfeas / potlp->tau,
                potlp->dInfeas / potlp->tau, potlp->kappa / potlp->tau,
@@ -448,7 +417,7 @@ extern pot_int LPSolverOptimize( potlp_solver *potlp ) {
     
     pot_int retcode = RETCODE_OK;
     
-    if (0) {
+    if ((0)) {
         LPSolverIScale(potlp);
     }
     

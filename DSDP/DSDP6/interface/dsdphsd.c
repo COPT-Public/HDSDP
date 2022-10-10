@@ -278,7 +278,8 @@ static DSDP_INT DSDPICheckData( HSDSolver *dsdpSolver ) {
 static void DSDPIFreeLPData( HSDSolver *dsdpSolver ) {
     // Free the internal LP data
     if (dsdpSolver->isLPset) {
-        lpMatFree(dsdpSolver->lpData); dsdpSolver->isLPset = 0;
+        lpMatFree(dsdpSolver->lpData);
+        dsdpSolver->isLPset = 0;
     }
     DSDP_FREE(dsdpSolver->lpData);
 }
@@ -399,13 +400,9 @@ static DSDP_INT DSDPIFreeCleanUp( HSDSolver *dsdpSolver ) {
     // isSDPset
     DSDP_FREE(dsdpSolver->isSDPset);
     // lpObj
-    if (dsdpSolver->isLPset) {
-        vec_destroy(dsdpSolver->lpObj);
-    }
+    vec_destroy(dsdpSolver->lpObj);
     // dObj
-    if (dsdpSolver->dObj) {
-        vec_destroy(dsdpSolver->dObj);
-    }
+    vec_destroy(dsdpSolver->dObj);
     // Other data
     dsdpSolver->param = NULL;      dsdpSolver->m = 0;         dsdpSolver->nBlock = 0;
     dsdpSolver->lpDim = 0;         dsdpSolver->mu = 0.0;      dsdpSolver->Mscaler = 0.0;

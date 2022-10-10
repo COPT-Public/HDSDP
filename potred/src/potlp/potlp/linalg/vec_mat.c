@@ -66,3 +66,27 @@ extern double sumlogdet( pot_int *n, double *x ) {
     
     return logdet;
 }
+
+extern void spMatAxpy( int n, int *Ap, int *Ai, double *Ax, double a, double *x, double *y ) {
+    
+    for ( int i = 0, j; i < n; ++i ) {
+        for ( j = Ap[i]; j < Ap[i + 1]; ++j ) {
+            y[Ai[j]] += a * x[i] * Ax[j];
+        }
+    }
+    
+    return;
+}
+
+extern void spMatATxpy( int n, int *Ap, int *Ai, double *Ax, double a, double *x, double *y ) {
+    
+    for ( int i = 0, j; i < n; ++i ) {
+        double aTy = 0.0;
+        for ( j = Ap[i]; j < Ap[i + 1]; ++j ) {
+            aTy += x[Ai[j]] * Ax[j];
+        }
+        y[i] += a * aTy;
+    }
+    
+    return;
+}

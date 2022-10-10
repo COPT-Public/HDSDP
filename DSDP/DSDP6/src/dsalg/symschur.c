@@ -1156,7 +1156,9 @@ extern DSDP_INT symSchurMatFree( symM *M ) {
         DSDP_FREE(M->perms[i]); DSDP_FREE(M->MX[i]); DSDP_FREE(M->Sinv[i]);
     }
     
-    DSDP_FREE(M->perms); DSDP_FREE(M->MX); DSDP_FREE(M->Sinv); DSDP_FREE(M->schurAux);
+    DSDP_FREE(M->perms); DSDP_FREE(M->MX); DSDP_FREE(M->Sinv);
+    DSDP_FREE(M->schurAux); DSDP_FREE(M->useTwo);
+    
     M->Mready     = FALSE; M->m           = 0;    M->nblock = 0; M->perms = NULL;
     M->MX         = NULL;  M->S           = NULL; M->B = NULL;   M->Adata = NULL;
     M->M          = NULL;  M->asinv       = NULL; M->asinvrysinv = NULL;

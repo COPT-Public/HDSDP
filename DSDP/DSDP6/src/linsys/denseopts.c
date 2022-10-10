@@ -122,6 +122,7 @@ extern void denseMatFree( dsMat *dMat ) {
         DSDP_FREE(dMat->ipiv); DSDP_FREE(dMat->work);
     } else {
         rkMatFree(dMat->factor);
+        DSDP_FREE(dMat->factor);
     }
 }
 

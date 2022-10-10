@@ -317,7 +317,7 @@ extern void speigFree( speigfac *ef ) {
     DSDP_FREE(ef->perm);     DSDP_FREE(ef->pinv);
     DSDP_FREE(ef->cnz);      DSDP_FREE(ef->dwork);
     DSDP_FREE(ef->dworkmat); DSDP_FREE(ef->dworkevl);
-    DSDP_FREE(ef->dworkevl); DSDP_FREE(ef->iwork);
+    DSDP_FREE(ef->dworkevc); DSDP_FREE(ef->iwork);
     DSDP_FREE(ef->iworkup);
     
     ef->nmax = 0; ef->lwork = 0; ef->liwork = 0;

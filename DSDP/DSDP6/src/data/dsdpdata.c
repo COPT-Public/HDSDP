@@ -548,6 +548,7 @@ extern void sdpMatFree( sdpMat *sdpData ) {
             default: assert( FALSE );
         }
     }
+    DSDP_FREE(sdpData->sdpData);
     DSDP_FREE(sdpData->types); DSDP_FREE(sdpData->schurspIdx);
     DSDP_FREE(sdpData->spsMatIdx); DSDP_FREE(sdpData->denseMatIdx);
     DSDP_FREE(sdpData->rkMatIdx); DSDP_FREE(sdpData->nzIdx);
