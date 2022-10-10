@@ -1,4 +1,4 @@
-function [x] = potreduceLp(A, ydim, maxiter, ncurv, linesearch, neweigs, printlevel)
+function [x] = potreduceLp(A, ydim, maxiter, ncurv, linesearch, neweigs, printlevel, lpA, lpb, lpc)
 % Implement potential reduction for LPs
 % The first ydim columns in A refer to y
 
@@ -41,9 +41,12 @@ for i = 1:maxiter
         mk = x_pres - x_prev;
         
         % Gradient projection
-        gk = rho / f * g;
-        gk(coneidx) = gk(coneidx) - e ./ x_pres(coneidx);
-        
+%         gk = rho / f * g;
+%         gk(coneidx) = gk(coneidx) - e ./ x_pres(coneidx);
+
+        gk = g;
+        gk(coneidx) = gk(coneidx) - (f ./ x_pres(coneidx)) / rho;
+
         if usecurvature && ncurv
             nstar = nstar + 1;
             logstar = "*";
@@ -66,6 +69,9 @@ for i = 1:maxiter
         end % End if
         
         gk = gk / nrmgk;
+        
+        nrmgk = nrmgk * rho / f;
+        
         Agk = A * gk; Amk = A * mk;
         
         gTgk = g' * gk; gTmk = g' * mk;
@@ -135,7 +141,7 @@ for i = 1:maxiter
         ratio = 0;
     end % End if
     
-    if f < 1e-10 || beta < 1e-05
+    if f < 1e-12 || beta < 1e-05
         break;
     end % End if
     
@@ -154,7 +160,7 @@ for i = 1:maxiter
     x_pres = x_pres + d;
     potold = potnew;
     
-    if logstar == "*" && potred > -0.5
+    if logstar == "*" && potred > -0.1
         ncurv = false;
     end % End if 
     

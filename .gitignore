@@ -15,3 +15,6 @@ exp
 sharp_opt
 fastspeigs/build
 potred/matlab/data
+DSDP/DSDP6/logs
+DSDP/DSDP6/test
+DSDP/DSDP6/matlab/benchmark

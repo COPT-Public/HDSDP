@@ -7,7 +7,7 @@ function [zfin, lam, delta] = potlanczos(x, coneidx, rho, g, f, ATA, AT, A, scal
 % The matrix-vector multiplication is specially processed
 rng(24);
 n = size(AT, 1);
-maxiter = n;
+maxiter = 1000;
 
 if scale
     v = x;
