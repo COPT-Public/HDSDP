@@ -11,6 +11,8 @@ A = data.A;
 b = data.b;
 c = data.c;
 
+savepotdata(data);
+
 linesearch = false;
 neweigs = false;
 
@@ -32,7 +34,7 @@ HSDAA = [sparse(m, m), A, sparse(m, n), sparse(m, 1), -b;
      
 % HSDAA = HSDAA' * inv(HSDAA * HSDAA') * HSDAA; 
 [D, E, HSDA] = ruizscale(HSDAA, 30);
-lpsol = potreduceLp(HSDA, m, 5000, true, linesearch, neweigs, 1);
+lpsol = potreduceLp(HSDA, m, 100, false, linesearch, neweigs, 1);
 sol = lpsol .* E;
 
 kappa = sol(end - 1);
