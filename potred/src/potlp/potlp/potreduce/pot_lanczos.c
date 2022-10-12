@@ -22,7 +22,7 @@ extern pot_int potLanczosCreate( pot_lanczos **ppotLanczos ) {
         goto exit_cleanup;
     }
     
-    memset(potLanczos, 0, sizeof(pot_lanczos));
+    POTLP_ZERO(potLanczos, pot_lanczos, 1);
     *ppotLanczos = potLanczos;
     
 exit_cleanup:

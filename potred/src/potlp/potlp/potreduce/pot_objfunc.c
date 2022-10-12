@@ -18,7 +18,7 @@ extern pot_int potObjFCreate( pot_fx **ppotObjF ) {
         goto exit_cleanup;
     }
     
-    memset(potObjF, 0, sizeof(pot_fx));
+    POTLP_ZERO(potObjF, pot_fx, 1);
     *ppotObjF = potObjF;
     
 exit_cleanup:
@@ -87,8 +87,7 @@ extern void potObjFMonitor( pot_fx *potObjF, void *info ) {
 
 extern void potObjFClear( pot_fx *potObjF ) {
     
-    memset(potObjF, 0, sizeof(pot_fx));
-    
+    POTLP_ZERO(potObjF, pot_fx, 1);
     return;
 }
 

@@ -18,7 +18,7 @@ extern pot_int potConstrMatCreate( pot_constr_mat **ppotConstrMat ) {
         goto exit_cleanup;
     }
     
-    memset(potConstrMat, 0, sizeof(pot_constr_mat));
+    POTLP_ZERO(potConstrMat, pot_constr_mat, 1);
     *ppotConstrMat = potConstrMat;
     
 exit_cleanup:
@@ -87,7 +87,7 @@ extern void potConstrMatMonitor( pot_constr_mat *potConstrMat, void *info ) {
 
 extern void potConstrMatClear( pot_constr_mat *potConstrMat ) {
     
-    memset(potConstrMat, 0, sizeof(pot_constr_mat));
+    POTLP_ZERO(potConstrMat, pot_constr_mat, 1);
     
     return;
 }

@@ -57,6 +57,21 @@ extern void rscl( pot_int *n, double *sa, double *sx, pot_int *incx ) {
     return;
 }
 
+extern pot_int idamax( pot_int *n, double *x, pot_int *incx ) {
+    
+    pot_int idmax = 0;
+    double damax = 0.0;
+    
+    for ( int i = 0; i < *n; ++i ) {
+        double ax = fabs(x[i]);
+        if ( ax > damax ) {
+            damax = ax; idmax = i;
+        }
+    }
+    
+    return idmax;
+}
+
 extern double sumlogdet( pot_int *n, double *x ) {
     
     double logdet = 0.0;
@@ -65,6 +80,25 @@ extern double sumlogdet( pot_int *n, double *x ) {
     }
     
     return logdet;
+}
+
+extern void vvscl( pot_int *n, double *s, double *x ) {
+    
+    for ( int i = 0; i < *n; ++i ) {
+        assert( s[i] > 0.0 );
+        x[i] = x[i] * s[i];
+    }
+    
+    return;
+}
+
+extern void vvrscl( pot_int *n, double *s, double *x ) {
+    
+    for ( int i = 0; i < *n; ++i ) {
+        x[i] = x[i] / s[i];
+    }
+    
+    return;
 }
 
 extern void spMatAxpy( int n, int *Ap, int *Ai, double *Ax, double a, double *x, double *y ) {

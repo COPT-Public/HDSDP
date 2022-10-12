@@ -284,7 +284,7 @@ static pot_int potReductionOneStep( pot_solver *pot ) {
         double alphaStep[2] = {0.0};
         double modelVal = potReductionTrustRegionSolve(alphaStep, pot->projHessMat, pot->projgVec,
                                                        pot->projGMat, pot->betaRadius * pot->betaRadius / 4,
-                                                       1e-08);
+                                                       1e-05);
         
         if ( modelVal > 0.0 || pot->betaRadius < 1e-05 ) {
             retcode = RETCODE_FAILED;

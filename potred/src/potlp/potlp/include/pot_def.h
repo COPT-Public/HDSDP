@@ -34,7 +34,8 @@ typedef int pot_int;
 // Memory handler
 #define POTLP_FREE(var) do {free((var)); (var) = NULL;} while (0)
 #define POTLP_INIT(var, type, size) (var) = (type *) calloc(size, sizeof(type))
-#define POTLP_MEMCPY(dst, src, type, size) memcpy(dst, src, sizeof(type) * size)
+#define POTLP_MEMCPY(dst, src, type, size) memcpy(dst, src, sizeof(type) * (size))
+#define POTLP_ZERO(var, type, size) memset(var, 0, sizeof(type) * (size))
 
 // Return code
 #define RETCODE_OK     (0)
@@ -61,8 +62,10 @@ typedef int pot_int;
 #define VERSION_TECHNICAL       0
 
 #define BUILD_DATE_YEAR         2022
-#define BUILD_DATE_MONTH        9
-#define BUILD_DATE_DAY          28
+#define BUILD_DATE_MONTH        10
+#define BUILD_DATE_DAY          10
 
+#define POTLP_MAX(x, y) (x) >= (y) ? (x) : (y);
+#define POTLP_MIN(x, y) (x) <= (y) ? (x) : (y);
 
 #endif /* pot_def_h */

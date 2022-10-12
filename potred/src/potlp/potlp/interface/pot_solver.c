@@ -19,7 +19,7 @@ extern pot_int potLPCreate( pot_solver **ppot ) {
         goto exit_cleanup;
     }
     
-    memset(pot, 0, sizeof(pot_solver));
+    POTLP_ZERO(pot, pot_solver, 1);
     
     pot->potVal = POTLP_INFINITY;
     pot->zVal = 0.0;
@@ -134,7 +134,7 @@ extern void potLPClear( pot_solver *pot ) {
     potLanczosDestroy(&pot->lczTool);
     
     POTLP_FREE(pot->HessMat);
-    memset(pot, 0, sizeof(pot_solver));
+    POTLP_ZERO(pot, pot_solver, 1);
     
     return;
 }

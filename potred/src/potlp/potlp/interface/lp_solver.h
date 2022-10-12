@@ -6,7 +6,7 @@
 typedef struct {
     
     pot_int nCol; ///< Number of LP variables
-    pot_int nConstr; ///< Number of constraints
+    pot_int nRow; ///< Number of constraints
     
     pot_int *colMatBeg;
     pot_int *colMatIdx;
@@ -20,6 +20,7 @@ typedef struct {
     
     double *ruizCol;
     double *ruizRow;
+    double *scalVals;
     
     double *pdcRes;
     double *pRes;
@@ -36,7 +37,11 @@ typedef struct {
     
     double kappa;
     double tau;
-        
+    
+    double *colVal;
+    double *colDual;
+    double *rowDual;
+            
     pot_solver *potIterator;
     pot_constr_mat *potConstrMat;
     pot_fx *potObjF;

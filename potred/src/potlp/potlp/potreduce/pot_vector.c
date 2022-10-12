@@ -90,6 +90,15 @@ extern double potVecNormalize( pot_vec *pVec ) {
     return pVec->nrm;
 }
 
+extern void potVecArrScal( pot_vec *pVecX, double *dArray ) {
+    
+    for ( int i = 0; i < pVecX->n; ++i ) {
+        pVecX->x[i] /= dArray[i];
+    }
+    
+    return;
+}
+
 extern double potVecScaledDot( pot_vec *pVecX, pot_vec *pVecY, pot_vec *pVecZ ) {
     
     double snrm = 0.0, tmp1 = 0.0, tmp2;
@@ -184,7 +193,8 @@ extern void potVecConeAddConstant( pot_vec *pVecX, double cVal ) {
 extern void potVecCopy( pot_vec *srcVec, pot_vec *dstVec ) {
     
     assert( srcVec->n == dstVec->n );
-    memcpy(dstVec->x, srcVec->x, sizeof(double) * srcVec->n);
+    
+    POTLP_MEMCPY(dstVec->x, srcVec->x, double, srcVec->n);
     
     dstVec->nrm = srcVec->nrm;
     
@@ -193,10 +203,15 @@ extern void potVecCopy( pot_vec *srcVec, pot_vec *dstVec ) {
 
 extern void potVecReset( pot_vec *pVec ) {
     
-    memset(pVec->x, 0, sizeof(double) * pVec->n);
+    POTLP_ZERO(pVec->x, double, pVec->n);
     pVec->nrm = -1.0;
     
     return;
+}
+
+extern void potVecExport( pot_vec *pVec, double *dVec ) {
+    
+    POTLP_MEMCPY(dVec, pVec->x, double, pVec->n);
 }
 
 extern void potVecClear( pot_vec *pVec ) {
