@@ -199,6 +199,7 @@ static pot_int potReductionOneStep( pot_solver *pot ) {
         
     pot_vec *xPrev = pot->xVecOld;
     pot_vec *xPres = pot->xVec;
+    pot_vec *xNorm = pot->xVecNorm;
     pot_vec *dXStep = pot->xStepVec;
     pot_vec *mkVec = pot->mkVec;
     pot_vec *gVec = pot->gVec;
@@ -206,20 +207,26 @@ static pot_int potReductionOneStep( pot_solver *pot ) {
     pot_vec *auxVec1 = pot->auxVec1;
     pot_vec *auxVec2 = pot->auxVec2;
     
+    /* Scale xPres */
+    potVecCopy(xPres, xNorm);
+    potVecConeNormalize(xNorm);
+    
     /* [f, g] = fpot(A, ATA, x_pres); */
     pot->fVal = potObjFVal(objFunc, xPres);
     potObjFGrad(objFunc, xPres, gVec);
     
     double fVal = pot->fVal;
     double rhoVal = pot->rhoVal;
+    int lczCode = RETCODE_OK;
     
     /* Build the gradient of the potential function */
     potAssembleGrad(rhoVal, fVal, gkVec, gVec, xPres);
     
     /* Prepare the second direction */
-    if ( 0 ) {
+    if ( pot->useCurvature && pot->allowCurvature ) {
         /* Use negative curvature */
-        POT_CALL(potLanczosSolve(pot->lczTool, mkVec));
+        lczCode = potLanczosSolve(pot->lczTool, gVec, mkVec);
+        potVecConeScal(xPres, mkVec);
     } else {
         /* Use momentum mk = x_pres - x_prev; */
         potVecDiff(mkVec, xPrev, xPres);
@@ -320,7 +327,19 @@ static pot_int potReductionOneStep( pot_solver *pot ) {
     potVecCopy(xPres, xPrev);
     potVecCopy(dXStep, xPres);
     
-    if ( potReduce > -0.01 ) {
+    if ( (potReduce > 0 && pot->useCurvature) || lczCode != RETCODE_OK ) {
+        pot->allowCurvature = 0;
+        
+        if ( lczCode != RETCODE_OK ) {
+            printf("Curvature is shut down due to failed Lanczos \n");
+        } else {
+            printf("Curvature is shut down due to insufficient descent \n");
+        }
+    }
+    
+    pot->useCurvature = 0;
+        
+    if ( potReduce > -0.01 && pot->allowCurvature ) {
         pot->useCurvature = 1;
     }
     
@@ -344,6 +363,10 @@ extern pot_int potReductionSolve( pot_solver *pot ) {
     potVecReset(pot->auxVec1);
     potVecReset(pot->auxVec2);
     
+    /* Use curvature in the initial iteration */
+    pot->useCurvature = 1;
+    pot->allowCurvature = 1;
+    
     pot_int info = 0;
     
     /* Initialize */
@@ -351,6 +374,12 @@ extern pot_int potReductionSolve( pot_solver *pot ) {
     potConstrMatPrepareX(pot->AMat, pot->xVecOld);
     
     for ( int i = 0; ; ++i ) {
+        
+        if ( i % 1000 == 0 && pot->allowCurvature ) {
+            pot->useCurvature = 1;
+        } else {
+            pot->useCurvature = 0;
+        }
         
         retcode = potReductionOneStep(pot);
         potObjFMonitor(pot->objFunc, &info);

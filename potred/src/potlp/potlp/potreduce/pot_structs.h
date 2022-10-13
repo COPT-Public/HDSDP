@@ -101,6 +101,7 @@ typedef struct {
     double   zVal; ///< Lower bound
     pot_vec *xVec; ///< Variable
     pot_vec *xVecOld; ///< Old x
+    pot_vec *xVecNorm; ///< Scaled variable
     pot_vec *gVec; ///< Gradient of f
     pot_vec *gkVec; ///< Gradient of potential function
     pot_vec *mkVec; ///< Momentum
@@ -123,6 +124,7 @@ typedef struct {
     pot_vec *auxVec2;
     
     pot_int useCurvature;
+    pot_int allowCurvature;
     
 } pot_solver;
 

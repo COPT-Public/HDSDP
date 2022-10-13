@@ -7,6 +7,7 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		1964F0C228F7BC9700E6458B /* Accelerate.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 1964F0C128F7BC9700E6458B /* Accelerate.framework */; };
 		19BC6B1228EA14AB00C7A150 /* vec_mat.c in Sources */ = {isa = PBXBuildFile; fileRef = 19BC6B1128EA14AB00C7A150 /* vec_mat.c */; };
 		19BC6B1528EA1C4A00C7A150 /* pot_lanczos.c in Sources */ = {isa = PBXBuildFile; fileRef = 19BC6B1428EA1C4A00C7A150 /* pot_lanczos.c */; };
 		19DCD82628DB5662006B6B01 /* main.c in Sources */ = {isa = PBXBuildFile; fileRef = 19DCD82528DB5662006B6B01 /* main.c */; };
@@ -33,6 +34,7 @@
 /* Begin PBXFileReference section */
 		1955F02828EDF76400CD7B84 /* pot_solver.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = pot_solver.h; sourceTree = "<group>"; };
 		1964F0BF28F7010F00E6458B /* data_new.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = data_new.h; path = potlp/test/data_new.h; sourceTree = "<group>"; };
+		1964F0C128F7BC9700E6458B /* Accelerate.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = Accelerate.framework; path = System/Library/Frameworks/Accelerate.framework; sourceTree = SDKROOT; };
 		19BC6B1028EA14AB00C7A150 /* vec_mat.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = vec_mat.h; sourceTree = "<group>"; };
 		19BC6B1128EA14AB00C7A150 /* vec_mat.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = vec_mat.c; sourceTree = "<group>"; };
 		19BC6B1328EA1C4A00C7A150 /* pot_lanczos.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = pot_lanczos.h; sourceTree = "<group>"; };
@@ -60,18 +62,28 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				1964F0C228F7BC9700E6458B /* Accelerate.framework in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
 /* End PBXFrameworksBuildPhase section */
 
 /* Begin PBXGroup section */
+		1964F0C028F7BC9700E6458B /* Frameworks */ = {
+			isa = PBXGroup;
+			children = (
+				1964F0C128F7BC9700E6458B /* Accelerate.framework */,
+			);
+			name = Frameworks;
+			sourceTree = "<group>";
+		};
 		19DCD81928DB5662006B6B01 = {
 			isa = PBXGroup;
 			children = (
 				1964F0BF28F7010F00E6458B /* data_new.h */,
 				19DCD82428DB5662006B6B01 /* potlp */,
 				19DCD82328DB5662006B6B01 /* Products */,
+				1964F0C028F7BC9700E6458B /* Frameworks */,
 			);
 			sourceTree = "<group>";
 		};

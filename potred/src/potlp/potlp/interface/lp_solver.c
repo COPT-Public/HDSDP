@@ -46,7 +46,6 @@ static void potLpConstrMatImplProject( void *AMatData, pot_vec *xVec ) {
 
 static void potLpConstrMatImplScalProject( void *AMatData, pot_vec *xVec, pot_vec *yVec ) {
     
-    potVecNormalize(xVec);
     double xTy = potVecSumScalCone(xVec, yVec);
     potVecConeAxpy(-xTy, xVec, yVec);
     
@@ -298,8 +297,8 @@ static void potLpObjFImplMonitor( void *objFData, void *info ) {
         logFreq = 50000;
     }
     
-    double relFeasTol = 1e-05;
-    double relOptTol = 1e-04;
+    double relFeasTol = 1e-08;
+    double relOptTol = 1e-08;
     
     int *intInfo = NULL;
     if ( relGap < relOptTol && pInfeas < relFeasTol && dInfeas < relFeasTol ) {
@@ -312,7 +311,7 @@ static void potLpObjFImplMonitor( void *objFData, void *info ) {
         *intInfo = 1;
     }
     
-    if ( potlp->nIter % logFreq == 0 || potlp->nIter == 1 || intInfo ) {
+    if ( potlp->nIter % logFreq == 0 || potlp->nIter == 1 || intInfo || potlp->potIterator->useCurvature ) {
         
         double elapsedTime = my_clock() - potlp->startT;
         if ( elapsedTime < 100.0 ) {
@@ -824,6 +823,7 @@ extern pot_int LPSolverOptimize( potlp_solver *potlp ) {
     
     POT_CALL(LPSolverIRuizScale(potlp));
     POT_CALL(potReductionSolve(potlp->potIterator));
+    
     LPSolverIRetrieveSolution(potlp);
     
 exit_cleanup:

@@ -11,13 +11,29 @@ int main(int argc, const char * argv[]) {
     
     if ( retcode != RETCODE_OK ) {
         retcode = RETCODE_FAILED;
+        goto exit_cleanup;
     }
     
     retcode = LPSolverInit(potlp, nCol, nRow);
+    if ( retcode != RETCODE_OK ) {
+        retcode = RETCODE_FAILED;
+        goto exit_cleanup;
+    }
+    
     retcode = LPSolverSetData(potlp, Ap, Ai, Ax, obj, rhs);
-    potlp->intParams[INT_PARAM_MAXITER] = 2000000;
-    potlp->intParams[INT_PARAM_MAXRUIZITER] = 100;
+    if ( retcode != RETCODE_OK ) {
+        retcode = RETCODE_FAILED;
+        goto exit_cleanup;
+    }
+    
+    potlp->intParams[INT_PARAM_MAXITER] = 1000000;
+    potlp->intParams[INT_PARAM_MAXRUIZITER] = 1000;
+    
     retcode = LPSolverOptimize(potlp);
+    if ( retcode != RETCODE_OK ) {
+        retcode = RETCODE_FAILED;
+        goto exit_cleanup;
+    }
     
 exit_cleanup:
     LPSolverDestroy(&potlp);
