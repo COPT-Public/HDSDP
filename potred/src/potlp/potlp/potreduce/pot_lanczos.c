@@ -71,7 +71,7 @@ extern pot_int potLanczosInit( pot_lanczos *potLanczos, pot_int nCols, pot_int n
         goto exit_cleanup;
     }
     
-    potLanczos->maxIter = 2000;
+    potLanczos->maxIter = POTLP_MIN(nCols, 1000);
     
     POT_CALL(potVecCreate(&potLanczos->vVec));
     POT_CALL(potVecInit(potLanczos->vVec, nCols, nCones));
@@ -172,6 +172,7 @@ extern pot_int potLanczosSolve( pot_lanczos *potLanczos, pot_vec *lczStart, pot_
     potVecExport(vVec, VMat);
     
     int k;
+    int checkFreq = (int) potl->maxIter / 10;
     double finalEigs = 0.0;
     
     /* Start Lanczos iterations */
@@ -195,7 +196,7 @@ extern pot_int potLanczosSolve( pot_lanczos *potLanczos, pot_vec *lczStart, pot_
         LANCZOS_DEBUG("Lanczos Alp value: %f \n", -vAlp);
         
         /* Refinement */
-        if ( 1 || normPres < 0.99 * normPrev ) {
+        if ( normPres < 0.9 * normPrev || 1 ) {
             wVec->nrm = -1.0; // TODO: Not good. Try rewriting this
             for ( int i = 0; i < k; ++i ) {
                 double alpha = - dot(&nVRow, &V(0, i), &potIntConstantOne, wVecData, &potIntConstantOne);
@@ -209,7 +210,7 @@ extern pot_int potLanczosSolve( pot_lanczos *potLanczos, pot_vec *lczStart, pot_
         potVecExport(vVec, &V(0, k + 1));
         H(k + 1, k) = H(k, k + 1) = normPres;
         
-        if ( (k + 1) % 50 == 0 || k >= maxIter - 1 ) {
+        if ( (k + 1) % checkFreq == 0 || k >= maxIter - 1 ) {
             
             int kPlus1 = k + 1;
             
@@ -224,7 +225,7 @@ extern pot_int potLanczosSolve( pot_lanczos *potLanczos, pot_vec *lczStart, pot_
             double resiVal = fabs( H(kPlus1, k) * YMat[kPlus1 + k] );
             LANCZOS_DEBUG("Lanczos outer resi value: %f \n", resiVal);
             
-            if ( resiVal < 1e-02 || k >= maxIter - 1 ) {
+            if ( resiVal < 1e-04 || k >= maxIter - 1 ) {
                 
                 LANCZOS_DEBUG("Lanczos iteration %d \n", k);
                 

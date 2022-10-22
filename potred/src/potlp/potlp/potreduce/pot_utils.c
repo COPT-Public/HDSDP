@@ -312,9 +312,10 @@ static pot_int potReductionOneStep( pot_solver *pot ) {
         
         if ( potReduceRatio < 0.2 ) {
             pot->betaRadius *= 0.25;
+            printf("\n");
         } else if ( potReduceRatio > 0.75 ) {
             pot->betaRadius *= 2.0;
-            pot->betaRadius = (pot->betaRadius > 0.99995) ? 0.99995 : pot->betaRadius;
+            pot->betaRadius = POTLP_MIN(pot->betaRadius, 1.0);
             pot->potVal = potValTmp;
             break;
         } else {
@@ -327,7 +328,7 @@ static pot_int potReductionOneStep( pot_solver *pot ) {
     potVecCopy(xPres, xPrev);
     potVecCopy(dXStep, xPres);
     
-    if ( (potReduce > 0 && pot->useCurvature) || lczCode != RETCODE_OK ) {
+    if ( (potReduce > -1e-03 && pot->useCurvature) || lczCode != RETCODE_OK ) {
         pot->allowCurvature = 0;
         
         if ( lczCode != RETCODE_OK ) {
@@ -339,7 +340,7 @@ static pot_int potReductionOneStep( pot_solver *pot ) {
     
     pot->useCurvature = 0;
         
-    if ( potReduce > -0.01 && pot->allowCurvature ) {
+    if ( potReduce > -5 && pot->allowCurvature ) {
         pot->useCurvature = 1;
     }
     
@@ -375,10 +376,8 @@ extern pot_int potReductionSolve( pot_solver *pot ) {
     
     for ( int i = 0; ; ++i ) {
         
-        if ( i % 1000 == 0 && pot->allowCurvature ) {
+        if ( i % 5000 == 0 && pot->allowCurvature ) {
             pot->useCurvature = 1;
-        } else {
-            pot->useCurvature = 0;
         }
         
         retcode = potReductionOneStep(pot);

@@ -277,13 +277,13 @@ static void potLpObjFImplMonitor( void *objFData, void *info ) {
         printf("%8s  %10s  %10s  %10s  %10s  %10s  %10s \n", "nIter", "pObj", "dObj", "rGap", "pInf", "dInf", "k/t");
     }
     
-    double objScalCoeff = (1.0 + potlp->lpObjNorm) * (1.0 + potlp->lpRHSNorm) / potlp->tau;
+    double objScalCoeff = 1.0 / potlp->tau; // (1.0 + potlp->lpObjNorm) * (1.0 + potlp->lpRHSNorm) / potlp->tau;
     double pObjVal = potlp->pObjVal * objScalCoeff;
     double dObjVal = potlp->dObjVal * objScalCoeff;
     double absGap = fabs(pObjVal - dObjVal);
     double relGap = absGap / (1.0 + fabs(pObjVal) + fabs(dObjVal));
-    double pInfeas = potlp->pInfeas;
-    double dInfeas = potlp->dInfeas;
+    double pInfeas = potlp->pInfeas / (potlp->lpObjNorm + 1.0);
+    double dInfeas = potlp->dInfeas / (potlp->lpRHSNorm + 1.0);
     
     int logFreq = 0;
     
@@ -593,22 +593,23 @@ static void LPSolverIScale( potlp_solver *potlp ) {
     potlp->lpObjNorm = objOneNorm;
     potlp->lpRHSNorm = rhsOneNorm;
     
-    double objScaler = objOneNorm + 1.0;
-    double rhsScaler = rhsOneNorm + 1.0;
+//    double objScaler = objOneNorm + 1.0;
+//    double rhsScaler = rhsOneNorm + 1.0;
     
-    for ( int i = 0; i < potlp->nCol; ++i ) {
-        lpObj[i] = lpObj[i] / objScaler;
-    }
-    
-    for ( int i = 0; i < potlp->nRow; ++i ) {
-        lpRHS[i] = lpRHS[i] / rhsScaler;
-    }
+//    for ( int i = 0; i < potlp->nCol; ++i ) {
+//        lpObj[i] = lpObj[i] / objScaler;
+//    }
+//
+//    for ( int i = 0; i < potlp->nRow; ++i ) {
+//        lpRHS[i] = lpRHS[i] / rhsScaler;
+//    }
     
     return;
 }
 
 static void LPSovlerIPrintLPStats( potlp_solver *potlp ) {
     
+    printf("\nPOTLP: A first-order potential reduction LP solver\n");
     printf("\nOptimizing an LP with %d variables and %d constraints. \n", potlp->nCol, potlp->nRow);
     printf("LP Data norm |b| = %5.2e |c| = %5.2e. \n", potlp->lpRHSNorm, potlp->lpObjNorm);
     
@@ -634,8 +635,11 @@ static void LPSolverIRetrieveSolution( potlp_solver *potlp ) {
     double *colDual = colVal + nCol;
     double tau = *( colDual + nCol + 1 );
     
-    double primalScaler = tau / (potlp->lpRHSNorm + 1.0);
-    double dualScaler = tau / (potlp->lpObjNorm + 1.0);
+    double objScaler = 1.0; // potlp->lpObjNorm + 1.0;
+    double rhsScaler = 1.0; // potlp->lpRHSNorm + 1.0;
+    
+    double primalScaler = tau / rhsScaler;
+    double dualScaler = tau / objScaler;
     
     /* Scale back */
     rscl(&nCol, &primalScaler, colVal, &potIntConstantOne);
@@ -645,20 +649,22 @@ static void LPSolverIRetrieveSolution( potlp_solver *potlp ) {
     /* Verify errors */
     double pObjVal = dot(&nCol, colVal, &potIntConstantOne, lpObj, &potIntConstantOne);
     double dObjVal = dot(&nRow, rowDual, &potIntConstantOne, lpRHS, &potIntConstantOne);
-    pObjVal = pObjVal * (potlp->lpObjNorm + 1.0);
-    dObjVal = dObjVal * (potlp->lpRHSNorm + 1.0);
+    pObjVal = pObjVal * objScaler;
+    dObjVal = dObjVal * rhsScaler;
     
     double *pRes = potlp->pRes;
     double *dRes = potlp->dRes;
     
     for ( int i = 0; i < nRow; ++i ) {
-        pRes[i] = - lpRHS[i] * (potlp->lpRHSNorm + 1.0);
+        pRes[i] = - lpRHS[i] * rhsScaler;
     }
     
     for ( int i = 0; i < nCol; ++i ) {
-        dRes[i] = colDual[i] - lpObj[i] * (potlp->lpObjNorm + 1.0);
+        dRes[i] = colDual[i] - lpObj[i] * objScaler;
     }
     
+    objScaler = potlp->lpObjNorm + 1.0;
+    rhsScaler = potlp->lpRHSNorm + 1.0;
     /* Primal infeasibility b - A * x  */
     spMatAxpy(nCol, potlp->colMatBeg, potlp->colMatIdx, potlp->colMatElem, 1.0, colVal, pRes);
     
@@ -666,9 +672,9 @@ static void LPSolverIRetrieveSolution( potlp_solver *potlp ) {
     spMatATxpy(nCol, potlp->colMatBeg, potlp->colMatIdx, potlp->colMatElem, 1.0, rowDual, dRes);
     
     double pInfeas = nrm2(&nRow, pRes, &potIntConstantOne);
-    double relpInfeas = pInfeas / (potlp->lpRHSNorm + 1.0);
+    double relpInfeas = pInfeas / rhsScaler;
     double dInfeas = nrm2(&nCol, dRes, &potIntConstantOne);
-    double reldInfeas = dInfeas / (potlp->lpObjNorm + 1.0);
+    double reldInfeas = dInfeas / objScaler;
     double compGap = fabs(pObjVal - dObjVal);
     double rGap = compGap / ( 1 + fabs(pObjVal) + fabs(dObjVal) );
     
@@ -677,10 +683,10 @@ static void LPSolverIRetrieveSolution( potlp_solver *potlp ) {
     potlp->complGap = compGap;
     
     printf("\nLP Solution statistic \n");
-    printf("    pObj: %+8.2e   Obj: %+8.2e \n", pObjVal, dObjVal);
-    printf("    pInf:  %8.2e   Rel:  %8.2e \n", pInfeas, relpInfeas);
-    printf("    dInf:  %8.2e   Rel:  %8.2e \n", dInfeas, reldInfeas);
-    printf("    Gap :  %8.2e   Rel:  %8.2e \n", compGap, rGap);
+    printf("pObj: %+8.2e   Obj: %+8.2e \n", pObjVal, dObjVal);
+    printf("pInf:  %8.2e   Rel:  %8.2e \n", pInfeas, relpInfeas);
+    printf("dInf:  %8.2e   Rel:  %8.2e \n", dInfeas, reldInfeas);
+    printf("Gap :  %8.2e   Rel:  %8.2e \n\n", compGap, rGap);
     
     POTLP_MEMCPY(potlp->colVal, colVal, double, nCol);
     POTLP_MEMCPY(potlp->colDual, colDual, double, nCol);
