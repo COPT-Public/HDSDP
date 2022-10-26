@@ -226,9 +226,7 @@
             startingColumnNumber = "9223372036854775807"
             endingColumnNumber = "9223372036854775807"
             startingLineNumber = "1323"
-            endingLineNumber = "1323"
-            landmarkName = "DSDPSchurSetup(M)"
-            landmarkType = "9">
+            endingLineNumber = "1323">
          </BreakpointContent>
       </BreakpointProxy>
       <BreakpointProxy
@@ -403,8 +401,8 @@
             endingColumnNumber = "9223372036854775807"
             startingLineNumber = "70"
             endingLineNumber = "70"
-            landmarkName = "initparams(dsdpSolver)"
-            landmarkType = "9">
+            landmarkName = "unknown"
+            landmarkType = "0">
          </BreakpointContent>
       </BreakpointProxy>
       <BreakpointProxy
@@ -531,7 +529,7 @@
             endingColumnNumber = "9223372036854775807"
             startingLineNumber = "132"
             endingLineNumber = "132"
-            landmarkName = "speigFactor(eigfac, n, nsub, eigvals, eigvecs)"
+            landmarkName = "speigGetSubMat(ef, n, nnz, Ai, Aj, Ax)"
             landmarkType = "9">
          </BreakpointContent>
       </BreakpointProxy>
@@ -963,9 +961,7 @@
             startingColumnNumber = "9223372036854775807"
             endingColumnNumber = "9223372036854775807"
             startingLineNumber = "1357"
-            endingLineNumber = "1357"
-            landmarkName = "DSDPSchurSetup(M)"
-            landmarkType = "9">
+            endingLineNumber = "1357">
          </BreakpointContent>
       </BreakpointProxy>
       <BreakpointProxy
@@ -979,9 +975,7 @@
             startingColumnNumber = "9223372036854775807"
             endingColumnNumber = "9223372036854775807"
             startingLineNumber = "1372"
-            endingLineNumber = "1372"
-            landmarkName = "DSDPSchurSetup(M)"
-            landmarkType = "9">
+            endingLineNumber = "1372">
          </BreakpointContent>
       </BreakpointProxy>
       <BreakpointProxy
@@ -1060,7 +1054,23 @@
             endingColumnNumber = "9223372036854775807"
             startingLineNumber = "62"
             endingLineNumber = "62"
-            landmarkName = "initparams(dsdpSolver)"
+            landmarkName = "initresi(dsdpSolver)"
+            landmarkType = "9">
+         </BreakpointContent>
+      </BreakpointProxy>
+      <BreakpointProxy
+         BreakpointExtensionID = "Xcode.Breakpoint.FileBreakpoint">
+         <BreakpointContent
+            uuid = "C95983E9-2CD2-469C-8E60-FA9C4C9390A7"
+            shouldBeEnabled = "Yes"
+            ignoreCount = "0"
+            continueAfterRunningActions = "No"
+            filePath = "DSDP6/src/dsalg/symschur.c"
+            startingColumnNumber = "9223372036854775807"
+            endingColumnNumber = "9223372036854775807"
+            startingLineNumber = "926"
+            endingLineNumber = "926"
+            landmarkName = "schurMatReorder(M)"
             landmarkType = "9">
          </BreakpointContent>
       </BreakpointProxy>
