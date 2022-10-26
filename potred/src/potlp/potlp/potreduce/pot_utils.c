@@ -18,16 +18,14 @@ extern void potUtilGetDefaultParams( double dblParams[NUM_DBL_PARAM], int intPar
     
     /* Absolute optimality tolerance */
     dblParams[DBL_PARAM_RELOPTTOL] = 1e-04;
-    
     /* Absolute feasibility tolerance */
     dblParams[DBL_PARAM_RELFEASTOL] = 1e-04;
-    
+    /* Time limit  */
+    dblParams[DBL_PARAM_TIMELIMIT] = 600.0;
     /* Maximum iteration */
     intParams[INT_PARAM_MAXITER] = 10000;
-    
     /* Maximum maximum Ruiz iteration */
     intParams[INT_PARAM_MAXRUIZITER] = 100;
-    
     /* Switch of coefficient scaling */
     intParams[INT_PARAM_COEFSCALE] = 0;
     

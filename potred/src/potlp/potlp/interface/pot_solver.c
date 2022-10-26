@@ -112,7 +112,7 @@ static double potReductionTrustRegionSolve( double alpha[2], double projH[4], do
     /* Trace back by Bisection */
     double diff = lamUpBound - lamLowBound;
     
-    while ( diff > 1e-06 ) {
+    while ( diff > 1e-08 ) {
         
         double lamCurrent = lamLowBound + diff * 0.5;
         HplusLamG[0] = projH[0] + lamCurrent * projG[0];
@@ -247,7 +247,7 @@ static pot_int potReductionOneStep( pot_solver *pot ) {
         double alphaStep[2] = {0.0};
         double modelVal = potReductionTrustRegionSolve(alphaStep, pot->projHessMat, pot->projgVec,
                                                        pot->projGMat, pot->betaRadius * pot->betaRadius / 4,
-                                                       1e-05);
+                                                       1e-08);
         
         if ( modelVal > 0.0 || pot->betaRadius < 1e-05 ) {
             retcode = RETCODE_FAILED;
@@ -296,7 +296,7 @@ static pot_int potReductionOneStep( pot_solver *pot ) {
     
     pot->useCurvature = 0;
         
-    if ( potReduce > -5 && pot->allowCurvature ) {
+    if ( potReduce > -1e-03 && pot->allowCurvature ) {
         pot->useCurvature = 1;
     }
     
@@ -521,7 +521,7 @@ extern pot_int potReductionSolve( pot_solver *pot ) {
     
     for ( int i = 0; ; ++i ) {
         
-        if ( i % 5000 == 0 && pot->allowCurvature ) {
+        if ( i % 10000 == 0 && pot->allowCurvature ) {
             pot->useCurvature = 1;
         }
         

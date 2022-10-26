@@ -71,7 +71,7 @@ extern pot_int potLanczosInit( pot_lanczos *potLanczos, pot_int nCols, pot_int n
         goto exit_cleanup;
     }
     
-    potLanczos->maxIter = POTLP_MIN(nCols, 1000);
+    potLanczos->maxIter = POTLP_MIN(nCols, 200);
     
     POT_CALL(potVecCreate(&potLanczos->vVec));
     POT_CALL(potVecInit(potLanczos->vVec, nCols, nCones));

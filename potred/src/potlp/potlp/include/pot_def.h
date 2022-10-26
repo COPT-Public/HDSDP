@@ -56,6 +56,7 @@ typedef int pot_int;
 // Double Parameters
 #define DBL_PARAM_RELFEASTOL    0
 #define DBL_PARAM_RELOPTTOL     1
+#define DBL_PARAM_TIMELIMIT     2
 
 // Version information
 #define VERSION_MAJOR           0

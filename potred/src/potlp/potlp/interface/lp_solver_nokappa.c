@@ -1,14 +1,9 @@
 /** @file lpdata.c
  *  @brief Implement the LP data interface for potential reduction
+ *  This version does not treat kappa as a variable
  *
  * @TODO: Add more detailed comments
  */
-
-#define NOKAPPA
-
-#ifdef NOKAPPA
-#include "lp_solver_nokappa.c"
-#else
 
 #include "lp_solver.h"
 #include "lp_solver.h"
@@ -23,13 +18,15 @@
 #include <sys/time.h>
 #include <math.h>
 
+#ifdef NOKAPPA
+
 /* Constraint methods */
 static void potLpConstrMatImplPrepareX( void *AMatData, pot_vec *xInit ) {
     
     potVecReset(xInit);
     
     for ( int i = xInit->n - xInit->ncone; i < xInit->n; ++i ) {
-        xInit->x[i] = 1.0;
+        xInit->x[i] = 1.0 / xInit->n;
     }
     
     return;
@@ -69,8 +66,7 @@ static void potLpObjFISetupRes( potlp_solver *potlp, pot_vec *xVec ) {
     double *rowDual = scalVals;
     double *colVal = rowDual + nRow;
     double *colSlack = colVal + nCol;
-    double *kappaVar = colSlack + nCol;
-    double *tauVar = kappaVar + 1;
+    double *tauVar = colSlack + nCol;
     
     double *lpObj = potlp->lpObj;
     double *lpRHS = potlp->lpRHS;
@@ -103,9 +99,9 @@ static void potLpObjFISetupRes( potlp_solver *potlp, pot_vec *xVec ) {
     axpy(&nCol, &potDblConstantMinusOne, colSlack, &potIntConstantOne, dRes, &potIntConstantOne);
     
     /* Complementarity */
-    potlp->kappa = *kappaVar;
+    potlp->kappa = 1.0;
     potlp->tau = *tauVar;
-    *compl = potlp->dObjVal - potlp->pObjVal - *kappaVar;
+    *compl = potlp->dObjVal - potlp->pObjVal;
     
     /* Get statistics */
     potlp->pInfeas = nrm2(&nRow, pRes, &potIntConstantOne);
@@ -132,8 +128,7 @@ static void potLpObjFISetupGrad( potlp_solver *potlp, pot_vec *gVec ) {
     double *gRowDual = gVec->x;
     double *gColVal = gRowDual + nRow;
     double *gColSlack = gColVal + nCol;
-    double *gKappaVar = gColSlack + nCol;
-    double *gTauVar = gKappaVar + 1;
+    double *gTauVar = gColSlack + nCol;
     
     double *lpObj = potlp->lpObj;
     double *lpRHS = potlp->lpRHS;
@@ -160,9 +155,6 @@ static void potLpObjFISetupGrad( potlp_solver *potlp, pot_vec *gVec ) {
         gColSlack[i] = - dRes[i];
     }
     
-    /* Gradient of kappa */
-    gKappaVar[0] = - compl;
-    
     /* Gradient of tau */
     gTauVar[0] = dot(&nCol, lpObj, &potIntConstantOne, dRes, &potIntConstantOne);
     gTauVar[0] -= dot(&nRow, lpRHS, &potIntConstantOne, pRes, &potIntConstantOne);
@@ -186,8 +178,7 @@ static void potLpObjFISetupHVec( potlp_solver *potlp, pot_vec *xVec, pot_vec *fH
     double *rowDual = scalVals;
     double *colVal = rowDual + nRow;
     double *colSlack = colVal + nCol;
-    double *kappaVar = colSlack + nCol;
-    double *tauVar = kappaVar + 1;
+    double *tauVar = colSlack + nCol;
     
     double *lpObj = potlp->lpObj;
     double *lpRHS = potlp->lpRHS;
@@ -204,11 +195,11 @@ static void potLpObjFISetupHVec( potlp_solver *potlp, pot_vec *xVec, pot_vec *fH
     double dObjVal = dot(&nRow, rowDual, &potIntConstantOne, potlp->lpRHS, &potIntConstantOne);
     
     for ( int i = 0; i < nRow; ++i ) {
-        pRes[i] = -lpRHS[i] * (*tauVar);
+        pRes[i] = -lpRHS[i] * tauVar[0];
     }
     
     for ( int i = 0; i < nCol; ++i ) {
-        dRes[i] = lpObj[i] * (*tauVar);
+        dRes[i] = lpObj[i] * tauVar[0];
     }
     
     /* Primal infeasibility */
@@ -218,7 +209,7 @@ static void potLpObjFISetupHVec( potlp_solver *potlp, pot_vec *xVec, pot_vec *fH
     spMatATxpy(nCol, Ap, Ai, Ax, -1.0, rowDual, dRes);
     axpy(&nCol, &potDblConstantMinusOne, colSlack, &potIntConstantOne, dRes, &potIntConstantOne);
     
-    *compl = dObjVal - pObjVal - *kappaVar;
+    *compl = dObjVal - pObjVal;
     
     /* Pre-multiply Ruiz */
     int nRuizRow = nRow + nCol + 1;
@@ -318,7 +309,6 @@ static void potLpObjFImplMonitor( void *objFData, void *info ) {
     
     if ( potlp->nIter % logFreq == 0 || potlp->nIter == 1 || intInfo || potlp->potIterator->useCurvature ) {
         
-        double elapsedTime = potUtilGetTimeStamp() - potlp->startT;
         if ( elapsedTime < 100.0 ) {
             printf("%8lld  %10.3e  %10.3e  %10.3e  %10.3e  %10.3e  %10.3e |%5.1f [s] \n",
                    potlp->nIter, pObjVal, dObjVal, relGap, pInfeas,
@@ -355,7 +345,7 @@ static pot_int LPSolverIRuizScale( potlp_solver *potlp ) {
     pot_int *colMatIdx = potlp->colMatIdx;
     
     pot_int nRuizRow = nRow + nCol + 1;
-    pot_int nRuizCol = nRow + 2 * nCol + 2;
+    pot_int nRuizCol = nRow + 2 * nCol + 1;
     
     double *ruizWorkDiagRow = NULL;
     double *ruizWorkDiagCol = NULL;
@@ -366,7 +356,6 @@ static pot_int LPSolverIRuizScale( potlp_solver *potlp ) {
     double *ruizWorkRhs = NULL;
     double *ruizWorkRhsTrans = NULL;
     double *ruizWorkEye = NULL;
-    double ruizWorkOne = 1.0;
     
     double *ruizScalDiagRow = potlp->ruizRow;
     double *ruizScalDiagCol = potlp->ruizCol;
@@ -414,9 +403,9 @@ static pot_int LPSolverIRuizScale( potlp_solver *potlp ) {
     int maxRuizIter = potlp->intParams[INT_PARAM_MAXRUIZITER];
     
     /* Start ruiz scaling on the matrix
-        [ 0   A  0  0 -b
-          A'  0 -I  0  c
-          b' -c' 0 -1  0 ]
+        [ 0   A  0 -b
+          A'  0 -I  c
+          b' -c' 0  0 ]
     */
     
     RUIZ_DEBUG("Start Ruiz-scaling %s\n", "");
@@ -441,7 +430,6 @@ static pot_int LPSolverIRuizScale( potlp_solver *potlp ) {
         
         /* row[0] <- max( [ row[0], -b    ] )
            row[1] <- max( [ row[1], -I, c ] )
-           row[2] <- max( [ row[2], -1    ] )
          */
         
         double *ruizWorkDiagRowRHS = ruizWorkDiagRow;
@@ -457,14 +445,12 @@ static pot_int LPSolverIRuizScale( potlp_solver *potlp ) {
             ruizWorkDiagRowObj[j] = POTLP_MAX(ruizWorkEye[j], ruizWorkDiagRowObj[j]);
         }
         
-        compElem = POTLP_MAX(compElem, ruizWorkOne);
         ruizWorkDiagRow[nRow + nCol] = compElem;
         
         /* col[0] <- max( [  A' ] )
            col[1] <- max( [  A  ] )
            col[2] <- max( [ -I  ] )
-           col[3] <- max( [ -1  ] )
-           col[4] <- max( [ -b; c] )
+           col[3] <- max( [ -b; c] )
          */
         
         POTLP_ZERO(ruizWorkDiagCol, double, nRuizCol);
@@ -476,13 +462,11 @@ static pot_int LPSolverIRuizScale( potlp_solver *potlp ) {
             ruizWorkDiagColEye[j] = ruizWorkEye[j];
         }
         
-        ruizWorkDiagCol[nRow + nCol + nCol] = ruizWorkOne;
-        
         maxRHSIdx = idamax(&nRow, ruizWorkRhs, &potIntConstantOne);
         maxObjIdx = idamax(&nCol, ruizWorkObjVal, &potIntConstantOne);
         maxRHS = fabs(ruizWorkRhs[maxRHSIdx]);
         maxObj = fabs(ruizWorkObjVal[maxObjIdx]);
-        ruizWorkDiagCol[nRow + 2 * nCol + 1] = POTLP_MAX(maxRHS, maxObj);
+        ruizWorkDiagCol[nRow + 2 * nCol] = POTLP_MAX(maxRHS, maxObj);
         
         /* col[0] <- max( [ col[0],  b ] )
            col[1] <- max( [ col[1], -c ] )
@@ -536,7 +520,6 @@ static pot_int LPSolverIRuizScale( potlp_solver *potlp ) {
         double *ruizWorkDiagRowCompl = ruizWorkDiagRow + nRow + nCol;
         rscl(&nRow, ruizWorkDiagRowCompl, ruizWorkRhsTrans, &potIntConstantOne);
         rscl(&nCol, ruizWorkDiagRowCompl, ruizWorkObjValTrans, &potIntConstantOne);
-        ruizWorkOne = ruizWorkOne / (*ruizWorkDiagRowCompl);
     
         /* Column scaling */
         spMatRowScal(nCol, colMatBeg, colMatIdx, ruizWorkColMatElemTrans, ruizWorkDiagColRHS);
@@ -545,8 +528,7 @@ static pot_int LPSolverIRuizScale( potlp_solver *potlp ) {
         vvrscl(&nRow, ruizWorkDiagColObj, ruizWorkObjValTrans);
         vvrscl(&nCol, ruizWorkDiagColEye, ruizWorkEye);
         
-        ruizWorkOne = ruizWorkOne / ruizWorkDiagCol[nRow + nCol + nCol];
-        double *ruizWorkDiagColCompl = ruizWorkDiagCol + nRow + nCol + nCol + 1;
+        double *ruizWorkDiagColCompl = ruizWorkDiagCol + nRow + nCol + nCol;
         rscl(&nRow, ruizWorkDiagColCompl, ruizWorkRhs, &potIntConstantOne);
         rscl(&nCol, ruizWorkDiagColCompl, ruizWorkObjVal, &potIntConstantOne);
     }
@@ -647,7 +629,7 @@ static void LPSolverIRetrieveSolution( potlp_solver *potlp ) {
     double *rowDual = scalVals;
     double *colVal = rowDual + nRow;
     double *colDual = colVal + nCol;
-    double tau = *( colDual + nCol + 1 );
+    double tau = *( colDual + nCol );
     
     double objScaler = potlp->objScaler;
     double rhsScaler = potlp->rhsScaler;
@@ -757,8 +739,8 @@ extern pot_int LPSolverInit( potlp_solver *potlp, pot_int nCol, pot_int nRow ) {
     potlp->nCol = nCol;
     potlp->nRow = nRow;
     
-    /* x; s; kappa; tau*/
-    pot_int coneDim = 2 * nCol + 2;
+    /* x; s; tau*/
+    pot_int coneDim = 2 * nCol + 1;
     
     /* y */
     pot_int varDim = coneDim + nRow;
@@ -808,8 +790,8 @@ extern pot_int LPSolverSetData( potlp_solver *potlp, pot_int *Ap, pot_int *Ai, d
     POTLP_INIT(potlp->pdcRes, double, nRow + nCol + 1);
     
     POTLP_INIT(potlp->ruizRow, double, nRow + nCol + 1);
-    POTLP_INIT(potlp->ruizCol, double, nRow + 2 * nCol + 2);
-    POTLP_INIT(potlp->scalVals, double, nRow + 2 * nCol + 2);
+    POTLP_INIT(potlp->ruizCol, double, nRow + 2 * nCol + 1);
+    POTLP_INIT(potlp->scalVals, double, nRow + 2 * nCol + 1);
     
     POTLP_INIT(potlp->colVal, double, nCol);
     POTLP_INIT(potlp->colDual, double, nCol);
