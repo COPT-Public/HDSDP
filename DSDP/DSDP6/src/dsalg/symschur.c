@@ -995,8 +995,10 @@ static DSDP_INT schurMatSpsReorder( symM *M ) {
         if (memNnz <= schurNnz + m) {
             memNnz += m; Mitmp = Mi;
             Mi = (DSDP_INT *) realloc(Mi, sizeof(DSDP_INT) * memNnz);
-            printf("Memory allocation failed when allocating memory for sparse Schur matrix. \n");
-            if (!Mi) { fatal_error; }
+            if (!Mi) {
+                printf("Memory allocation failed when allocating memory for sparse Schur matrix. \n");
+                fatal_error;
+            }
         }
         Mp[i + 1] = schurNnz;
     }

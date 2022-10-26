@@ -1,11 +1,14 @@
-function [v] = findnegacurv(x, m, coneidx, rho, g, f, ATA, AT, A, method)
+function [v] = findnegacurv(x, m, coneidx, projidx, rho, g, f, ATA, AT, A, method)
 % Find negative curvature of the Hessian matrix
 % Hess =  rho * (- (g * g') / f + ATA) + diag(f * d)
 % over the subspace e' * v = 0
 
 n = length(x);
 ncone = length(coneidx);
+nproj = length(projidx);
 e = ones(ncone, 1);
+e(projidx - min(coneidx) + 1) = 0;
+e = 1 - e;
 
 % Filter the non-basic variables
 % bid = find(x(coneidx) > 5e-04);
@@ -30,9 +33,9 @@ if method == "direct"
     Hess = (- (g * g') / f + ATA) + diag(d * f / rho);
     H11 = Hess(1:m, 1:m); H12 = Hess(1:m, m+1:end);
     H22 = Hess(m + 1:end, m+1:end);
-    PH12 = H12 - (H12 * e) * e' / ncone;
-    HeeT = (H22 * e) * e' / ncone;
-    PH22P = H22 - HeeT - HeeT' + sum(sum(H22)) / ncone^2;
+    PH12 = H12 - (H12 * e) * e' / nproj;
+    HeeT = (H22 * e) * e' / nproj;
+    PH22P = H22 - HeeT - HeeT' + sum(sum(H22)) / nproj^2;
     Hproj = [H11,   PH12;
              PH12', PH22P'];
     [V, evals] = eig(Hproj, 'vector');

@@ -7,14 +7,10 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
-		1901C7F227B15FB30046EFB2 /* dsdpcg.c in Sources */ = {isa = PBXBuildFile; fileRef = 1901C7F127B15FB30046EFB2 /* dsdpcg.c */; };
 		1905E06327C4AD240020D1B2 /* dsdpstats.c in Sources */ = {isa = PBXBuildFile; fileRef = 1905E06227C4AD240020D1B2 /* dsdpstats.c */; };
 		19118DE62737B72800D51D03 /* schurmatops.c in Sources */ = {isa = PBXBuildFile; fileRef = 19118D942737B72800D51D03 /* schurmatops.c */; };
 		19118DE92737B72800D51D03 /* stepheur.c in Sources */ = {isa = PBXBuildFile; fileRef = 19118D972737B72800D51D03 /* stepheur.c */; };
 		19118DEB2737B72800D51D03 /* vec.c in Sources */ = {isa = PBXBuildFile; fileRef = 19118D9F2737B72800D51D03 /* vec.c */; };
-		19118DEC2737B72800D51D03 /* densemat.c in Sources */ = {isa = PBXBuildFile; fileRef = 19118DA12737B72800D51D03 /* densemat.c */; };
-		19118DED2737B72800D51D03 /* sparsemat.c in Sources */ = {isa = PBXBuildFile; fileRef = 19118DA22737B72800D51D03 /* sparsemat.c */; };
-		19118DEE2737B72800D51D03 /* config.c in Sources */ = {isa = PBXBuildFile; fileRef = 19118DA82737B72800D51D03 /* config.c */; };
 		19118E232737B72800D51D03 /* main.c in Sources */ = {isa = PBXBuildFile; fileRef = 19118DE22737B72800D51D03 /* main.c */; };
 		19118E242737B72800D51D03 /* dsdphsd.c in Sources */ = {isa = PBXBuildFile; fileRef = 19118DE42737B72800D51D03 /* dsdphsd.c */; };
 		1924445D27E9E07300C99F42 /* dsdpcorrector.c in Sources */ = {isa = PBXBuildFile; fileRef = 1924445C27E9E07200C99F42 /* dsdpcorrector.c */; };
@@ -28,19 +24,22 @@
 		197A770627C7889A00D3A50B /* symschur.c in Sources */ = {isa = PBXBuildFile; fileRef = 197A770527C7889A00D3A50B /* symschur.c */; };
 		19808F3F273807770014086F /* dsdpdata.c in Sources */ = {isa = PBXBuildFile; fileRef = 19808F3E273807770014086F /* dsdpdata.c */; };
 		19808F4327380A990014086F /* dsdppresolve.c in Sources */ = {isa = PBXBuildFile; fileRef = 19808F4227380A990014086F /* dsdppresolve.c */; };
-		19808F46273817510014086F /* rankonemat.c in Sources */ = {isa = PBXBuildFile; fileRef = 19808F45273817510014086F /* rankonemat.c */; };
 		198237612802B966005F85B4 /* schurmat.c in Sources */ = {isa = PBXBuildFile; fileRef = 198237602802B966005F85B4 /* schurmat.c */; };
 		1985AC3D279B9DB400B7B8EB /* dsdppfeas.c in Sources */ = {isa = PBXBuildFile; fileRef = 1985AC3C279B9DB400B7B8EB /* dsdppfeas.c */; };
 		1997804A27CF5DA6006B7E6A /* libmkl_core.1.dylib in Embed Libraries */ = {isa = PBXBuildFile; fileRef = 199220782737D8A400DD975D /* libmkl_core.1.dylib */; settings = {ATTRIBUTES = (CodeSignOnCopy, ); }; };
 		1997804B27CF5DA6006B7E6A /* libmkl_intel_lp64.1.dylib in Embed Libraries */ = {isa = PBXBuildFile; fileRef = 199220792737D8A400DD975D /* libmkl_intel_lp64.1.dylib */; settings = {ATTRIBUTES = (CodeSignOnCopy, ); }; };
 		1997805327CF6426006B7E6A /* libmkl_intel_lp64.1.dylib in Frameworks */ = {isa = PBXBuildFile; fileRef = 1997805127CF6426006B7E6A /* libmkl_intel_lp64.1.dylib */; };
 		1997805427CF6426006B7E6A /* libmkl_core.1.dylib in Frameworks */ = {isa = PBXBuildFile; fileRef = 1997805227CF6426006B7E6A /* libmkl_core.1.dylib */; };
-		199CB0742875604600799285 /* cs.c in Sources */ = {isa = PBXBuildFile; fileRef = 199CB0732875604600799285 /* cs.c */; };
+		199DB95529043FB5005AD896 /* sparseopts.c in Sources */ = {isa = PBXBuildFile; fileRef = 199DB94829043FB5005AD896 /* sparseopts.c */; };
+		199DB95629043FB5005AD896 /* adpcg.c in Sources */ = {isa = PBXBuildFile; fileRef = 199DB94A29043FB5005AD896 /* adpcg.c */; };
+		199DB95729043FB5005AD896 /* lanczos.c in Sources */ = {isa = PBXBuildFile; fileRef = 199DB94B29043FB5005AD896 /* lanczos.c */; };
+		199DB95829043FB5005AD896 /* rankkopts.c in Sources */ = {isa = PBXBuildFile; fileRef = 199DB94E29043FB5005AD896 /* rankkopts.c */; };
+		199DB95929043FB5005AD896 /* rank1opts.c in Sources */ = {isa = PBXBuildFile; fileRef = 199DB94F29043FB5005AD896 /* rank1opts.c */; };
+		199DB95A29043FB5005AD896 /* denseopts.c in Sources */ = {isa = PBXBuildFile; fileRef = 199DB95229043FB5005AD896 /* denseopts.c */; };
+		199DB95D29043FD3005AD896 /* dsdpcs.c in Sources */ = {isa = PBXBuildFile; fileRef = 199DB95B29043FD3005AD896 /* dsdpcs.c */; };
 		199F256F2826377600D6B778 /* heurpool.c in Sources */ = {isa = PBXBuildFile; fileRef = 199F256E2826377600D6B778 /* heurpool.c */; };
 		19ABC01227C09F6B00105887 /* dsdpparam.c in Sources */ = {isa = PBXBuildFile; fileRef = 19ABC01127C09F6B00105887 /* dsdpparam.c */; };
 		19BCF811282179D3000B6AC5 /* speigs.c in Sources */ = {isa = PBXBuildFile; fileRef = 19BCF810282179D3000B6AC5 /* speigs.c */; };
-		19C3732727A7F2DA0021A708 /* rankkmat.c in Sources */ = {isa = PBXBuildFile; fileRef = 19C3732627A7F2DA0021A708 /* rankkmat.c */; };
-		19C3732B27A98B0D0021A708 /* dsdplanczos.c in Sources */ = {isa = PBXBuildFile; fileRef = 19C3732A27A98B0D0021A708 /* dsdplanczos.c */; };
 		19C3BBDA2794032000F0331B /* dsdplog.c in Sources */ = {isa = PBXBuildFile; fileRef = 19C3BBD92794032000F0331B /* dsdplog.c */; };
 		19C3BBDD2794539600F0331B /* dsdpdinfeas.c in Sources */ = {isa = PBXBuildFile; fileRef = 19C3BBDC2794539600F0331B /* dsdpdinfeas.c */; };
 		19C3BBE0279453F200F0331B /* dsdpinitializer.c in Sources */ = {isa = PBXBuildFile; fileRef = 19C3BBDF279453F200F0331B /* dsdpinitializer.c */; };
@@ -79,8 +78,6 @@
 /* End PBXCopyFilesBuildPhase section */
 
 /* Begin PBXFileReference section */
-		1901C7F027B15FB30046EFB2 /* dsdpcg.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = dsdpcg.h; sourceTree = "<group>"; };
-		1901C7F127B15FB30046EFB2 /* dsdpcg.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = dsdpcg.c; sourceTree = "<group>"; };
 		1905E06127C4AD240020D1B2 /* dsdpstats.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = dsdpstats.h; sourceTree = "<group>"; };
 		1905E06227C4AD240020D1B2 /* dsdpstats.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = dsdpstats.c; sourceTree = "<group>"; };
 		19118D862737B6CF00D51D03 /* DSDP6 */ = {isa = PBXFileReference; explicitFileType = "compiled.mach-o.executable"; includeInIndex = 0; path = DSDP6; sourceTree = BUILT_PRODUCTS_DIR; };
@@ -89,16 +86,8 @@
 		19118D972737B72800D51D03 /* stepheur.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = stepheur.c; sourceTree = "<group>"; };
 		19118D992737B72800D51D03 /* schurmatops.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = schurmatops.h; sourceTree = "<group>"; };
 		19118D9C2737B72800D51D03 /* vec.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = vec.h; sourceTree = "<group>"; };
-		19118D9D2737B72800D51D03 /* sparsemat.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = sparsemat.h; sourceTree = "<group>"; };
-		19118D9E2737B72800D51D03 /* densemat.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = densemat.h; sourceTree = "<group>"; };
 		19118D9F2737B72800D51D03 /* vec.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = vec.c; sourceTree = "<group>"; };
-		19118DA12737B72800D51D03 /* densemat.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = densemat.c; sourceTree = "<group>"; };
-		19118DA22737B72800D51D03 /* sparsemat.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = sparsemat.c; sourceTree = "<group>"; };
-		19118DA42737B72800D51D03 /* dsdppardiso.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = dsdppardiso.h; sourceTree = "<group>"; };
 		19118DA52737B72800D51D03 /* dsdplapack.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = dsdplapack.h; sourceTree = "<group>"; };
-		19118DA82737B72800D51D03 /* config.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = config.c; sourceTree = "<group>"; };
-		19118DA92737B72800D51D03 /* config.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = config.h; sourceTree = "<group>"; };
-		19118DD82737B72800D51D03 /* cs.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = cs.h; sourceTree = "<group>"; };
 		19118DE22737B72800D51D03 /* main.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = main.c; sourceTree = "<group>"; };
 		19118DE42737B72800D51D03 /* dsdphsd.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = dsdphsd.c; sourceTree = "<group>"; };
 		19118DE52737B72800D51D03 /* dsdphsd.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = dsdphsd.h; sourceTree = "<group>"; };
@@ -106,7 +95,6 @@
 		1924445C27E9E07200C99F42 /* dsdpcorrector.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = dsdpcorrector.c; sourceTree = "<group>"; };
 		1934771127B7E1A00048A772 /* dsdpreadsdpa.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = dsdpreadsdpa.h; sourceTree = "<group>"; };
 		1934771227B7E1A00048A772 /* dsdpreadsdpa.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = dsdpreadsdpa.c; sourceTree = "<group>"; };
-		1947DC1E2799B66B004065D8 /* data.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = data.h; sourceTree = "<group>"; };
 		1950371427B625C400C723FC /* dsdppsol.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = dsdppsol.h; sourceTree = "<group>"; };
 		1950371527B625C400C723FC /* dsdppsol.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = dsdppsol.c; sourceTree = "<group>"; };
 		195EE4C527B92AD400065A4B /* dsdpsort.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = dsdpsort.h; sourceTree = "<group>"; };
@@ -115,13 +103,10 @@
 		1971D5F9285B093000690C39 /* libiomp5.dylib */ = {isa = PBXFileReference; lastKnownFileType = "compiled.mach-o.dylib"; name = libiomp5.dylib; path = ../../../../../opt/intel/oneapi/compiler/2022.0.0/mac/compiler/lib/libiomp5.dylib; sourceTree = "<group>"; };
 		197A770427C7889A00D3A50B /* symschur.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = symschur.h; sourceTree = "<group>"; };
 		197A770527C7889A00D3A50B /* symschur.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = symschur.c; sourceTree = "<group>"; };
-		19808F392737FEDA0014086F /* test.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = test.h; sourceTree = "<group>"; };
 		19808F3D273807770014086F /* dsdpdata.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = dsdpdata.h; sourceTree = "<group>"; };
 		19808F3E273807770014086F /* dsdpdata.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = dsdpdata.c; sourceTree = "<group>"; };
 		19808F4127380A990014086F /* dsdppresolve.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; name = dsdppresolve.h; path = DSDP6/src/presolve/dsdppresolve.h; sourceTree = SOURCE_ROOT; };
 		19808F4227380A990014086F /* dsdppresolve.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; name = dsdppresolve.c; path = DSDP6/src/presolve/dsdppresolve.c; sourceTree = SOURCE_ROOT; };
-		19808F44273817510014086F /* rankonemat.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = rankonemat.h; sourceTree = "<group>"; };
-		19808F45273817510014086F /* rankonemat.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = rankonemat.c; sourceTree = "<group>"; };
 		19808F47273833760014086F /* dsdpparam.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = dsdpparam.h; sourceTree = "<group>"; };
 		1982375F2802B966005F85B4 /* schurmat.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = schurmat.h; sourceTree = "<group>"; };
 		198237602802B966005F85B4 /* schurmat.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = schurmat.c; sourceTree = "<group>"; };
@@ -138,7 +123,21 @@
 		1997804727CF5D68006B7E6A /* libiomp5.dylib */ = {isa = PBXFileReference; lastKnownFileType = "compiled.mach-o.dylib"; name = libiomp5.dylib; path = ../../../../../usr/local/lib/libiomp5.dylib; sourceTree = "<group>"; };
 		1997805127CF6426006B7E6A /* libmkl_intel_lp64.1.dylib */ = {isa = PBXFileReference; lastKnownFileType = "compiled.mach-o.dylib"; name = libmkl_intel_lp64.1.dylib; path = ../../../../../usr/local/lib/libmkl_intel_lp64.1.dylib; sourceTree = "<group>"; };
 		1997805227CF6426006B7E6A /* libmkl_core.1.dylib */ = {isa = PBXFileReference; lastKnownFileType = "compiled.mach-o.dylib"; name = libmkl_core.1.dylib; path = ../../../../../usr/local/lib/libmkl_core.1.dylib; sourceTree = "<group>"; };
-		199CB0732875604600799285 /* cs.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = cs.c; sourceTree = "<group>"; };
+		199DB94829043FB5005AD896 /* sparseopts.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = sparseopts.c; sourceTree = "<group>"; };
+		199DB94929043FB5005AD896 /* rank1opts.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = rank1opts.h; sourceTree = "<group>"; };
+		199DB94A29043FB5005AD896 /* adpcg.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = adpcg.c; sourceTree = "<group>"; };
+		199DB94B29043FB5005AD896 /* lanczos.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = lanczos.c; sourceTree = "<group>"; };
+		199DB94C29043FB5005AD896 /* adpcg.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = adpcg.h; sourceTree = "<group>"; };
+		199DB94D29043FB5005AD896 /* denseopts.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = denseopts.h; sourceTree = "<group>"; };
+		199DB94E29043FB5005AD896 /* rankkopts.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = rankkopts.c; sourceTree = "<group>"; };
+		199DB94F29043FB5005AD896 /* rank1opts.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = rank1opts.c; sourceTree = "<group>"; };
+		199DB95029043FB5005AD896 /* rankkopts.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = rankkopts.h; sourceTree = "<group>"; };
+		199DB95129043FB5005AD896 /* pardiso.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = pardiso.h; sourceTree = "<group>"; };
+		199DB95229043FB5005AD896 /* denseopts.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = denseopts.c; sourceTree = "<group>"; };
+		199DB95329043FB5005AD896 /* sparseopts.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = sparseopts.h; sourceTree = "<group>"; };
+		199DB95429043FB5005AD896 /* lanczos.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = lanczos.h; sourceTree = "<group>"; };
+		199DB95B29043FD3005AD896 /* dsdpcs.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = dsdpcs.c; sourceTree = "<group>"; };
+		199DB95C29043FD3005AD896 /* dsdpcs.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = dsdpcs.h; sourceTree = "<group>"; };
 		199F256D2824AA4300D6B778 /* heurpool.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = heurpool.h; sourceTree = "<group>"; };
 		199F256E2826377600D6B778 /* heurpool.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = heurpool.c; sourceTree = "<group>"; };
 		19ABC01127C09F6B00105887 /* dsdpparam.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = dsdpparam.c; sourceTree = "<group>"; };
@@ -149,12 +148,6 @@
 		19BCF80F282179D3000B6AC5 /* speigs.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = speigs.h; sourceTree = "<group>"; };
 		19BCF810282179D3000B6AC5 /* speigs.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = speigs.c; sourceTree = "<group>"; };
 		19BEEC2A2757F14A00C36C9E /* dsdpsolver.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = dsdpsolver.h; sourceTree = "<group>"; };
-		19C1E9D42768E707000FCBF9 /* SDPdata.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = SDPdata.h; sourceTree = "<group>"; };
-		19C3732527A7F2DA0021A708 /* rankkmat.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = rankkmat.h; sourceTree = "<group>"; };
-		19C3732627A7F2DA0021A708 /* rankkmat.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = rankkmat.c; sourceTree = "<group>"; };
-		19C3732827A9063E0021A708 /* data2.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = data2.h; sourceTree = "<group>"; };
-		19C3732927A98B0D0021A708 /* dsdplanczos.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = dsdplanczos.h; sourceTree = "<group>"; };
-		19C3732A27A98B0D0021A708 /* dsdplanczos.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = dsdplanczos.c; sourceTree = "<group>"; };
 		19C3BBD82794032000F0331B /* dsdplog.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = dsdplog.h; sourceTree = "<group>"; };
 		19C3BBD92794032000F0331B /* dsdplog.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = dsdplog.c; sourceTree = "<group>"; };
 		19C3BBDB2794539600F0331B /* dsdpdinfeas.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = dsdpdinfeas.h; sourceTree = "<group>"; };
@@ -215,7 +208,6 @@
 				19118DA32737B72800D51D03 /* include */,
 				19118DE32737B72800D51D03 /* interface */,
 				19118D902737B72800D51D03 /* src */,
-				19118DE12737B72800D51D03 /* test */,
 			);
 			path = DSDP6;
 			sourceTree = "<group>";
@@ -267,26 +259,26 @@
 		19118D9A2737B72800D51D03 /* linsys */ = {
 			isa = PBXGroup;
 			children = (
+				199DB94A29043FB5005AD896 /* adpcg.c */,
+				199DB94C29043FB5005AD896 /* adpcg.h */,
+				199DB95229043FB5005AD896 /* denseopts.c */,
+				199DB94D29043FB5005AD896 /* denseopts.h */,
+				199DB94B29043FB5005AD896 /* lanczos.c */,
+				199DB95429043FB5005AD896 /* lanczos.h */,
+				199DB95129043FB5005AD896 /* pardiso.h */,
+				199DB94F29043FB5005AD896 /* rank1opts.c */,
+				199DB94929043FB5005AD896 /* rank1opts.h */,
+				199DB94E29043FB5005AD896 /* rankkopts.c */,
+				199DB95029043FB5005AD896 /* rankkopts.h */,
+				199DB94829043FB5005AD896 /* sparseopts.c */,
+				199DB95329043FB5005AD896 /* sparseopts.h */,
 				19F1195C275A9A260051D808 /* dsdpfeast.h */,
-				19118DA42737B72800D51D03 /* dsdppardiso.h */,
 				19BACAF1274EAE4500E987FD /* structs.h */,
-				19C3732927A98B0D0021A708 /* dsdplanczos.h */,
 				19118D9C2737B72800D51D03 /* vec.h */,
-				19118D9D2737B72800D51D03 /* sparsemat.h */,
-				19118D9E2737B72800D51D03 /* densemat.h */,
-				19808F44273817510014086F /* rankonemat.h */,
 				1982375F2802B966005F85B4 /* schurmat.h */,
-				19C3732527A7F2DA0021A708 /* rankkmat.h */,
-				1901C7F027B15FB30046EFB2 /* dsdpcg.h */,
 				19BCF80F282179D3000B6AC5 /* speigs.h */,
 				19118D9F2737B72800D51D03 /* vec.c */,
-				19118DA12737B72800D51D03 /* densemat.c */,
-				19118DA22737B72800D51D03 /* sparsemat.c */,
-				19808F45273817510014086F /* rankonemat.c */,
-				19C3732627A7F2DA0021A708 /* rankkmat.c */,
 				198237602802B966005F85B4 /* schurmat.c */,
-				19C3732A27A98B0D0021A708 /* dsdplanczos.c */,
-				1901C7F127B15FB30046EFB2 /* dsdpcg.c */,
 				19BCF810282179D3000B6AC5 /* speigs.c */,
 				19D864022890FB51002D5A7E /* linsysconfig.h */,
 				19D864032890FB51002D5A7E /* linsysconfig.c */,
@@ -305,23 +297,10 @@
 		19118DA62737B72800D51D03 /* externals */ = {
 			isa = PBXGroup;
 			children = (
-				19118DA82737B72800D51D03 /* config.c */,
-				19118DA92737B72800D51D03 /* config.h */,
-				19118DD82737B72800D51D03 /* cs.h */,
-				199CB0732875604600799285 /* cs.c */,
+				199DB95B29043FD3005AD896 /* dsdpcs.c */,
+				199DB95C29043FD3005AD896 /* dsdpcs.h */,
 			);
 			path = externals;
-			sourceTree = "<group>";
-		};
-		19118DE12737B72800D51D03 /* test */ = {
-			isa = PBXGroup;
-			children = (
-				19C3732827A9063E0021A708 /* data2.h */,
-				1947DC1E2799B66B004065D8 /* data.h */,
-				19C1E9D42768E707000FCBF9 /* SDPdata.h */,
-				19808F392737FEDA0014086F /* test.h */,
-			);
-			path = test;
 			sourceTree = "<group>";
 		};
 		19118DE32737B72800D51D03 /* interface */ = {
@@ -446,29 +425,28 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				199DB95A29043FB5005AD896 /* denseopts.c in Sources */,
 				19808F4327380A990014086F /* dsdppresolve.c in Sources */,
-				19118DEC2737B72800D51D03 /* densemat.c in Sources */,
 				1924445D27E9E07300C99F42 /* dsdpcorrector.c in Sources */,
 				19118DEB2737B72800D51D03 /* vec.c in Sources */,
+				199DB95729043FB5005AD896 /* lanczos.c in Sources */,
 				19C3BC05279527BA00F0331B /* dsdppfeascheck.c in Sources */,
 				199F256F2826377600D6B778 /* heurpool.c in Sources */,
 				19C3BBDA2794032000F0331B /* dsdplog.c in Sources */,
-				199CB0742875604600799285 /* cs.c in Sources */,
-				19808F46273817510014086F /* rankonemat.c in Sources */,
 				19118DE62737B72800D51D03 /* schurmatops.c in Sources */,
-				19C3732B27A98B0D0021A708 /* dsdplanczos.c in Sources */,
+				199DB95829043FB5005AD896 /* rankkopts.c in Sources */,
 				19D864042890FB51002D5A7E /* linsysconfig.c in Sources */,
 				19C3BBE62795054900F0331B /* dsdpproxmeasure.c in Sources */,
 				1905E06327C4AD240020D1B2 /* dsdpstats.c in Sources */,
 				1934771327B7E1A00048A772 /* dsdpreadsdpa.c in Sources */,
-				19118DED2737B72800D51D03 /* sparsemat.c in Sources */,
 				19118E232737B72800D51D03 /* main.c in Sources */,
 				19F1195B275A627B0051D808 /* stepdirection.c in Sources */,
-				19C3732727A7F2DA0021A708 /* rankkmat.c in Sources */,
+				199DB95629043FB5005AD896 /* adpcg.c in Sources */,
 				19118E242737B72800D51D03 /* dsdphsd.c in Sources */,
+				199DB95929043FB5005AD896 /* rank1opts.c in Sources */,
 				19808F3F273807770014086F /* dsdpdata.c in Sources */,
-				1901C7F227B15FB30046EFB2 /* dsdpcg.c in Sources */,
-				19118DEE2737B72800D51D03 /* config.c in Sources */,
+				199DB95529043FB5005AD896 /* sparseopts.c in Sources */,
+				199DB95D29043FD3005AD896 /* dsdpcs.c in Sources */,
 				1985AC3D279B9DB400B7B8EB /* dsdppfeas.c in Sources */,
 				197A770627C7889A00D3A50B /* symschur.c in Sources */,
 				19C9AA1A2862BA2400258135 /* dsdpoutput.c in Sources */,
@@ -605,7 +583,7 @@
 			buildSettings = {
 				CODE_SIGN_STYLE = Automatic;
 				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
-				GCC_OPTIMIZATION_LEVEL = fast;
+				GCC_OPTIMIZATION_LEVEL = 0;
 				"HEADER_SEARCH_PATHS[arch=*]" = "./DSDP6/**";
 				LIBRARY_SEARCH_PATHS = (
 					"$(inherited)",
@@ -622,7 +600,7 @@
 			buildSettings = {
 				CODE_SIGN_STYLE = Automatic;
 				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
-				GCC_OPTIMIZATION_LEVEL = fast;
+				GCC_OPTIMIZATION_LEVEL = 0;
 				HEADER_SEARCH_PATHS = "./DSDP6/**";
 				LIBRARY_SEARCH_PATHS = (
 					"$(inherited)",

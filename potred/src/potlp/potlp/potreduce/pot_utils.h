@@ -10,11 +10,7 @@
 #include "pot_def.h"
 #include "pot_structs.h"
 
-#define POT_CALL(func) if ((func) != RETCODE_OK) {     \
-                            retcode = RETCODE_FAILED;  \
-                            goto exit_cleanup;         \
-                        }
-
-extern pot_int potReductionSolve( pot_solver *pot );
+extern double potUtilGetTimeStamp( void );
+extern void potUtilGetDefaultParams( double dblParams[NUM_DBL_PARAM], int intParams[NUM_INT_PARAM] );
 
 #endif /* pot_utils_h */

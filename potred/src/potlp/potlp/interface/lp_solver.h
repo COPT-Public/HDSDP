@@ -6,11 +6,11 @@
 typedef struct {
     
     pot_int nCol; ///< Number of LP variables
-    pot_int nConstr; ///< Number of constraints
+    pot_int nRow; ///< Number of constraints
     
     pot_int *colMatBeg;
     pot_int *colMatIdx;
-    double  *colMatVal;
+    double  *colMatElem;
     
     double *lpRHS;
     double *lpObj;
@@ -20,6 +20,9 @@ typedef struct {
     
     double *ruizCol;
     double *ruizRow;
+    double objScaler;
+    double rhsScaler;
+    double *scalVals;
     
     double *pdcRes;
     double *pRes;
@@ -37,11 +40,16 @@ typedef struct {
     double kappa;
     double tau;
     
-    double *auxArray;
-    
+    double *colVal;
+    double *colDual;
+    double *rowDual;
+            
     pot_solver *potIterator;
     pot_constr_mat *potConstrMat;
     pot_fx *potObjF;
+    
+    int intParams[NUM_INT_PARAM];
+    double dblParams[NUM_DBL_PARAM];
     
     int64_t nIter; ///< Number of iterations
     double  startT; ///< Start time
@@ -52,7 +60,9 @@ extern pot_int LPSolverCreate( potlp_solver **ppotlp );
 extern pot_int LPSolverInit( potlp_solver *potlp, pot_int nCol, pot_int nRow );
 extern pot_int LPSolverSetData( potlp_solver *potlp, pot_int *Ap, pot_int *Ai,
                                 double *Ax, double *lpObj, double *lpRHS );
+extern void LPSolverParamsPrint( potlp_solver *potlp );
 extern pot_int LPSolverOptimize( potlp_solver *potlp );
+extern void LPSolverGetSolution( potlp_solver *potlp, double *colVal, double *rowDual, double *colDual );
 extern void LPSolverDestroy( potlp_solver **ppotlp );
 
 #endif /* lpdata_h */

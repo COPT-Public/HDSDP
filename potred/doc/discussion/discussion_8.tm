@@ -39,7 +39,7 @@
     <assign|a|<macro|<math|<math-bf|a>>>>
   </hide-preamble>
 
-  <screens|<\shown>
+  <screens|<\hidden>
     <tit|Dimension-Reduced Interior Point Method>
 
     \;
@@ -66,18 +66,22 @@
 
       <date|>
     </author-affiliation>>>>
-  </shown>|<\hidden>
+  </hidden>|<\hidden>
     <tit|Current Progress>
 
     \;
 
     <strong|Potential reduction>
 
+    \;
+
     <\itemize>
       <item>Working on C transformation
 
       <item>The warm-start Lanczos improves by 20% in speed
     </itemize>
+
+    \;
 
     The solver is designed for solving general problem
 
@@ -90,7 +94,7 @@
 
     <\eqnarray*>
       <tformat|<table|<row|<cell|\<phi\><around*|(|<x>|)>>|<cell|\<assign\>>|<cell|\<rho\>
-      log<around*|(|f<around*|(|<x>|)>-z|)>+<big|sum><rsub|i=1><rsup|n>x<rsub|i>>>>>
+      log<around*|(|f<around*|(|<x>|)>-z|)>+<big|sum><rsub|i=1><rsup|n>log<around*|(|x<rsub|i>|)>>>>>
     </eqnarray*>
 
     <\itemize>
@@ -101,11 +105,48 @@
     </itemize>
 
     \;
+  </hidden>|<\shown>
+    <tit|One useful observation>
+
+    \;
+
+    Recall that\ 
+
+    \;
+
+    <\equation*>
+      \<lambda\><rsub|min><around*|(|<X>\<nabla\><rsup|2>\<phi\><around*|(|<x>|)><X>|)>\<leq\><frac|-2\<rho\>|<around*|\<\|\|\>|<X><rsup|-1><around*|(|<x><rsup|\<ast\>>-<x>|)>|\<\|\|\>><rsup|2>>+1.
+    </equation*>
+
+    \;
+
+    \;
+
+    <\itemize>
+      <item>If <math|x<rsub|i>\<rightarrow\>0> while
+      <math|x<rsup|\<ast\>><rsub|i>-x<rsub|i>\<neq\>0>, then the curvature is
+      harder to find
+
+      In other words, <with|color|red|centrality> matters when exploiting the
+      curvature
+
+      <math|x<rsub|i>+\<alpha\>d<rsub|i>\<rightarrow\>0<rsup|+>> makes next
+      curvature hard to detect
+
+      \;
+
+      <item>In practice, we now let line-search go less aggressively to
+      ensure centrality
+
+      <math|\<rho\>> is also adjusted to balance centrality and optimality
+    </itemize>
+
+    \;
 
     <strong|HDSDP>
 
-    Getting the solver into COPT
-  </hidden>>
+    Now integrating HDSDP into the next COPT release
+  </shown>>
 </body>
 
 <\initial>
