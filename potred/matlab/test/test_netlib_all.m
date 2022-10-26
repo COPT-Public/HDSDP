@@ -6,12 +6,15 @@ addpath ../data/;
 files = dir(fullfile("..", "data", "p_*"));
 nfiles = length(files);
 fnames = {files.name}';
-maxmn = 1000;
+maxmn = 500;
 minmn = 0;
 
-diary("log_20220915.txt")
-diary on
-for i = 1:nfiles
-    test_netlib(fullfile("..", "data", fnames{i}), 1000, maxmn, minmn);
-end % End for
 diary off;
+
+for i = 1:nfiles
+    n = fnames{i};
+    diary("log_20221027" + n(3:end-8) + ".txt");
+    diary on
+    test_netlib(fullfile("..", "data", fnames{i}), 500000, maxmn, minmn);
+    diary off;
+end % End for

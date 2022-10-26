@@ -521,7 +521,7 @@ extern pot_int potReductionSolve( pot_solver *pot ) {
     
     for ( int i = 0; ; ++i ) {
         
-        if ( i % 10000 == 0 && pot->allowCurvature ) {
+        if ( i % 1000 == 0 && i < 10000 && pot->allowCurvature ) {
             pot->useCurvature = 1;
         }
         

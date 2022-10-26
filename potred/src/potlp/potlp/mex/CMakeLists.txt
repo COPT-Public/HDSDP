@@ -3,9 +3,11 @@ cmake_minimum_required(VERSION 3.21)
 set(CMAKE_OSX_ARCHITECTURES x86_64)
 project(POTLP C)
 set(CMAKE_C_STANDARD 11)
+SET(CMAKE_BUILD_TYPE "Release")
 
 find_package(Matlab)
 add_compile_definitions(MATLAB_MEX_FILE)
+# add_compile_definitions(NOKAPPA)
 
 # Configure MKL paths
 set(ENV{MKL_LIB_PATH} /opt/intel/oneapi/mkl/2021.2.0/lib)

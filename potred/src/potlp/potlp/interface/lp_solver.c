@@ -4,8 +4,6 @@
  * @TODO: Add more detailed comments
  */
 
-#define NOKAPPA
-
 #ifdef NOKAPPA
 #include "lp_solver_nokappa.c"
 #else
