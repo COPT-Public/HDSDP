@@ -1,6 +1,6 @@
 #include "pot_lanczos.h"
 #include "pot_vector.h"
-#include "pot_utils.h"
+#include "pot_solver.h"
 #include "vec_mat.h"
 
 #include <math.h>
