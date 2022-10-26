@@ -7,9 +7,12 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		1964F0C228F7BC9700E6458B /* Accelerate.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 1964F0C128F7BC9700E6458B /* Accelerate.framework */; };
+		19BC6B1228EA14AB00C7A150 /* vec_mat.c in Sources */ = {isa = PBXBuildFile; fileRef = 19BC6B1128EA14AB00C7A150 /* vec_mat.c */; };
+		19BC6B1528EA1C4A00C7A150 /* pot_lanczos.c in Sources */ = {isa = PBXBuildFile; fileRef = 19BC6B1428EA1C4A00C7A150 /* pot_lanczos.c */; };
 		19DCD82628DB5662006B6B01 /* main.c in Sources */ = {isa = PBXBuildFile; fileRef = 19DCD82528DB5662006B6B01 /* main.c */; };
-		19DCD83228DB587A006B6B01 /* potlp.c in Sources */ = {isa = PBXBuildFile; fileRef = 19DCD83128DB587A006B6B01 /* potlp.c */; };
-		19DCD83528DB6148006B6B01 /* lpdata.c in Sources */ = {isa = PBXBuildFile; fileRef = 19DCD83428DB6148006B6B01 /* lpdata.c */; };
+		19DCD83228DB587A006B6B01 /* pot_solver.c in Sources */ = {isa = PBXBuildFile; fileRef = 19DCD83128DB587A006B6B01 /* pot_solver.c */; };
+		19DCD83528DB6148006B6B01 /* lp_solver.c in Sources */ = {isa = PBXBuildFile; fileRef = 19DCD83428DB6148006B6B01 /* lp_solver.c */; };
 		19F175CD28E41874004265A0 /* pot_utils.c in Sources */ = {isa = PBXBuildFile; fileRef = 19F175CC28E41874004265A0 /* pot_utils.c */; };
 		19F9A0A928E3B8AE00C7710E /* pot_vector.c in Sources */ = {isa = PBXBuildFile; fileRef = 19F9A0A828E3B8AE00C7710E /* pot_vector.c */; };
 		19F9A0B328E3BDD300C7710E /* pot_constr_mat.c in Sources */ = {isa = PBXBuildFile; fileRef = 19F9A0B228E3BDD300C7710E /* pot_constr_mat.c */; };
@@ -29,12 +32,19 @@
 /* End PBXCopyFilesBuildPhase section */
 
 /* Begin PBXFileReference section */
+		1955F02828EDF76400CD7B84 /* pot_solver.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = pot_solver.h; sourceTree = "<group>"; };
+		1964F0BF28F7010F00E6458B /* data_new.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = data_new.h; path = potlp/test/data_new.h; sourceTree = "<group>"; };
+		1964F0C128F7BC9700E6458B /* Accelerate.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = Accelerate.framework; path = System/Library/Frameworks/Accelerate.framework; sourceTree = SDKROOT; };
+		19BC6B1028EA14AB00C7A150 /* vec_mat.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = vec_mat.h; sourceTree = "<group>"; };
+		19BC6B1128EA14AB00C7A150 /* vec_mat.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = vec_mat.c; sourceTree = "<group>"; };
+		19BC6B1328EA1C4A00C7A150 /* pot_lanczos.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = pot_lanczos.h; sourceTree = "<group>"; };
+		19BC6B1428EA1C4A00C7A150 /* pot_lanczos.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = pot_lanczos.c; sourceTree = "<group>"; };
 		19DCD82228DB5662006B6B01 /* potlp */ = {isa = PBXFileReference; explicitFileType = "compiled.mach-o.executable"; includeInIndex = 0; path = potlp; sourceTree = BUILT_PRODUCTS_DIR; };
 		19DCD82528DB5662006B6B01 /* main.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = main.c; sourceTree = "<group>"; };
-		19DCD83028DB587A006B6B01 /* potlp.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = potlp.h; sourceTree = "<group>"; };
-		19DCD83128DB587A006B6B01 /* potlp.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = potlp.c; sourceTree = "<group>"; };
-		19DCD83328DB6148006B6B01 /* lpdata.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = lpdata.h; sourceTree = "<group>"; };
-		19DCD83428DB6148006B6B01 /* lpdata.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = lpdata.c; sourceTree = "<group>"; };
+		19DCD83028DB587A006B6B01 /* pot_def.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = pot_def.h; sourceTree = "<group>"; };
+		19DCD83128DB587A006B6B01 /* pot_solver.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = pot_solver.c; sourceTree = "<group>"; };
+		19DCD83328DB6148006B6B01 /* lp_solver.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = lp_solver.h; sourceTree = "<group>"; };
+		19DCD83428DB6148006B6B01 /* lp_solver.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = lp_solver.c; sourceTree = "<group>"; };
 		19F175CA28E4155B004265A0 /* pot_param.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = pot_param.h; sourceTree = "<group>"; };
 		19F175CB28E41874004265A0 /* pot_utils.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = pot_utils.h; sourceTree = "<group>"; };
 		19F175CC28E41874004265A0 /* pot_utils.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = pot_utils.c; sourceTree = "<group>"; };
@@ -52,17 +62,28 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				1964F0C228F7BC9700E6458B /* Accelerate.framework in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
 /* End PBXFrameworksBuildPhase section */
 
 /* Begin PBXGroup section */
+		1964F0C028F7BC9700E6458B /* Frameworks */ = {
+			isa = PBXGroup;
+			children = (
+				1964F0C128F7BC9700E6458B /* Accelerate.framework */,
+			);
+			name = Frameworks;
+			sourceTree = "<group>";
+		};
 		19DCD81928DB5662006B6B01 = {
 			isa = PBXGroup;
 			children = (
+				1964F0BF28F7010F00E6458B /* data_new.h */,
 				19DCD82428DB5662006B6B01 /* potlp */,
 				19DCD82328DB5662006B6B01 /* Products */,
+				1964F0C028F7BC9700E6458B /* Frameworks */,
 			);
 			sourceTree = "<group>";
 		};
@@ -89,8 +110,11 @@
 		19DCD82C28DB57C2006B6B01 /* interface */ = {
 			isa = PBXGroup;
 			children = (
-				19DCD83128DB587A006B6B01 /* potlp.c */,
+				19DCD83328DB6148006B6B01 /* lp_solver.h */,
+				19DCD83428DB6148006B6B01 /* lp_solver.c */,
+				19DCD83128DB587A006B6B01 /* pot_solver.c */,
 				19F175CA28E4155B004265A0 /* pot_param.h */,
+				1955F02828EDF76400CD7B84 /* pot_solver.h */,
 			);
 			path = interface;
 			sourceTree = "<group>";
@@ -107,6 +131,8 @@
 				19F9A0A628E3AB0600C7710E /* pot_structs.h */,
 				19F175CB28E41874004265A0 /* pot_utils.h */,
 				19F175CC28E41874004265A0 /* pot_utils.c */,
+				19BC6B1328EA1C4A00C7A150 /* pot_lanczos.h */,
+				19BC6B1428EA1C4A00C7A150 /* pot_lanczos.c */,
 			);
 			path = potreduce;
 			sourceTree = "<group>";
@@ -114,8 +140,8 @@
 		19DCD82E28DB57D5006B6B01 /* linalg */ = {
 			isa = PBXGroup;
 			children = (
-				19DCD83328DB6148006B6B01 /* lpdata.h */,
-				19DCD83428DB6148006B6B01 /* lpdata.c */,
+				19BC6B1028EA14AB00C7A150 /* vec_mat.h */,
+				19BC6B1128EA14AB00C7A150 /* vec_mat.c */,
 			);
 			path = linalg;
 			sourceTree = "<group>";
@@ -123,7 +149,7 @@
 		19DCD82F28DB581B006B6B01 /* include */ = {
 			isa = PBXGroup;
 			children = (
-				19DCD83028DB587A006B6B01 /* potlp.h */,
+				19DCD83028DB587A006B6B01 /* pot_def.h */,
 			);
 			path = include;
 			sourceTree = "<group>";
@@ -186,12 +212,14 @@
 			buildActionMask = 2147483647;
 			files = (
 				19F9A0B328E3BDD300C7710E /* pot_constr_mat.c in Sources */,
-				19DCD83528DB6148006B6B01 /* lpdata.c in Sources */,
+				19BC6B1528EA1C4A00C7A150 /* pot_lanczos.c in Sources */,
+				19BC6B1228EA14AB00C7A150 /* vec_mat.c in Sources */,
+				19DCD83528DB6148006B6B01 /* lp_solver.c in Sources */,
 				19DCD82628DB5662006B6B01 /* main.c in Sources */,
 				19F9A0B628E3C4D700C7710E /* pot_objfunc.c in Sources */,
 				19F175CD28E41874004265A0 /* pot_utils.c in Sources */,
 				19F9A0A928E3B8AE00C7710E /* pot_vector.c in Sources */,
-				19DCD83228DB587A006B6B01 /* potlp.c in Sources */,
+				19DCD83228DB587A006B6B01 /* pot_solver.c in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -237,7 +265,7 @@
 				GCC_C_LANGUAGE_STANDARD = gnu11;
 				GCC_DYNAMIC_NO_PIC = NO;
 				GCC_NO_COMMON_BLOCKS = YES;
-				GCC_OPTIMIZATION_LEVEL = 0;
+				GCC_OPTIMIZATION_LEVEL = fast;
 				GCC_PREPROCESSOR_DEFINITIONS = (
 					"DEBUG=1",
 					"$(inherited)",
@@ -294,6 +322,7 @@
 				ENABLE_STRICT_OBJC_MSGSEND = YES;
 				GCC_C_LANGUAGE_STANDARD = gnu11;
 				GCC_NO_COMMON_BLOCKS = YES;
+				GCC_OPTIMIZATION_LEVEL = fast;
 				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
 				GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;
 				GCC_WARN_UNDECLARED_SELECTOR = YES;

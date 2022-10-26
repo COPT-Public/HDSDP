@@ -550,6 +550,12 @@
   \;
 
   where the first inequality is by <math|<frac|\<rho\><X><n>f<around*|(|<x>|)><n>f<around*|(|<x>|)><rsup|\<top\>><X>|f<around*|(|<x>|)><rsup|2>>\<preceq\><frac|4\<rho\>|n><I>>.
+
+  \;
+
+  <\equation*>
+    <matrix|<tformat|<table|<row|<cell|a<rsub|11>>|<cell|>>|<row|<cell|a<rsub|21>>|<cell|a<rsub|22>>>>>><matrix|<tformat|<table|<row|<cell|x<rsub|1>>>|<row|<cell|dx<rsub|2>>>>>>=<matrix|<tformat|<table|<row|<cell|b<rsub|1>>>|<row|<cell|b<rsub|2>>>>>>
+  </equation*>
 </body>
 
 <\initial>
@@ -565,7 +571,6 @@
     <associate|auto-11|<tuple|5|8>>
     <associate|auto-12|<tuple|6|9>>
     <associate|auto-13|<tuple|6.1|9>>
-    <associate|auto-14|<tuple|6.2|?>>
     <associate|auto-2|<tuple|1.1|1>>
     <associate|auto-3|<tuple|2|2>>
     <associate|auto-4|<tuple|2.1|3>>

@@ -7,7 +7,8 @@
 #define NUM_DBL_PARAM (10)
 
 static int defaultIntParam[NUM_INT_PARAM] = {
-    10000
+    10000,
+    100
 };
 
 static double defaultDblParam[NUM_DBL_PARAM] = {

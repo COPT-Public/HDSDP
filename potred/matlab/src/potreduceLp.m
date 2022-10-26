@@ -18,7 +18,7 @@ potold = rho * log(f) - sum(log(x_prev(coneidx)));
 x_pres = x_prev;
 recompute = true;
 
-beta = 1.0;
+beta = 0.7;
 
 tic;
 if printlevel
@@ -49,7 +49,7 @@ for i = 1:maxiter
             logstar = "*";
             % Consider negative curvature of Hessian
             % Hess = rho * (- (g * g') / f + ATA) + diag(f * d);
-            method = "scaled";
+            method = "direct";
             mk = findnegacurv(x_pres, m, coneidx, rho, g, f, ATA, AT, A, method);
             usecurvature = false;
         end % End if 

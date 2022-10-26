@@ -1,0 +1,541 @@
+\documentclass{article}
+\usepackage[english]{babel}
+\usepackage{amsmath,amssymb}
+\usepackage{hyperref}
+\usepackage{geometry}[scale=0.8]
+
+%%%%%%%%%% Start TeXmacs macros
+\newcommand{\assign}{:=}
+\newcommand{\backassign}{=:}
+\newcommand{\cdummy}{\cdot}
+\newcommand{\tmaffiliation}[1]{\\ #1}
+\newcommand{\tmstrong}[1]{\textbf{#1}}
+\newcommand{\tmtextit}[1]{\text{{\itshape{#1}}}}
+\newcommand{\tmverbatim}[1]{\text{{\ttfamily{#1}}}}
+%%%%%%%%%% End TeXmacs macros
+
+\setlength{\parindent}{0pt}
+
+\newcommand{\x}{\mathbf{x}}
+\newcommand{\A}{\mathbf{A}}
+\newcommand{\0}{\textbf{0}}
+\newcommand{\e}{\mathbf{e}}
+\newcommand{\n}{\nabla}
+\newcommand{\X}{\mathbf{X}}
+\newcommand{\tmi}{\ensuremath{\mathbf{I}}}
+\newcommand{\I}{\mathbf{I}}
+\newcommand{\tmH}{\mathbf{H}}
+\newcommand{\h}{\mathbf{h}}
+\newcommand{\tmP}{\mathbf{P}}
+\newcommand{\m}{\mathbf{m}}
+\newcommand{\g}{\mathbf{g}}
+\newcommand{\M}{\mathbf{M}}
+\newcommand{\tmd}{\mathbf{d}}
+\newcommand{\G}{\mathbf{G}}
+\newcommand{\tma}{\mathbf{a}}
+\newcommand{\tmb}{\mathbf{b}}
+\newcommand{\tmc}{\mathbf{c}}
+\newcommand{\y}{\mathbf{y}}
+\newcommand{\s}{\mathbf{s}}
+\newcommand{\tmu}{\mathbf{u}}
+\newcommand{\HA}{\^{\mathbf{A}}}
+\newcommand{\bs}{\mathbf{S}}
+\newcommand{\tmr}{\mathbf{r}}
+\newcommand{\Y}{\mathbf{Y}}
+\newcommand{\p}{\mathbf{p}}
+\newcommand{\V}{\mathbf{V}}
+\newcommand{\tmv}{\mathbf{v}}
+\newcommand{\D}{\mathbf{D}}
+\newcommand{\w}{\mathbf{w}}
+\newcommand{\B}{\ensuremath{\mathbf{B}}}
+
+\begin{document}
+
+\title{On the Practical Implementataion of a First-order Potential Reduction
+Algorithm for Linear Programming}
+
+\author{
+  \tmaffiliation{Huikang Liu\qquad  Wenzhi Gao\qquad Yinyu Ye}
+}
+
+\maketitle
+
+\begin{abstract}
+  In this report, we present the detailed implementation details for a
+  first-order potential reduction algorithm for linear programming (LP)
+  problems. The algorithm applies dimension-reduced method to reduce the
+  potential function defined over the well-known homogeneous self-dual model
+  for LP and leverages the negative curvature of the potential function to
+  accelerate convergence. A complete recipe on algorithm design and
+  implementation is depicted in this report and some preliminary experiment
+  results are given.
+\end{abstract}
+
+\
+
+\section{Introduction}
+
+\subsection{First-order Potential Reduction Method for LP}
+
+In this report, we are interested in a first-order method for the standard LP
+problems.
+
+{\tmstrong{Standard Primal-dual LP}}
+\begin{eqnarray*}
+  \min_{\x \in \mathbb{R}^n} & \tmc^{\top} \x & \\
+  \text{subject to} & \A \x = \tmb & \\
+  & \x \geq \0 & \\
+  &  & \\
+  \max_{\y \in \mathbb{R}^m} & \tmb^{\top} \y & \\
+  \text{subject to} & \A^{\top} \y + \s = \tmc & \\
+  & \s \geq \0 & 
+\end{eqnarray*}
+It is well-known that LPs admit a homogeneous self-dual (HSD) model
+\begin{eqnarray*}
+  \A \x - \tmb \tau & = & \0\\
+  - \A^{\top} \y - \s + \tmc \tau & = & \0\\
+  \tmb^{\top} \y - \tmc^{\top} \x - \kappa & = & 0\\
+  \left( \x, \s, \kappa, \tau \right) & \geq & \0,
+\end{eqnarray*}
+where the two homogenizing variables $\kappa, \tau$ are introduced for
+infeasibility detection {\cite{ye2011interior}}. The first-order potential
+reduction method, initially proposed by {\cite{ye2015first}}, encodes the
+above HSD model into the following simplex-constrained QP
+\begin{eqnarray*}
+  \min_{\left( \x, \y, \s, \kappa, \tau \right)} & \frac{1}{2} \left\| \tmr
+  \left( \x, \y, \s, \kappa, \tau \right) \right\|^2 & \\
+  \text{subject to} & \e_n^{\top} \x + \e_n^{\top} \s + \kappa + \tau = 1, & 
+\end{eqnarray*}
+where
+\begin{eqnarray*}
+  \tmr \left( \x, \y, \s, \kappa, \tau \right) & \assign &
+  \left(\begin{array}{ccccc}
+    \0_{m \times m} & \A & \0_{m \times n} & \0_{m \times 1} & - \tmb\\
+    - \A^{\top} & \0_{n \times n} & - \I_{n \times n} & \0_{n \times 1} &
+    \tmc\\
+    \tmb^{\top} & - \tmc^{\top} & \0_{1 \times n} & - 1 & 0
+  \end{array}\right) \left(\begin{array}{c}
+    \y\\
+    \x\\
+    \s\\
+    \kappa\\
+    \tau
+  \end{array}\right)
+\end{eqnarray*}
+and for brevity, we simplify the notation by re-defining $\A$ and $\x$ and
+consider the formulation below
+\begin{eqnarray*}
+  \min_{\x} & \frac{1}{2} \left\| \A \x \right\|^2 & \backassign f \left( \x
+  \right)\\
+  \text{subject to} & \e^{\top} \x = 1 & \\
+  & \x \geq \0 . & 
+\end{eqnarray*}
+Given the re-formulation, the first-order potential reduction method adopts
+the potential function
+\[ \phi \left( \x \right) \assign \rho \log \left( f \left( \x \right) \right)
+   - \sum_{i = 1}^n \log x_i \]
+and applies a conditional gradient method to drive $\phi$ to $- \infty$. More
+detailedly, the gradient of $\phi$ is given by
+\[ \n \phi \left( \x \right) = \frac{\rho \n f \left( \x \right)}{f \left( \x
+   \right)} - \X^{- 1} \e . \]
+At each iteration, we evaluate the gradient $\n \phi \left( \x^k \right)$, let
+$\Delta^k \assign \x^{k + 1} - \x^k$ and solve following subproblem
+\begin{eqnarray*}
+  \min_{\Delta} & \left\langle \n \phi \left( \x^k \right), \Delta
+  \right\rangle & \\
+  \text{subject to} & \e^{\top} \Delta^k = 0 & \\
+  & \left\| \left( \X^k \right)^{- 1} \Delta^k \right\| \leq \beta & 
+\end{eqnarray*}
+to update $\x^{k + 1} \leftarrow \x^k + \Delta^k$. In the next section, we
+extend the basic potential reduction framwork by incorporating momentum term
+from the Dimension-reduced method proposed in {\cite{zhang2022drsom}}.
+
+\subsection{Dimension-reduced Potential Reduction}
+
+In this section, we consider two direction extension of the potential
+reduction framework. In a word, by keeping track of one recent history
+iterate, we update
+\begin{eqnarray*}
+  \tmd^k & \leftarrow & \alpha^g \tmP_{\Delta} \left[ \nabla \phi \left( \x^k
+  \right) \right] + \alpha^m \left( \x^k - \x^{k - 1} \right)\\
+  \x^k & \leftarrow & \x^k + \tmd^k
+\end{eqnarray*}
+where $\tmP_{\Delta} [\cdummy]$ is the orthogonal projection onto null space
+of the simplex constraint $\e^{\top} \x = 0$. Since we leverage the
+dimension-reduced method, \ $\alpha^g, \alpha^d$ are evaluated through the
+following model
+\begin{eqnarray*}
+  \min_{\tmd, \alpha^g, \alpha^m} & \frac{1}{2} \tmd^{\top} \nabla^2 \phi
+  \left( \x \right) \tmd + \nabla \phi \left( \x \right)^{\top} \tmd & \\
+  \text{subject to} & \left\| \X^{- 1} \tmd \right\| \leq \Delta & \\
+  & \tmd = \alpha^g \g^k + \alpha^m \m^k & 
+\end{eqnarray*}
+where $\g^k \assign \tmP_{\Delta} \left[ \nabla \phi \left( \x^k \right)
+\right]$, $\m^k \assign \x^k - \x^{k - 1}$. If we define
+\begin{eqnarray*}
+  \widetilde{\tmH} & \assign & \left(\begin{array}{cc}
+    \left\langle \g^k, \nabla^2 \phi \left( \x^k \right) \g^k \right\rangle &
+    \left\langle \g^k, \nabla^2 \phi \left( \x^k \right) \m^k \right\rangle\\
+    \left\langle \m^k, \nabla^2 \phi \left( \x^k \right) \g^k \right\rangle &
+    \left\langle \m^k, \nabla^2 \phi \left( \x^k \right) \m^k \right\rangle
+  \end{array}\right)\\
+  \widetilde{\h} & \assign & \left(\begin{array}{c}
+    \left\| \g^k \right\|^2\\
+    \left\langle \g^k, \m^k \right\rangle
+  \end{array}\right)\\
+  \M & \assign & \left(\begin{array}{cc}
+    \left\| \left( \X^k \right)^{- 1} \g^k \right\|^2 & \left\langle \g^k,
+    \left( \X^k \right)^{- 2} \m^k \right\rangle\\
+    \left\langle \m^k, \left( \X^k \right)^{- 2} \g^k \right\rangle & \left\|
+    \left( \X^k \right)^{- 1} \m^k \right\|^2
+  \end{array}\right),
+\end{eqnarray*}
+the above model simplies into a two-dimensional QCQP.
+\begin{eqnarray*}
+  \min_{\alpha} & \frac{1}{2} \alpha^{\top} \widetilde{\tmH} \alpha +
+  \widetilde{\h} \alpha & \backassign m (\alpha)\\
+  \text{subject to} & \left\| \M \alpha \right\| \leq \Delta & 
+\end{eqnarray*}
+
+
+Note that $\nabla^2 \phi \left( \x^k \right) = - \frac{\rho \n f \left( \x^k
+\right) \n f \left( \x^k \right)^{\top}}{f \left( \x^k \right)^2} + \rho
+\frac{\A^{\top} \A}{f \left( \x^k \right)} + \left( \X^k \right)^{- 2}$ and we
+evaluate the above relations via
+\begin{eqnarray*}
+  \left\langle \tma, \nabla^2 \phi \left( \x^k \right) \tma \right\rangle & =
+  & \left\langle \tma, - \frac{\rho \n f \left( \x^k \right) \n f \left( \x^k
+  \right)^{\top} \tma}{f \left( \x^k \right)^2} \right\rangle + \frac{\left\|
+  \A \tma \right\|^2}{f \left( \x^k \right)} + \left\| \left( \X^k \right)^{-
+  1} \tma \right\|^2\\
+  & = & - \rho \left( \frac{\n f \left( \x^k \right)^{\top} \tma}{f \left(
+  \x^k \right)} \right)^2 + \frac{\left\| \A \tma \right\|^2}{f \left( \x^k
+  \right)} + \left\| \left( \X^k \right)^{- 1} \tma \right\|^2\\
+  \left\langle \tma, \nabla^2 \phi \left( \x^k \right) \tmb \right\rangle & =
+  & \left\langle \tma, - \frac{\rho \n f \left( \x^k \right) \n f \left( \x^k
+  \right)^{\top} \tmb}{f \left( \x^k \right)^2} \right\rangle +
+  \frac{\left\langle \A \tma, \A \tmb \right\rangle}{f \left( \x^k \right)} +
+  \left\langle \tma, \left( \X^k \right)^{- 2} \tmb \right\rangle\\
+  & = & - \rho \left( \frac{\n f \left( \x^k \right)^{\top} \tma}{f \left(
+  \x^k \right)} \right) \left( \frac{\n f \left( \x^k \right)^{\top} \tmb}{f
+  \left( \x^k \right)} \right) + \frac{\left\langle \A \tma, \A \tmb
+  \right\rangle}{f \left( \x^k \right)} + \left\langle \tma, \left( \X^k
+  \right)^{- 2} \tmb \right\rangle .
+\end{eqnarray*}
+To ensure feasibility, we always choose $\Delta \leq 1$ and adjust it based on
+the trust-region rule.
+
+\section{Accelerating the Dimension-reduced Potential Reduction}
+
+In this section, we summarize several techniques applied to improve the
+potential reduction method.
+
+\subsection{Scaling}
+
+As is often observed in the first-order type methods, proper scaling
+accelerates the performance of the algorithm. In practice, we scale
+\[ \tmb \leftarrow \frac{\tmb}{\left\| \tmb \right\|_1 + 1} \hspace{3em} \tmc
+   \leftarrow \frac{\tmc}{\left\| \tmc \right\|_1 + 1} \]
+and then apply Ruiz scaling {\cite{ruiz2001scaling}} to
+$\left(\begin{array}{ccccc}
+  \0_{m \times m} & \A & \0_{m \times n} & \0_{m \times 1} & - \tmb\\
+  - \A^{\top} & \0_{n \times n} & - \I_{n \times n} & \0_{n \times 1} & \tmc\\
+  \tmb^{\top} & - \tmc^{\top} & \0_{1 \times n} & - 1 & 0
+\end{array}\right)$ to improve conditioning of the matrix.
+
+\subsection{Line-search}
+
+When a direction is assembled from the trust-region subproblem, instead of
+directly updating
+\[ \x^{k + 1} \leftarrow \x^k + \tmd^k, \]
+we allow a more aggressive exploitation of the direction by performing a
+line-search over
+\[ \phi \left( \x + \alpha \tmd \right), \alpha \in \left[ 0, 0.9
+   \alpha_{\text{max}} \right), \]
+where $\alpha_{\text{max}} = \max \left\{ \alpha \geq 0, \x + \alpha \tmd \geq
+\0 \right\}$. The line-search sometimes help accelerate convergence when the
+algorithm approaches optimality.
+
+\subsection{Escaping the Local Optimum}
+
+One most important accleration trick is to introduce the negative curvature as
+a search direction. Since potential function is nonconvex in nature, it's
+quite common that the algorithm stagates at a local solution. To help escape
+such local optimum, we make use of the negative curvature of $\n^2 \phi \left(
+\x \right)$. In our case this can be done by finding the (minimal) negative
+eigenvalue and eigenvector
+\[ \lambda_{\min} \left\{ \nabla^2 \phi \left( \x \right) = \frac{2 \rho
+   \A^{\top} \A}{\left\| \A \x \right\|^2} - \frac{4 \rho \A^{\top} \A \x
+   \x^{\top} \A^{\top} \A}{\left\| \A \x \right\|^4} + \small{\X^{- 2}}
+   \right\} \]
+and we wish to solve the eigen-problem
+\begin{eqnarray*}
+  \min_{\left\| \tmv \right\| = 1} & \tmv^{\top} \left\{ \frac{2 \rho
+  \A^{\top} \A}{\left\| \A \x \right\|^2} - \frac{4 \rho \A^{\top} \A \x
+  \x^{\top} \A^{\top} \A}{\left\| \A \x \right\|^4} + \small{\X^{- 2}}
+  \right\} \tmv & \\
+  \text{subject to} & \e^{\top} \tmv = 0. & 
+\end{eqnarray*}
+In general there are two ways to compute a valid direction. The first method
+approaches the problem directly and uses Lanczos iteration to find the
+negative eigen-value of $\n^2 \phi$. As for the second approach, we apply the
+scaling matrix $\X$ and solve
+\begin{eqnarray*}
+  \min_{\left\| \X \tmv \right\| = 1} & \tmv^{\top} \left\{ \frac{2 \rho \X
+  \A^{\top} \A \X}{\left\| \A \x \right\|^2} - \frac{4 \rho \X \A^{\top} \A \x
+  \x^{\top} \A^{\top} \A \X}{\left\| \A \tmu \right\|^4} + \small{\I} \right\}
+  \small{} \tmv & \\
+  \text{subject to} & \x^{\top} \tmv = 0. & 
+\end{eqnarray*}
+Since we are to find any negative curvature, it is safe to replace $\left\| \X
+\tmv \right\| = 1$ by $\left\| \tmv \right\| = 1$ and arrive at
+\begin{eqnarray*}
+  \min_{\left\| \tmv \right\| = 1} & \tmv^{\top} \left\{ \frac{2 \rho \X
+  \A^{\top} \A \X}{\left\| \A \x \right\|^2} - \frac{4 \rho \X \A^{\top} \A \x
+  \x^{\top} \A^{\top} \A \X}{\left\| \A \tmu \right\|^4} + \small{\I} \right\}
+  \small{} \tmv & \\
+  \text{subject to} & \x^{\top} \tmv = 0. & 
+\end{eqnarray*}
+Another useful technique when evaluating the curvature is to reduce the
+support of the curvature. Since it's likely that $v_j$, $j \in \{ i : x_i
+\rightarrow 0 \}$ will contribute a lot in the negative curvature, we can
+restrict the support of $\tmv$ to $\{ i : x_i \geq \varepsilon \}$ for some
+$\varepsilon > 0$.
+
+\section{Algorithm Design}
+
+In this section, we discuss the design of the potential-reduction based
+solver.
+
+\subsection{Abstract Function Class}
+
+To allow further extension, we design the solver to solve general problem
+\begin{eqnarray*}
+  \min_{\x} & f \left( \x \right) & \\
+  \text{subject to} & \A \x = \tmb & \\
+  & \x \geq \0 & 
+\end{eqnarray*}
+using potential reduction
+\begin{eqnarray*}
+  \phi \left( \x \right) & \assign & \rho \log \left( f \left( \x \right) - z
+  \right) + \log \sum_{i = 1}^n x_i
+\end{eqnarray*}
+over Null space of $\A$. To drive the method to work, the following methods
+are provided by $f$.
+\begin{itemize}
+  \item Gradient evaluation $\nabla f \left( \x \right)$
+  
+  \item Hessian vector product $\n^2 f \left( \x \right) \tmu$
+  
+  \item Progress monitor (Optional)
+\end{itemize}
+The potential reduction framework requries $\A$ and maintains $\x, z, \rho$ to
+run
+\begin{itemize}
+  \item Potential gradient evaluation
+  \[ \n \phi \left( \x \right) = \frac{\rho}{f \left( \x \right) - z} \n f
+     \left( \x \right) - \X^{- 1} \e \]
+  \item Potential (scaled) Hessian-vector product
+  \begin{eqnarray*}
+    \n^2 \phi \left( \x \right) & = & - \frac{\rho \n f \left( \x \right) \n f
+    \left( \x \right)^{\top}}{\left( f \left( \x \right) - z \right)^2} +
+    \frac{\n^2 f \left( \x \right)}{f \left( \x \right) - z} + \X^{- 2}\\
+    \X \n^2 \phi \left( \x \right) \X \tmu & = & - \frac{\rho \X \n f \left( \x
+    \right) \n f \left( \x \right)^{\top} \X \tmu}{\left( f \left( \x \right)
+    - z \right)^2} + \frac{\X \n^2 f \left( \x \right) \X \tmu}{f \left( \x
+    \right) - z} + \tmu
+  \end{eqnarray*}
+  \item (Scaled) projection onto Null space
+  \[ \left( \I - \A^{\top} \left( \A \A^{\top} \right)^{- 1} \A \right) \tmu
+  \]
+  \[ \left( \I - \X \A^{\top} \left( \A \X^2 \A^{\top} \right)^{- 1} \A \X
+     \right) \tmu \]
+  \item Scaled projected gradient and negative curvature
+  
+  \item Trust-region subproblem
+  \begin{eqnarray*}
+    \min_{\alpha} & \frac{1}{2} \alpha^{\top} \tmH \alpha + \g^{\top} \alpha &
+    \\
+    \text{subject to} & \alpha^{\top} \G \alpha \leq \beta & 
+  \end{eqnarray*}
+  \item Heuristic routines
+  
+  Line search, Curvature frequency, lower bound update
+\end{itemize}
+
+\subsection{Numerical Operations}
+
+In this section, we introduce how to implement the numerical operations from
+the potential reduction method. Here we define $\widetilde{\A} \assign
+\left(\begin{array}{ccccc}
+  \0_{m \times m} & \A & \0_{m \times n} & \0_{m \times 1} & - \tmb\\
+  - \A^{\top} & \0_{n \times n} & - \I_{n \times n} & \0_{n \times 1} & \tmc\\
+  \tmb^{\top} & - \tmc^{\top} & \0_{1 \times n} & - 1 & 0
+\end{array}\right)$.
+
+{\tmstrong{Residual setup}}
+\begin{eqnarray*}
+  \tmr_1 & = & \A \x - \tmb \tau\\
+  \tmr_2 & = & - \A^{\top} \y - \s + \tmc \tau\\
+  r_3 & = & \tmb^{\top} \y - \tmc^{\top} \x - \kappa .
+\end{eqnarray*}
+{\tmstrong{Objective value}}
+\[ f = \frac{1}{2} \left[ \left\| \tmr_1 \right\|^2 + \left\| \tmr_2
+   \right\|^2 + r_3^2 \right] \]
+{\tmstrong{Gradient setup}}
+\[ \nabla f = \left(\begin{array}{c}
+     - \A \tmr_2 + \tmb r_3\\
+     \A^{\top} \tmr_1 - \tmc r_3\\
+     - \tmr_2\\
+     - r_3\\
+     - \tmb^{\top} \tmr_1 + \tmc^{\top} \tmr_2
+   \end{array}\right) \]
+\[ \nabla \varphi = \frac{\rho \n f}{f} - \left(\begin{array}{c}
+     \X^{- 1} \e\\
+     \0_m\\
+     \bs^{- 1} \e\\
+     \kappa^{- 1}\\
+     \tau^{- 1}
+   \end{array}\right) \]
+{\tmstrong{Hessian-vector (with projection)}}
+\begin{eqnarray*}
+  \tmu & = & \x - \frac{\e^{\top} \x}{n} \cdummy \e\\
+  \n^2 \phi \tmu & = & - \frac{\rho \left( \n f^{\top} \tmu \right)}{f^2} \n f
+  + \frac{\rho}{f} \widetilde{\A}^{\top} \left( \widetilde{\A} \tmu \right) +
+  \small{\left(\begin{array}{ccccc}
+    \X^{- 2} &  &  &  & \\
+    & \0_{m \times m} &  &  & \\
+    &  & \bs^{- 2} &  & \\
+    &  &  & \kappa^{- 2} & \\
+    &  &  &  & \tau^{- 2}
+  \end{array}\right)} \tmu .
+\end{eqnarray*}
+
+
+{\tmstrong{Lanczos Hessian-vector (with projection)}}
+\[ \M \assign \small{\left(\begin{array}{cc}
+     \I_m & \\
+     & \I_n - \x \x^{\top} / \left\| \x \right\|^2
+   \end{array}\right)} \left[ \frac{2 \rho \bs \widetilde{\A}^{\top}
+   \widetilde{\A} \bs}{\left\| \widetilde{\A} \tmu \right\|^2} - \frac{4 \rho
+   \bs \widetilde{\A}^{\top} \widetilde{\A} \tmu \tmu^{\top}
+   \widetilde{\A}^{\top} \widetilde{\A} \bs}{\left\| \widetilde{\A} \tmu
+   \right\|^4} + \small{\left(\begin{array}{cc}
+     \0_m & \\
+     & \I_n
+   \end{array}\right)} \right] \small{\left(\begin{array}{cc}
+     \I_m & \\
+     & \I_n - \x \x^{\top} / \left\| \x \right\|^2
+   \end{array}\right)} \]
+\begin{eqnarray*}
+  \x' & \leftarrow & \frac{\x}{\left\| \x \right\|}\\
+  \tmv & \leftarrow & \small{\left(\begin{array}{c}
+    \tmv_{\y}\\
+    \tmv_{\x} - \left( {\x'}^{\top} \tmv_{\x} \right) \x'
+  \end{array}\right)}\\
+  \tmu_1 & \leftarrow & \small{\left(\begin{array}{c}
+    \0\\
+    \tmv_{\x} - \left( {\x'}^{\top} \tmv_{\x} \right) \x'
+  \end{array}\right)}\\
+  \tmu_2 & \leftarrow & \small{\small{\left(\begin{array}{cc}
+    \I_m & \\
+    & \I_n - \x' {\x'}^{\top}
+  \end{array}\right)} \left(\begin{array}{cc}
+    \I_m & \\
+    & \X
+  \end{array}\right) \widetilde{\A}^{\top} \widetilde{\A}
+  \left(\begin{array}{cc}
+    \I_m & \\
+    & \X
+  \end{array}\right) \tmv}\\
+  \tmu_3 & \leftarrow & \small{\g^{\top} \left(\begin{array}{cc}
+    \I_m & \\
+    & \X
+  \end{array}\right) \tmv \left(\begin{array}{cc}
+    \I_m & \\
+    & \I_n - \x' {\x'}^{\top}
+  \end{array}\right) \left(\begin{array}{cc}
+    \I_m & \\
+    & \X
+  \end{array}\right) \g}\\
+  \M \tmv & \leftarrow & \frac{f^2 \tmu_1 + \rho f \tmu_2 - \rho
+  \tmu_3}{\left\| \widetilde{\A} \tmu \right\|^4}
+\end{eqnarray*}
+
+
+\section{Numerical Experiments}
+
+We provide some preliminary computational results on the NETLIB LP problems.
+The results are obtained using \tmverbatim{MATLAB} after 1000 iterations.
+
+\begin{table}[h]
+  {\small{\begin{tabular}{cccc|c|ccc}
+    \hline
+    Problem & PInfeas & DInfeas. & Compl. & Problem & PInfeas & DInfeas. &
+    Compl.\\
+    \hline
+    DLITTLE & 1.347e-10 & 2.308e-10 & 2.960e-09 & KB2 & 5.455e-11 & 6.417e-10
+    & 7.562e-11\\
+    \hline
+    AFIRO & 7.641e-11 & 7.375e-11 & 3.130e-10 & LOTFI & 2.164e-09 & 4.155e-09
+    & 8.663e-08\\
+    \hline
+    AGG2 & 3.374e-08 & 4.859e-08 & 6.286e-07 & MODSZK1 & 1.527e-06 & 5.415e-05
+    & 2.597e-04\\
+    \hline
+    AGG3 & 2.248e-05 & 1.151e-06 & 1.518e-05 & RECIPELP & 5.868e-08 &
+    6.300e-08 & 1.285e-07\\
+    \hline
+    BANDM & 2.444e-09 & 4.886e-09 & 3.769e-08 & SC105 & 7.315e-11 & 5.970e-11
+    & 2.435e-10\\
+    \hline
+    BEACONFD & 5.765e-12 & 9.853e-12 & 1.022e-10 & SC205 & 6.392e-11 &
+    5.710e-11 & 2.650e-10\\
+    \hline
+    BLEND & 2.018e-10 & 3.729e-10 & 1.179e-09 & SC50A & 1.078e-05 & 6.098e-06
+    & 4.279e-05\\
+    \hline
+    BOEING2 & 1.144e-07 & 1.110e-08 & 2.307e-07 & SC50B & 4.647e-11 &
+    3.269e-11 & 1.747e-10\\
+    \hline
+    BORE3D & 2.389e-08 & 5.013e-08 & 1.165e-07 & SCAGR25 & 1.048e-07 &
+    5.298e-08 & 1.289e-06\\
+    \hline
+    BRANDY & 2.702e-05 & 7.818e-06 & 1.849e-05 & SCAGR7 & 1.087e-07 &
+    1.173e-08 & 2.601e-07\\
+    \hline
+    CAPRI & 7.575e-05 & 4.488e-05 & 4.880e-05 & SCFXM1 & 4.323e-06 & 5.244e-06
+    & 8.681e-06\\
+    \hline
+    E226 & 2.656e-06 & 4.742e-06 & 2.512e-05 & SCORPION & 1.674e-09 &
+    1.892e-09 & 1.737e-08\\
+    \hline
+    FINNIS & 8.577e-07 & 8.367e-07 & 1.001e-05 & SCTAP1 & 5.567e-07 &
+    8.430e-07 & 5.081e-06\\
+    \hline
+    FORPLAN & 5.874e-07 & 2.084e-07 & 4.979e-06 & SEBA & 2.919e-11 & 5.729e-11
+    & 1.448e-10\\
+    \hline
+    GFRD-PNC & 4.558e-05 & 1.052e-05 & 4.363e-05 & SHARE1B & 3.367e-07 &
+    1.339e-06 & 3.578e-06\\
+    \hline
+    GROW7 & 1.276e-04 & 4.906e-06 & 1.024e-04 & SHARE2B & 2.142e-04 &
+    2.014e-05 & 6.146e-05\\
+    \hline
+    ISRAEL & 1.422e-06 & 1.336e-06 & 1.404e-05 & STAIR & 5.549e-04 & 8.566e-06
+    & 2.861e-05\\
+    \hline
+    STANDATA & 5.645e-08 & 2.735e-07 & 5.130e-06 & STANDGUB & 2.934e-08 &
+    1.467e-07 & 2.753e-06\\
+    \hline
+    STOCFOR1 & 6.633e-09 & 9.701e-09 & 4.811e-08 & VTP-BASE & 1.349e-10 &
+    5.098e-11 & 2.342e-10\\
+    \hline
+  \end{tabular}}}
+  \caption{Solving NETLIB LPs in 1000 iterations}
+\end{table}
+
+\bibliography{ref.bib}
+\bibliographystyle{plain}
+
+\end{document}
