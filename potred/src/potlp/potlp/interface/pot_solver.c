@@ -1,5 +1,4 @@
 #include "pot_def.h"
-#include "pot_param.h"
 #include "pot_structs.h"
 #include "pot_vector.h"
 #include "pot_solver.h"

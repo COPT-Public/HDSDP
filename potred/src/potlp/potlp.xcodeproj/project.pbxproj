@@ -33,7 +33,6 @@
 
 /* Begin PBXFileReference section */
 		1955F02828EDF76400CD7B84 /* pot_solver.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = pot_solver.h; sourceTree = "<group>"; };
-		1964F0BF28F7010F00E6458B /* data_new.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = data_new.h; path = potlp/test/data_new.h; sourceTree = "<group>"; };
 		1964F0C128F7BC9700E6458B /* Accelerate.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = Accelerate.framework; path = System/Library/Frameworks/Accelerate.framework; sourceTree = SDKROOT; };
 		19BC6B1028EA14AB00C7A150 /* vec_mat.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = vec_mat.h; sourceTree = "<group>"; };
 		19BC6B1128EA14AB00C7A150 /* vec_mat.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = vec_mat.c; sourceTree = "<group>"; };
@@ -45,6 +44,7 @@
 		19DCD83128DB587A006B6B01 /* pot_solver.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = pot_solver.c; sourceTree = "<group>"; };
 		19DCD83328DB6148006B6B01 /* lp_solver.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = lp_solver.h; sourceTree = "<group>"; };
 		19DCD83428DB6148006B6B01 /* lp_solver.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = lp_solver.c; sourceTree = "<group>"; };
+		19E194E22908CB42003BEFD3 /* data.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = data.h; path = potlp/test/data.h; sourceTree = "<group>"; };
 		19F175CA28E4155B004265A0 /* pot_param.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = pot_param.h; sourceTree = "<group>"; };
 		19F175CB28E41874004265A0 /* pot_utils.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = pot_utils.h; sourceTree = "<group>"; };
 		19F175CC28E41874004265A0 /* pot_utils.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = pot_utils.c; sourceTree = "<group>"; };
@@ -80,7 +80,7 @@
 		19DCD81928DB5662006B6B01 = {
 			isa = PBXGroup;
 			children = (
-				1964F0BF28F7010F00E6458B /* data_new.h */,
+				19E194E22908CB42003BEFD3 /* data.h */,
 				19DCD82428DB5662006B6B01 /* potlp */,
 				19DCD82328DB5662006B6B01 /* Products */,
 				1964F0C028F7BC9700E6458B /* Frameworks */,
@@ -265,7 +265,7 @@
 				GCC_C_LANGUAGE_STANDARD = gnu11;
 				GCC_DYNAMIC_NO_PIC = NO;
 				GCC_NO_COMMON_BLOCKS = YES;
-				GCC_OPTIMIZATION_LEVEL = fast;
+				GCC_OPTIMIZATION_LEVEL = 0;
 				GCC_PREPROCESSOR_DEFINITIONS = (
 					"DEBUG=1",
 					"$(inherited)",
@@ -322,7 +322,7 @@
 				ENABLE_STRICT_OBJC_MSGSEND = YES;
 				GCC_C_LANGUAGE_STANDARD = gnu11;
 				GCC_NO_COMMON_BLOCKS = YES;
-				GCC_OPTIMIZATION_LEVEL = fast;
+				GCC_OPTIMIZATION_LEVEL = 0;
 				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
 				GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;
 				GCC_WARN_UNDECLARED_SELECTOR = YES;

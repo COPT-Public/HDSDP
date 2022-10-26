@@ -19,7 +19,7 @@
 #define printf mexPrintf
 #define free mxFree
 // Define data type
-typedef mwSignedIndex pot_int;
+typedef int pot_int;
 #else
 #include <stdint.h>
 #ifdef POTLP64
@@ -51,10 +51,11 @@ typedef int pot_int;
 // Integer Parameters
 #define INT_PARAM_MAXITER       0
 #define INT_PARAM_MAXRUIZITER   1
+#define INT_PARAM_COEFSCALE     2
 
 // Double Parameters
-#define DBL_PARAM_ABSFEASTOL    0
-#define DBL_PARAM_ABSOPTTOL     1
+#define DBL_PARAM_RELFEASTOL    0
+#define DBL_PARAM_RELOPTTOL     1
 
 // Version information
 #define VERSION_MAJOR           0

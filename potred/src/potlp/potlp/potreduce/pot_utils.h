@@ -10,4 +10,7 @@
 #include "pot_def.h"
 #include "pot_structs.h"
 
+extern double potUtilGetTimeStamp( void );
+extern void potUtilGetDefaultParams( double dblParams[NUM_DBL_PARAM], int intParams[NUM_INT_PARAM] );
+
 #endif /* pot_utils_h */

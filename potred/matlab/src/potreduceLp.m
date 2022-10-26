@@ -5,10 +5,13 @@ function [x] = potreduceLp(A, ydim, maxiter, ncurv, linesearch, neweigs, printle
 warning off;
 [~, n] = size(A); m = ydim;
 ncone = n - m; coneidx = ydim + 1 : n;
+% projidx = coneidx;
+projidx = n - 1 : n; 
+nproj = length(projidx);
 rho = (ncone + sqrt(ncone));
-e = ones(ncone, 1);
+e = ones(nproj, 1);
 x_prev = zeros(n, 1);
-x_prev(coneidx) = e;
+x_prev(coneidx) = 1;
 ATA = A' * A;
 AT = A';
 
@@ -42,7 +45,7 @@ for i = 1:maxiter
         
         % Gradient projection
         gk = rho / f * g;
-        gk(coneidx) = gk(coneidx) - e ./ x_pres(coneidx);
+        gk(projidx) = gk(projidx) - e ./ x_pres(projidx);
         
         if usecurvature && ncurv
             nstar = nstar + 1;
@@ -50,12 +53,12 @@ for i = 1:maxiter
             % Consider negative curvature of Hessian
             % Hess = rho * (- (g * g') / f + ATA) + diag(f * d);
             method = "direct";
-            mk = findnegacurv(x_pres, m, coneidx, rho, g, f, ATA, AT, A, method);
+            mk = findnegacurv(x_pres, m, coneidx, projidx, rho, g, f, ATA, AT, A, method);
             usecurvature = false;
         end % End if 
         
-        gk(coneidx) = gk(coneidx) - e * sum(gk(coneidx)) / ncone;
-        mk(coneidx) = mk(coneidx) - e * sum(mk(coneidx)) / ncone;
+        gk(projidx) = gk(projidx) - e * sum(gk(projidx)) / nproj;
+        mk(projidx) = mk(projidx) - e * sum(mk(projidx)) / nproj;
         
         % Prepare hessian
         nrmgk = norm(gk);
@@ -158,7 +161,7 @@ for i = 1:maxiter
         ncurv = false;
     end % End if 
     
-    if mod(i, 500) && printlevel
+    if mod(i, 500) == 1 && printlevel
         fprintf("%5d  %+8.2e  %+8.2e  %+8.2e  %+8.2e  %+8.2e  %+8.2e %1.1s %3.3f %+3.3e\n",...
             i, f, potnew, alpha(1), alpha(2), beta, potred, logstar, toc, min(x_pres(coneidx)));
     end % End if

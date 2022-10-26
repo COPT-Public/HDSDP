@@ -20,6 +20,8 @@ typedef struct {
     
     double *ruizCol;
     double *ruizRow;
+    double objScaler;
+    double rhsScaler;
     double *scalVals;
     
     double *pdcRes;
@@ -58,7 +60,9 @@ extern pot_int LPSolverCreate( potlp_solver **ppotlp );
 extern pot_int LPSolverInit( potlp_solver *potlp, pot_int nCol, pot_int nRow );
 extern pot_int LPSolverSetData( potlp_solver *potlp, pot_int *Ap, pot_int *Ai,
                                 double *Ax, double *lpObj, double *lpRHS );
+extern void LPSolverParamsPrint( potlp_solver *potlp );
 extern pot_int LPSolverOptimize( potlp_solver *potlp );
+extern void LPSolverGetSolution( potlp_solver *potlp, double *colVal, double *rowDual, double *colDual );
 extern void LPSolverDestroy( potlp_solver **ppotlp );
 
 #endif /* lpdata_h */

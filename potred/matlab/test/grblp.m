@@ -5,6 +5,8 @@ close all;
 fname = fullfile('data', 'p_ADLITTLE.SIF.mps');
 data = preprocess(fname);
 
+[xpot, ypot, spot] = potlp(data.A, data.b, data.c);
+
 rng(24);
 
 A = data.A;
@@ -34,7 +36,7 @@ HSDAA = [sparse(m, m), A, sparse(m, n), sparse(m, 1), -b;
      
 % HSDAA = HSDAA' * inv(HSDAA * HSDAA') * HSDAA; 
 [D, E, HSDA] = ruizscale(HSDAA, 30);
-lpsol = potreduceLp(HSDA, m, 100, false, linesearch, neweigs, 1);
+lpsol = potreduceLp(HSDA, m, 5000, true, linesearch, neweigs, 1);
 sol = lpsol .* E;
 
 kappa = sol(end - 1);

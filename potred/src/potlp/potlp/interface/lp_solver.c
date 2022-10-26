@@ -17,13 +17,6 @@
 #include <sys/time.h>
 #include <math.h>
 
-static double my_clock( void ) {
-    
-    struct timeval t;
-    gettimeofday(&t, NULL);
-    return (1.0e-6 * t.tv_usec + t.tv_sec);
-}
-
 /* Constraint methods */
 static void potLpConstrMatImplPrepareX( void *AMatData, pot_vec *xInit ) {
     
@@ -110,9 +103,7 @@ static void potLpObjFISetupRes( potlp_solver *potlp, pot_vec *xVec ) {
     
     /* Get statistics */
     potlp->pInfeas = nrm2(&nRow, pRes, &potIntConstantOne);
-    potlp->pInfeas = potlp->pInfeas / *tauVar;
     potlp->dInfeas = nrm2(&nCol, dRes, &potIntConstantOne);
-    potlp->dInfeas = potlp->dInfeas / *tauVar;
     potlp->complInfeas = *compl;
     potlp->complGap = potlp->pObjVal - potlp->dObjVal;
     
@@ -274,16 +265,22 @@ static void potLpObjFImplMonitor( void *objFData, void *info ) {
     
     if ( potlp->nIter == 1 ) {
         printf("Potential reduction log \n\n");
-        printf("%8s  %10s  %10s  %10s  %10s  %10s  %10s \n", "nIter", "pObj", "dObj", "rGap", "pInf", "dInf", "k/t");
+        printf("%8s  %10s  %10s  %10s  %10s  %10s  %10s |   "
+               "T  [u]\n", "nIter", "pObj", "dObj", "rGap", "pInf", "dInf", "k/t");
     }
     
-    double objScalCoeff = 1.0 / potlp->tau; // (1.0 + potlp->lpObjNorm) * (1.0 + potlp->lpRHSNorm) / potlp->tau;
+    double objScalCoeff = potlp->objScaler * potlp->rhsScaler / potlp->tau;
+    double pInfeasScalCoeff = potlp->rhsScaler / potlp->tau;
+    double dInfeasScalCoeff = potlp->objScaler / potlp->tau;
+    
     double pObjVal = potlp->pObjVal * objScalCoeff;
     double dObjVal = potlp->dObjVal * objScalCoeff;
+    double pInfeas = potlp->pInfeas * pInfeasScalCoeff;
+    pInfeas = pInfeas / (potlp->lpRHSNorm + 1.0);
+    double dInfeas = potlp->dInfeas * dInfeasScalCoeff;
+    dInfeas = dInfeas / (potlp->lpObjNorm + 1.0);
     double absGap = fabs(pObjVal - dObjVal);
     double relGap = absGap / (1.0 + fabs(pObjVal) + fabs(dObjVal));
-    double pInfeas = potlp->pInfeas / (potlp->lpObjNorm + 1.0);
-    double dInfeas = potlp->dInfeas / (potlp->lpRHSNorm + 1.0);
     
     int logFreq = 0;
     
@@ -297,8 +294,8 @@ static void potLpObjFImplMonitor( void *objFData, void *info ) {
         logFreq = 50000;
     }
     
-    double relFeasTol = 1e-08;
-    double relOptTol = 1e-08;
+    double relOptTol = potlp->dblParams[DBL_PARAM_RELOPTTOL];
+    double relFeasTol = potlp->dblParams[DBL_PARAM_RELFEASTOL];
     
     int *intInfo = NULL;
     if ( relGap < relOptTol && pInfeas < relFeasTol && dInfeas < relFeasTol ) {
@@ -306,14 +303,14 @@ static void potLpObjFImplMonitor( void *objFData, void *info ) {
         *intInfo = 1;
     }
     
-    if ( potlp->nIter >= potlp->intParams[INT_PARAM_MAXITER]) {
+    if ( potlp->nIter >= potlp->intParams[INT_PARAM_MAXITER] ) {
         intInfo = (int *) info;
         *intInfo = 1;
     }
     
     if ( potlp->nIter % logFreq == 0 || potlp->nIter == 1 || intInfo || potlp->potIterator->useCurvature ) {
         
-        double elapsedTime = my_clock() - potlp->startT;
+        double elapsedTime = potUtilGetTimeStamp() - potlp->startT;
         if ( elapsedTime < 100.0 ) {
             printf("%8lld  %10.3e  %10.3e  %10.3e  %10.3e  %10.3e  %10.3e |%5.1f [s] \n",
                    potlp->nIter, pObjVal, dObjVal, relGap, pInfeas,
@@ -329,6 +326,8 @@ static void potLpObjFImplMonitor( void *objFData, void *info ) {
                    dInfeas, potlp->kappa / potlp->tau,
                    elapsedTime / 3600.0 );
         }
+        
+        fflush(stdout);
     }
     
     return;
@@ -520,7 +519,6 @@ static pot_int LPSolverIRuizScale( potlp_solver *potlp ) {
         /* Row scaling */
         spMatRowScal(nCol, colMatBeg, colMatIdx, ruizWorkColMatElem, ruizWorkDiagRowRHS);
         vvrscl(&nRow, ruizWorkDiagRowRHS, ruizWorkRhs);
-        
         spMatColScal(nCol, colMatBeg, colMatIdx, ruizWorkColMatElemTrans, ruizWorkDiagRowObj);
         vvrscl(&nCol, ruizWorkDiagRowObj, ruizWorkEye);
         vvrscl(&nCol, ruizWorkDiagRowObj, ruizWorkObjVal);
@@ -533,14 +531,11 @@ static pot_int LPSolverIRuizScale( potlp_solver *potlp ) {
         /* Column scaling */
         spMatRowScal(nCol, colMatBeg, colMatIdx, ruizWorkColMatElemTrans, ruizWorkDiagColRHS);
         vvrscl(&nRow, ruizWorkDiagColRHS, ruizWorkRhsTrans);
-        
         spMatColScal(nCol, colMatBeg, colMatIdx, ruizWorkColMatElem, ruizWorkDiagColObj);
         vvrscl(&nRow, ruizWorkDiagColObj, ruizWorkObjValTrans);
-        
         vvrscl(&nCol, ruizWorkDiagColEye, ruizWorkEye);
         
         ruizWorkOne = ruizWorkOne / ruizWorkDiagCol[nRow + nCol + nCol];
-        
         double *ruizWorkDiagColCompl = ruizWorkDiagCol + nRow + nCol + nCol + 1;
         rscl(&nRow, ruizWorkDiagColCompl, ruizWorkRhs, &potIntConstantOne);
         rscl(&nCol, ruizWorkDiagColCompl, ruizWorkObjVal, &potIntConstantOne);
@@ -592,24 +587,31 @@ static void LPSolverIScale( potlp_solver *potlp ) {
     
     potlp->lpObjNorm = objOneNorm;
     potlp->lpRHSNorm = rhsOneNorm;
+    potlp->objScaler = 1.0;
+    potlp->rhsScaler = 1.0;
     
-//    double objScaler = objOneNorm + 1.0;
-//    double rhsScaler = rhsOneNorm + 1.0;
-    
-//    for ( int i = 0; i < potlp->nCol; ++i ) {
-//        lpObj[i] = lpObj[i] / objScaler;
-//    }
-//
-//    for ( int i = 0; i < potlp->nRow; ++i ) {
-//        lpRHS[i] = lpRHS[i] / rhsScaler;
-//    }
+    if ( potlp->intParams[INT_PARAM_COEFSCALE] ) {
+        
+        double objScaler = objOneNorm + 1.0;
+        double rhsScaler = rhsOneNorm + 1.0;
+        
+        potlp->objScaler = objScaler;
+        potlp->rhsScaler = rhsScaler;
+        
+        for ( int i = 0; i < potlp->nCol; ++i ) {
+            lpObj[i] = lpObj[i] / objScaler;
+        }
+
+        for ( int i = 0; i < potlp->nRow; ++i ) {
+            lpRHS[i] = lpRHS[i] / rhsScaler;
+        }
+    }
     
     return;
 }
 
 static void LPSovlerIPrintLPStats( potlp_solver *potlp ) {
     
-    printf("\nPOTLP: A first-order potential reduction LP solver\n");
     printf("\nOptimizing an LP with %d variables and %d constraints. \n", potlp->nCol, potlp->nRow);
     printf("LP Data norm |b| = %5.2e |c| = %5.2e. \n", potlp->lpRHSNorm, potlp->lpObjNorm);
     
@@ -619,6 +621,8 @@ static void LPSovlerIPrintLPStats( potlp_solver *potlp ) {
 static void LPSolverIRetrieveSolution( potlp_solver *potlp ) {
     
     pot_solver *pot = potlp->potIterator;
+    
+    double solTime = potUtilGetTimeStamp() - potlp->startT;
     
     int nCol = potlp->nCol;
     int nRow = potlp->nRow;
@@ -635,8 +639,8 @@ static void LPSolverIRetrieveSolution( potlp_solver *potlp ) {
     double *colDual = colVal + nCol;
     double tau = *( colDual + nCol + 1 );
     
-    double objScaler = 1.0; // potlp->lpObjNorm + 1.0;
-    double rhsScaler = 1.0; // potlp->lpRHSNorm + 1.0;
+    double objScaler = potlp->objScaler;
+    double rhsScaler = potlp->rhsScaler;
     
     double primalScaler = tau / rhsScaler;
     double dualScaler = tau / objScaler;
@@ -663,8 +667,10 @@ static void LPSolverIRetrieveSolution( potlp_solver *potlp ) {
         dRes[i] = colDual[i] - lpObj[i] * objScaler;
     }
     
+    /* Scaler when evaluating errors */
     objScaler = potlp->lpObjNorm + 1.0;
     rhsScaler = potlp->lpRHSNorm + 1.0;
+    
     /* Primal infeasibility b - A * x  */
     spMatAxpy(nCol, potlp->colMatBeg, potlp->colMatIdx, potlp->colMatElem, 1.0, colVal, pRes);
     
@@ -683,10 +689,11 @@ static void LPSolverIRetrieveSolution( potlp_solver *potlp ) {
     potlp->complGap = compGap;
     
     printf("\nLP Solution statistic \n");
-    printf("pObj: %+8.2e   Obj: %+8.2e \n", pObjVal, dObjVal);
-    printf("pInf:  %8.2e   Rel:  %8.2e \n", pInfeas, relpInfeas);
-    printf("dInf:  %8.2e   Rel:  %8.2e \n", dInfeas, reldInfeas);
-    printf("Gap :  %8.2e   Rel:  %8.2e \n\n", compGap, rGap);
+    printf("pObj: %+8.3e   dObj: %+8.3e \n", pObjVal, dObjVal);
+    printf("pInf:  %8.3e    Rel:  %8.3e \n", pInfeas, relpInfeas);
+    printf("dInf:  %8.3e    Rel:  %8.3e \n", dInfeas, reldInfeas);
+    printf("Gap :  %8.3e    Rel:  %8.3e \n", compGap, rGap);
+    printf("Time:  %5.3f seconds \n\n", solTime);
     
     POTLP_MEMCPY(potlp->colVal, colVal, double, nCol);
     POTLP_MEMCPY(potlp->colDual, colDual, double, nCol);
@@ -698,6 +705,8 @@ static void LPSolverIRetrieveSolution( potlp_solver *potlp ) {
 extern pot_int LPSolverCreate( potlp_solver **ppotlp ) {
     
     pot_int retcode = RETCODE_OK;
+    
+    printf("\nPOTLP: A first-order potential reduction LP solver\n\n");
     
     if ( !ppotlp ) {
         retcode = RETCODE_FAILED;
@@ -715,15 +724,14 @@ extern pot_int LPSolverCreate( potlp_solver **ppotlp ) {
     
     POTLP_ZERO(potlp, potlp_solver, 1);
     
-    POTLP_MEMCPY(potlp->dblParams, defaultDblParam, double, NUM_DBL_PARAM);
-    POTLP_MEMCPY(potlp->intParams, defaultIntParam, int, NUM_INT_PARAM);
+    potUtilGetDefaultParams(potlp->dblParams, potlp->intParams);
     
     POT_CALL(potLPCreate(&potlp->potIterator));
     POT_CALL(potConstrMatCreate(&potlp->potConstrMat));
     POT_CALL(potObjFCreate(&potlp->potObjF));
     
     potlp->nIter = 0;
-    potlp->startT = my_clock();
+    potlp->startT = potUtilGetTimeStamp();
     
     *ppotlp = potlp;
     
@@ -820,6 +828,18 @@ exit_cleanup:
     return retcode;
 }
 
+extern void LPSolverParamsPrint( potlp_solver *potlp ) {
+    
+    printf("Parameter summary \n");
+    printf("MaxIter     is set to %d \n", potlp->intParams[INT_PARAM_MAXITER]);
+    printf("RuizMaxIter is set to %d \n", potlp->intParams[INT_PARAM_MAXRUIZITER]);
+    printf("CoeffScal   is set to %d \n", potlp->intParams[INT_PARAM_COEFSCALE]);
+    printf("RelFeasTol  is set to %3.3e \n", potlp->dblParams[DBL_PARAM_RELFEASTOL]);
+    printf("RelOptTol   is set to %3.3e \n", potlp->dblParams[DBL_PARAM_RELOPTTOL]);
+    
+    return;
+}
+
 extern pot_int LPSolverOptimize( potlp_solver *potlp ) {
     
     pot_int retcode = RETCODE_OK;
@@ -863,6 +883,30 @@ extern void LPSolverClear( potlp_solver *potlp ) {
     potLPDestroy(&potlp->potIterator);
     
     POTLP_ZERO(potlp, potlp_solver, 1);
+    
+    return;
+}
+
+extern void LPSolverGetSolution( potlp_solver *potlp, double *colVal, double *rowDual, double *colDual ) {
+        
+    if ( !potlp ) {
+        return;
+    }
+    
+    pot_int nCol = potlp->nCol;
+    pot_int nRow = potlp->nRow;
+    
+    if ( colVal ) {
+        POTLP_MEMCPY(colVal, potlp->colVal, double, nCol);
+    }
+    
+    if ( rowDual ) {
+        POTLP_MEMCPY(rowDual, potlp->rowDual, double, nRow);
+    }
+    
+    if ( colDual ) {
+        POTLP_MEMCPY(colDual, potlp->colDual, double, nCol);
+    }
     
     return;
 }
