@@ -559,6 +559,8 @@ static pot_int LPSolverIRuizScale( potlp_solver *potlp ) {
         ruizScalDiagCol[i] = 1.0 / ruizScalDiagCol[i];
     }
     
+    potlp->ruizRow[nRuizRow - 1] *= potlp->dblParams[DBL_PARAM_COMPFOCUS];
+    
 exit_cleanup:
     
     POTLP_FREE(ruizWorkDiagRow);
@@ -838,13 +840,7 @@ exit_cleanup:
 
 extern void LPSolverParamsPrint( potlp_solver *potlp ) {
     
-    printf("Parameter summary \n");
-    printf("MaxIter     is set to %d \n", potlp->intParams[INT_PARAM_MAXITER]);
-    printf("RuizMaxIter is set to %d \n", potlp->intParams[INT_PARAM_MAXRUIZITER]);
-    printf("CoeffScal   is set to %d \n", potlp->intParams[INT_PARAM_COEFSCALE]);
-    printf("RelFeasTol  is set to %3.3e \n", potlp->dblParams[DBL_PARAM_RELFEASTOL]);
-    printf("RelOptTol   is set to %3.3e \n", potlp->dblParams[DBL_PARAM_RELOPTTOL]);
-    printf("TimeLimit   is set to %f s\n", potlp->dblParams[DBL_PARAM_TIMELIMIT]);
+    potUtilPrintParams(potlp->dblParams, potlp->intParams);
     
     return;
 }

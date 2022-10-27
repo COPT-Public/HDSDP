@@ -81,6 +81,7 @@ extern void mexFunction( int nlhs, mxArray *plhs[], int nrhs, const mxArray *prh
     double relFeasTol = 1e-04;
     double relOptTol = 1e-04;
     double maxTime = 600.0;
+    double compFocus = 10.0;
     
     if ( nrhs == 4 ) {
         
@@ -114,6 +115,10 @@ extern void mexFunction( int nlhs, mxArray *plhs[], int nrhs, const mxArray *prh
             maxTime = (double) (*mxGetPr(param));
         }
         
+        param = mxGetField(params, 0, "compFocus");
+        if ( param ) {
+            compFocus = (double) (*mxGetPr(param));
+        }
     }
     
     /* Ready to solve */
@@ -172,6 +177,7 @@ extern void mexFunction( int nlhs, mxArray *plhs[], int nrhs, const mxArray *prh
     potlp->dblParams[DBL_PARAM_RELFEASTOL] = relFeasTol;
     potlp->dblParams[DBL_PARAM_RELOPTTOL] = relOptTol;
     potlp->dblParams[DBL_PARAM_TIMELIMIT] = maxTime;
+    potlp->dblParams[DBL_PARAM_COMPFOCUS] = compFocus;
     
     LPSolverParamsPrint(potlp);
 

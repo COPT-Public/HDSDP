@@ -22,12 +22,28 @@ extern void potUtilGetDefaultParams( double dblParams[NUM_DBL_PARAM], int intPar
     dblParams[DBL_PARAM_RELFEASTOL] = 1e-04;
     /* Time limit  */
     dblParams[DBL_PARAM_TIMELIMIT] = 600.0;
+    /* Objective focus */
+    dblParams[DBL_PARAM_COMPFOCUS] = 10.0;
     /* Maximum iteration */
     intParams[INT_PARAM_MAXITER] = 10000;
     /* Maximum maximum Ruiz iteration */
     intParams[INT_PARAM_MAXRUIZITER] = 100;
     /* Switch of coefficient scaling */
     intParams[INT_PARAM_COEFSCALE] = 0;
+    
+    return;
+}
+
+extern void potUtilPrintParams( double dblParams[NUM_DBL_PARAM], int intParams[NUM_INT_PARAM] ) {
+    
+    printf("Parameter summary \n");
+    printf("MaxIter     is set to %d \n", intParams[INT_PARAM_MAXITER]);
+    printf("RuizMaxIter is set to %d \n", intParams[INT_PARAM_MAXRUIZITER]);
+    printf("CoeffScal   is set to %d \n", intParams[INT_PARAM_COEFSCALE]);
+    printf("RelFeasTol  is set to %3.3e \n", dblParams[DBL_PARAM_RELFEASTOL]);
+    printf("RelOptTol   is set to %3.3e \n", dblParams[DBL_PARAM_RELOPTTOL]);
+    printf("TimeLimit   is set to %.0f s \n", dblParams[DBL_PARAM_TIMELIMIT]);
+    printf("compFocus   is set to %3.3e \n", dblParams[DBL_PARAM_COMPFOCUS]);
     
     return;
 }

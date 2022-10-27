@@ -57,6 +57,7 @@ typedef int pot_int;
 #define DBL_PARAM_RELFEASTOL    0
 #define DBL_PARAM_RELOPTTOL     1
 #define DBL_PARAM_TIMELIMIT     2
+#define DBL_PARAM_COMPFOCUS     3
 
 // Version information
 #define VERSION_MAJOR           0

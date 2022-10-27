@@ -1,4 +1,4 @@
-function [] = test_netlib(fname, maxiter, maxmn, minmn)
+function [] = test_netlib(fname, maxiter, maxtime, maxmn, minmn)
 
 data = preprocess(fname);
 A = data.A;
@@ -16,7 +16,7 @@ end % End if
 
 params.maxIter = maxiter;
 params.maxRuizIter = 200;
-params.maxTime = 600.0;
+params.maxTime = maxtime;
 params.coefScal = 1;
 [x, y, s] = potlp(A, b, c, params);
 
