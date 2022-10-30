@@ -77,6 +77,7 @@ extern void mexFunction( int nlhs, mxArray *plhs[], int nrhs, const mxArray *prh
     int maxIter = 1000;
     int maxRuizIter = 50;
     int coefScal = 0;
+    int curvature = 1;
     
     double relFeasTol = 1e-04;
     double relOptTol = 1e-04;
@@ -98,6 +99,11 @@ extern void mexFunction( int nlhs, mxArray *plhs[], int nrhs, const mxArray *prh
         param = mxGetField(params, 0, "coefScal");
         if ( param ) {
             coefScal = (int) (*mxGetPr(param));
+        }
+        
+        param = mxGetField(params, 0, "curvature");
+        if ( param ) {
+            curvature = (int) (*mxGetPr(param));
         }
         
         param = mxGetField(params, 0, "relFeasTol");
@@ -173,6 +179,7 @@ extern void mexFunction( int nlhs, mxArray *plhs[], int nrhs, const mxArray *prh
     potlp->intParams[INT_PARAM_MAXITER] = maxIter;
     potlp->intParams[INT_PARAM_MAXRUIZITER] = maxRuizIter;
     potlp->intParams[INT_PARAM_COEFSCALE] = coefScal;
+    potlp->intParams[INT_PARAM_CURVATURE] = curvature;
     
     potlp->dblParams[DBL_PARAM_RELFEASTOL] = relFeasTol;
     potlp->dblParams[DBL_PARAM_RELOPTTOL] = relOptTol;

@@ -511,8 +511,6 @@ extern pot_int potReductionSolve( pot_solver *pot ) {
     
     /* Use curvature in the initial iteration */
     pot->useCurvature = 1;
-    pot->allowCurvature = 1;
-    
     pot_int info = 0;
     
     /* Initialize */

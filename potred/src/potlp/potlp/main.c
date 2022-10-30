@@ -1,7 +1,7 @@
 #include <stdio.h>
 
 #include "lp_solver.h"
-#include "data_new.h"
+#include "data.h"
 
 int main(int argc, const char * argv[]) {
     
@@ -28,7 +28,10 @@ int main(int argc, const char * argv[]) {
     
     potlp->intParams[INT_PARAM_MAXITER] = 1000000;
     potlp->intParams[INT_PARAM_MAXRUIZITER] = 1000;
+    potlp->intParams[INT_PARAM_CURVATURE] = 1;
+    potlp->dblParams[DBL_PARAM_COMPFOCUS] = 10.0;
     
+    LPSolverParamsPrint(potlp);
     retcode = LPSolverOptimize(potlp);
     if ( retcode != RETCODE_OK ) {
         retcode = RETCODE_FAILED;

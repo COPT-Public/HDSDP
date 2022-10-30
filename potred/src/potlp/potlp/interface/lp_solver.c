@@ -628,6 +628,19 @@ static void LPSovlerIPrintLPStats( potlp_solver *potlp ) {
     return;
 }
 
+static void LPSolverIParamAdjust( potlp_solver *potlp ) {
+    
+    pot_solver *pot = potlp->potIterator;
+    
+    if ( potlp->intParams[INT_PARAM_CURVATURE] == 0 ) {
+        pot->allowCurvature = 0;
+    } else {
+        pot->allowCurvature = 1;
+    }
+    
+    return;
+}
+
 static void LPSolverIRetrieveSolution( potlp_solver *potlp ) {
     
     pot_solver *pot = potlp->potIterator;
@@ -716,7 +729,7 @@ extern pot_int LPSolverCreate( potlp_solver **ppotlp ) {
     
     pot_int retcode = RETCODE_OK;
     
-    printf("\nPOTLP: A first-order potential reduction LP solver\n");
+    printf("\nPOTLP: A first-order potential reduction LP solver\n\n");
     
     if ( !ppotlp ) {
         retcode = RETCODE_FAILED;
@@ -849,6 +862,7 @@ extern pot_int LPSolverOptimize( potlp_solver *potlp ) {
     
     pot_int retcode = RETCODE_OK;
     
+    LPSolverIParamAdjust(potlp);
     LPSolverIScale(potlp);
     LPSovlerIPrintLPStats(potlp);
     

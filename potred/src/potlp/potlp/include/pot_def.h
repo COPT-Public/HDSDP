@@ -52,6 +52,7 @@ typedef int pot_int;
 #define INT_PARAM_MAXITER       0
 #define INT_PARAM_MAXRUIZITER   1
 #define INT_PARAM_COEFSCALE     2
+#define INT_PARAM_CURVATURE     3
 
 // Double Parameters
 #define DBL_PARAM_RELFEASTOL    0
