@@ -36,8 +36,7 @@ exit_cleanup:
     return retcode;
 }
 
-extern pot_int LPQMatInit( lp_qmatrix *QMat, pot_int nCol, pot_int nRow, pot_int *colMatBeg,
-                           pot_int *colMatIdx, double *colMatElem, double *lpObj, double *lpRHS ) {
+extern pot_int LPQMatInit( lp_qmatrix *QMat, pot_int nCol, pot_int nRow, pot_int *colMatBeg ) {
     
     pot_int retcode = RETCODE_OK;
     
@@ -71,13 +70,27 @@ extern pot_int LPQMatInit( lp_qmatrix *QMat, pot_int nCol, pot_int nRow, pot_int
     
     int nColMatElem = colMatBeg[nCol];
     /* 2 * nnz(A) + 2 * m + 3 * n [+ 1] kappa would give an extra entry  */
-    int nQMatElem = 2 * nColMatElem + 2 * nRow + 3 * nCol;
+    int nQMatElem = 2 * nColMatElem + 2 * nRow + 3 * nCol + 1;
     
     POTLP_INIT(QMat->QMatBeg, pot_int, QMat->nColQ + 1);
     POTLP_INIT(QMat->QMatIdx, pot_int, nQMatElem);
     POTLP_INIT(QMat->QMatElem, double, nQMatElem);
     
     if ( !QMat->QMatBeg || !QMat->QMatIdx || !QMat->QMatElem ) {
+        retcode = RETCODE_FAILED;
+        goto exit_cleanup;
+    }
+    
+exit_cleanup:
+    return retcode;
+}
+
+extern pot_int LPQMatSetup( lp_qmatrix *QMat, pot_int nCol, pot_int nRow, pot_int *colMatBeg,
+                            pot_int *colMatIdx, double *colMatElem, double *lpObj, double *lpRHS ) {
+    
+    pot_int retcode = RETCODE_OK;
+    
+    if ( QMat->nRowQ != nRow + nCol + 1 || QMat->nColQ != 2 * nCol + nRow + 2 ) {
         retcode = RETCODE_FAILED;
         goto exit_cleanup;
     }
@@ -134,7 +147,6 @@ extern pot_int LPQMatRuizScal( lp_qmatrix *QMat, int maxIter ) {
     
     for ( int i = 0; i < maxIter; ++i ) {
         
-        /* Get column norms */
         POTLP_ZERO(ruizWorkDiagRow, double, nRowQ);
         spMatMaxRowAbs(nColQ, QMatBeg, QMatIdx, QMatElem, ruizWorkDiagRow);
         POTLP_ZERO(ruizWorkDiagCol, double, nColQ);

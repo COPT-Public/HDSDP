@@ -13,6 +13,13 @@
 #include "pot_structs.h"
 #include "lp_qmatrix.h"
 
+/* To allow multiple definitions of the same interface */
+#define POT_FNAME(x) Ano##x
+#ifdef potlp_solver
+#undef potlp_solver
+#endif
+#define potlp_solver potlp_anosolver
+
 typedef struct {
     
     pot_int nCol; ///< Number of LP variables
@@ -73,5 +80,14 @@ typedef struct {
     double  startT; ///< Start time
     
 } potlp_anosolver;
+
+extern pot_int POT_FNAME(LPSolverCreate)( potlp_solver **ppotlp );
+extern pot_int POT_FNAME(LPSolverInit)( potlp_solver *potlp, pot_int nCol, pot_int nRow );
+extern pot_int POT_FNAME(LPSolverSetData)( potlp_solver *potlp, pot_int *Ap, pot_int *Ai,
+                                double *Ax, double *lpObj, double *lpRHS );
+extern void POT_FNAME(LPSolverParamsPrint)( potlp_solver *potlp );
+extern pot_int POT_FNAME(LPSolverOptimize)( potlp_solver *potlp );
+extern void POT_FNAME(LPSolverGetSolution)( potlp_solver *potlp, double *colVal, double *rowDual, double *colDual );
+extern void POT_FNAME(LPSolverDestroy)( potlp_solver **ppotlp );
 
 #endif /* another_lp_solver_h */

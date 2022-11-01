@@ -10,13 +10,6 @@
 #include <sys/time.h>
 #include <math.h>
 
-/* To allow multiple definitions of the same interface */
-#define POT_FNAME(x) Ano##x
-#ifdef potlp_solver
-#undef potlp_solver
-#endif
-#define potlp_solver potlp_anosolver
-
 static void POT_FNAME(potLpResidualScal) ( potlp_solver *potlp ) {
     
     double *pRes = potlp->pRes;
@@ -151,12 +144,27 @@ static void POT_FNAME(potLpObjFImplMonitor)( void *objFData, void *info ) {
     if ( potlp->nIter % logFreq == 0 || potlp->nIter == 1 || intInfo || potlp->potIterator->useCurvature ) {
         
         POT_FNAME(LPSolverIRetrieveSolution)(potlp);
+        
+        double relOptTol = potlp->dblParams[DBL_PARAM_RELOPTTOL];
+        double relFeasTol = potlp->dblParams[DBL_PARAM_RELFEASTOL];
         double elapsedTime = potUtilGetTimeStamp() - potlp->startT;
+        
         double pObjVal = potlp->pObjVal;
         double dObjVal = potlp->dObjVal;
-        double pInfeas = potlp->pInfeas;
-        double dInfeas = potlp->dInfeas;
+        double pInfeas = potlp->pInfeasRel;
+        double dInfeas = potlp->dInfeasRel;
         double relGap = potlp->complGapRel;
+        
+        if ( (relGap < relOptTol && pInfeas < relFeasTol && dInfeas < relFeasTol) ) {
+            intInfo = (int *) info;
+            *intInfo = 1;
+        }
+        
+        if ( potlp->nIter >= potlp->intParams[INT_PARAM_MAXITER] ||
+            elapsedTime >= potlp->dblParams[DBL_PARAM_TIMELIMIT]) {
+            intInfo = (int *) info;
+            *intInfo = 1;
+        }
         
         if ( elapsedTime < 100.0 ) {
             printf("%8lld  %10.3e  %10.3e  %10.3e  %10.3e  %10.3e  %10.3e |%5.1f [s] \n",
@@ -179,15 +187,6 @@ static void POT_FNAME(potLpObjFImplMonitor)( void *objFData, void *info ) {
     }
     
     return;
-}
-
-static pot_int POT_FNAME(LPSolverIRuizScale)( potlp_solver *potlp ) {
-    
-    pot_int retcode = RETCODE_OK;
-    POT_CALL(LPQMatRuizScal(potlp->potQMatrix, potlp->intParams[INT_PARAM_MAXRUIZITER]));
-    
-exit_cleanup:
-    return retcode;
 }
 
 static void POT_FNAME(LPSolverIScale)( potlp_solver *potlp ) {
@@ -229,6 +228,26 @@ static void POT_FNAME(LPSolverIScale)( potlp_solver *potlp ) {
     }
     
     return;
+}
+
+static pot_int POT_FNAME(LPSolverISetupQMatrix)( potlp_solver *potlp ) {
+    
+    pot_int retcode = RETCODE_OK;
+    POT_CALL(LPQMatSetup(potlp->potQMatrix, potlp->nCol, potlp->nRow,
+                         potlp->colMatBeg, potlp->colMatIdx, potlp->colMatElem,
+                         potlp->lpObj, potlp->lpRHS));
+    
+exit_cleanup:
+    return retcode;
+}
+
+static pot_int POT_FNAME(LPSolverIRuizScale)( potlp_solver *potlp ) {
+    
+    pot_int retcode = RETCODE_OK;
+    POT_CALL(LPQMatRuizScal(potlp->potQMatrix, potlp->intParams[INT_PARAM_MAXRUIZITER]));
+    
+exit_cleanup:
+    return retcode;
 }
 
 static void POT_FNAME(LPSovlerIPrintLPStats)( potlp_solver *potlp ) {
@@ -343,7 +362,7 @@ static void POT_FNAME(LPSolverIRetrieveSolution)( potlp_solver *potlp ) {
     potlp->dInfeas = dInfeas;
     potlp->dInfeasRel = reldInfeas;
     potlp->complGap = compGap;
-    potlp->complGap = rGap;
+    potlp->complGapRel = rGap;
     
     POTLP_MEMCPY(potlp->colVal, colVal, double, nCol);
     POTLP_MEMCPY(potlp->colDual, colDual, double, nCol);
@@ -488,11 +507,10 @@ extern pot_int POT_FNAME(LPSolverSetData)( potlp_solver *potlp, pot_int *Ap, pot
     POTLP_MEMCPY(potlp->lpObj, lpObj, double, nCol);
     POTLP_MEMCPY(potlp->lpRHS, lpRHS, double, nRow);
     
-    /* Set up Q Matrix */
-    POT_CALL(LPQMatInit(potlp->potQMatrix, nCol, nRow, potlp->colMatBeg,
-                        potlp->colMatIdx, potlp->colMatElem, potlp->lpObj, potlp->lpRHS));
-exit_cleanup:
+    /* Prepare Q Matrix */
+    POT_CALL(LPQMatInit(potlp->potQMatrix, nCol, nRow, potlp->colMatBeg));
     
+exit_cleanup:
     return retcode;
 }
 
@@ -511,7 +529,9 @@ extern pot_int POT_FNAME(LPSolverOptimize)( potlp_solver *potlp ) {
     POT_FNAME(LPSolverIParamAdjust)(potlp);
     POT_FNAME(LPSolverIScale)(potlp);
     POT_FNAME(LPSovlerIPrintLPStats)(potlp);
+    POT_CALL(POT_FNAME(LPSolverISetupQMatrix(potlp)));
     POT_CALL(POT_FNAME(LPSolverIRuizScale(potlp)));
+    POT_FNAME(LPSolverIHeurInitialize)(potlp);
     
     /* Solve */
     POT_CALL(potReductionSolve(potlp->potIterator));

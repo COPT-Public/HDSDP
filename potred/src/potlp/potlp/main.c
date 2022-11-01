@@ -1,26 +1,26 @@
 #include <stdio.h>
 
-#include "lp_solver.h"
+#include "another_lp_solver.h"
 #include "data.h"
 
 int main(int argc, const char * argv[]) {
     
     int retcode = RETCODE_OK;
     potlp_solver *potlp = NULL;
-    retcode = LPSolverCreate(&potlp);
+    retcode = POT_FNAME(LPSolverCreate)(&potlp);
     
     if ( retcode != RETCODE_OK ) {
         retcode = RETCODE_FAILED;
         goto exit_cleanup;
     }
     
-    retcode = LPSolverInit(potlp, nCol, nRow);
+    retcode = POT_FNAME(LPSolverInit)(potlp, nCol, nRow);
     if ( retcode != RETCODE_OK ) {
         retcode = RETCODE_FAILED;
         goto exit_cleanup;
     }
     
-    retcode = LPSolverSetData(potlp, Ap, Ai, Ax, obj, rhs);
+    retcode = POT_FNAME(LPSolverSetData)(potlp, Ap, Ai, Ax, obj, rhs);
     if ( retcode != RETCODE_OK ) {
         retcode = RETCODE_FAILED;
         goto exit_cleanup;
@@ -29,17 +29,20 @@ int main(int argc, const char * argv[]) {
     potlp->intParams[INT_PARAM_MAXITER] = 1000000;
     potlp->intParams[INT_PARAM_MAXRUIZITER] = 1000;
     potlp->intParams[INT_PARAM_CURVATURE] = 1;
+    potlp->intParams[INT_PARAM_COEFSCALE] = 0;
     potlp->dblParams[DBL_PARAM_COMPFOCUS] = 10.0;
+    potlp->dblParams[DBL_PARAM_RELOPTTOL] = 1e-10;
+    potlp->dblParams[DBL_PARAM_RELFEASTOL] = 1e-10;
     
-    LPSolverParamsPrint(potlp);
-    retcode = LPSolverOptimize(potlp);
+    POT_FNAME(LPSolverParamsPrint)(potlp);
+    retcode = POT_FNAME(LPSolverOptimize)(potlp);
     if ( retcode != RETCODE_OK ) {
         retcode = RETCODE_FAILED;
         goto exit_cleanup;
     }
     
 exit_cleanup:
-    LPSolverDestroy(&potlp);
+    POT_FNAME(LPSolverDestroy)(&potlp);
     return retcode;
 }
 

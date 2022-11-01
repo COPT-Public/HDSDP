@@ -304,14 +304,14 @@ extern int spMatBuildQMat( int qm, int qn, int *Qp, int *Qi, double *Qx,
     for ( int i = 0, j, k; i < an; ++i ) {
         for ( j = Ap[i]; j < Ap[i + 1]; ++j ) {
             k = amaux[Ai[j]];
-            Qi[k] = i; Qx[k] = -Ax[j];
+            Qi[k] = i + am; Qx[k] = -Ax[j];
             amaux[Ai[j]] += 1;
         }
     }
     
     for ( int i = 0; i < am; ++i ) {
-        Qi[amaux[Ai[i]]] = am + an;
-        Qx[amaux[Ai[i]]] = b[i];
+        Qi[amaux[i]] = am + an;
+        Qx[amaux[i]] = b[i];
     }
     
     /* Build the second column block
@@ -339,8 +339,10 @@ extern int spMatBuildQMat( int qm, int qn, int *Qp, int *Qi, double *Qx,
         POTLP_MEMCPY(pQi, pAi, int, k);
         POTLP_MEMCPY(pQx, pAx, double, k);
         /* Copy -c */
-        pQi += k; *pQi = am + an; pQi += 1;
-        pQx += k; *pQx = -c[i];   pQx += 1;
+        pQi += k; pAi += k;
+        *pQi = am + an; pQi += 1;
+        pQx += k; pAx += k;
+        *pQx = -c[i]; pQx += 1;
     }
     
     /* Build the third column block and alternatively the fourth block
@@ -364,9 +366,7 @@ extern int spMatBuildQMat( int qm, int qn, int *Qp, int *Qi, double *Qx,
        [  c ]
        [  0 ]
      */
-    pQp += an; pQp[1] = pQp[0] + am + an;
-    
-    pQi += an; pQx += an;
+    pQp[1] = pQp[0] + am + an;
     for ( int i = 0; i < am; ++i ) {
         pQi[i] = i; pQx[i] = -b[i];
     }
@@ -377,7 +377,7 @@ extern int spMatBuildQMat( int qm, int qn, int *Qp, int *Qi, double *Qx,
     }
     
     /* Done */
-    assert( *pQp == 2 * nzA + 2 * am + 3 * an + 1 );
+    assert( pQp[1] == 2 * nzA + 2 * am + 3 * an + 1 );
     
 exit_cleanup:
     

@@ -19,8 +19,9 @@ typedef struct {
 } lp_qmatrix;
 
 extern pot_int LPQMatCreate( lp_qmatrix **pQMat );
-extern pot_int LPQMatInit( lp_qmatrix *QMat, pot_int nCol, pot_int nRow, pot_int *colMatBeg,
-                           pot_int *colMatIdx, double *colMatElem, double *lpObj, double *lpRHS );
+extern pot_int LPQMatInit( lp_qmatrix *QMat, pot_int nCol, pot_int nRow, pot_int *colMatBeg );
+extern pot_int LPQMatSetup( lp_qmatrix *QMat, pot_int nCol, pot_int nRow, pot_int *colMatBeg,
+                            pot_int *colMatIdx, double *colMatElem, double *lpObj, double *lpRHS );
 extern pot_int LPQMatRuizScal( lp_qmatrix *QMat, int maxIter );
 extern void LPQMatMultiply( lp_qmatrix *QMat, int *isColBasic, double *xVal, double *qxVal );
 extern void LPQMatTransMultiply( lp_qmatrix *QMat, int *isColBasic, double *yVal, double *qtyVal );
