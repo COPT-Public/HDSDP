@@ -286,7 +286,6 @@ static pot_int potReductionOneStep( pot_solver *pot ) {
     
     if ( (potReduce > -1e-03 && pot->useCurvature) || lczCode != RETCODE_OK ) {
         pot->allowCurvature = 0;
-        
         if ( lczCode != RETCODE_OK ) {
             printf("Curvature is shut down due to failed Lanczos \n");
         } else {
@@ -448,10 +447,10 @@ extern pot_int potLPInit( pot_solver *pot, pot_int vDim, pot_int vConeDim ) {
     POT_CALL(potVecCreate(&pot->auxVec2));
     POT_CALL(potVecInit(pot->auxVec2, vDim, vConeDim));
     
-    pot->rhoVal = vConeDim + sqrt(vConeDim);
+    /* Potential value is slightly larger */
+    pot->rhoVal = 1.1 * (vConeDim + sqrt(vConeDim));
     POT_CALL(potLanczosInit(pot->lczTool, vDim, vConeDim));
-    pot->lczTool->MMat = pot;
-    pot->lczTool->lczMatVec = potLPPotentialHVec;
+    potLanczosInitData(pot->lczTool, pot, potLPPotentialHVec);
     
 #ifdef POT_DEBUG
     POTLP_INIT(pot->HessMat, double, vDim * vDim);

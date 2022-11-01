@@ -129,7 +129,6 @@ extern pot_int potLanczosSolve( pot_lanczos *potLanczos, pot_vec *lczStart, pot_
     
     pot_int retcode = RETCODE_OK;
     
-    /* TODO: Implement the Lanczos procedure */
     pot_lanczos *potl = potLanczos;
     
     pot_vec *vVec = potl->vVec;

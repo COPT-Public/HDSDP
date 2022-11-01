@@ -1,4 +1,4 @@
-/** @file lpdata.c
+/** @file lp\_solver.c
  *  @brief Implement the LP data interface for potential reduction
  *
  * @TODO: Add more detailed comments
@@ -8,7 +8,6 @@
 #include "lp_solver_nokappa.c"
 #else
 
-#include "lp_solver.h"
 #include "lp_solver.h"
 #include "pot_solver.h"
 #include "pot_structs.h"
@@ -770,7 +769,7 @@ extern pot_int LPSolverInit( potlp_solver *potlp, pot_int nCol, pot_int nRow ) {
     potlp->nCol = nCol;
     potlp->nRow = nRow;
     
-    /* x; s; kappa; tau*/
+    /* x; s; kappa; tau */
     pot_int coneDim = 2 * nCol + 2;
     
     /* y */

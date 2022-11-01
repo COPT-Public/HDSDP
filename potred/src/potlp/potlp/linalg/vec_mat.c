@@ -260,3 +260,128 @@ extern void spMatColScal( int n, int *Ap, int *Ai, double *Ax, double *col ) {
 
     return;
 }
+
+extern int spMatBuildQMat( int qm, int qn, int *Qp, int *Qi, double *Qx,
+                           int am, int an, int *Ap, int *Ai, double *Ax,
+                           double *b, double *c ) {
+    
+    pot_int retcode = RETCODE_OK;
+    
+    /* Auxiliary array */
+    int *amaux = NULL;
+    int *anaux = NULL;
+    
+    int nzA = Ap[an];
+    
+    POTLP_INIT(amaux, int, am + 1);
+    POTLP_INIT(anaux, int, an + 1);
+    
+    if ( !amaux || !anaux ) {
+        retcode = RETCODE_FAILED;
+        goto exit_cleanup;
+    }
+    
+    for ( int i = 1; i < am + 1; ++i ) {
+        amaux[i] = 1;
+    }
+    
+    /* Build the first column block
+       [  0 ]
+       [ -A']
+       [  b']
+     */
+    
+    
+    for ( int i = 0; i < nzA; ++i ) {
+        amaux[Ai[i] + 1] += 1;
+    }
+    
+    for ( int i = 0; i < am; ++i ) {
+        amaux[i + 1] += amaux[i];
+    }
+    
+    POTLP_MEMCPY(Qp, amaux, int, am + 1);
+    for ( int i = 0, j, k; i < an; ++i ) {
+        for ( j = Ap[i]; j < Ap[i + 1]; ++j ) {
+            k = amaux[Ai[j]];
+            Qi[k] = i; Qx[k] = -Ax[j];
+            amaux[Ai[j]] += 1;
+        }
+    }
+    
+    for ( int i = 0; i < am; ++i ) {
+        Qi[amaux[Ai[i]]] = am + an;
+        Qx[amaux[Ai[i]]] = b[i];
+    }
+    
+    /* Build the second column block
+       [  A ]
+       [  0 ]
+       [ -c']
+     */
+    
+    anaux[0] = Qp[am];
+    for ( int i = 1; i < an + 1; ++i ) {
+        anaux[i] = Ap[i] + anaux[0] + i; /* i reserved for c' */
+    }
+    
+    int *pQp = Qp + am;
+    int *pQi = Qi + nzA + am;
+    int *pAi = Ai;
+    double *pQx = Qx + nzA + am;
+    double *pAx = Ax;
+
+    POTLP_MEMCPY(pQp, anaux, int, an + 1);
+    pQp += an;
+    for ( int i = 0, k; i < an; ++i ) {
+        /* Copy A */
+        k = Ap[i + 1] - Ap[i];
+        POTLP_MEMCPY(pQi, pAi, int, k);
+        POTLP_MEMCPY(pQx, pAx, double, k);
+        /* Copy -c */
+        pQi += k; *pQi = am + an; pQi += 1;
+        pQx += k; *pQx = -c[i];   pQx += 1;
+    }
+    
+    /* Build the third column block and alternatively the fourth block
+       [  0 (  0 ) ]
+       [ -I (  0 ) ]
+       [  0 ( -1 ) ]
+     */
+    
+    /* No kappa if blkn = an */
+    int blkn = an + 1;
+    for ( int i = 0; i < blkn; ++i ) {
+        pQp[i + 1] = pQp[i] + 1;
+        pQi[i] = am + i;
+        pQx[i] = -1.0;
+    }
+    
+    pQp += blkn; pQi += blkn; pQx += blkn;
+    
+    /* Build the last column block
+       [ -b ]
+       [  c ]
+       [  0 ]
+     */
+    pQp += an; pQp[1] = pQp[0] + am + an;
+    
+    pQi += an; pQx += an;
+    for ( int i = 0; i < am; ++i ) {
+        pQi[i] = i; pQx[i] = -b[i];
+    }
+    
+    pQi += am; pQx += am;
+    for ( int i = 0; i < an; ++i ) {
+        pQi[i] = i + am; pQx[i] = c[i];
+    }
+    
+    /* Done */
+    assert( *pQp == 2 * nzA + 2 * am + 3 * an + 1 );
+    
+exit_cleanup:
+    
+    POTLP_FREE(amaux);
+    POTLP_FREE(anaux);
+    return retcode;
+}

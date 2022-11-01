@@ -31,5 +31,8 @@ extern void spMatMaxRowAbs( int n, int *Ap, int *Ai, double *Ax, double *row );
 extern void spMatMaxColAbs( int n, int *Ap, int *Ai, double *Ax, double *col );
 extern void spMatRowScal( int n, int *Ap, int *Ai, double *Ax, double *row );
 extern void spMatColScal( int n, int *Ap, int *Ai, double *Ax, double *col );
+extern int spMatBuildQMat( int qm, int qn, int *Qp, int *Qi, double *Qx,
+                           int am, int an, int *Ap, int *Ai, double *Ax,
+                           double *b, double *c );
 
 #endif /* vec_mat_h */
