@@ -537,15 +537,21 @@ extern pot_int potReductionSolve( pot_solver *pot ) {
     return retcode;
 }
 
+extern void potReductionRestart( pot_solver *pot ) {
+    
+    /* Restart the potential reduction solver */
+    pot->betaRadius = 1.0;
+    pot->potVal = POTLP_INFINITY;
+    pot->allowCurvature = 1;
+    
+    return;
+}
+
 extern void potLPClear( pot_solver *pot ) {
     
     if (!pot) {
-        return;;
+        return;
     }
-    
-    pot->objFunc = NULL;
-    pot->AMat = NULL;
-    pot->fVal = POTLP_INFINITY;
     
     potVecDestroy(&pot->xVec);
     potVecDestroy(&pot->xVecOld);
@@ -555,10 +561,6 @@ extern void potLPClear( pot_solver *pot ) {
     potVecDestroy(&pot->xStepVec);
     potVecDestroy(&pot->auxVec1);
     potVecDestroy(&pot->auxVec2);
-    
-    pot->objFunc = NULL;
-    pot->AMat = NULL;
-    
     potLanczosDestroy(&pot->lczTool);
     
     POTLP_FREE(pot->HessMat);

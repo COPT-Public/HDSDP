@@ -4,10 +4,6 @@
  * @TODO: Add more detailed comments
  */
 
-#ifdef NOKAPPA
-#include "lp_solver_nokappa.c"
-#else
-
 #include "lp_solver.h"
 #include "pot_solver.h"
 #include "pot_structs.h"
@@ -940,5 +936,3 @@ extern void LPSolverDestroy( potlp_solver **ppotlp ) {
     
     return;
 }
-
-#endif

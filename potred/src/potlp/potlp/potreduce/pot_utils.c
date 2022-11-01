@@ -32,6 +32,8 @@ extern void potUtilGetDefaultParams( double dblParams[NUM_DBL_PARAM], int intPar
     intParams[INT_PARAM_COEFSCALE] = 0;
     /* Switch of curvature usage */
     intParams[INT_PARAM_CURVATURE] = 1;
+    /* Frequency of switching the weight of the residuals */
+    intParams[INT_PARAM_RSCALFREQ] = -1;
     
     return;
 }
@@ -43,6 +45,7 @@ extern void potUtilPrintParams( double dblParams[NUM_DBL_PARAM], int intParams[N
     printf("RuizMaxIter is set to %d \n", intParams[INT_PARAM_MAXRUIZITER]);
     printf("CoeffScal   is set to %d \n", intParams[INT_PARAM_COEFSCALE]);
     printf("Curvature   is set to %d \n", intParams[INT_PARAM_CURVATURE]);
+    printf("RScalFreq   is set to %d \n", intParams[INT_PARAM_RSCALFREQ]);
     printf("RelFeasTol  is set to %3.3e \n", dblParams[DBL_PARAM_RELFEASTOL]);
     printf("RelOptTol   is set to %3.3e \n", dblParams[DBL_PARAM_RELOPTTOL]);
     printf("TimeLimit   is set to %.0fs \n", dblParams[DBL_PARAM_TIMELIMIT]);

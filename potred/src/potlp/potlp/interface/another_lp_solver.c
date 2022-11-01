@@ -22,6 +22,60 @@ static void POT_FNAME(potLpResidualScal) ( potlp_solver *potlp ) {
     return;
 }
 
+#define REWEIGHT_DEBUG(s, p, d, c) // printf("%s: pInf = %3.3f dInf = %3.3f Gap = %3.3f \n", s, p, d, c)
+static void POT_FNAME(potLpReWeight) ( potlp_solver *potlp ) {
+    
+
+    /* Implement the weighted objective Heuristic  */
+    double pOmega = potlp->pResOmega;
+    double dOmega = potlp->dResOmega;
+    double cOmega = potlp->cplResOmega;
+    
+    double pInfeas = potlp->pInfeasRel;
+    double dInfeas = potlp->dInfeasRel;
+    double complGap = potlp->complGapRel;
+    
+    REWEIGHT_DEBUG("Before", pOmega, dOmega, cOmega);
+    
+    /* Are the residuals stuck? */
+    int pStuck = 0, pFast = 0;
+    int dStuck = 0, dFast = 0;
+    int cStuck = 0, cFast = 0;
+    
+    double minInfeas = 0.0;
+    minInfeas = POTLP_MIN(pInfeas, dInfeas);
+    minInfeas = POTLP_MIN(minInfeas, complGap);
+    
+    if ( pInfeas > 10 * minInfeas ) { pStuck = 1; }
+    else if ( pInfeas < 1.1 * minInfeas ) { pFast = 1; }
+    if ( dInfeas > 10 * minInfeas ) { dStuck = 1; }
+    else if ( dInfeas < 1.1 * minInfeas ) { dFast = 1; }
+    if ( complGap > 10 * minInfeas ) { cStuck = 1; }
+    else if ( complGap < 1.1 * minInfeas ) { cFast = 1; }
+    
+    if ( pStuck ) { pOmega = POTLP_MIN(pOmega * 1.5, 3.0); }
+    if ( dStuck ) { dOmega = POTLP_MIN(dOmega * 1.5, 3.0); }
+    if ( cStuck ) { cOmega = POTLP_MIN(cOmega * 1.5, 3.0); }
+    
+    /* Normalize */
+    double minOmega = POTLP_MIN(pOmega, dOmega);
+    minOmega = POTLP_MIN(minOmega, cOmega);
+    
+    pOmega = pOmega / minOmega;
+    dOmega = dOmega / minOmega;
+    cOmega = cOmega / minOmega;
+    
+    REWEIGHT_DEBUG("After", pOmega, dOmega, cOmega);
+    
+    potlp->pResOmega = pOmega;
+    potlp->dResOmega = dOmega;
+    potlp->cplResOmega = cOmega;
+    
+    potReductionRestart(potlp->potIterator);
+    
+    return;
+}
+
 /* Constraint methods */
 static void POT_FNAME(potLpConstrMatImplPrepareX)( void *AMatData, pot_vec *xInit ) {
     
@@ -65,6 +119,7 @@ static void POT_FNAME(potLpObjFISetupRes)( potlp_solver *potlp, pot_vec *xVec ) 
 
 static void POT_FNAME(potLpObjFISetupGrad)( potlp_solver *potlp, pot_vec *gVec ) {
     
+    POT_FNAME(potLpResidualScal)(potlp);
     LPQMatTransMultiply(potlp->potQMatrix, potlp->isColBasic, potlp->pdcRes, gVec->x);
     
     return;
@@ -73,6 +128,7 @@ static void POT_FNAME(potLpObjFISetupGrad)( potlp_solver *potlp, pot_vec *gVec )
 static void POT_FNAME(potLpObjFISetupHVec)( potlp_solver *potlp, pot_vec *xVec, pot_vec *fHvec ) {
     
     LPQMatMultiply(potlp->potQMatrix, potlp->isColBasic, xVec->x, potlp->pdcRes);
+    POT_FNAME(potLpResidualScal)(potlp);
     POT_FNAME(potLpResidualScal)(potlp);
     LPQMatTransMultiply(potlp->potQMatrix, potlp->isColBasic, potlp->pdcRes, fHvec->x);
     
@@ -184,6 +240,15 @@ static void POT_FNAME(potLpObjFImplMonitor)( void *objFData, void *info ) {
 #ifdef MATLAB_MEX_FILE
         mexEvalString("drawnow;");
 #endif
+    }
+    
+    int resiFreq = logFreq;
+    if ( potlp->intParams[INT_PARAM_RSCALFREQ] > 0 ) {
+        resiFreq = potlp->intParams[INT_PARAM_RSCALFREQ];
+    }
+    
+    if ( potlp->nIter % resiFreq == 1 ) {
+        POT_FNAME(potLpReWeight)(potlp);
     }
     
     return;
@@ -397,7 +462,6 @@ extern pot_int POT_FNAME(LPSolverCreate)( potlp_solver **ppotlp ) {
     }
     
     potlp_solver *potlp = NULL;
-    
     POTLP_INIT(potlp, potlp_solver, 1);
     
     if ( !potlp ) {
