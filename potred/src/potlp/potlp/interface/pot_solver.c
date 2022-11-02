@@ -147,6 +147,39 @@ static double potReductionComputePotValue( double rhoVal, double fVal, double zV
     return rhoVal * logl(fVal - zVal) - potVecLogDet(xVec);
 }
 
+static double potReductionPotLineSearch( pot_fx *objFunc, double rhoVal, double zVal, pot_vec *xVec, pot_vec *dXVec, pot_vec *auxVec, double potValTmp, double dCone ) {
+    
+    double ratio = potVecRatioTest(xVec, dXVec, dCone);
+    
+    if ( ratio < 0.0 ) {
+        ratio = 1e+06;
+    }
+    
+    ratio = 0.9 * ratio;
+    
+    double fVal = 0.0;
+    double potVal = POTLP_INFINITY;
+    double targetPotVal = ( potValTmp > 0.0 ) ? 0.9 * potValTmp : 1.05 * potValTmp;
+    
+    for ( ; ratio > 1.0; ) {
+        potVecCopy(xVec, auxVec);
+        potVecAxpy(ratio, dXVec, auxVec);
+        fVal = potObjFVal(objFunc, auxVec);
+        potVal = potReductionComputePotValue(rhoVal, fVal, zVal, auxVec);
+        
+        if ( potVal <= targetPotVal ) {
+            break;
+        }
+        ratio *= 0.9;
+    }
+    
+    if ( ratio <= 1.0 ) {
+        potVal = POTLP_INFINITY;
+    }
+    
+    return potVal;
+}
+
 static pot_int potReductionOneStep( pot_solver *pot ) {
     
     pot_int retcode = RETCODE_OK;
@@ -265,11 +298,25 @@ static pot_int potReductionOneStep( pot_solver *pot ) {
         
         /* Assemble the direction */
         potVeczAxpby(dXStep, alphaStep[0], gkVec, alphaStep[1], mkVec);
-        potVecAxpy(1.0, xPres, dXStep);
+        potVeczAxpby(auxVec1, 1.0, xPres, 1.0, dXStep);
         
-        double fValTmp = potObjFVal(objFunc, dXStep);
+        double fValTmp = potObjFVal(objFunc, auxVec1);
         double zVal = pot->zVal;
-        double potValTmp = potReductionComputePotValue(rhoVal, fValTmp, zVal, dXStep);
+        double potValTmp = potReductionComputePotValue(rhoVal, fValTmp, zVal, auxVec1);
+        double potLineVal = POTLP_INFINITY;
+        
+        if ( pot->curvInterval < 0 ) {
+            potLineVal = potReductionPotLineSearch(objFunc, rhoVal, zVal, xPres,
+                                                   dXStep, auxVec2, potValTmp, 0.0);
+        }
+        
+        potVecCopy(xPres, xPrev);
+        if ( potLineVal < potValTmp ) {
+            potValTmp = potLineVal;
+            potVecCopy(auxVec2, xPres);
+        } else {
+            potVecCopy(auxVec1, xPres);
+        }
         
         potReduce = potValTmp - potVal;
         
@@ -290,9 +337,7 @@ static pot_int potReductionOneStep( pot_solver *pot ) {
         }
     }
     
-    potVecCopy(xPres, xPrev);
-    potVecCopy(dXStep, xPres);
-    double potReduceEps = -1e-03; //  * pot->n;
+    double potReduceEps = -1e-03; // * pot->n;
     
     if ( (potReduce > potReduceEps && pot->useCurvature) || lczCode != RETCODE_OK ) {
         pot->allowCurvature = 0;
@@ -320,8 +365,15 @@ exit_cleanup:
     return retcode;
 }
 
-
+#if 0
+/* TODO: Implement a Hessian vector product */
 static void potLPPotentialHVec( void *pot, pot_vec *vVec, pot_vec *vVecP ) {
+    
+    return;
+}
+#endif
+
+static void potLPPotentialScaledHVec( void *pot, pot_vec *vVec, pot_vec *vVecP ) {
 
     pot_solver *p = pot;
     /* Assemble potential function Hessian-vector product
@@ -474,7 +526,7 @@ extern pot_int potLPInit( pot_solver *pot, pot_int vDim, pot_int vConeDim ) {
     /* Potential value is slightly larger */
     pot->rhoVal = 1.1 * (vConeDim + sqrt(vConeDim));
     POT_CALL(potLanczosInit(pot->lczTool, vDim, vConeDim));
-    potLanczosInitData(pot->lczTool, pot, potLPPotentialHVec);
+    potLanczosInitData(pot->lczTool, pot, potLPPotentialScaledHVec);
     
 #ifdef POT_DEBUG
     POTLP_INIT(pot->HessMat, double, vDim * vDim);
@@ -549,6 +601,7 @@ extern pot_int potReductionSolve( pot_solver *pot ) {
             pot->useCurvature = 1;
         }
         
+        /* TODO: Consider using internal error instead of returning */
         retcode = potReductionOneStep(pot);
         potObjFMonitor(pot->objFunc, &info);
         

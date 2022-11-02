@@ -24,6 +24,7 @@ extern void potVecConeScal( pot_vec *pVecX, pot_vec *pVecY );
 extern double potVecLogDet( pot_vec *pVecX );
 extern double potVecSumCone( pot_vec *pVecX );
 extern double potVecSumScalCone( pot_vec *pVecX, pot_vec *pVecY );
+extern double potVecRatioTest( pot_vec *pVecX, pot_vec *pVecdX, double dCone );
 extern void potVecConeAddConstant( pot_vec *pVecX, double cVal );
 extern void potVecClear( pot_vec *pVec );
 extern void potVecDestroy( pot_vec **pVec );

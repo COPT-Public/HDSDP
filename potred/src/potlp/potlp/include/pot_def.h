@@ -48,6 +48,7 @@ typedef int pot_int;
 #define POTLP_INFEAS_OR_UNBOUNDED   (102)
 #define POTLP_TIMELIMIT             (103)
 #define POTLP_USER_INTERRUPT        (104)
+#define POTLP_INTERNAL_ERROR        (105)
 
 // Integer Parameters
 #define INT_PARAM_MAXITER       0

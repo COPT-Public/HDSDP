@@ -213,6 +213,29 @@ extern double potVecSumScalCone( pot_vec *pVecX, pot_vec *pVecY ) {
     return xTy;
 }
 
+extern double potVecRatioTest( pot_vec *pVecX, pot_vec *pVecdX, double dCone ) {
+    
+    double ratio = 0.0;
+    
+    if ( dCone == 0.0 ) {
+        for ( int i = pVecX->n - pVecX->ncone; i < pVecX->n; ++i ) {
+            ratio = POTLP_MIN(ratio, pVecdX->x[i] / pVecX->x[i]);
+            
+        }
+    } else {
+        double d = 0.0;
+        for ( int i = pVecX->n - pVecX->ncone; i < pVecX->n; ++i ) {
+            d = pVecX->x[i] - dCone;
+            if ( d < 0.0 ) {
+                return 0.0;
+            }
+            ratio = POTLP_MIN(ratio, pVecdX->x[i] / d);
+        }
+    }
+    
+    return (- 1.0 / ratio);
+}
+
 extern void potVecConeAddConstant( pot_vec *pVecX, double cVal ) {
     
     for ( int i = pVecX->n - pVecX->ncone; i < pVecX->n; ++i ) {

@@ -127,7 +127,7 @@ static void POT_FNAME(potLpReWeight) ( potlp_solver *potlp ) {
 static void POT_FNAME(potLpConstrMatImplPrepareX)( void *AMatData, pot_vec *xInit ) {
     
     potVecReset(xInit);
-    
+
     for ( int i = xInit->n - xInit->ncone; i < xInit->n; ++i ) {
         xInit->x[i] = 1.0;
     }
@@ -226,8 +226,8 @@ static void POT_FNAME(potLpObjFImplMonitor)( void *objFData, void *info ) {
     
     if ( potlp->nIter == 1 ) {
         printf("Potential reduction log \n\n");
-        printf("%8s  %10s  %10s  %10s  %10s  %10s  %10s |   "
-               "T  [u]\n", "nIter", "pObj", "dObj", "rGap", "pInf", "dInf", "k/t");
+        printf("%8s  %10s  %10s    %12s  %10s  %10s  %10s |   "
+               "T  [u]\n", "nIter", "pObj", "dObj", "Rel/Best Gap", "pInf", "dInf", "k/t");
     }
     
     int logFreq = 0;
@@ -271,7 +271,18 @@ static void POT_FNAME(potLpObjFImplMonitor)( void *objFData, void *info ) {
         double dInfeas = potlp->dInfeasRel;
         double relGap = potlp->complGapRel;
         
-        if ( (relGap < relOptTol && pInfeas < relFeasTol && dInfeas < relFeasTol) ) {
+        if ( pInfeas < relFeasTol ) {
+            potlp->pObjBest = POTLP_MIN(potlp->pObjBest, pObjVal);
+        }
+        
+        if ( dInfeas < relFeasTol ) {
+            potlp->dObjBest = POTLP_MAX(potlp->dObjBest, dObjVal);
+        }
+        
+        double bestGap = potlp->pObjBest - potlp->dObjBest;
+        double relBestGap = bestGap / (fabs(potlp->pObjBest) + fabs(potlp->dObjBest) + 1.0);
+        
+        if ( (relBestGap < relOptTol && pInfeas < relFeasTol && dInfeas < relFeasTol) ) {
             potlp->Lpstatus = POTLP_OPTIMAL;
             intInfo = (int *) info;
             *intInfo = 1;
@@ -296,17 +307,17 @@ static void POT_FNAME(potLpObjFImplMonitor)( void *objFData, void *info ) {
         }
         
         if ( elapsedTime < 100.0 ) {
-            printf("%8lld  %10.3e  %10.3e  %10.3e  %10.3e  %10.3e  %10.3e |%5.1f [s] \n",
-                   potlp->nIter, pObjVal, dObjVal, relGap, pInfeas,
+            printf("%8lld  %10.3e  %10.3e  %5.1e %5.1e %10.3e  %10.3e  %10.3e |%5.1f [s] \n",
+                   potlp->nIter, pObjVal, dObjVal, relGap, relBestGap, pInfeas,
                    dInfeas, potlp->kappa / potlp->tau, elapsedTime);
         } else if ( elapsedTime < 3600  ){
-            printf("%8lld  %10.3e  %10.3e  %10.3e  %10.3e  %10.3e  %10.3e |%5.1f [m] \n",
-                   potlp->nIter, pObjVal, dObjVal, relGap, pInfeas,
+            printf("%8lld  %10.3e  %10.3e  %5.1e %5.1e %10.3e  %10.3e  %10.3e |%5.1f [m] \n",
+                   potlp->nIter, pObjVal, dObjVal, relGap, relBestGap, pInfeas,
                    dInfeas, potlp->kappa / potlp->tau,
                    elapsedTime / 60.0 );
         } else {
-            printf("%8lld  %10.3e  %10.3e  %10.3e  %10.3e  %10.3e  %10.3e |%5.1f [h] \n",
-                   potlp->nIter, pObjVal, dObjVal, relGap, pInfeas,
+            printf("%8lld  %10.3e  %10.3e  %5.1e %5.1e %10.3e  %10.3e  %10.3e |%5.1f [h] \n",
+                   potlp->nIter, pObjVal, dObjVal, relGap, relBestGap, pInfeas,
                    dInfeas, potlp->kappa / potlp->tau,
                    elapsedTime / 3600.0 );
         }
@@ -399,6 +410,9 @@ static void POT_FNAME(LPSovlerIPrintLPStats)( potlp_solver *potlp ) {
 static void POT_FNAME(LPSolverIParamAdjust)( potlp_solver *potlp ) {
     
     pot_solver *pot = potlp->potIterator;
+    
+    potlp->pObjBest = POTLP_INFINITY;
+    potlp->dObjBest = -POTLP_INFINITY;
     
     if ( potlp->intParams[INT_PARAM_CURVATURE] == 0 ) {
         pot->allowCurvature = 0;
@@ -536,6 +550,8 @@ static void POT_FNAME(LPSolverIPrintSolStatistics)( potlp_solver *potlp ) {
         printf("\nLP Status: %s \n", "Timelimit");
     } else if ( potlp->Lpstatus == POTLP_USER_INTERRUPT ) {
         printf("\nLP Status: %s \n", "User Interrupt");
+    } else if ( potlp->Lpstatus == POTLP_INTERNAL_ERROR ) {
+        printf("\nLP Status: %s \n", "Internal Error");
     } else if ( potlp->Lpstatus == POTLP_UNKNOWN ){
         printf("\nLP Status: %s \n", "Unknown");
     } else {

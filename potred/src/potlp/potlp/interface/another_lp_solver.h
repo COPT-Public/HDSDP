@@ -46,7 +46,9 @@ typedef struct {
     double *cplRes;
     
     double pObjVal;
+    double pObjBest;
     double dObjVal;
+    double dObjBest;
     
     double pInfeas;
     double pInfeasRel;
@@ -61,6 +63,12 @@ typedef struct {
     double *colVal;
     double *colDual;
     double *rowDual;
+    
+    /* TODO: Implement the best obj heuristic
+     double *colValBest;
+     double *colDualBest;
+     double *rowDualBest;
+     */
     
     /* Heuristics */
     double pResOmega;
