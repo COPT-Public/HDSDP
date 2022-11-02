@@ -76,6 +76,7 @@ typedef struct {
     int intParams[NUM_INT_PARAM];
     double dblParams[NUM_DBL_PARAM];
     
+    int Lpstatus;
     int64_t nIter; ///< Number of iterations
     double  startT; ///< Start time
     

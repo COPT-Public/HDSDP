@@ -49,7 +49,7 @@ extern void potUtilPrintParams( double dblParams[NUM_DBL_PARAM], int intParams[N
     printf("RelFeasTol  is set to %3.3e \n", dblParams[DBL_PARAM_RELFEASTOL]);
     printf("RelOptTol   is set to %3.3e \n", dblParams[DBL_PARAM_RELOPTTOL]);
     printf("TimeLimit   is set to %.0fs \n", dblParams[DBL_PARAM_TIMELIMIT]);
-    printf("compFocus   is set to %3.3e \n", dblParams[DBL_PARAM_COMPFOCUS]);
+    printf("compFocus   is set to %3.3e [Depreciated]\n", dblParams[DBL_PARAM_COMPFOCUS]);
     
     return;
 }

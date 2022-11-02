@@ -53,9 +53,9 @@ static void POT_FNAME(potLpReWeight) ( potlp_solver *potlp ) {
     if ( complGap > 10 * minInfeas ) { cStuck = 1; }
     else if ( complGap < 1.1 * minInfeas ) { cFast = 1; }
     
-    if ( pStuck ) { pOmega = POTLP_MIN(pOmega * 1.5, 3.0); }
-    if ( dStuck ) { dOmega = POTLP_MIN(dOmega * 1.5, 3.0); }
-    if ( cStuck ) { cOmega = POTLP_MIN(cOmega * 1.5, 3.0); }
+    if ( pStuck ) { pOmega = POTLP_MIN(pOmega * 20, 1e+04); }
+    if ( dStuck ) { dOmega = POTLP_MIN(dOmega * 20, 1e+04); }
+    if ( cStuck ) { cOmega = POTLP_MIN(cOmega * 20, 1e+04); }
     
     /* Normalize */
     double minOmega = POTLP_MIN(pOmega, dOmega);
@@ -212,12 +212,25 @@ static void POT_FNAME(potLpObjFImplMonitor)( void *objFData, void *info ) {
         double relGap = potlp->complGapRel;
         
         if ( (relGap < relOptTol && pInfeas < relFeasTol && dInfeas < relFeasTol) ) {
+            potlp->Lpstatus = POTLP_OPTIMAL;
             intInfo = (int *) info;
             *intInfo = 1;
         }
         
-        if ( potlp->nIter >= potlp->intParams[INT_PARAM_MAXITER] ||
-            elapsedTime >= potlp->dblParams[DBL_PARAM_TIMELIMIT]) {
+        if ( elapsedTime >= potlp->dblParams[DBL_PARAM_TIMELIMIT] ) {
+            potlp->Lpstatus = POTLP_TIMELIMIT;
+            intInfo = (int *) info;
+            *intInfo = 1;
+        }
+        
+        if ( potlp->nIter >= potlp->intParams[INT_PARAM_MAXITER] ) {
+            potlp->Lpstatus = POTLP_MAXITER;
+            intInfo = (int *) info;
+            *intInfo = 1;
+        }
+        
+        if ( potlp->kappa > 1e+08 * potlp->tau && potlp->potIterator->fVal < 1e-06 ) {
+            potlp->Lpstatus = POTLP_INFEAS_OR_UNBOUNDED;
             intInfo = (int *) info;
             *intInfo = 1;
         }
@@ -440,7 +453,21 @@ static void POT_FNAME(LPSolverIPrintSolStatistics)( potlp_solver *potlp ) {
     
     double solTime = potUtilGetTimeStamp() - potlp->startT;
     
-    printf("\nLP Solution statistic \n");
+    if ( potlp->Lpstatus == POTLP_OPTIMAL ) {
+        printf("\nLP Status: %s \n", "Optimal");
+    } else if ( potlp->Lpstatus == POTLP_MAXITER ) {
+        printf("\nLP Status: %s \n", "Maxiter");
+    } else if ( potlp->Lpstatus == POTLP_INFEAS_OR_UNBOUNDED ) {
+        printf("\nLP Status: %s \n", "Infeasible or Unbounded");
+    } else if ( potlp->Lpstatus == POTLP_TIMELIMIT ) {
+        printf("\nLP Status: %s \n", "Timelimit");
+    } else if ( potlp->Lpstatus == POTLP_UNKNOWN ) {
+        printf("\nLP Status: %s \n", "Unknown");
+    } else {
+        assert( 0 );
+    }
+    
+    printf("LP Solution statistic \n");
     printf("pObj: %+8.3e   dObj: %+8.3e \n", potlp->pObjVal, potlp->dObjVal);
     printf("pInf:  %8.3e    Rel:  %8.3e \n", potlp->pInfeas, potlp->pInfeasRel);
     printf("dInf:  %8.3e    Rel:  %8.3e \n", potlp->dInfeas, potlp->dInfeasRel);
@@ -524,6 +551,8 @@ extern pot_int POT_FNAME(LPSolverInit)( potlp_solver *potlp, pot_int nCol, pot_i
     potlp->potConstrMat->AMatProject = POT_FNAME(potLpConstrMatImplProject);
     potlp->potConstrMat->AMatScalProject = POT_FNAME(potLpConstrMatImplScalProject);
     potlp->potConstrMat->AMatMonitor = POT_FNAME(potLpConstrMatImplMonitor);
+    
+    potlp->Lpstatus = POTLP_UNKNOWN;
     
 exit_cleanup:
     return retcode;

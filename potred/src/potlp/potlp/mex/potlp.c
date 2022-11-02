@@ -6,7 +6,12 @@
  *
  */
 
+#ifdef LEGACY_POTLP
+#define POT_FNAME(x) x
 #include "lp_solver.h"
+#else
+#include "another_lp_solver.h"
+#endif
 
 /* [x, y, s] = potlp(A, b, c, params); */
 #define x      plhs[0]
@@ -78,6 +83,7 @@ extern void mexFunction( int nlhs, mxArray *plhs[], int nrhs, const mxArray *prh
     int maxRuizIter = 50;
     int coefScal = 0;
     int curvature = 1;
+    int rscalFreq = -1;
     
     double relFeasTol = 1e-04;
     double relOptTol = 1e-04;
@@ -106,6 +112,11 @@ extern void mexFunction( int nlhs, mxArray *plhs[], int nrhs, const mxArray *prh
             curvature = (int) (*mxGetPr(param));
         }
         
+        param = mxGetField(params, 0, "RScalFreq");
+        if ( param ) {
+            rscalFreq = (int) (*mxGetPr(param));
+        }
+        
         param = mxGetField(params, 0, "relFeasTol");
         if ( param ) {
             relFeasTol = (double) (*mxGetPr(param));
@@ -129,7 +140,7 @@ extern void mexFunction( int nlhs, mxArray *plhs[], int nrhs, const mxArray *prh
     
     /* Ready to solve */
     potlp_solver *potlp = NULL;
-    retcode = LPSolverCreate(&potlp);
+    retcode = POT_FNAME(LPSolverCreate)(&potlp);
     
     if ( retcode != RETCODE_OK ) {
         retcode = RETCODE_FAILED;
@@ -164,7 +175,7 @@ extern void mexFunction( int nlhs, mxArray *plhs[], int nrhs, const mxArray *prh
         Ai[i] = colMatIdx[i];
     }
     
-    retcode = LPSolverSetData(potlp, Ap, Ai, colMatElem, colObj, rowRhs);
+    retcode = POT_FNAME(LPSolverSetData)(potlp, Ap, Ai, colMatElem, colObj, rowRhs);
     
     mxFree(Ap); Ap = NULL;
     mxFree(Ai); Ai = NULL;
@@ -180,15 +191,16 @@ extern void mexFunction( int nlhs, mxArray *plhs[], int nrhs, const mxArray *prh
     potlp->intParams[INT_PARAM_MAXRUIZITER] = maxRuizIter;
     potlp->intParams[INT_PARAM_COEFSCALE] = coefScal;
     potlp->intParams[INT_PARAM_CURVATURE] = curvature;
+    potlp->intParams[INT_PARAM_RSCALFREQ] = rscalFreq;
     
     potlp->dblParams[DBL_PARAM_RELFEASTOL] = relFeasTol;
     potlp->dblParams[DBL_PARAM_RELOPTTOL] = relOptTol;
     potlp->dblParams[DBL_PARAM_TIMELIMIT] = maxTime;
     potlp->dblParams[DBL_PARAM_COMPFOCUS] = compFocus;
     
-    LPSolverParamsPrint(potlp);
+    POT_FNAME(LPSolverParamsPrint)(potlp);
 
-    retcode = LPSolverOptimize(potlp);
+    retcode = POT_FNAME(LPSolverOptimize)(potlp);
     if ( retcode != RETCODE_OK ) {
         retcode = RETCODE_FAILED;
         printf("Error on line %d \n", __LINE__);
@@ -208,7 +220,7 @@ extern void mexFunction( int nlhs, mxArray *plhs[], int nrhs, const mxArray *prh
         mexErrMsgTxt("Failed to allocate memory for LP solution.\n");
     }
     
-    LPSolverGetSolution(potlp, xp, yp, sp);
+    POT_FNAME(LPSolverGetSolution)(potlp, xp, yp, sp);
     
 exit_cleanup:
     
@@ -220,6 +232,6 @@ exit_cleanup:
         mxFree(Ai);
     }
     
-    LPSolverDestroy(&potlp);
+    POT_FNAME(LPSolverDestroy)(&potlp);
     return;
 }

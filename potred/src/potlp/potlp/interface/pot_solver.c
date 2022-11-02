@@ -542,7 +542,6 @@ extern void potReductionRestart( pot_solver *pot ) {
     /* Restart the potential reduction solver */
     pot->betaRadius = 1.0;
     pot->potVal = POTLP_INFINITY;
-    pot->allowCurvature = 1;
     
     return;
 }
