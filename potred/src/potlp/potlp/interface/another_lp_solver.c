@@ -271,18 +271,40 @@ static void POT_FNAME(potLpObjFImplMonitor)( void *objFData, void *info ) {
         double dInfeas = potlp->dInfeasRel;
         double relGap = potlp->complGapRel;
         
+        double pObjBestNew = potlp->pObjBest;
+        double dObjBestNew = potlp->dObjBest;
+        
+#define Gap(x, y) fabs((x) - (y)) / (fabs(x) + fabs(y) + 1.0);
+        
         if ( pInfeas < relFeasTol ) {
-            potlp->pObjBest = POTLP_MIN(potlp->pObjBest, pObjVal);
+            pObjBestNew = pObjVal;
         }
         
         if ( dInfeas < relFeasTol ) {
-            potlp->dObjBest = POTLP_MAX(potlp->dObjBest, dObjVal);
+            dObjBestNew = dObjVal;
         }
         
-        double bestGap = potlp->pObjBest - potlp->dObjBest;
-        double relBestGap = bestGap / (fabs(potlp->pObjBest) + fabs(potlp->dObjBest) + 1.0);
+        double relBestGap = Gap(potlp->pObjBest, potlp->dObjBest);
+        double oldPNewDGap = Gap(potlp->pObjBest, dObjBestNew);
+        double oldDNewPGap = Gap(pObjBestNew, potlp->dObjBest);
+        double newPNewDGap = Gap(pObjBestNew, dObjBestNew);
         
-        if ( (relBestGap < relOptTol && pInfeas < relFeasTol && dInfeas < relFeasTol) ) {
+        double minGap = POTLP_MIN(relBestGap, oldPNewDGap);
+        minGap = POTLP_MIN(minGap, oldDNewPGap);
+        minGap = POTLP_MIN(minGap, newPNewDGap);
+        
+        if ( minGap == oldPNewDGap ) {
+            potlp->dObjBest = dObjBestNew;
+        } else if ( minGap == oldDNewPGap ) {
+            potlp->pObjBest = pObjBestNew;
+        } else if ( minGap == newPNewDGap ) {
+            potlp->dObjBest = dObjBestNew;
+            potlp->pObjBest = pObjBestNew;
+        } else {
+            /* No change in gap */
+        }
+        
+        if ( minGap < relOptTol && pInfeas < relFeasTol && dInfeas < relFeasTol ) {
             potlp->Lpstatus = POTLP_OPTIMAL;
             intInfo = (int *) info;
             *intInfo = 1;
@@ -308,16 +330,16 @@ static void POT_FNAME(potLpObjFImplMonitor)( void *objFData, void *info ) {
         
         if ( elapsedTime < 100.0 ) {
             printf("%8lld  %10.3e  %10.3e  %5.1e %5.1e %10.3e  %10.3e  %10.3e |%5.1f [s] \n",
-                   potlp->nIter, pObjVal, dObjVal, relGap, relBestGap, pInfeas,
+                   potlp->nIter, pObjVal, dObjVal, relGap, minGap, pInfeas,
                    dInfeas, potlp->kappa / potlp->tau, elapsedTime);
         } else if ( elapsedTime < 3600  ){
             printf("%8lld  %10.3e  %10.3e  %5.1e %5.1e %10.3e  %10.3e  %10.3e |%5.1f [m] \n",
-                   potlp->nIter, pObjVal, dObjVal, relGap, relBestGap, pInfeas,
+                   potlp->nIter, pObjVal, dObjVal, relGap, minGap, pInfeas,
                    dInfeas, potlp->kappa / potlp->tau,
                    elapsedTime / 60.0 );
         } else {
             printf("%8lld  %10.3e  %10.3e  %5.1e %5.1e %10.3e  %10.3e  %10.3e |%5.1f [h] \n",
-                   potlp->nIter, pObjVal, dObjVal, relGap, relBestGap, pInfeas,
+                   potlp->nIter, pObjVal, dObjVal, relGap, minGap, pInfeas,
                    dInfeas, potlp->kappa / potlp->tau,
                    elapsedTime / 3600.0 );
         }
