@@ -75,7 +75,7 @@ static void POT_FNAME(potLpReWeight) ( potlp_solver *potlp ) {
         else if ( pInfeas < 1.1 * minInfeas ) { pFast = 1; }
         if ( dInfeas > 10 * minInfeas ) { dStuck = 1; }
         else if ( dInfeas < 1.1 * minInfeas ) { dFast = 1; }
-        if ( complGap > 5.0 * minInfeas ) { cStuck = 1; }
+        if ( complGap > 10 * minInfeas ) { cStuck = 1; }
         else if ( complGap < 1.1 * minInfeas ) { cFast = 1; }
         
         /* Do if stuck */
@@ -98,9 +98,14 @@ static void POT_FNAME(potLpReWeight) ( potlp_solver *potlp ) {
         
     } else {
         /* Make residuals the same */
-        pOmega = pOmega * (pInfeas / minInfeas);
-        dOmega = dOmega * (dInfeas / minInfeas);
-        cOmega = cOmega * (complGap / minInfeas);
+        pOmega = sqrt(pInfeas / minInfeas);
+        dOmega = sqrt(dInfeas / minInfeas);
+        cOmega = sqrt(complGap / minInfeas);
+        
+//        double sOmega = pOmega + dOmega + cOmega;
+//        pOmega = pOmega / sOmega;
+//        dOmega = dOmega / sOmega;
+//        cOmega = cOmega / sOmega;
         
         pOmega = POTLP_MIN(pOmega, rMax);
         dOmega = POTLP_MIN(dOmega, rMax);
@@ -518,7 +523,7 @@ static void POT_FNAME(LPSolverIPrintSolStatistics)( potlp_solver *potlp ) {
     double curvT = 0.0;
     potReductionGetStatistics(potlp->potIterator, &nCurvs, &curvT);
     printf("\nPotential Reduction statistic \n");
-    printf("In all [%d] curvs takes [%5.3f] seconds ([%5.3f]s/curv) \n", nCurvs, curvT, curvT / nCurvs);
+    printf("In all [%d] curvs take [%5.3f] seconds ([%5.3f]s/curv) \n", nCurvs, curvT, curvT / nCurvs);
     
     /* LP Statistics */
     if ( potlp->Lpstatus == POTLP_OPTIMAL ) {

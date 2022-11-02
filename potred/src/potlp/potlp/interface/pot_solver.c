@@ -292,8 +292,9 @@ static pot_int potReductionOneStep( pot_solver *pot ) {
     
     potVecCopy(xPres, xPrev);
     potVecCopy(dXStep, xPres);
+    double potReduceEps = -1e-03; //  * pot->n;
     
-    if ( (potReduce > -1e-03 && pot->useCurvature) || lczCode != RETCODE_OK ) {
+    if ( (potReduce > potReduceEps && pot->useCurvature) || lczCode != RETCODE_OK ) {
         pot->allowCurvature = 0;
         if ( lczCode != RETCODE_OK ) {
             printf("Curvature is shut down due to failed Lanczos \n");
@@ -309,7 +310,7 @@ static pot_int potReductionOneStep( pot_solver *pot ) {
     
     pot->useCurvature = 0;
         
-    if ( potReduce > -1e-03 && pot->curvInterval >= pot->curvMinInterval &&
+    if ( potReduce > potReduceEps && pot->curvInterval >= pot->curvMinInterval &&
         pot->allowCurvature ) {
         pot->useCurvature = 1;
     }

@@ -197,6 +197,7 @@ extern void mexFunction( int nlhs, mxArray *plhs[], int nrhs, const mxArray *prh
     potlp->intParams[INT_PARAM_MAXRUIZITER] = maxRuizIter;
     potlp->intParams[INT_PARAM_COEFSCALE] = coefScal;
     potlp->intParams[INT_PARAM_CURVATURE] = curvature;
+    potlp->intParams[INT_PARAM_CURVINTERVAL] = curvInterval;
     potlp->intParams[INT_PARAM_RSCALFREQ] = rscalFreq;
     
     potlp->dblParams[DBL_PARAM_RELFEASTOL] = relFeasTol;

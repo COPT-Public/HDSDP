@@ -195,7 +195,7 @@ extern pot_int potLanczosSolve( pot_lanczos *potLanczos, pot_vec *lczStart, pot_
         LANCZOS_DEBUG("Lanczos Alp value: %f \n", -vAlp);
         
         /* Refinement */
-        if ( normPres < 0.9 * normPrev || 0 ) {
+        if ( normPres < 0.99 * normPrev || 1 ) {
             wVec->nrm = -1.0; // TODO: Not good. Try rewriting this
             // TODO: Use dgemv
             for ( int i = 0; i < k; ++i ) {
