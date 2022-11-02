@@ -3,8 +3,11 @@
 
 #include "pot_def.h"
 
-#define NUM_INT_PARAM (10)
-#define NUM_DBL_PARAM (10)
+#define NUM_INT_PARAM (20)
+#define NUM_DBL_PARAM (20)
 #define POTLP_INFINITY 1e+30
+
+#define DBL_IPARAM_RESTARTRATE  18
+#define DBL_IPARAM_RESTARTMAX   19
 
 #endif /* pot_param_h */

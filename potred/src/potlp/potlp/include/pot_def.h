@@ -47,13 +47,15 @@ typedef int pot_int;
 #define POTLP_MAXITER               (101)
 #define POTLP_INFEAS_OR_UNBOUNDED   (102)
 #define POTLP_TIMELIMIT             (103)
+#define POTLP_USER_INTERRUPT        (104)
 
 // Integer Parameters
 #define INT_PARAM_MAXITER       0
 #define INT_PARAM_MAXRUIZITER   1
 #define INT_PARAM_COEFSCALE     2
 #define INT_PARAM_CURVATURE     3
-#define INT_PARAM_RSCALFREQ     4
+#define INT_PARAM_CURVINTERVAL  4
+#define INT_PARAM_RSCALFREQ     5
 
 // Double Parameters
 #define DBL_PARAM_RELFEASTOL    0

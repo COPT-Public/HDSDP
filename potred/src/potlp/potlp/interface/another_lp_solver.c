@@ -10,13 +10,33 @@
 #include <sys/time.h>
 #include <math.h>
 
+#ifdef MATLAB_MEX_FILE
+#include <stdbool.h>
+#ifdef __cplusplus
+extern "C" {
+    bool utIsInterruptPending();
+}
+#else
+extern bool utIsInterruptPending();
+#endif
+#endif
+
+/* TODO: Remove the static interrupt method */
+static int isCtrlC = 0;
+
+static void monitorCtrlC( int sigNum ) {
+    
+    isCtrlC = 1;
+    return;
+}
+
 static void POT_FNAME(potLpResidualScal) ( potlp_solver *potlp ) {
     
     double *pRes = potlp->pRes;
     double *dRes = potlp->dRes;
     
-    scl(&potlp->nRow, &potlp->pResOmega, pRes, &potIntConstantOne);
-    scl(&potlp->nCol, &potlp->dResOmega, dRes, &potIntConstantOne);
+    scal(&potlp->nRow, &potlp->pResOmega, pRes, &potIntConstantOne);
+    scal(&potlp->nCol, &potlp->dResOmega, dRes, &potIntConstantOne);
     *potlp->cplRes = (*potlp->cplRes) * potlp->cplResOmega;
     
     return;
@@ -26,7 +46,10 @@ static void POT_FNAME(potLpResidualScal) ( potlp_solver *potlp ) {
 static void POT_FNAME(potLpReWeight) ( potlp_solver *potlp ) {
     
 
-    /* Implement the weighted objective Heuristic  */
+    /* Implement the weighted objective Heuristic */
+    double rRate = potlp->dblParams[DBL_IPARAM_RESTARTRATE];
+    double rMax = potlp->dblParams[DBL_IPARAM_RESTARTMAX];
+    
     double pOmega = potlp->pResOmega;
     double dOmega = potlp->dResOmega;
     double cOmega = potlp->cplResOmega;
@@ -46,24 +69,43 @@ static void POT_FNAME(potLpReWeight) ( potlp_solver *potlp ) {
     minInfeas = POTLP_MIN(pInfeas, dInfeas);
     minInfeas = POTLP_MIN(minInfeas, complGap);
     
-    if ( pInfeas > 10 * minInfeas ) { pStuck = 1; }
-    else if ( pInfeas < 1.1 * minInfeas ) { pFast = 1; }
-    if ( dInfeas > 10 * minInfeas ) { dStuck = 1; }
-    else if ( dInfeas < 1.1 * minInfeas ) { dFast = 1; }
-    if ( complGap > 10 * minInfeas ) { cStuck = 1; }
-    else if ( complGap < 1.1 * minInfeas ) { cFast = 1; }
-    
-    if ( pStuck ) { pOmega = POTLP_MIN(pOmega * 20, 1e+04); }
-    if ( dStuck ) { dOmega = POTLP_MIN(dOmega * 20, 1e+04); }
-    if ( cStuck ) { cOmega = POTLP_MIN(cOmega * 20, 1e+04); }
-    
-    /* Normalize */
-    double minOmega = POTLP_MIN(pOmega, dOmega);
-    minOmega = POTLP_MIN(minOmega, cOmega);
-    
-    pOmega = pOmega / minOmega;
-    dOmega = dOmega / minOmega;
-    cOmega = cOmega / minOmega;
+    if ( rRate > 0 ) {
+        /* Heuristic update */
+        if ( pInfeas > 10 * minInfeas ) { pStuck = 1; }
+        else if ( pInfeas < 1.1 * minInfeas ) { pFast = 1; }
+        if ( dInfeas > 10 * minInfeas ) { dStuck = 1; }
+        else if ( dInfeas < 1.1 * minInfeas ) { dFast = 1; }
+        if ( complGap > 5.0 * minInfeas ) { cStuck = 1; }
+        else if ( complGap < 1.1 * minInfeas ) { cFast = 1; }
+        
+        /* Do if stuck */
+        if ( pStuck ) { pOmega = POTLP_MIN(pOmega * rRate, rMax); }
+        if ( dStuck ) { dOmega = POTLP_MIN(dOmega * rRate, rMax); }
+        if ( cStuck ) { cOmega = POTLP_MIN(cOmega * rRate, rMax); }
+        
+        /* Do if fast */
+        if ( pFast ) { };
+        if ( dFast ) { };
+        if ( cFast ) { };
+        
+        /* Normalize */
+        double minOmega = POTLP_MIN(pOmega, dOmega);
+        minOmega = POTLP_MIN(minOmega, cOmega);
+
+        pOmega = pOmega / minOmega;
+        dOmega = dOmega / minOmega;
+        cOmega = cOmega / minOmega;
+        
+    } else {
+        /* Make residuals the same */
+        pOmega = pOmega * (pInfeas / minInfeas);
+        dOmega = dOmega * (dInfeas / minInfeas);
+        cOmega = cOmega * (complGap / minInfeas);
+        
+        pOmega = POTLP_MIN(pOmega, rMax);
+        dOmega = POTLP_MIN(dOmega, rMax);
+        cOmega = POTLP_MIN(cOmega, rMax);
+    }
     
     REWEIGHT_DEBUG("After", pOmega, dOmega, cOmega);
     
@@ -197,6 +239,19 @@ static void POT_FNAME(potLpObjFImplMonitor)( void *objFData, void *info ) {
     
     int *intInfo = NULL;
     
+#ifdef MATLAB_MEX_FILE
+    if (utIsInterruptPending()) {
+        monitorCtrlC(0);
+    }
+#endif
+    
+    if ( isCtrlC ) {
+        potlp->Lpstatus = POTLP_USER_INTERRUPT;
+        intInfo = (int *) info;
+        *intInfo = 1;
+        isCtrlC = 0; /* Reset the ctrl c status */
+    }
+    
     if ( potlp->nIter % logFreq == 0 || potlp->nIter == 1 || intInfo || potlp->potIterator->useCurvature ) {
         
         POT_FNAME(LPSolverIRetrieveSolution)(potlp);
@@ -260,7 +315,7 @@ static void POT_FNAME(potLpObjFImplMonitor)( void *objFData, void *info ) {
         resiFreq = potlp->intParams[INT_PARAM_RSCALFREQ];
     }
     
-    if ( potlp->nIter % resiFreq == 1 ) {
+    if ( potlp->nIter % resiFreq == 1 && !potlp->potIterator->useCurvature ) {
         POT_FNAME(potLpReWeight)(potlp);
     }
     
@@ -346,6 +401,9 @@ static void POT_FNAME(LPSolverIParamAdjust)( potlp_solver *potlp ) {
         pot->allowCurvature = 1;
     }
     
+    pot->curvLimit = potlp->intParams[INT_PARAM_CURVATURE] - 1;
+    pot->curvMinInterval = potlp->intParams[INT_PARAM_CURVINTERVAL];
+    
     return;
 }
 
@@ -355,8 +413,10 @@ static void POT_FNAME(LPSolverIHeurInitialize) ( potlp_solver *potlp ) {
     int *isColBasic = potlp->isColBasic;
     
     /* Initialize basis status */
-    for ( int i = 0; i < nColQ; ++i ) {
-        isColBasic[i] = 1;
+    if ( isColBasic ) {
+        for ( int i = 0; i < nColQ; ++i ) {
+            isColBasic[i] = 1;
+        }
     }
     
     /* Initialize residual weight */
@@ -453,6 +513,14 @@ static void POT_FNAME(LPSolverIPrintSolStatistics)( potlp_solver *potlp ) {
     
     double solTime = potUtilGetTimeStamp() - potlp->startT;
     
+    /* Potential statistics */
+    int nCurvs = 0;
+    double curvT = 0.0;
+    potReductionGetStatistics(potlp->potIterator, &nCurvs, &curvT);
+    printf("\nPotential Reduction statistic \n");
+    printf("In all [%d] curvs takes [%5.3f] seconds ([%5.3f]s/curv) \n", nCurvs, curvT, curvT / nCurvs);
+    
+    /* LP Statistics */
     if ( potlp->Lpstatus == POTLP_OPTIMAL ) {
         printf("\nLP Status: %s \n", "Optimal");
     } else if ( potlp->Lpstatus == POTLP_MAXITER ) {
@@ -461,7 +529,9 @@ static void POT_FNAME(LPSolverIPrintSolStatistics)( potlp_solver *potlp ) {
         printf("\nLP Status: %s \n", "Infeasible or Unbounded");
     } else if ( potlp->Lpstatus == POTLP_TIMELIMIT ) {
         printf("\nLP Status: %s \n", "Timelimit");
-    } else if ( potlp->Lpstatus == POTLP_UNKNOWN ) {
+    } else if ( potlp->Lpstatus == POTLP_USER_INTERRUPT ) {
+        printf("\nLP Status: %s \n", "User Interrupt");
+    } else if ( potlp->Lpstatus == POTLP_UNKNOWN ){
         printf("\nLP Status: %s \n", "Unknown");
     } else {
         assert( 0 );
@@ -480,8 +550,6 @@ static void POT_FNAME(LPSolverIPrintSolStatistics)( potlp_solver *potlp ) {
 extern pot_int POT_FNAME(LPSolverCreate)( potlp_solver **ppotlp ) {
     
     pot_int retcode = RETCODE_OK;
-    
-    printf("\nPOTLP: A first-order potential reduction LP solver\n\n");
     
     if ( !ppotlp ) {
         retcode = RETCODE_FAILED;
@@ -507,6 +575,9 @@ extern pot_int POT_FNAME(LPSolverCreate)( potlp_solver **ppotlp ) {
     
     potlp->nIter = 0;
     potlp->startT = potUtilGetTimeStamp();
+    
+    potlp->act.sa_handler = monitorCtrlC;
+    sigaction(SIGINT, &potlp->act, NULL);
     
     *ppotlp = potlp;
     
@@ -584,7 +655,7 @@ extern pot_int POT_FNAME(LPSolverSetData)( potlp_solver *potlp, pot_int *Ap, pot
     if ( !potlp->colMatBeg || !potlp->colMatIdx || !potlp->colMatElem ||
          !potlp->lpObj || !potlp->lpRHS || !potlp->pdcRes ||
          !potlp->colVal || !potlp->colDual || !potlp->rowDual ||
-         !potlp->scalVals || !potlp->isColBasic ) {
+         !potlp->scalVals ) {
         retcode = RETCODE_FAILED;
         goto exit_cleanup;
     }
@@ -610,6 +681,7 @@ exit_cleanup:
 extern void POT_FNAME(LPSolverParamsPrint)( potlp_solver *potlp ) {
     
     potUtilPrintParams(potlp->dblParams, potlp->intParams);
+    potUtilPrintIParams(potlp->dblParams, potlp->intParams);
     
     return;
 }

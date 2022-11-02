@@ -3,6 +3,7 @@ cmake_minimum_required(VERSION 3.21)
 set(CMAKE_OSX_ARCHITECTURES x86_64)
 project(POTLP C)
 set(CMAKE_C_STANDARD 11)
+set(CMAKE_C_COMPILER clang)
 SET(CMAKE_BUILD_TYPE "Release")
 
 find_package(Matlab)
@@ -21,13 +22,17 @@ include_directories(../include)
 include_directories(../potreduce)
 
 matlab_add_mex(NAME potlp SRC ./potlp.c ./matrix.h ./tmwtypes.h ./mex.h
-			  ../interface/lp_solver.c ../interface/lp_solver.h ../interface/pot_param.h  ../interface/pot_solver.c ../interface/pot_solver.h
+			  ../interface/lp_qmatrix.c ../interface/lp_qmatrix.h 
+			  ../interface/lp_solver.c ../interface/lp_solver.h 
+			  ../interface/another_lp_solver.c ../interface/another_lp_solver.h 
+			  ../interface/pot_param.h  ../interface/pot_solver.c ../interface/pot_solver.h
 			  ../linalg/vec_mat.c ../linalg/vec_mat.h
 			  ../include/pot_def.h 
 			  ../potreduce/pot_constr_mat.c ../potreduce/pot_constr_mat.h ../potreduce/pot_lanczos.c ../potreduce/pot_lanczos.h
 			  ../potreduce/pot_objfunc.c ../potreduce/pot_objfunc.h ../potreduce/pot_structs.h ../potreduce/pot_utils.c ../potreduce/pot_utils.h
 			  ../potreduce/pot_vector.c ../potreduce/pot_vector.h)
 
+target_link_libraries(potlp /Applications/MATLAB_R2021a.app/bin/maci64/libut.dylib)
 target_link_libraries(potlp $ENV{MKL_LIB_PATH}/libmkl_core.a)
 target_link_libraries(potlp $ENV{MKL_LIB_PATH}/libmkl_intel_lp64.a)
 target_link_libraries(potlp $ENV{MKL_LIB_PATH}/libmkl_sequential.a)

@@ -1,5 +1,7 @@
-#include <sys/time.h>
 #include "pot_utils.h"
+#include "pot_param.h"
+
+#include <sys/time.h>
 
 /* TODO: Add compatibility for Windows platform */
 static double my_clock( void ) {
@@ -30,10 +32,14 @@ extern void potUtilGetDefaultParams( double dblParams[NUM_DBL_PARAM], int intPar
     intParams[INT_PARAM_MAXRUIZITER] = 100;
     /* Switch of coefficient scaling */
     intParams[INT_PARAM_COEFSCALE] = 0;
-    /* Switch of curvature usage */
-    intParams[INT_PARAM_CURVATURE] = 1;
+    /* Number of curvature usage */
+    intParams[INT_PARAM_CURVATURE] = 20;
     /* Frequency of switching the weight of the residuals */
     intParams[INT_PARAM_RSCALFREQ] = -1;
+    
+    /* Internal parameters */
+    dblParams[DBL_IPARAM_RESTARTRATE] = 20.0;
+    dblParams[DBL_IPARAM_RESTARTMAX] = 1e+04;
     
     return;
 }
@@ -45,6 +51,7 @@ extern void potUtilPrintParams( double dblParams[NUM_DBL_PARAM], int intParams[N
     printf("RuizMaxIter is set to %d \n", intParams[INT_PARAM_MAXRUIZITER]);
     printf("CoeffScal   is set to %d \n", intParams[INT_PARAM_COEFSCALE]);
     printf("Curvature   is set to %d \n", intParams[INT_PARAM_CURVATURE]);
+    printf("CInterVal   is set to %d \n", intParams[INT_PARAM_CURVINTERVAL]);
     printf("RScalFreq   is set to %d \n", intParams[INT_PARAM_RSCALFREQ]);
     printf("RelFeasTol  is set to %3.3e \n", dblParams[DBL_PARAM_RELFEASTOL]);
     printf("RelOptTol   is set to %3.3e \n", dblParams[DBL_PARAM_RELOPTTOL]);
@@ -54,3 +61,11 @@ extern void potUtilPrintParams( double dblParams[NUM_DBL_PARAM], int intParams[N
     return;
 }
 
+extern void potUtilPrintIParams( double dblParams[NUM_DBL_PARAM], int intParams[NUM_INT_PARAM] ) {
+    
+    printf("\nInternal parameter summary \n");
+    printf("RestartRate is set to %3.3e \n", dblParams[DBL_IPARAM_RESTARTRATE]);
+    printf("RestartMax  is set to %3.3e \n", dblParams[DBL_IPARAM_RESTARTMAX]);
+    
+    return;
+}

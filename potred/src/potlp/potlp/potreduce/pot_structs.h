@@ -10,6 +10,7 @@
 #include "pot_def.h"
 #include "pot_param.h"
 
+#include <signal.h>
 
 /** @brief Struture that contains vector implementations
  *
@@ -84,6 +85,7 @@ typedef struct {
     pot_int *eiIntMat; ///< Auxiliary int workspace
     
     void (*lczMatVec) (void *, pot_vec *, pot_vec *);
+    void (*lczPartMatVec) (void *, int *, pot_vec *, pot_vec *);
     
 } pot_lanczos;
 
@@ -125,6 +127,14 @@ typedef struct {
     
     pot_int useCurvature;
     pot_int allowCurvature;
+    
+    pot_int nCurvs;  ///< How many times curvatures have been computed
+    pot_int curvLimit; ///< Stop computing curvatures after reaching this limit
+    
+    pot_int curvInterval; ///< How many calls have been passed without using curvatures
+    pot_int curvMinInterval; ///< Minimum interval before computing the next curvature
+    
+    double  curvTime;
     
 } pot_solver;
 

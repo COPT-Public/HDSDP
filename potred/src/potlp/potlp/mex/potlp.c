@@ -83,59 +83,61 @@ extern void mexFunction( int nlhs, mxArray *plhs[], int nrhs, const mxArray *prh
     int maxRuizIter = 50;
     int coefScal = 0;
     int curvature = 1;
+    int curvInterval = 500;
     int rscalFreq = -1;
+    int verbose = 1;
     
     double relFeasTol = 1e-04;
     double relOptTol = 1e-04;
     double maxTime = 600.0;
     double compFocus = 10.0;
     
+    int iParamRestartRate = 18;
+    int iParamRestartMax = 19;
+    double ParamRestartRate = 2.0;
+    double ParamRestartMax = 1e+04;
+    
     if ( nrhs == 4 ) {
         
         param = mxGetField(params, 0, "maxIter");
-        if ( param ) {
-            maxIter = (int) (*mxGetPr(param));
-        }
+        if ( param ) { maxIter = (int) (*mxGetPr(param)); }
         
         param = mxGetField(params, 0, "maxRuizIter");
-        if ( param ) {
-            maxRuizIter = (int) (*mxGetPr(param));
-        }
+        if ( param ) { maxRuizIter = (int) (*mxGetPr(param)); }
         
         param = mxGetField(params, 0, "coefScal");
-        if ( param ) {
-            coefScal = (int) (*mxGetPr(param));
-        }
+        if ( param ) { coefScal = (int) (*mxGetPr(param)); }
         
         param = mxGetField(params, 0, "curvature");
-        if ( param ) {
-            curvature = (int) (*mxGetPr(param));
-        }
+        if ( param ) { curvature = (int) (*mxGetPr(param)); }
+        
+        param = mxGetField(params, 0, "curvInterval");
+        if ( param ) { curvInterval = (int) (*mxGetPr(param)); }
         
         param = mxGetField(params, 0, "RScalFreq");
-        if ( param ) {
-            rscalFreq = (int) (*mxGetPr(param));
-        }
+        if ( param ) { rscalFreq = (int) (*mxGetPr(param)); }
+        
+        param = mxGetField(params, 0, "verbose");
+        if ( param ) { verbose = (int) (*mxGetPr(param)); }
         
         param = mxGetField(params, 0, "relFeasTol");
-        if ( param ) {
-            relFeasTol = (double) (*mxGetPr(param));
-        }
+        if ( param ) { relFeasTol = (double) (*mxGetPr(param)); }
         
         param = mxGetField(params, 0, "relOptTol");
-        if ( param ) {
-            relOptTol = (double) (*mxGetPr(param));
-        }
+        if ( param ) { relOptTol = (double) (*mxGetPr(param)); }
         
         param = mxGetField(params, 0, "maxTime");
-        if ( param ) {
-            maxTime = (double) (*mxGetPr(param));
-        }
+        if ( param ) { maxTime = (double) (*mxGetPr(param)); }
         
         param = mxGetField(params, 0, "compFocus");
-        if ( param ) {
-            compFocus = (double) (*mxGetPr(param));
-        }
+        if ( param ) { compFocus = (double) (*mxGetPr(param)); }
+        
+        /* Internal parameters */
+        param = mxGetField(params, 0, "PI_RestartMax");
+        if ( param ) { ParamRestartMax = (double) (*mxGetPr(param)); }
+        
+        param = mxGetField(params, 0, "PI_RestartRate");
+        if ( param ) { ParamRestartRate = (double) (*mxGetPr(param)); }
     }
     
     /* Ready to solve */
@@ -148,7 +150,11 @@ extern void mexFunction( int nlhs, mxArray *plhs[], int nrhs, const mxArray *prh
         goto exit_cleanup;
     }
     
-    retcode = LPSolverInit(potlp, nCol, nRow);
+    if ( verbose ) {
+        printf("\nPOTLP: A first-order potential reduction LP solver\n\n");
+    }
+    
+    retcode = POT_FNAME(LPSolverInit)(potlp, nCol, nRow);
     if ( retcode != RETCODE_OK ) {
         retcode = RETCODE_FAILED;
         printf("Error on line %d \n", __LINE__);
@@ -198,7 +204,13 @@ extern void mexFunction( int nlhs, mxArray *plhs[], int nrhs, const mxArray *prh
     potlp->dblParams[DBL_PARAM_TIMELIMIT] = maxTime;
     potlp->dblParams[DBL_PARAM_COMPFOCUS] = compFocus;
     
-    POT_FNAME(LPSolverParamsPrint)(potlp);
+    /* Internal Parameters */
+    potlp->dblParams[iParamRestartRate] = ParamRestartRate;
+    potlp->dblParams[iParamRestartMax] = ParamRestartMax;
+    
+    if ( verbose ) {
+        POT_FNAME(LPSolverParamsPrint)(potlp);
+    }
 
     retcode = POT_FNAME(LPSolverOptimize)(potlp);
     if ( retcode != RETCODE_OK ) {

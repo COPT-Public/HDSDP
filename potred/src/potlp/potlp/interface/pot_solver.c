@@ -5,6 +5,7 @@
 #include "pot_objfunc.h"
 #include "pot_constr_mat.h"
 #include "pot_lanczos.h"
+#include "pot_utils.h"
 
 #include <math.h>
 
@@ -181,11 +182,19 @@ static pot_int potReductionOneStep( pot_solver *pot ) {
     /* Prepare the second direction */
     if ( pot->useCurvature && pot->allowCurvature ) {
         /* Use negative curvature */
+        double curvTStart = potUtilGetTimeStamp();
+        pot->nCurvs += 1;
         lczCode = potLanczosSolve(pot->lczTool, gVec, mkVec);
+        pot->curvTime += potUtilGetTimeStamp() - curvTStart;
         potVecConeScal(xPres, mkVec);
+        /* Reset curvature interval */
+        pot->curvInterval = 0;
+        
     } else {
         /* Use momentum mk = x_pres - x_prev; */
         potVecDiff(mkVec, xPrev, xPres);
+        /* Update curvature interval */
+        pot->curvInterval += 1;
     }
     
     /* Gradient projection */
@@ -268,7 +277,7 @@ static pot_int potReductionOneStep( pot_solver *pot ) {
         
         if ( potReduceRatio < 0.2 ) {
             pot->betaRadius *= 0.25;
-            printf("\n");
+            // printf("\n");
         } else if ( potReduceRatio > 0.75 ) {
             pot->betaRadius *= 2.0;
             pot->betaRadius = POTLP_MIN(pot->betaRadius, 1.0);
@@ -293,9 +302,15 @@ static pot_int potReductionOneStep( pot_solver *pot ) {
         }
     }
     
+    if ( pot->nCurvs > pot->curvLimit && pot->allowCurvature ) {
+        pot->allowCurvature = 0;
+        printf("Curvature is shut down due to reaching limit \n");
+    }
+    
     pot->useCurvature = 0;
         
-    if ( potReduce > -1e-03 && pot->allowCurvature ) {
+    if ( potReduce > -1e-03 && pot->curvInterval >= pot->curvMinInterval &&
+        pot->allowCurvature ) {
         pot->useCurvature = 1;
     }
     
@@ -401,6 +416,14 @@ extern pot_int potLPCreate( pot_solver **ppot ) {
     
     pot->potVal = POTLP_INFINITY;
     pot->zVal = 0.0;
+    
+    pot->nCurvs = 0;
+    pot->curvLimit = 200000000;
+    
+    pot->curvInterval = 0;
+    pot->curvMinInterval = 0;
+    
+    pot->curvTime = 0.0;
     
     POT_CALL(potLanczosCreate(&pot->lczTool));
     
@@ -518,7 +541,10 @@ extern pot_int potReductionSolve( pot_solver *pot ) {
     
     for ( int i = 0; ; ++i ) {
         
-        if ( i % 1000 == 0 && i < 10000 && pot->allowCurvature ) {
+        /* Invoke curvature from time to time. But never too frequently */
+        if ( i % 5000 == 0 && i < 10000 &&
+            pot->curvInterval >= pot->curvMinInterval &&
+            pot->allowCurvature ) {
             pot->useCurvature = 1;
         }
         
@@ -542,6 +568,19 @@ extern void potReductionRestart( pot_solver *pot ) {
     /* Restart the potential reduction solver */
     pot->betaRadius = 1.0;
     pot->potVal = POTLP_INFINITY;
+    
+    return;
+}
+
+extern void potReductionGetStatistics( pot_solver *pot, int *nCurvs, double *curvT ) {
+    
+    if ( nCurvs ) {
+        *nCurvs = pot->nCurvs;
+    }
+    
+    if ( curvT ) {
+        *curvT = pot->curvTime;
+    }
     
     return;
 }

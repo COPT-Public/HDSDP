@@ -264,7 +264,7 @@ extern void LPQMatTransMultiply( lp_qmatrix *QMat, int *isColBasic, double *yVal
             qtyVal[i] = qty;
         }
     } else {
-        spMatATxpy(QMat->nRowQ, QMatBeg, QMatIdx, QMatElem, 1.0, yVal, qtyVal);
+        spMatATxpy(QMat->nColQ, QMatBeg, QMatIdx, QMatElem, 1.0, yVal, qtyVal);
     }
     
     return;

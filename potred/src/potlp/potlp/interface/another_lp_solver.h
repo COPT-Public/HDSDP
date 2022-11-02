@@ -80,6 +80,8 @@ typedef struct {
     int64_t nIter; ///< Number of iterations
     double  startT; ///< Start time
     
+    struct sigaction act; /// Control C detector 
+    
 } potlp_anosolver;
 
 extern pot_int POT_FNAME(LPSolverCreate)( potlp_solver **ppotlp );

@@ -15,6 +15,7 @@ extern pot_int potLPSetObj( pot_solver *pot, pot_fx *objFunc );
 extern pot_int potLPSetLinearConstrs( pot_solver *pot, pot_constr_mat *AMat );
 extern pot_int potReductionSolve( pot_solver *pot );
 extern void potReductionRestart( pot_solver *pot );
+extern void potReductionGetStatistics( pot_solver *pot, int *nCurvs, double *curvT );
 extern void potLPClear( pot_solver *pot );
 extern void potLPDestroy( pot_solver **ppot );
 
