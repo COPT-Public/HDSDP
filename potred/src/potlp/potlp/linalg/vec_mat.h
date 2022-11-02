@@ -12,7 +12,7 @@ static pot_int potIntConstantZero = 0;
 extern double nrm2( pot_int *n, double *x, pot_int *incx );
 extern void axpy( pot_int *n, double *a, double *x, pot_int *incx, double *y, pot_int *incy );
 extern double dot( pot_int *n, double *x, pot_int *incx, double *y, pot_int *incy );
-extern void scl( pot_int *n, double *sa, double *sx, pot_int *incx );
+extern void scal( pot_int *n, double *sa, double *sx, pot_int *incx );
 extern void rscl( pot_int *n, double *sa, double *sx, pot_int *incx );
 extern pot_int idamax( pot_int *n, double *x, pot_int *incx );
 

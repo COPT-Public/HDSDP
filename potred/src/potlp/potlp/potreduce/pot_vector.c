@@ -94,7 +94,7 @@ extern double potVecNormalize( pot_vec *pVec ) {
 
 extern void potVecScal( pot_vec *pVexX, double sVal ) {
     
-    scl(&pVexX->n, &sVal, pVexX->x, &potIntConstantOne);
+    scal(&pVexX->n, &sVal, pVexX->x, &potIntConstantOne);
     
     if ( pVexX ->nrm != -1.0 ) {
         pVexX->nrm = pVexX->nrm * fabs(sVal);

@@ -1,8 +1,25 @@
 #include <math.h>
 #include "vec_mat.h"
 
+#ifdef MYBLAS
+#undef MYBLAS
+#endif
+
+#define MYBLAS
+
+/* Blas functions */
+extern double dnrm2( int *n, double *x, int *incx );
+extern void daxpy( int *n, double *a, double *x, int *incx, double *y, int *incy );
+extern double ddot( int *n, double *x, int *incx, double *y, int *incy );
+extern void dscal( int *n, double *sa, double *sx, int *incx );
+extern void drscl( int *n, double *sa, double *sx, int *incx );
+extern int idamax( int *n, double *x, int *incx );
+extern void dgemv( char *trans, pot_int *m, pot_int *n, double *alpha,
+                   double *a, pot_int *lda, double *x, pot_int *incx,
+                   double *beta, double *y, pot_int *incy );
+
 extern double nrm2( pot_int *n, double *x, pot_int *incx ) {
-    
+#ifdef MYBLAS
     assert( *incx == 1 );
     
     double nrm = 0.0;
@@ -12,21 +29,26 @@ extern double nrm2( pot_int *n, double *x, pot_int *incx ) {
     }
     
     return sqrt(nrm);
+#else
+    return dnrm2(n, x, incx);
+#endif
 }
 
 extern void axpy( pot_int *n, double *a, double *x, pot_int *incx, double *y, pot_int *incy ) {
-    
+#ifdef MYBLAS
     assert( *incx == 1 && *incy == 1 );
     
     for ( int i = 0; i < *n; ++i ) {
         y[i] += (*a) * x[i];
     }
-    
+#else
+    daxpy(n, a, x, incx, y, incy);
+#endif
     return;
 }
 
 extern double dot( pot_int *n, double *x, pot_int *incx, double *y, pot_int *incy ) {
-    
+#ifdef MYBLAS
     assert( *incx == 1 && *incy == 1 );
     
     double dres = 0.0;
@@ -36,23 +58,28 @@ extern double dot( pot_int *n, double *x, pot_int *incx, double *y, pot_int *inc
     }
     
     return dres;
+#else
+    return ddot(n, x, incx, y, incy);
+#endif
 }
 
-extern void scl( pot_int *n, double *sa, double *sx, pot_int *incx ) {
-    
+extern void scal( pot_int *n, double *sa, double *sx, pot_int *incx ) {
+#ifdef MYBLAS
     assert( *incx == 1 );
     double a = *sa;
     
     for ( int i = 0; i < *n; ++i ) {
         sx[i] = sx[i] * a;
     }
-    
+#else
+    dscal(n, sa, sx, incx);
+#endif
     return;
 }
 
-
+/* Use standard Blas for this sensitive operation */
 extern void rscl( pot_int *n, double *sa, double *sx, pot_int *incx ) {
-    
+#if 0
     assert( *incx == 1 );
     double a = *sa;
     
@@ -66,6 +93,9 @@ extern void rscl( pot_int *n, double *sa, double *sx, pot_int *incx ) {
     for ( int i = 0; i < *n; ++i ) {
         sx[i] = sx[i] / a;
     }
+#else
+    drscl(n, sa, sx, incx);
+#endif
     
     return;
 }
@@ -113,10 +143,6 @@ extern void eig( const char     *jobz,
                  const pot_int  *liwork,
                  pot_int        *info );
 
-extern void dgemv( char *trans, pot_int *m, pot_int *n, double *alpha,
-                   double *a, pot_int *lda, double *x, pot_int *incx,
-                   double *beta, double *y, pot_int *incy );
-
 extern void gemv( char *trans, pot_int *m, pot_int *n, double *alpha,
                   double *a, pot_int *lda, double *x, pot_int *incx,
                   double *beta, double *y, pot_int *incy ) {
@@ -130,7 +156,7 @@ extern double sumlogdet( pot_int *n, double *x ) {
     
     double logdet = 0.0;
     for ( int i = 0; i < *n; ++i ) {
-        logdet += logl(x[i]);
+        logdet += log(x[i]);
     }
     
     return logdet;
@@ -139,7 +165,6 @@ extern double sumlogdet( pot_int *n, double *x ) {
 extern void vvscl( pot_int *n, double *s, double *x ) {
     
     for ( int i = 0; i < *n; ++i ) {
-        assert( s[i] > 0.0 );
         x[i] = x[i] * s[i];
     }
     
