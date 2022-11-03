@@ -308,6 +308,8 @@ static void POT_FNAME(potLpObjFImplMonitor)( void *objFData, void *info ) {
             /* No change in gap */
         }
         
+        minGap = POTLP_MIN(minGap, relGap);
+        
         if ( minGap < relOptTol && pInfeas < relFeasTol && dInfeas < relFeasTol ) {
             potlp->Lpstatus = POTLP_OPTIMAL;
             intInfo = (int *) info;
