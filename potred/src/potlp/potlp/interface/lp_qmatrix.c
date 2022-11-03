@@ -108,96 +108,11 @@ exit_cleanup:
     return retcode;
 }
 
-#define RUIZ_DEBUG(format, info) // printf(format, info);
 extern pot_int LPQMatRuizScal( lp_qmatrix *QMat, int maxIter ) {
     
-    pot_int retcode = RETCODE_OK;
-    
-    pot_int nRowQ = QMat->nRowQ;
-    pot_int nColQ = QMat->nColQ;
-    
-    pot_int *QMatBeg = QMat->QMatBeg;
-    pot_int *QMatIdx = QMat->QMatIdx;
-    double  *QMatElem = QMat->QMatElem;
-    
-    double *ruizScalDiagRow = QMat->sclRow;
-    double *ruizScalDiagCol = QMat->sclCol;
-    double *ruizWorkDiagRow = NULL;
-    double *ruizWorkDiagCol = NULL;
-    
-    /* Allocate workspace */
-    POTLP_INIT(ruizWorkDiagRow, double, nRowQ);
-    POTLP_INIT(ruizWorkDiagCol, double, nColQ);
-    
-    if ( !ruizWorkDiagRow || !ruizWorkDiagCol ) {
-        retcode = RETCODE_FAILED;
-        goto exit_cleanup;
-    }
-    
-    /* Initialize scalers */
-    for ( int i = 0; i < nRowQ; ++i ) {
-        ruizScalDiagRow[i] = 1.0;
-    }
-    
-    for ( int i = 0; i < nColQ; ++i ) {
-        ruizScalDiagCol[i] = 1.0;
-    }
-    
-    RUIZ_DEBUG("Start Ruiz-scaling %s\n", "");
-    
-    for ( int i = 0; i < maxIter; ++i ) {
-        
-        POTLP_ZERO(ruizWorkDiagRow, double, nRowQ);
-        spMatMaxRowAbs(nColQ, QMatBeg, QMatIdx, QMatElem, ruizWorkDiagRow);
-        POTLP_ZERO(ruizWorkDiagCol, double, nColQ);
-        spMatMaxColAbs(nColQ, QMatBeg, QMatIdx, QMatElem, ruizWorkDiagCol);
-        
-        /* sqrt operation */
-        double maxRuizDiagDeviate = 0.0;
-        double ruizDiagDeviate = 0.0;
-        
-        for ( int j = 0; j < nRowQ; ++j ) {
-            ruizWorkDiagRow[j] = sqrtl(ruizWorkDiagRow[j]);
-            ruizScalDiagRow[j] = ruizScalDiagRow[j] * ruizWorkDiagRow[j];
-            ruizDiagDeviate = fabs(ruizWorkDiagRow[j] - 1.0);
-            maxRuizDiagDeviate = POTLP_MAX(maxRuizDiagDeviate, ruizDiagDeviate);
-        }
-        
-        for ( int j = 0; j < nColQ; ++j ) {
-            ruizWorkDiagCol[j] = sqrtl(ruizWorkDiagCol[j]);
-            ruizScalDiagCol[j] = ruizScalDiagCol[j] * ruizWorkDiagCol[j];
-            ruizDiagDeviate = fabs(ruizWorkDiagCol[j] - 1.0);
-            maxRuizDiagDeviate = POTLP_MAX(maxRuizDiagDeviate, ruizDiagDeviate);
-        }
-        
-        RUIZ_DEBUG("Ruiz Deviation %e \n", maxRuizDiagDeviate);
-        
-        if ( maxRuizDiagDeviate < 1e-08 ) {
-            RUIZ_DEBUG("Ruiz Successfully Ends in %d iterations \n", i);
-            break;
-        }
-        
-        /* Scaling */
-        spMatRowScal(nColQ, QMatBeg, QMatIdx, QMatElem, ruizWorkDiagRow);
-        spMatColScal(nColQ, QMatBeg, QMatIdx, QMatElem, ruizWorkDiagCol);
-    }
-    
-    RUIZ_DEBUG("Ruiz-scaling Ends %s\n", "");
-    
-    for ( int i = 0; i < nRowQ; ++i ) {
-        ruizScalDiagRow[i] = 1.0 / ruizScalDiagRow[i];
-    }
-    
-    for ( int i = 0; i < nColQ; ++i ) {
-        ruizScalDiagCol[i] = 1.0 / ruizScalDiagCol[i];
-    }
-    
-exit_cleanup:
-    
-    POTLP_FREE(ruizWorkDiagRow);
-    POTLP_FREE(ruizWorkDiagCol);
-    
-    return retcode;
+    return spMatRuizScal(QMat->nRowQ, QMat->nColQ, QMat->QMatBeg,
+                         QMat->QMatIdx, QMat->QMatElem, QMat->sclRow,
+                         QMat->sclCol, maxIter);
 }
 
 /** @brief Q matrix multiplication Q x

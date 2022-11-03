@@ -405,6 +405,62 @@ static void POT_FNAME(LPSolverIScale)( potlp_solver *potlp ) {
     return;
 }
 
+/* Test scaling from SCS. The original LP data is destroyed */
+static pot_int POT_FNAME(LPSolverIScalInplace)( potlp_solver *potlp ) {
+    
+    pot_int retcode = RETCODE_OK;
+    
+    printf("\n[Warning!] Inplace scaling is on. The original LP is destroyed. \n");
+    potlp->intParams[INT_PARAM_MAXRUIZITER] = 0;
+    potlp->intParams[INT_PARAM_COEFSCALE] = 0;
+    
+    pot_int nRow = potlp->nRow;
+    pot_int nCol = potlp->nCol;
+    
+    pot_int *colMatBeg = potlp->colMatBeg;
+    pot_int *colMatIdx = potlp->colMatIdx;
+    double *colMatElem = potlp->colMatElem;
+    double *lpObj = potlp->lpObj;
+    double *lpRHS = potlp->lpRHS;
+    
+    double *inpScalWorkRow = NULL;
+    double *inpScalWorkCol = NULL;
+    
+    POTLP_INIT(inpScalWorkRow, double, nRow);
+    POTLP_INIT(inpScalWorkCol, double, nCol);
+    
+    if ( !inpScalWorkRow || !inpScalWorkCol ) {
+        retcode = RETCODE_FAILED;
+        goto exit_cleanup;
+    }
+    
+    /* Do 25 Ruiz */
+    POT_CALL(spMatRuizScal(nRow, nCol, colMatBeg, colMatIdx, colMatElem,
+                           inpScalWorkRow, inpScalWorkCol, 25));
+    /* Do 1 L2 */
+    POT_CALL(spMatL2Scal(nRow, nCol, colMatBeg, colMatIdx, colMatElem,
+                         inpScalWorkRow, inpScalWorkCol));
+    
+    /* Scale b and c */
+    vvscl(&nRow, inpScalWorkRow, lpRHS);
+    vvscl(&nCol, inpScalWorkCol, lpObj);
+    
+    int iMaxAbsb = idamax(&nRow, lpRHS, &potIntConstantOne);
+    double maxAbsb = fabs(lpRHS[iMaxAbsb]);
+    int iMaxAbsc = idamax(&nCol, lpObj, &potIntConstantOne);
+    double maxAbsc = fabs(lpObj[iMaxAbsc]);
+    
+    rscl(&nRow, &maxAbsb, lpRHS, &potIntConstantOne);
+    rscl(&nCol, &maxAbsc, lpObj, &potIntConstantOne);
+    
+exit_cleanup:
+    
+    POTLP_FREE(inpScalWorkRow);
+    POTLP_FREE(inpScalWorkCol);
+    
+    return retcode;
+}
+
 static pot_int POT_FNAME(LPSolverISetupQMatrix)( potlp_solver *potlp ) {
     
     pot_int retcode = RETCODE_OK;
@@ -739,6 +795,8 @@ extern pot_int POT_FNAME(LPSolverOptimize)( potlp_solver *potlp ) {
     
     /* Pre-solve */
     POT_FNAME(LPSolverIParamAdjust)(potlp);
+    /* Test SCS strategy but destroying the original LP */
+    POT_FNAME(LPSolverIScalInplace(potlp));
     POT_FNAME(LPSolverIScale)(potlp);
     POT_FNAME(LPSovlerIPrintLPStats)(potlp);
     POT_CALL(POT_FNAME(LPSolverISetupQMatrix(potlp)));

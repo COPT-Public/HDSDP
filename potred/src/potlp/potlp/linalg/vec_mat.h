@@ -24,7 +24,6 @@ extern double sumlogdet( pot_int *n, double *x );
 extern void vvscl( pot_int *n, double *s, double *x );
 extern void vvrscl( pot_int *n, double *s, double *x );
 
-
 extern void spMatAxpy( int n, int *Ap, int *Ai, double *Ax, double a, double *x, double *y );
 extern void spMatATxpy( int n, int *Ap, int *Ai, double *Ax, double a, double *x, double *y );
 extern void spMatMaxRowAbs( int n, int *Ap, int *Ai, double *Ax, double *row );
@@ -34,5 +33,7 @@ extern void spMatColScal( int n, int *Ap, int *Ai, double *Ax, double *col );
 extern int spMatBuildQMat( int qm, int qn, int *Qp, int *Qi, double *Qx,
                            int am, int an, int *Ap, int *Ai, double *Ax,
                            double *b, double *c );
+extern int spMatRuizScal( int m, int n, int *Ap, int *Ai, double *Ax, double *D, double *E, int maxIter );
+extern int spMatL2Scal( int m, int n, int *Ap, int *Ai, double *Ax, double *D, double *E );
 
 #endif /* vec_mat_h */

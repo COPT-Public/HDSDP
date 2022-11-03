@@ -410,3 +410,142 @@ exit_cleanup:
     POTLP_FREE(anaux);
     return retcode;
 }
+
+#define RUIZ_DEBUG(format, info) // printf(format, info);
+extern int spMatRuizScal( int m, int n, int *Ap, int *Ai, double *Ax, double *D, double *E, int maxIter ) {
+    
+    pot_int retcode = RETCODE_OK;
+    
+    pot_int nRow = m;
+    pot_int nCol = n;
+    
+    double *ruizScalDiagRow = D;
+    double *ruizScalDiagCol = E;
+    double *ruizWorkDiagRow = NULL;
+    double *ruizWorkDiagCol = NULL;
+    
+    /* Allocate workspace */
+    POTLP_INIT(ruizWorkDiagRow, double, nRow);
+    POTLP_INIT(ruizWorkDiagCol, double, nCol);
+    
+    if ( !ruizWorkDiagRow || !ruizWorkDiagCol ) {
+        retcode = RETCODE_FAILED;
+        goto exit_cleanup;
+    }
+    
+    /* Initialize scalers */
+    for ( int i = 0; i < nRow; ++i ) {
+        ruizScalDiagRow[i] = 1.0;
+    }
+    
+    for ( int i = 0; i < nCol; ++i ) {
+        ruizScalDiagCol[i] = 1.0;
+    }
+    
+    RUIZ_DEBUG("Start Ruiz-scaling %s\n", "");
+    
+    for ( int i = 0; i < maxIter; ++i ) {
+        
+        POTLP_ZERO(ruizWorkDiagRow, double, nRow);
+        spMatMaxRowAbs(nCol, Ap, Ai, Ax, ruizWorkDiagRow);
+        POTLP_ZERO(ruizWorkDiagCol, double, nCol);
+        spMatMaxColAbs(nCol, Ap, Ai, Ax, ruizWorkDiagCol);
+        
+        /* sqrt operation */
+        double maxRuizDiagDeviate = 0.0;
+        double ruizDiagDeviate = 0.0;
+        
+        for ( int j = 0; j < nRow; ++j ) {
+            ruizWorkDiagRow[j] = sqrtl(ruizWorkDiagRow[j]);
+            ruizScalDiagRow[j] = ruizScalDiagRow[j] * ruizWorkDiagRow[j];
+            ruizDiagDeviate = fabs(ruizWorkDiagRow[j] - 1.0);
+            maxRuizDiagDeviate = POTLP_MAX(maxRuizDiagDeviate, ruizDiagDeviate);
+        }
+        
+        for ( int j = 0; j < nCol; ++j ) {
+            ruizWorkDiagCol[j] = sqrtl(ruizWorkDiagCol[j]);
+            ruizScalDiagCol[j] = ruizScalDiagCol[j] * ruizWorkDiagCol[j];
+            ruizDiagDeviate = fabs(ruizWorkDiagCol[j] - 1.0);
+            maxRuizDiagDeviate = POTLP_MAX(maxRuizDiagDeviate, ruizDiagDeviate);
+        }
+        
+        RUIZ_DEBUG("Ruiz Deviation %e \n", maxRuizDiagDeviate);
+        
+        if ( maxRuizDiagDeviate < 1e-08 ) {
+            RUIZ_DEBUG("Ruiz Successfully Ends in %d iterations \n", i);
+            break;
+        }
+        
+        /* Scaling */
+        spMatRowScal(nCol, Ap, Ai, Ax, ruizWorkDiagRow);
+        spMatColScal(nCol, Ap, Ai, Ax, ruizWorkDiagCol);
+    }
+    
+    RUIZ_DEBUG("Ruiz-scaling Ends %s\n", "");
+    
+    for ( int i = 0; i < nRow; ++i ) {
+        ruizScalDiagRow[i] = 1.0 / ruizScalDiagRow[i];
+    }
+    
+    for ( int i = 0; i < nCol; ++i ) {
+        ruizScalDiagCol[i] = 1.0 / ruizScalDiagCol[i];
+    }
+    
+    
+exit_cleanup:
+    
+    POTLP_FREE(ruizWorkDiagRow);
+    POTLP_FREE(ruizWorkDiagCol);
+    
+    return retcode;
+}
+
+extern int spMatL2Scal( int m, int n, int *Ap, int *Ai, double *Ax, double *D, double *E ) {
+    
+    pot_int retcode = RETCODE_OK;
+    
+    pot_int nRow = m;
+    pot_int nCol = n;
+    
+    double *L2WorkDiagRow = NULL;
+    double *L2WorkDiagCol = NULL;
+    
+    /* Allocate workspace */
+    POTLP_INIT(L2WorkDiagRow, double, nRow);
+    POTLP_INIT(L2WorkDiagCol, double, nCol);
+    
+    for ( int i = 0, j; i < nCol; ++i ) {
+        for ( j = Ap[i]; j < Ap[i + 1]; ++j ) {
+            L2WorkDiagRow[Ai[j]] += Ax[j] * Ax[j];
+        }
+    }
+    
+    for ( int i = 0; i < nRow; ++i ) {
+        L2WorkDiagRow[i] = sqrt(L2WorkDiagRow[i]);
+    }
+    
+    spMatRowScal(nCol, Ap, Ai, Ax, L2WorkDiagRow);
+    
+    for ( int i = 0, j; i < nCol; ++i ) {
+        for ( j = Ap[i]; j < Ap[i + 1]; ++j ) {
+            L2WorkDiagCol[i] += Ax[j] * Ax[j];
+        }
+    }
+    
+    for ( int i = 0; i < nCol; ++i ) {
+        L2WorkDiagCol[i] = sqrt(L2WorkDiagCol[i]);
+    }
+    
+    spMatColScal(nCol, Ap, Ai, Ax, L2WorkDiagCol);;
+    
+    /* Update scaling */
+    vvrscl(&nRow, L2WorkDiagRow, D);
+    vvrscl(&nCol, L2WorkDiagCol, E);
+    
+exit_cleanup:
+    
+    POTLP_FREE(L2WorkDiagRow);
+    POTLP_FREE(L2WorkDiagCol);
+    
+    return retcode;
+}
