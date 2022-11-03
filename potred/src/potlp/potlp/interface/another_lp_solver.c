@@ -54,9 +54,14 @@ static void POT_FNAME(potLpReWeight) ( potlp_solver *potlp ) {
     double dOmega = potlp->dResOmega;
     double cOmega = potlp->cplResOmega;
     
-    double pInfeas = potlp->pInfeasRel;
-    double dInfeas = potlp->dInfeasRel;
-    double complGap = potlp->complGapRel;
+    /*
+     double pInfeas = potlp->pInfeasRel;
+     double dInfeas = potlp->dInfeasRel;
+     double cInfeas = potlp->complGapRel; */
+    
+    double pInfeas = potlp->dInfeas;
+    double dInfeas = potlp->pInfeas;
+    double cInfeas = potlp->complGap * sqrt(potlp->nCol);
     
     REWEIGHT_DEBUG("Before", pOmega, dOmega, cOmega);
     
@@ -67,7 +72,7 @@ static void POT_FNAME(potLpReWeight) ( potlp_solver *potlp ) {
     
     double minInfeas = 0.0;
     minInfeas = POTLP_MIN(pInfeas, dInfeas);
-    minInfeas = POTLP_MIN(minInfeas, complGap);
+    minInfeas = POTLP_MIN(minInfeas, cInfeas);
     
     if ( rRate > 0 ) {
         /* Heuristic update */
@@ -75,8 +80,8 @@ static void POT_FNAME(potLpReWeight) ( potlp_solver *potlp ) {
         else if ( pInfeas < 1.1 * minInfeas ) { pFast = 1; }
         if ( dInfeas > 10 * minInfeas ) { dStuck = 1; }
         else if ( dInfeas < 1.1 * minInfeas ) { dFast = 1; }
-        if ( complGap > 10 * minInfeas ) { cStuck = 1; }
-        else if ( complGap < 1.1 * minInfeas ) { cFast = 1; }
+        if ( cInfeas > 10 * minInfeas ) { cStuck = 1; }
+        else if ( cInfeas < 1.1 * minInfeas ) { cFast = 1; }
         
         /* Do if stuck */
         if ( pStuck ) { pOmega = POTLP_MIN(pOmega * rRate, rMax); }
@@ -98,14 +103,13 @@ static void POT_FNAME(potLpReWeight) ( potlp_solver *potlp ) {
         
     } else {
         /* Make residuals the same */
-        pOmega = sqrt(pInfeas / minInfeas);
-        dOmega = sqrt(dInfeas / minInfeas);
-        cOmega = sqrt(complGap / minInfeas);
+        pOmega = pInfeas / minInfeas;
+        dOmega = dInfeas / minInfeas;
+        cOmega = cInfeas / minInfeas;
         
-//        double sOmega = pOmega + dOmega + cOmega;
-//        pOmega = pOmega / sOmega;
-//        dOmega = dOmega / sOmega;
-//        cOmega = cOmega / sOmega;
+        pOmega = pOmega * pOmega;
+        dOmega = dOmega * dOmega;
+        cOmega = cOmega * cOmega;
         
         pOmega = POTLP_MIN(pOmega, rMax);
         dOmega = POTLP_MIN(dOmega, rMax);
