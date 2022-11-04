@@ -413,7 +413,7 @@ static pot_int POT_FNAME(LPSolverIScalInplace)( potlp_solver *potlp ) {
     pot_int retcode = RETCODE_OK;
     
     printf("\n[Warning!] Inplace scaling is on. The original LP is destroyed. \n");
-    potlp->intParams[INT_PARAM_MAXRUIZITER] = 0;
+    potlp->intParams[INT_PARAM_MAXRUIZITER] = 25;
     potlp->intParams[INT_PARAM_COEFSCALE] = 0;
     
     pot_int nRow = potlp->nRow;
@@ -452,8 +452,18 @@ static pot_int POT_FNAME(LPSolverIScalInplace)( potlp_solver *potlp ) {
     int iMaxAbsc = idamax(&nCol, lpObj, &potIntConstantOne);
     double maxAbsc = fabs(lpObj[iMaxAbsc]);
     
-    rscl(&nRow, &maxAbsb, lpRHS, &potIntConstantOne);
-    rscl(&nCol, &maxAbsc, lpObj, &potIntConstantOne);
+    double scal = POTLP_MAX(maxAbsb, maxAbsc);
+    
+    if ( scal > 1e+04 ) {
+        scal = 1e+04;
+    }
+    
+    if ( scal < 1e-04 ) {
+        scal = 1.0;
+    }
+    
+    rscl(&nRow, &scal, lpRHS, &potIntConstantOne);
+    rscl(&nCol, &scal, lpObj, &potIntConstantOne);
     
 exit_cleanup:
     
