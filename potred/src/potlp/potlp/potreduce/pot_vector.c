@@ -188,6 +188,17 @@ extern void potVecConeScal( pot_vec *pVecX, pot_vec *pVecY ) {
     return;
 }
 
+extern void potVecSimplexProj( pot_vec *pVecX ) {
+    
+    double coneSumVal = 0.0;
+    for ( int i = pVecX->ncone; i < pVecX->n; ++i ) {
+        coneSumVal += pVecX->x[i];
+    }
+    rscl(&pVecX->n, &coneSumVal, pVecX->x, &potIntConstantOne);
+    
+    return;
+}
+
 extern double potVecLogDet( pot_vec *pVecX ) {
     
     return sumlogdet(&pVecX->ncone, pVecX->x + pVecX->n - pVecX->ncone);

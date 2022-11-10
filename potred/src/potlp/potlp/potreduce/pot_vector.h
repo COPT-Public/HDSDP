@@ -21,6 +21,7 @@ extern void potVecAxinvpBy( double alpha1, double alpha2, pot_vec *pVecX, double
 extern void potVecAxpy( double alpha, pot_vec *pVecX, pot_vec *pVecY );
 extern void potVecConeAxpy( double alpha, pot_vec *pVecX, pot_vec *pVecY );
 extern void potVecConeScal( pot_vec *pVecX, pot_vec *pVecY );
+extern void potVecSimplexProj( pot_vec *pVecX );
 extern double potVecLogDet( pot_vec *pVecX );
 extern double potVecSumCone( pot_vec *pVecX );
 extern double potVecSumScalCone( pot_vec *pVecX, pot_vec *pVecY );
