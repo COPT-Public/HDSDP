@@ -87,6 +87,10 @@ extern void potObjFMonitor( pot_fx *potObjF, void *info ) {
 
 extern void potObjFClear( pot_fx *potObjF ) {
     
+    if ( !potObjF ) {
+        return;
+    }
+    
     POTLP_ZERO(potObjF, pot_fx, 1);
     return;
 }

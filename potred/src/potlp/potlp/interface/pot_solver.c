@@ -155,11 +155,11 @@ static double potReductionPotLineSearch( pot_fx *objFunc, double rhoVal, double 
         ratio = 1e+06;
     }
     
-    ratio = 0.9 * ratio;
+    ratio = 0.99 * ratio;
     
     double fVal = 0.0;
     double potVal = POTLP_INFINITY;
-    double targetPotVal = ( potValTmp > 0.0 ) ? 0.9 * potValTmp : 1.05 * potValTmp;
+    double targetPotVal = potValTmp; // ( potValTmp > 0.0 ) ? 0.9 * potValTmp : 1.05 * potValTmp;
     
     for ( ; ratio > 1.0; ) {
         potVecCopy(xVec, auxVec);
@@ -167,7 +167,7 @@ static double potReductionPotLineSearch( pot_fx *objFunc, double rhoVal, double 
         fVal = potObjFVal(objFunc, auxVec);
         potVal = potReductionComputePotValue(rhoVal, fVal, zVal, auxVec);
         
-        if ( potVal <= targetPotVal ) {
+        if ( potVal < targetPotVal ) {
             break;
         }
         ratio *= 0.9;
@@ -305,9 +305,9 @@ static pot_int potReductionOneStep( pot_solver *pot ) {
         double potValTmp = potReductionComputePotValue(rhoVal, fValTmp, zVal, auxVec1);
         double potLineVal = POTLP_INFINITY;
         
-        if ( pot->curvInterval < 0 ) {
+        if ( pot->curvInterval < 50 && (0) ) {
             potLineVal = potReductionPotLineSearch(objFunc, rhoVal, zVal, xPres,
-                                                   dXStep, auxVec2, potValTmp, 0.0);
+                                                   dXStep, auxVec2, potValTmp, 1e-08);
         }
         
         potVecCopy(xPres, xPrev);
