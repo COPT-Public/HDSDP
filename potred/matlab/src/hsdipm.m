@@ -10,9 +10,9 @@ kappa = 1;
 
 sigma = 0.7;
 
-fprintf("%8s %8s %8s %8s %8s \n", "pobj", "dobj", "pinf", "dinf", "mu");
+% fprintf("%4s %8s %8s %8s %8s %8s \n", "iter", "pobj", "dobj", "pinf", "dinf", "mu");
 
-for i = 1:30
+for i = 1:100
     
     mu = (x' * s + kappa * tau) / (n + 1);
     
@@ -22,27 +22,35 @@ for i = 1:30
     pobj = c' * x;
     dobj = b' * y;
     
-    fprintf("%8.1e %8.1e %8.1e %8.1e %8.1e \n", pobj / tau, dobj / tau, norm(rp) / 1, norm(rd) / 1, mu);
+    pinf = norm(rp) / tau;
+    dinf = norm(rd) / tau;
     
-    XSe = sqrt(x .* s);
-    D = sqrt(s) ./ sqrt(x);
+    if max([pinf, dinf, mu]) < 1e-06
+        break;
+    end % End if
+    
+%     fprintf("%4d %8.1e %8.1e %8.1e %8.1e %8.1e \n", i, pobj / tau, dobj / tau, pinf, dinf, mu);
+    
+    XSe = sqrt(x .* s); % n 
+    D = sqrt(s) ./ sqrt(x); % n
     Dinv = sqrt(x) ./ sqrt(s);
-    
-    DinvXinvrmu1 = XSe - (mu * sigma) ./ XSe;
     
     ADinv = A * diag(Dinv);
     
     M = [speye(n), ADinv';
          ADinv, sparse(m, m)];
     
-    Dinvc = c ./ D;
-    rhs1 = [-Dinvc; b];
-    rhs2 = [Dinvc; b];
+    Dinvc = c ./ D; 
+    DinvXinvrmu1 = XSe - (mu * sigma) ./ XSe; 
+    rhs1 = [-Dinvc; b]; % m + n
+    rhs2 = [rd ./ D + DinvXinvrmu1; rp];
+    aux = [Dinvc; b]; % m + n
     
-    d1 = M \ rhs1;
-    d2 = M \ [rd ./ D + DinvXinvrmu1; rp];
-    dtau = rhs2' * d2 + dobj - pobj - sigma * mu / tau;
-    dtau = - dtau / (kappa / tau - rhs2' * d1);
+    d1 = M \ rhs1; 
+    d2 = M \ rhs2;
+    
+    dtau = aux' * d2 + dobj - pobj - sigma * mu / tau; 
+    dtau = - dtau / (kappa / tau - aux' * d1);
     
     dxdy = d1 * dtau - d2;
     dx = dxdy(1:n) ./ D;
@@ -57,6 +65,13 @@ for i = 1:30
     s = s + alpha * ds;
     kappa = kappa + alpha * dkappa;
     tau = tau + alpha * dtau;
+    
+    simp = tau; % sum(x) + sum(s) + kappa + tau;
+    x = x / simp;
+    y = y / simp;
+    s = s / simp;
+    kappa = kappa / simp;
+    tau = tau / simp;
     
 end % End for
 
