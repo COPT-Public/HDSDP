@@ -190,7 +190,8 @@ extern pot_int LpNewtonOneStep( lp_newton *newton, double *lpObj, double *lpRHS,
     
     /* Prepare Newton's system */
     int *ADBeg = newton->AugBeg + nCol;
-    double *ADElem = newton->AugElem + nCol;
+    int *ADIdx = newton->AugIdx;
+    double *ADElem = newton->AugElem;
     
     /*
      XSe = sqrt(x .* s);
@@ -208,9 +209,9 @@ extern pot_int LpNewtonOneStep( lp_newton *newton, double *lpObj, double *lpRHS,
           ADinv, sparse(m, m)];
      */
     POTLP_MEMCPY(ADElem, newton->colBackup, double, colMatBeg[nCol]);
-    for ( int i = 0, j; i < nCol; ++i ) {
+    for ( int i = 0, j; i < nRow; ++i ) {
         for ( j = ADBeg[i]; j < ADBeg[i + 1]; ++j ) {
-            ADElem[j] /= D[i];
+            ADElem[j] /= D[ADIdx[j]];
         }
     }
     

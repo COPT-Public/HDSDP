@@ -196,7 +196,7 @@ exit_cleanup:
 extern pot_int potLinsysNumFactorize( pot_linsys *potLinsys, int *colMatBeg, int *colMatIdx, double *colMatElem ) {
     
     pot_int retcode = RETCODE_OK;
-    retcode = potLinsys->LNFac(potLinsys->solver, colMatBeg, colMatIdx, colMatElem );
+    retcode = potLinsys->LNFac(potLinsys->solver, colMatBeg, colMatIdx, colMatElem);
     
     if ( retcode != RETCODE_OK ) {
         retcode = RETCODE_FAILED;
