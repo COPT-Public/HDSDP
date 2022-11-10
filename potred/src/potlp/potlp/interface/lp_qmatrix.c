@@ -115,6 +115,13 @@ extern pot_int LPQMatRuizScal( lp_qmatrix *QMat, int maxIter ) {
                          QMat->sclCol, maxIter);
 }
 
+extern pot_int LPQMatL2Scal( lp_qmatrix *QMat ) {
+    
+    return spMatL2Scal(QMat->nRowQ, QMat->nColQ,
+                       QMat->QMatBeg, QMat->QMatIdx, QMat->QMatElem,
+                       QMat->sclRow, QMat->sclCol);
+}
+
 /** @brief Q matrix multiplication Q x
  *
  *The internal isColBasic allows skipping some of the columns that are considered nonbasic

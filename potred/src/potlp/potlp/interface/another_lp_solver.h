@@ -12,6 +12,7 @@
 
 #include "pot_structs.h"
 #include "lp_qmatrix.h"
+#include "lp_newton.h"
 
 /* To allow multiple definitions of the same interface */
 #define POT_FNAME(x) Ano##x
@@ -80,6 +81,9 @@ typedef struct {
     pot_solver *potIterator;
     pot_constr_mat *potConstrMat;
     pot_fx *potObjF;
+    
+    /* Interior point solver */
+    lp_newton *ipm;
     
     int intParams[NUM_INT_PARAM];
     double dblParams[NUM_DBL_PARAM];

@@ -21,7 +21,6 @@ extern bool utIsInterruptPending();
 #endif
 #endif
 
-/* TODO: Remove the static interrupt method */
 static int isCtrlC = 0;
 
 static void monitorCtrlC( int sigNum ) {
@@ -54,14 +53,13 @@ static void POT_FNAME(potLpReWeight) ( potlp_solver *potlp ) {
     double dOmega = potlp->dResOmega;
     double cOmega = potlp->cplResOmega;
     
-    /*
-     double pInfeas = potlp->pInfeasRel;
-     double dInfeas = potlp->dInfeasRel;
-     double cInfeas = potlp->complGapRel; */
+    double pInfeas = potlp->pInfeasRel;
+    double dInfeas = potlp->dInfeasRel;
+    double cInfeas = potlp->complGapRel;
     
-    double pInfeas = potlp->dInfeas;
-    double dInfeas = potlp->pInfeas;
-    double cInfeas = potlp->complGap * sqrt(potlp->nCol);
+//    double pInfeas = potlp->dInfeas;
+//    double dInfeas = potlp->pInfeas;
+//    double cInfeas = potlp->complGap;
     
     REWEIGHT_DEBUG("Before", pOmega, dOmega, cOmega);
     
@@ -76,11 +74,11 @@ static void POT_FNAME(potLpReWeight) ( potlp_solver *potlp ) {
     
     if ( rRate > 0 ) {
         /* Heuristic update */
-        if ( pInfeas > 10 * minInfeas ) { pStuck = 1; }
+        if ( pInfeas > 5 * minInfeas ) { pStuck = 1; }
         else if ( pInfeas < 1.1 * minInfeas ) { pFast = 1; }
-        if ( dInfeas > 10 * minInfeas ) { dStuck = 1; }
+        if ( dInfeas > 5 * minInfeas ) { dStuck = 1; }
         else if ( dInfeas < 1.1 * minInfeas ) { dFast = 1; }
-        if ( cInfeas > 10 * minInfeas ) { cStuck = 1; }
+        if ( cInfeas > 5 * minInfeas ) { cStuck = 1; }
         else if ( cInfeas < 1.1 * minInfeas ) { cFast = 1; }
         
         /* Do if stuck */
@@ -265,6 +263,23 @@ static void POT_FNAME(potLpObjFImplMonitor)( void *objFData, void *info ) {
         
         POT_FNAME(LPSolverIRetrieveSolution)(potlp);
         
+        /* Interior point solver */
+        int useIPM = 1;
+        if ( useIPM ) {
+            int icode = RETCODE_OK;
+            double simp = 2 * potlp->nCol + 2;
+            icode = LpNewtonOneStep(potlp->ipm, potlp->lpObj, potlp->lpRHS, potlp->colMatBeg,
+                                    potlp->colMatIdx, potlp->colMatElem, potlp->colVal, potlp->rowDual,
+                                    potlp->colDual, &potlp->kappa, &potlp->tau, potlp->pRes, potlp->dRes,
+                                    potlp->pObjVal, potlp->dObjVal, simp);
+            if ( icode != RETCODE_OK ) {
+                potlp->Lpstatus = POTLP_INTERNAL_ERROR;
+                intInfo = (int *) info;
+                *intInfo = 1;
+                return;
+            }
+        }
+        
         double relOptTol = potlp->dblParams[DBL_PARAM_RELOPTTOL];
         double relFeasTol = potlp->dblParams[DBL_PARAM_RELFEASTOL];
         double elapsedTime = potUtilGetTimeStamp() - potlp->startT;
@@ -307,9 +322,7 @@ static void POT_FNAME(potLpObjFImplMonitor)( void *objFData, void *info ) {
         } else {
             /* No change in gap */
         }
-        
-        minGap = POTLP_MIN(minGap, relGap);
-        
+                
         if ( minGap < relOptTol && pInfeas < relFeasTol && dInfeas < relFeasTol ) {
             potlp->Lpstatus = POTLP_OPTIMAL;
             intInfo = (int *) info;
@@ -338,7 +351,7 @@ static void POT_FNAME(potLpObjFImplMonitor)( void *objFData, void *info ) {
             printf("%8lld  %10.3e  %10.3e  %5.1e %5.1e %10.3e  %10.3e  %10.3e |%5.1f [s] \n",
                    potlp->nIter, pObjVal, dObjVal, relGap, minGap, pInfeas,
                    dInfeas, potlp->kappa / potlp->tau, elapsedTime);
-        } else if ( elapsedTime < 3600  ){
+        } else if ( elapsedTime < 3600.0  ){
             printf("%8lld  %10.3e  %10.3e  %5.1e %5.1e %10.3e  %10.3e  %10.3e |%5.1f [m] \n",
                    potlp->nIter, pObjVal, dObjVal, relGap, minGap, pInfeas,
                    dInfeas, potlp->kappa / potlp->tau,
@@ -350,16 +363,17 @@ static void POT_FNAME(potLpObjFImplMonitor)( void *objFData, void *info ) {
                    elapsedTime / 3600.0 );
         }
 #ifdef MATLAB_MEX_FILE
+        /* Let MATLAB show log immediately */
         mexEvalString("drawnow;");
 #endif
     }
     
-    int resiFreq = logFreq;
+    int resiFreq = 500;
     if ( potlp->intParams[INT_PARAM_RSCALFREQ] > 0 ) {
         resiFreq = potlp->intParams[INT_PARAM_RSCALFREQ];
     }
     
-    if ( potlp->nIter % resiFreq == 1 && !potlp->potIterator->useCurvature ) {
+    if ( potlp->nIter % resiFreq == 0 && !potlp->potIterator->useCurvature ) {
         POT_FNAME(potLpReWeight)(potlp);
     }
     
@@ -389,8 +403,23 @@ static void POT_FNAME(LPSolverIScale)( potlp_solver *potlp ) {
     
     if ( potlp->intParams[INT_PARAM_COEFSCALE] ) {
         
-        double objScaler = objOneNorm + 1.0;
-        double rhsScaler = rhsOneNorm + 1.0;
+        int iMaxAbsb = idamax(&potlp->nRow, lpRHS, &potIntConstantOne);
+        int iMaxAbsc = idamax(&potlp->nCol, lpObj, &potIntConstantOne);
+        double maxAbsb = fabs(lpRHS[iMaxAbsb]);
+        double maxAbsc = fabs(lpObj[iMaxAbsc]);
+        
+        double scal = POTLP_MAX(maxAbsb, maxAbsc);
+        
+        if ( scal > 1e+04 ) {
+            scal = 1e+04;
+        }
+        
+        if ( scal < 1e-04 ) {
+            scal = 1.0;
+        }
+        
+        double objScaler = scal; // objOneNorm + 1.0;
+        double rhsScaler = scal; // rhsOneNorm + 1.0;
         
         potlp->objScaler = objScaler;
         potlp->rhsScaler = rhsScaler;
@@ -407,13 +436,14 @@ static void POT_FNAME(LPSolverIScale)( potlp_solver *potlp ) {
     return;
 }
 
+#if 0
 /* Test scaling from SCS. The original LP data is destroyed */
 static pot_int POT_FNAME(LPSolverIScalInplace)( potlp_solver *potlp ) {
     
     pot_int retcode = RETCODE_OK;
     
     printf("\n[Warning!] Inplace scaling is on. The original LP is destroyed. \n");
-    potlp->intParams[INT_PARAM_MAXRUIZITER] = 25;
+    potlp->intParams[INT_PARAM_MAXRUIZITER] = 0;
     potlp->intParams[INT_PARAM_COEFSCALE] = 0;
     
     pot_int nRow = potlp->nRow;
@@ -466,12 +496,11 @@ static pot_int POT_FNAME(LPSolverIScalInplace)( potlp_solver *potlp ) {
     rscl(&nCol, &scal, lpObj, &potIntConstantOne);
     
 exit_cleanup:
-    
     POTLP_FREE(inpScalWorkRow);
     POTLP_FREE(inpScalWorkCol);
-    
     return retcode;
 }
+#endif
 
 static pot_int POT_FNAME(LPSolverISetupQMatrix)( potlp_solver *potlp ) {
     
@@ -488,6 +517,15 @@ static pot_int POT_FNAME(LPSolverIRuizScale)( potlp_solver *potlp ) {
     
     pot_int retcode = RETCODE_OK;
     POT_CALL(LPQMatRuizScal(potlp->potQMatrix, potlp->intParams[INT_PARAM_MAXRUIZITER]));
+    
+exit_cleanup:
+    return retcode;
+}
+
+static pot_int POT_FNAME(LPSolverIL2Scale)( potlp_solver *potlp ) {
+    
+    pot_int retcode = RETCODE_OK;
+    POT_CALL(LPQMatL2Scal(potlp->potQMatrix));
     
 exit_cleanup:
     return retcode;
@@ -520,7 +558,7 @@ static void POT_FNAME(LPSolverIParamAdjust)( potlp_solver *potlp ) {
     return;
 }
 
-static void POT_FNAME(LPSolverIHeurInitialize) ( potlp_solver *potlp ) {
+static void POT_FNAME(LPSolverIHeurInitialize)( potlp_solver *potlp ) {
     
     int nColQ = potlp->potQMatrix->nColQ;
     int *isColBasic = potlp->isColBasic;
@@ -584,18 +622,18 @@ static void POT_FNAME(LPSolverIRetrieveSolution)( potlp_solver *potlp ) {
     }
     
     for ( int i = 0; i < nCol; ++i ) {
-        dRes[i] = colDual[i] - lpObj[i] * objScaler;
+        dRes[i] = - colDual[i] + lpObj[i] * objScaler;
     }
     
     /* Scaler when evaluating errors */
     objScaler = potlp->lpObjNorm + 1.0;
     rhsScaler = potlp->lpRHSNorm + 1.0;
     
-    /* Primal infeasibility b - A * x  */
+    /* Primal infeasibility A * x  - b */
     spMatAxpy(nCol, potlp->colMatBeg, potlp->colMatIdx, potlp->colMatElem, 1.0, colVal, pRes);
     
-    /* Dual infeasibility s - c + A' * y */
-    spMatATxpy(nCol, potlp->colMatBeg, potlp->colMatIdx, potlp->colMatElem, 1.0, rowDual, dRes);
+    /* Dual infeasibility - s + c - A' * y */
+    spMatATxpy(nCol, potlp->colMatBeg, potlp->colMatIdx, potlp->colMatElem, -1.0, rowDual, dRes);
     
     double pInfeas = nrm2(&nRow, pRes, &potIntConstantOne);
     double relpInfeas = pInfeas / rhsScaler;
@@ -630,8 +668,9 @@ static void POT_FNAME(LPSolverIPrintSolStatistics)( potlp_solver *potlp ) {
     int nCurvs = 0;
     double curvT = 0.0;
     potReductionGetStatistics(potlp->potIterator, &nCurvs, &curvT);
+    double avgTcurv = (nCurvs == 0) ? 0.0 : curvT / nCurvs;
     printf("\nPotential Reduction statistic \n");
-    printf("In all [%d] curvs take [%5.3f] seconds ([%5.3f]s/curv) \n", nCurvs, curvT, curvT / nCurvs);
+    printf("In all [%d] curvs take [%5.3f] seconds ([%5.3f]s/curv) \n", nCurvs, curvT, avgTcurv);
     
     /* LP Statistics */
     if ( potlp->Lpstatus == POTLP_OPTIMAL ) {
@@ -682,11 +721,12 @@ extern pot_int POT_FNAME(LPSolverCreate)( potlp_solver **ppotlp ) {
     POTLP_ZERO(potlp, potlp_solver, 1);
     
     potUtilGetDefaultParams(potlp->dblParams, potlp->intParams);
-    
+
     POT_CALL(LPQMatCreate(&potlp->potQMatrix));
     POT_CALL(potLPCreate(&potlp->potIterator));
     POT_CALL(potConstrMatCreate(&potlp->potConstrMat));
     POT_CALL(potObjFCreate(&potlp->potObjF));
+    POT_CALL(LpNewtonCreate(&potlp->ipm));
     
     potlp->nIter = 0;
     potlp->startT = potUtilGetTimeStamp();
@@ -723,7 +763,7 @@ extern pot_int POT_FNAME(LPSolverInit)( potlp_solver *potlp, pot_int nCol, pot_i
     POT_CALL(potLPSetLinearConstrs(potlp->potIterator, potlp->potConstrMat));
     POT_CALL(potLPSetObj(potlp->potIterator, potlp->potObjF));
     
-    /* Line data and methods to objective */
+    /* Link data and methods to objective */
     potlp->potObjF->objFData = potlp;
     potlp->potObjF->objFVal = POT_FNAME(potLpObjFImplVal);
     potlp->potObjF->objFGrad = POT_FNAME(potLpObjFImplGrad);
@@ -789,6 +829,9 @@ extern pot_int POT_FNAME(LPSolverSetData)( potlp_solver *potlp, pot_int *Ap, pot
     /* Prepare Q Matrix */
     POT_CALL(LPQMatInit(potlp->potQMatrix, nCol, nRow, potlp->colMatBeg));
     
+    /* Prepare the interior point solver */
+    POT_CALL(LpNewtonInit(potlp->ipm, nCol, nRow, Ap, Ai, Ax));
+    
 exit_cleanup:
     return retcode;
 }
@@ -808,11 +851,12 @@ extern pot_int POT_FNAME(LPSolverOptimize)( potlp_solver *potlp ) {
     /* Pre-solve */
     POT_FNAME(LPSolverIParamAdjust)(potlp);
     /* Test SCS strategy but destroying the original LP */
-    POT_FNAME(LPSolverIScalInplace(potlp));
+//    POT_FNAME(LPSolverIScalInplace(potlp));
     POT_FNAME(LPSolverIScale)(potlp);
     POT_FNAME(LPSovlerIPrintLPStats)(potlp);
     POT_CALL(POT_FNAME(LPSolverISetupQMatrix(potlp)));
     POT_CALL(POT_FNAME(LPSolverIRuizScale(potlp)));
+    POT_CALL(POT_FNAME(LPSolverIL2Scale(potlp)));
     POT_FNAME(LPSolverIHeurInitialize)(potlp);
     
     /* Solve */
@@ -851,6 +895,7 @@ extern void POT_FNAME(LPSolverClear)( potlp_solver *potlp ) {
     potConstrMatDestroy(&potlp->potConstrMat);
     potObjFDestroy(&potlp->potObjF);
     potLPDestroy(&potlp->potIterator);
+    LpNewtonDestroy(&potlp->ipm);
     
     POTLP_ZERO(potlp, potlp_solver, 1);
     

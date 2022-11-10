@@ -522,6 +522,9 @@ extern int spMatL2Scal( int m, int n, int *Ap, int *Ai, double *Ax, double *D, d
     
     for ( int i = 0; i < nRow; ++i ) {
         L2WorkDiagRow[i] = sqrt(L2WorkDiagRow[i]);
+        if ( L2WorkDiagRow[i] == 0.0 ) {
+            L2WorkDiagRow[i] = 1.0;
+        }
     }
     
     spMatRowScal(nCol, Ap, Ai, Ax, L2WorkDiagRow);
@@ -534,6 +537,9 @@ extern int spMatL2Scal( int m, int n, int *Ap, int *Ai, double *Ax, double *D, d
     
     for ( int i = 0; i < nCol; ++i ) {
         L2WorkDiagCol[i] = sqrt(L2WorkDiagCol[i]);
+        if ( L2WorkDiagCol[i] == 0.0 ) {
+            L2WorkDiagCol[i] = 1.0;
+        }
     }
     
     spMatColScal(nCol, Ap, Ai, Ax, L2WorkDiagCol);;
