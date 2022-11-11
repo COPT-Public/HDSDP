@@ -15,4 +15,10 @@ extern void potUtilGetDefaultParams( double dblParams[NUM_DBL_PARAM], int intPar
 extern void potUtilPrintParams( double dblParams[NUM_DBL_PARAM], int intParams[NUM_INT_PARAM] );
 extern void potUtilPrintIParams( double dblParams[NUM_DBL_PARAM], int intParams[NUM_INT_PARAM] );
 
+
+/* Debugging */
+extern void potUtilPrintDblContent( int n, double *d );
+extern void potUtilPrintIntContent( int n, int *d );
+extern void potUtilPrintDblSum( int n, double *d );
+
 #endif /* pot_utils_h */

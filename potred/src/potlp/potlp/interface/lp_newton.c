@@ -5,6 +5,7 @@
  *
  */
 
+#include "pot_utils.h"
 #include "vec_mat.h"
 #include "linsys.h"
 #include "lp_newton.h"
@@ -45,7 +46,7 @@ static double LpNewtonIRatioTest( int nCol, double *x, double *dx, double *s, do
     ratio = dtau / tau;
     alphaTmp = POTLP_MIN(ratio, alphaTmp);
     
-    return 1.0 / alphaTmp;
+    return fabs(1.0 / alphaTmp);
 }
 
 extern pot_int LpNewtonCreate( lp_newton **pnewton ) {
@@ -178,13 +179,13 @@ extern pot_int LpNewtonOneStep( lp_newton *newton, double *lpObj, double *lpRHS,
     int nNt = nCol + nRow;
     
     /* Prepare iteration */
-    double *b = lpRHS, *c = lpObj, kovert = *kappa / *tau;
+    double *b = lpRHS, *c = lpObj, kval = *kappa, tval = *tau;
     double *x = colVal, *y = rowDual, *s = colDual;
     double alpha = 0.0, beta = newton->beta, gamma = newton->gamma;
     double *D = newton->dd, *XSe = newton->xse, *d1 = newton->d1, *d2 = newton->d2, *daux = newton->daux;
     double *dx = newton->dx, *dy = newton->dy, *ds = newton->ds;
     double dkappa = 0.0, dtau = 0.0;
-    double mu = LpNewtonIBarrier(nCol, x, s, kovert, 1.0);
+    double mu = LpNewtonIBarrier(nCol, x, s, kval, tval);
     
     newton->mu = mu;
     
@@ -199,7 +200,7 @@ extern pot_int LpNewtonOneStep( lp_newton *newton, double *lpObj, double *lpRHS,
      */
     
     for ( int i = 0; i < nCol; ++i ) {
-        XSe[i] = x[i] * s[i];
+        XSe[i] = sqrtl(x[i] * s[i]);
         D[i] = sqrtl(s[i]) / sqrtl(x[i]);
     }
     
@@ -208,7 +209,7 @@ extern pot_int LpNewtonOneStep( lp_newton *newton, double *lpObj, double *lpRHS,
      M = [speye(n), ADinv';
           ADinv, sparse(m, m)];
      */
-    POTLP_MEMCPY(ADElem, newton->colBackup, double, colMatBeg[nCol]);
+    POTLP_MEMCPY(ADElem + nCol, newton->colBackup, double, colMatBeg[nCol]);
     for ( int i = 0, j; i < nRow; ++i ) {
         for ( j = ADBeg[i]; j < ADBeg[i + 1]; ++j ) {
             ADElem[j] /= D[ADIdx[j]];
@@ -238,7 +239,7 @@ extern pot_int LpNewtonOneStep( lp_newton *newton, double *lpObj, double *lpRHS,
         d2[i] = dRes[i] / D[i] + XSe[i] - mugamma / XSe[i];
     }
     
-    POTLP_MEMCPY(d2, pRes, double, nRow);
+    POTLP_MEMCPY(d2 + nCol, pRes, double, nRow);
     
     /* Solve the linear system
        d1 = M \ rhs1;
@@ -253,8 +254,8 @@ extern pot_int LpNewtonOneStep( lp_newton *newton, double *lpObj, double *lpRHS,
      */
     double auxTd1 = dot(&nNt, daux, &potIntConstantOne, d1, &potIntConstantOne);
     double auxTd2 = dot(&nNt, daux, &potIntConstantOne, d2, &potIntConstantOne);
-    dtau = auxTd2 + dObjVal - pObjVal - mugamma;
-    dtau = - dtau / (kovert - auxTd1);
+    dtau = auxTd2 + dObjVal - pObjVal - mugamma / tval;
+    dtau = - dtau / (kval / tval - auxTd1);
     
     /*
      dxdy = d1 * dtau - d2;
@@ -268,19 +269,18 @@ extern pot_int LpNewtonOneStep( lp_newton *newton, double *lpObj, double *lpRHS,
         daux[i] = d1[i] * dtau - d2[i];
     }
     
-    double auxoverd;
     for ( int i = 0; i < nCol; ++i ) {
-        auxoverd = daux[i] / D[i];
-        daux[i] = auxoverd;
-        ds[i] = - auxoverd - s[i] + mugamma / x[i];
+        dx[i] = daux[i] / D[i];
+        ds[i] = - daux[i] * D[i] - s[i] + mugamma / x[i];
     }
     
     for ( int i = 0; i < nRow; ++i ) {
         dy[i] = -daux[i + nCol];
     }
     
-    dkappa = -kovert * dtau - kovert + mugamma;
-    alpha = LpNewtonIRatioTest(nCol, x, dx, s, ds, kovert, dkappa, 1.0, dtau);
+    dkappa = - kval * dtau / tval - kval + mugamma / tval;
+    alpha = LpNewtonIRatioTest(nCol, x, dx, s, ds, kval, dkappa, tval, dtau);
+    
     alpha = alpha * beta;
     
     /*
@@ -294,11 +294,11 @@ extern pot_int LpNewtonOneStep( lp_newton *newton, double *lpObj, double *lpRHS,
     axpy(&nCol, &alpha, dx, &potIntConstantOne, x, &potIntConstantOne);
     axpy(&nRow, &alpha, dy, &potIntConstantOne, y, &potIntConstantOne);
     axpy(&nCol, &alpha, ds, &potIntConstantOne, s, &potIntConstantOne);
-    kovert += alpha * dkappa;
-    double newtau = 1.0 + alpha * dtau;
+    kval += alpha * dkappa;
+    tval += alpha * dtau;
     
     /* Back to the simplex */
-    double simp = kovert + newtau;
+    double simp = kval + tval;
     for ( int i = 0; i < nCol; ++i ) {
         simp += x[i];
         simp += s[i];
@@ -308,8 +308,10 @@ extern pot_int LpNewtonOneStep( lp_newton *newton, double *lpObj, double *lpRHS,
     scal(&nCol, &simp, x, &potIntConstantOne);
     scal(&nRow, &simp, y, &potIntConstantOne);
     scal(&nCol, &simp, s, &potIntConstantOne);
-    kovert *= simp; newtau *= simp;
-    *kappa = kovert; *tau = newtau;
+    kval *= simp; tval *= simp;
+    *kappa = kval; *tau = tval;
+    
+    newton->alpha = alpha;
     
 exit_cleanup:
     return retcode;
@@ -334,8 +336,7 @@ extern void LpNewtonClear( lp_newton *newton ) {
     POTLP_FREE(newton->d2);
     POTLP_FREE(newton->daux);
     POTLP_FREE(newton->dx);
-    POTLP_FREE(newton->dy);
-    POTLP_FREE(newton->ds);
+    /* dy and ds are continuous */
     
     POTLP_ZERO(newton, lp_newton, 1);
     return;

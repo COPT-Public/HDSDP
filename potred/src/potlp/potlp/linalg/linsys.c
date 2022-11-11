@@ -35,13 +35,14 @@ exit_cleanup:
     return retcode;
 }
 
+
 static int ldlSymbolic( void *ldl, int *Ap, int *Ai ) {
     
     int retcode = RETCODE_OK;
     qdldl_linsys *qdldl = (qdldl_linsys *) ldl;
     
     POTLP_INIT(qdldl->P, int, qdldl->n);
-    POTLP_INIT(qdldl->iWork, int, qdldl->n * 5);
+    POTLP_INIT(qdldl->iWork, int, qdldl->n * 4);
     POTLP_INIT(qdldl->dWork, double, qdldl->n * 3);
     POTLP_INIT(qdldl->Lp, int, qdldl->n + 1);
     POTLP_INIT(qdldl->Lnz, int, qdldl->n);
@@ -88,7 +89,7 @@ static int ldlNumeric( void *ldl, int *Ap, int *Ai, double *Ax ) {
     int nPos = QDLDL_factor(n, Ap, Ai, Ax, qdldl->Lp, qdldl->Li, qdldl->Lx,
                             D, Dinv, qdldl->Lnz, qdldl->P, bWork, iWork, fWork);
     
-    if ( nPos < n ) {
+    if ( nPos == -1 ) {
         retcode = RETCODE_FAILED;
         goto exit_cleanup;
     }

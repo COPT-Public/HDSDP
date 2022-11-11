@@ -192,6 +192,13 @@ extern void LPQMatTransMultiply( lp_qmatrix *QMat, int *isColBasic, double *yVal
     return;
 }
 
+extern void LPQMatScal( lp_qmatrix *QMat, double *xVal ) {
+    
+    vvrscl(&QMat->nColQ, QMat->sclCol, xVal);
+    
+    return;
+}
+
 extern void LPQMatScalBack( lp_qmatrix *QMat, double *xVal ) {
     
     vvscl(&QMat->nColQ, QMat->sclCol, xVal);

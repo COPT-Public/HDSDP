@@ -69,3 +69,35 @@ extern void potUtilPrintIParams( double dblParams[NUM_DBL_PARAM], int intParams[
     
     return;
 }
+
+
+/* Debugging */
+extern void potUtilPrintDblContent( int n, double *d ) {
+    
+    for ( int i = 0; i < n; ++i ) {
+        printf("%5.3e, ", d[i]);
+    }
+    printf("\n");
+    return;
+}
+
+extern void potUtilPrintIntContent( int n, int *d ) {
+    
+    for ( int i = 0; i < n; ++i ) {
+        printf("%5d, ", d[i]);
+    }
+    printf("\n");
+    return;
+}
+
+extern void potUtilPrintDblSum( int n, double *d ) {
+    
+    double ds = 0.0;
+    
+    for ( int i = 0; i < n; ++i ) {
+        ds += d[i];
+    }
+    
+    printf("Sum = %10.6e \n", ds);
+    return;
+}

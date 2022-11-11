@@ -68,6 +68,10 @@ extern void scal( pot_int *n, double *sa, double *sx, pot_int *incx ) {
     assert( *incx == 1 );
     double a = *sa;
     
+    if ( a == 1.0 ) {
+        return;
+    }
+    
     for ( int i = 0; i < *n; ++i ) {
         sx[i] = sx[i] * a;
     }
@@ -85,6 +89,10 @@ extern void rscl( pot_int *n, double *sa, double *sx, pot_int *incx ) {
     
     assert( a != 0.0 );
     assert( a > 0.0 );
+    
+    if ( a == 1.0 ) {
+        return;
+    }
     
     if ( fabs(a) < 1e-16 ) {
         a = (a > 0) ? 1e-16 : -1e-16;
