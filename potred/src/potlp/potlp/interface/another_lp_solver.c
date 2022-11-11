@@ -271,14 +271,14 @@ static void POT_FNAME(potLpObjFImplMonitor)( void *objFData, void *info ) {
     
     int logFreq = 0;
     
-    if ( potlp->nIter < 10000 ) {
+    if ( potlp->nIter < 1000 ) {
+        logFreq = 50;
+    } else if ( potlp->nIter < 5000 ) {
+        logFreq = 500;
+    } else if ( potlp->nIter < 20000 ) {
         logFreq = 1000;
-    } else if ( potlp->nIter < 50000 ) {
-        logFreq = 5000;
-    } else if ( potlp->nIter < 200000 ) {
-        logFreq = 10000;
     } else {
-        logFreq = 50000;
+        logFreq = 5000;
     }
     
     int *intInfo = NULL;
@@ -468,13 +468,14 @@ static void POT_FNAME(LPSolverIScale)( potlp_solver *potlp ) {
     return;
 }
 
+#if 0
 /* Test scaling from SCS. The original LP data is destroyed */
 static pot_int POT_FNAME(LPSolverIScalInplace)( potlp_solver *potlp ) {
     
     pot_int retcode = RETCODE_OK;
     
     printf("\n[Warning!] Inplace scaling is on. The original LP is destroyed. \n");
-//    potlp->intParams[INT_PARAM_MAXRUIZITER] = 0;
+    potlp->intParams[INT_PARAM_MAXRUIZITER] = 0;
     potlp->intParams[INT_PARAM_COEFSCALE] = 0;
     
     pot_int nRow = potlp->nRow;
@@ -542,6 +543,7 @@ static pot_int POT_FNAME(LPSolverISetupQMatrix)( potlp_solver *potlp ) {
 exit_cleanup:
     return retcode;
 }
+#endif
 
 static pot_int POT_FNAME(LPSolverIRuizScale)( potlp_solver *potlp ) {
     
@@ -884,12 +886,12 @@ extern pot_int POT_FNAME(LPSolverOptimize)( potlp_solver *potlp ) {
     POT_FNAME(LPSolverIParamAdjust)(potlp);
 
     /* Test SCS strategy but destroying the original LP */
-    POT_FNAME(LPSolverIScalInplace(potlp));
+//    POT_FNAME(LPSolverIScalInplace(potlp));
     POT_FNAME(LPSolverIScale)(potlp);
     POT_FNAME(LPSovlerIPrintLPStats)(potlp);
     POT_CALL(POT_FNAME(LPSolverISetupQMatrix(potlp)));
     POT_CALL(POT_FNAME(LPSolverIRuizScale(potlp)));
-    POT_CALL(POT_FNAME(LPSolverIL2Scale(potlp)));
+//    POT_CALL(POT_FNAME(LPSolverIL2Scale(potlp)));
     POT_FNAME(LPSolverIHeurInitialize)(potlp);
     
     /* Solve */
