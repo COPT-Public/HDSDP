@@ -532,6 +532,7 @@ exit_cleanup:
     POTLP_FREE(inpScalWorkCol);
     return retcode;
 }
+#endif
 
 static pot_int POT_FNAME(LPSolverISetupQMatrix)( potlp_solver *potlp ) {
     
@@ -543,7 +544,6 @@ static pot_int POT_FNAME(LPSolverISetupQMatrix)( potlp_solver *potlp ) {
 exit_cleanup:
     return retcode;
 }
-#endif
 
 static pot_int POT_FNAME(LPSolverIRuizScale)( potlp_solver *potlp ) {
     
