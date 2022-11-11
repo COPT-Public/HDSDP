@@ -31,6 +31,7 @@ typedef struct {
     
 } pds_linsys;
 
+#if 0
 static int ldlCreate( void **pldl, int n ) {
     
     int retcode = RETCODE_OK;
@@ -120,6 +121,7 @@ static int ldlSolve( void *ldl, double *bx ) {
     
     return RETCODE_OK;
 }
+#endif
 
 static int pdsCreate( void **pldl, int n ) {
     
