@@ -1,5 +1,6 @@
 #include "linsys.h"
 #include "qdldl.h"
+#include "pardiso.h"
 
 typedef struct {
     
@@ -15,6 +16,20 @@ typedef struct {
     double *Lx;
     
 } qdldl_linsys;
+
+typedef struct {
+    
+    int    n;
+    
+    int    *Ap;
+    int    *Ai;
+    double *Ax;
+    
+    double *dWork;
+    void   *pt[64];
+    int    iparm[64];
+    
+} pds_linsys;
 
 static int ldlCreate( void **pldl, int n ) {
     
@@ -34,7 +49,6 @@ static int ldlCreate( void **pldl, int n ) {
 exit_cleanup:
     return retcode;
 }
-
 
 static int ldlSymbolic( void *ldl, int *Ap, int *Ai ) {
     
@@ -98,13 +112,116 @@ exit_cleanup:
     return retcode;
 }
 
-static void ldlSolve( void *ldl, double *bx ) {
+static int ldlSolve( void *ldl, double *bx ) {
     
     qdldl_linsys *qdldl = (qdldl_linsys *) ldl;
     QDLDL_solve(qdldl->n, qdldl->Lp, qdldl->Li, qdldl->Lx,
                 qdldl->dWork + qdldl->n, bx);
     
-    return;
+    return RETCODE_OK;
+}
+
+static int pdsCreate( void **pldl, int n ) {
+    
+    int retcode = RETCODE_OK;
+    pds_linsys *pds = NULL;
+    
+    POTLP_INIT(pds, pds_linsys, 1);
+    
+    if ( !pds ) {
+        retcode = RETCODE_FAILED;
+        goto exit_cleanup;
+    }
+    
+    pds->n = n;
+    *pldl = pds;
+    
+    /* Initialize pardiso */
+    POTLP_ZERO(pds->pt, void *, 64);
+    POTLP_ZERO(pds->iparm, int, 64);
+    
+    int mtype = PARDISO_SYM_INDEFINITE;
+    pardisoinit(pds->pt, &mtype, pds->iparm);
+    set_pardiso_param(pds->iparm, PARDISO_PARAM_NONDEFAULT, 1);
+    set_pardiso_param(pds->iparm, PARDISO_PARAM_SYMBOLIC, PARDISO_PARAM_SYMBOLIC_ND);
+    set_pardiso_param(pds->iparm, PARDISO_PARAM_PERTURBATION, 5);
+    set_pardiso_param(pds->iparm, PARDISO_PARAM_INPLACE, 1);
+    set_pardiso_param(pds->iparm, PARDISO_PARAM_INDEX, PARDISO_PARAM_INDEX_C);
+    
+exit_cleanup:
+    return retcode;
+}
+
+static int pdsSymbolic( void *ldl, int *Ap, int *Ai ) {
+    
+    int retcode = RETCODE_OK;
+    pds_linsys *pds = (pds_linsys *) ldl;
+    
+    pds->Ap = Ap; pds->Ai = Ai;
+    
+    POTLP_INIT(pds->dWork, double, pds->n);
+    
+    if ( !pds->dWork ) {
+        retcode = RETCODE_FAILED;
+        goto exit_cleanup;
+    }
+    
+    int maxfct = 1, mnum = 1, mtype = PARDISO_SYM_INDEFINITE, phase = PARDISO_PHASE_SYM;
+    int idummy = 0, msg = 0, pdsret = PARDISO_RET_OK;
+        
+    pardiso(pds->pt, &maxfct, &mnum, &mtype, &phase,
+            &pds->n, NULL, Ap, Ai, &idummy, &idummy,
+            pds->iparm, &msg, NULL, NULL, &pdsret);
+    
+    if ( pdsret != PARDISO_RET_OK ) {
+        retcode = RETCODE_FAILED;
+        goto exit_cleanup;
+    }
+    
+exit_cleanup:
+    return retcode;
+}
+
+static int pdsNumeric( void *ldl, int *Ap, int *Ai, double *Ax ) {
+    
+    int retcode = RETCODE_OK;
+    pds_linsys *pds = (pds_linsys *) ldl;
+    pds->Ax = Ax;
+    
+    int maxfct = 1, mnum = 1, mtype = PARDISO_SYM_INDEFINITE, phase = PARDISO_PHASE_FAC;
+    int idummy = 0, msg = 0, pdsret = PARDISO_RET_OK;
+    
+    pardiso(pds->pt, &maxfct, &mnum, &mtype, &phase,
+            &pds->n, Ax, Ap, Ai, &idummy, &idummy,
+            pds->iparm, &msg, NULL, NULL, &pdsret);
+    
+    if ( pdsret != PARDISO_RET_OK ) {
+        retcode = RETCODE_FAILED;
+        goto exit_cleanup;
+    }
+    
+exit_cleanup:
+    return retcode;
+}
+
+static int pdsSolve( void *ldl, double *bx ) {
+    
+    pot_int retcode = RETCODE_OK;
+    pds_linsys *pds = (pds_linsys *) ldl;
+    
+    int maxfct = 1, mnum = 1, mtype = PARDISO_SYM_INDEFINITE, phase = PARDISO_PHASE_SOLVE;
+    int idummy = 0, nrhs = 1, msg = 0, pdsret = PARDISO_RET_OK;
+    
+    pardiso(pds->pt, &maxfct, &mnum, &mtype, &phase,
+            &pds->n, pds->Ax, pds->Ap, pds->Ai, &idummy, &nrhs,
+            pds->iparm, &msg, bx, pds->dWork, &pdsret);
+    
+    if ( pdsret != PARDISO_RET_OK ) {
+        retcode = RETCODE_FAILED;
+        return retcode;
+    }
+    
+    return retcode;
 }
 
 static void ldlDestroy( void **pldl ) {
@@ -133,6 +250,32 @@ static void ldlDestroy( void **pldl ) {
     return;
 }
 
+static void pdsDestroy( void **pldl ) {
+    
+    if ( !pldl ) {
+        return;
+    }
+    
+    pds_linsys *pds = (pds_linsys *) (*pldl);
+    
+    if ( pds ) {
+        
+        int maxfct = 1, mnum = 1, mtype = PARDISO_SYM_INDEFINITE, phase = PARDISO_PHASE_FREE;
+        int idummy = 0, msg = 0, pdsret = PARDISO_RET_OK;
+        pardiso(pds->pt, &maxfct, &mnum, &mtype, &phase,
+                &pds->n, pds->Ax, pds->Ap, pds->Ai, &idummy, &idummy,
+                pds->iparm, &msg, NULL, NULL, &pdsret);
+        
+        POTLP_FREE(pds->dWork);
+        POTLP_ZERO(pds, pds_linsys, 1);
+    }
+    
+    
+    POTLP_FREE(*pldl);
+
+    return;
+}
+
 extern pot_int potLinsysCreate( pot_linsys **ppotLinsys ) {
     
     pot_int retcode = RETCODE_OK;
@@ -152,11 +295,11 @@ extern pot_int potLinsysCreate( pot_linsys **ppotLinsys ) {
     
     POTLP_ZERO(potLinsys, pot_linsys, 1);
     
-    potLinsys->LCreate = ldlCreate;
-    potLinsys->LDestroy = ldlDestroy;
-    potLinsys->LSFac = ldlSymbolic;
-    potLinsys->LNFac = ldlNumeric;
-    potLinsys->LSolve = ldlSolve;
+    potLinsys->LCreate = pdsCreate;
+    potLinsys->LDestroy = pdsDestroy;
+    potLinsys->LSFac = pdsSymbolic;
+    potLinsys->LNFac = pdsNumeric;
+    potLinsys->LSolve = pdsSolve;
     
     *ppotLinsys = potLinsys;
     
@@ -208,16 +351,17 @@ exit_cleanup:
     return retcode;
 }
 
-extern void potLinsysSolve( pot_linsys *potLinsys, double *rhsVec, double *solVec ) {
+extern pot_int potLinsysSolve( pot_linsys *potLinsys, double *rhsVec, double *solVec ) {
     
+    pot_int retcode = RETCODE_OK;
     if ( solVec ) {
         POTLP_MEMCPY(solVec, rhsVec, double, potLinsys->nCol);
-        potLinsys->LSolve(potLinsys->solver, solVec);
+        retcode = potLinsys->LSolve(potLinsys->solver, solVec);
     } else {
-        potLinsys->LSolve(potLinsys->solver, rhsVec);
+        retcode = potLinsys->LSolve(potLinsys->solver, rhsVec);
     }
     
-    return;
+    return retcode;
 }
 
 extern void potLinsysClear( pot_linsys *potLinsys ) {

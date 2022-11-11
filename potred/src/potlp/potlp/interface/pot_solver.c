@@ -602,7 +602,7 @@ extern pot_int potReductionSolve( pot_solver *pot ) {
         }
         
         /* TODO: Consider using internal error instead of returning */
-        retcode = potReductionOneStep(pot);
+//        retcode = potReductionOneStep(pot);
         potObjFMonitor(pot->objFunc, &info);
         
         if ( retcode != RETCODE_OK ) {
