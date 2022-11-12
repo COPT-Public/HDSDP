@@ -305,7 +305,7 @@ static void POT_FNAME(potLpObjFImplMonitor)( void *objFData, void *info ) {
         if ( useIPM ) {
             int icode = POT_FNAME(potLpNewtonStep)(potlp);
             if ( icode != RETCODE_OK ) {
-                potlp->Lpstatus = POTLP_INTERNAL_ERROR;
+                potlp->Lpstatus = POTLP_NUMERICAL;
                 intInfo = (int *) info;
                 *intInfo = 1;
                 return;
@@ -373,7 +373,7 @@ static void POT_FNAME(potLpObjFImplMonitor)( void *objFData, void *info ) {
             *intInfo = 1;
         }
         
-        if ( potlp->kappa > 1e+08 * potlp->tau && potlp->potIterator->fVal < 1e-06 ) {
+        if ( potlp->kappa > 1e+10 * potlp->tau && potlp->potIterator->fVal < 1e-08 ) {
             potlp->Lpstatus = POTLP_INFEAS_OR_UNBOUNDED;
             intInfo = (int *) info;
             *intInfo = 1;
@@ -468,7 +468,6 @@ static void POT_FNAME(LPSolverIScale)( potlp_solver *potlp ) {
     return;
 }
 
-#if 0
 /* Test scaling from SCS. The original LP data is destroyed */
 static pot_int POT_FNAME(LPSolverIScalInplace)( potlp_solver *potlp ) {
     
@@ -514,18 +513,13 @@ static pot_int POT_FNAME(LPSolverIScalInplace)( potlp_solver *potlp ) {
     int iMaxAbsc = idamax(&nCol, lpObj, &potIntConstantOne);
     double maxAbsc = fabs(lpObj[iMaxAbsc]);
     
-    double scal = POTLP_MAX(maxAbsb, maxAbsc);
+    double pscal = POTLP_MIN(maxAbsb, 1e+04);
+    pscal += 1.0;
+    double dscal = POTLP_MIN(maxAbsc, 1e+04);
+    dscal += 1.0;
     
-    if ( scal > 1e+04 ) {
-        scal = 1e+04;
-    }
-    
-    if ( scal < 1e-04 ) {
-        scal = 1.0;
-    }
-    
-    rscl(&nRow, &scal, lpRHS, &potIntConstantOne);
-    rscl(&nCol, &scal, lpObj, &potIntConstantOne);
+    rscl(&nRow, &pscal, lpRHS, &potIntConstantOne);
+    rscl(&nCol, &dscal, lpObj, &potIntConstantOne);
     
 exit_cleanup:
     POTLP_FREE(inpScalWorkRow);
@@ -543,7 +537,6 @@ static pot_int POT_FNAME(LPSolverISetupQMatrix)( potlp_solver *potlp ) {
 exit_cleanup:
     return retcode;
 }
-#endif
 
 static pot_int POT_FNAME(LPSolverIRuizScale)( potlp_solver *potlp ) {
     
@@ -719,6 +712,8 @@ static void POT_FNAME(LPSolverIPrintSolStatistics)( potlp_solver *potlp ) {
         printf("\nLP Status: %s \n", "User Interrupt");
     } else if ( potlp->Lpstatus == POTLP_INTERNAL_ERROR ) {
         printf("\nLP Status: %s \n", "Internal Error");
+    } else if ( potlp->Lpstatus == POTLP_NUMERICAL ) {
+        printf("\nLP Status: %s \n", "Numerical");
     } else if ( potlp->Lpstatus == POTLP_UNKNOWN ){
         printf("\nLP Status: %s \n", "Unknown");
     } else {
@@ -886,7 +881,10 @@ extern pot_int POT_FNAME(LPSolverOptimize)( potlp_solver *potlp ) {
     POT_FNAME(LPSolverIParamAdjust)(potlp);
 
     /* Test SCS strategy but destroying the original LP */
-//    POT_FNAME(LPSolverIScalInplace(potlp));
+    if ( 0 ) {
+        POT_FNAME(LPSolverIScalInplace(potlp));
+    }
+    
     POT_FNAME(LPSolverIScale)(potlp);
     POT_FNAME(LPSovlerIPrintLPStats)(potlp);
     POT_CALL(POT_FNAME(LPSolverISetupQMatrix(potlp)));

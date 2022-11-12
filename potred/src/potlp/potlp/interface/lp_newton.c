@@ -172,17 +172,28 @@ extern pot_int LpNewtonOneStep( lp_newton *newton, double *lpObj, double *lpRHS,
     /* Prepare Newton's system */
     int *ADBeg = newton->AugBeg;
     double *ADElem = newton->AugElem;
+    double xsi = 0.0;
+    double minXSi = kval * tval;
     
     for ( int i = 0; i < nCol; ++i ) {
-        XSe[i] = sqrtl(x[i] * s[i]);
+        xsi = x[i] * s[i];
+        minXSi = POTLP_MIN(minXSi, xsi);
+        XSe[i] = sqrtl(xsi);
         D[i] = sqrtl(s[i]) / sqrtl(x[i]);
     }
+    
+    /* A little more adaptive using LOQO strategy */
+    double ksi = minXSi / mu;
+    newton->gamma = (1 - ksi) / ksi;
+    newton->gamma = 0.05 * newton->gamma;
+    newton->gamma = 0.1 * newton->gamma * newton->gamma * newton->gamma;
+    newton->gamma = POTLP_MIN(0.8, newton->gamma);
     
     /* Setup the augmented system */
     POTLP_MEMCPY(ADElem, newton->colBackup, double, colMatBeg[nCol] + nCol);
     for ( int i = 0, j; i < nCol; ++i ) {
         for ( j = ADBeg[i] + 1; j < ADBeg[i + 1]; ++j ) {
-            ADElem[j] /= D[i];
+            ADElem[j] = ADElem[j] / D[i];
         }
     }
     
@@ -194,7 +205,8 @@ extern pot_int LpNewtonOneStep( lp_newton *newton, double *lpObj, double *lpRHS,
     double mugamma = mu * gamma;
     for ( int i = 0; i < nCol; ++i ) {
         coverd = c[i] / D[i];
-        d1[i] = -coverd; daux[i] = coverd;
+        d1[i] = -coverd;
+        daux[i] = coverd;
     }
     
     POTLP_MEMCPY(d1 + nCol, b, double, nRow);
@@ -234,6 +246,7 @@ extern pot_int LpNewtonOneStep( lp_newton *newton, double *lpObj, double *lpRHS,
     alpha = LpNewtonIRatioTest(nCol, x, dx, s, ds, kval, dkappa, tval, dtau);
     
     alpha = alpha * beta;
+    alpha = POTLP_MIN(alpha, 1.0);
     
     /* Ratio test and update */
     axpy(&nCol, &alpha, dx, &potIntConstantOne, x, &potIntConstantOne);
@@ -258,7 +271,7 @@ extern pot_int LpNewtonOneStep( lp_newton *newton, double *lpObj, double *lpRHS,
     
     newton->alpha = alpha;
     
-    if ( alpha < 0.001 ) {
+    if ( alpha < 1e-05 ) {
         retcode = RETCODE_FAILED;
         goto exit_cleanup;
     }

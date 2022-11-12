@@ -49,6 +49,7 @@ typedef int pot_int;
 #define POTLP_TIMELIMIT             (103)
 #define POTLP_USER_INTERRUPT        (104)
 #define POTLP_INTERNAL_ERROR        (105)
+#define POTLP_NUMERICAL             (106)
 
 // Integer Parameters
 #define INT_PARAM_MAXITER       0
@@ -62,7 +63,6 @@ typedef int pot_int;
 #define DBL_PARAM_RELFEASTOL    0
 #define DBL_PARAM_RELOPTTOL     1
 #define DBL_PARAM_TIMELIMIT     2
-#define DBL_PARAM_COMPFOCUS     3
 
 // Version information
 #define VERSION_MAJOR           0
