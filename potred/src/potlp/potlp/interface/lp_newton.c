@@ -225,8 +225,8 @@ extern pot_int LpNewtonOneStep( lp_newton *newton, double *lpObj, double *lpRHS,
     /* Compute dtau to assemble directions */
     double auxTd1 = dot(&nNt, daux, &potIntConstantOne, d1, &potIntConstantOne);
     double auxTd2 = dot(&nNt, daux, &potIntConstantOne, d2, &potIntConstantOne);
-    dtau = auxTd2 + dObjVal - pObjVal - mugamma / tval;
-    dtau = - dtau / (kval / tval - auxTd1);
+    dtau = auxTd2 * tval + (dObjVal - pObjVal) * tval - mugamma;
+    dtau = - dtau / (kval - auxTd1 * tval);
     
     /* Solving for the steps */
     for ( int i = 0; i < nNt; ++i ) {
@@ -271,7 +271,7 @@ extern pot_int LpNewtonOneStep( lp_newton *newton, double *lpObj, double *lpRHS,
     
     newton->alpha = alpha;
     
-    if ( alpha < 1e-05 ) {
+    if ( alpha < 1e-04 ) {
         retcode = RETCODE_FAILED;
         goto exit_cleanup;
     }

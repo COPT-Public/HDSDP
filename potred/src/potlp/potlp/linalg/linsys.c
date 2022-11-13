@@ -147,7 +147,7 @@ static int pdsCreate( void **pldl, int n ) {
     
     set_pardiso_param(pds->iparm, PARDISO_PARAM_NONDEFAULT, 1);
     set_pardiso_param(pds->iparm, PARDISO_PARAM_SYMBOLIC, PARDISO_PARAM_SYMBOLIC_MMD);
-    set_pardiso_param(pds->iparm, PARDISO_PARAM_PERTURBATION, 4);
+    set_pardiso_param(pds->iparm, PARDISO_PARAM_PERTURBATION, 6);
     set_pardiso_param(pds->iparm, PARDISO_PARAM_REFINEMENT, 2);
     set_pardiso_param(pds->iparm, PARDISO_PARAM_INPLACE, 1);
     set_pardiso_param(pds->iparm, PARDISO_PARAM_INDEX, PARDISO_PARAM_INDEX_C);
