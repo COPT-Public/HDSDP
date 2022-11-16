@@ -70,6 +70,7 @@ extern pot_int LpNewtonCreate( lp_newton **pnewton ) {
     
     nt->beta = 0.995;
     nt->gamma = 0.7;
+    nt->badNewton = 0;
     
     *pnewton = nt;
     
@@ -272,8 +273,14 @@ extern pot_int LpNewtonOneStep( lp_newton *newton, double *lpObj, double *lpRHS,
     newton->alpha = alpha;
     
     if ( alpha < 1e-04 ) {
-        retcode = RETCODE_FAILED;
-        goto exit_cleanup;
+        if ( newton->badNewton >= 2 ) {
+            retcode = RETCODE_FAILED;
+            goto exit_cleanup;
+        } else {
+            /* Try to rescue the system using scaling and matching */
+            potLinsysSwitchToBackup(newton->lpLinsys);
+            newton->badNewton += 1;
+        }
     }
     
 exit_cleanup:

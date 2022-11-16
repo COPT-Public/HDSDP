@@ -366,7 +366,7 @@ exit_cleanup:
 }
 
 #if 0
-/* TODO: Implement a Hessian vector product */
+/* TODO: Implement a Hessian vector product for testing */
 static void potLPPotentialHVec( void *pot, pot_vec *vVec, pot_vec *vVecP ) {
     
     return;
@@ -467,6 +467,7 @@ extern pot_int potLPCreate( pot_solver **ppot ) {
     
     POTLP_ZERO(pot, pot_solver, 1);
     
+    pot->fVal = POTLP_INFINITY;
     pot->potVal = POTLP_INFINITY;
     pot->zVal = 0.0;
     

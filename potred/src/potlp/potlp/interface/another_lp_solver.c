@@ -57,10 +57,6 @@ static void POT_FNAME(potLpReWeight) ( potlp_solver *potlp ) {
     double dInfeas = potlp->dInfeasRel;
     double cInfeas = potlp->complGapRel;
     
-//    double pInfeas = potlp->dInfeas;
-//    double dInfeas = potlp->pInfeas;
-//    double cInfeas = potlp->complGap;
-    
     REWEIGHT_DEBUG("Before", pOmega, dOmega, cOmega);
     
     /* Are the residuals stuck? */
@@ -87,9 +83,7 @@ static void POT_FNAME(potLpReWeight) ( potlp_solver *potlp ) {
         if ( cStuck ) { cOmega = POTLP_MIN(cOmega * rRate, rMax); }
         
         /* Do if fast */
-        if ( pFast ) { };
-        if ( dFast ) { };
-        if ( cFast ) { };
+        if ( pFast ) { }; if ( dFast ) { }; if ( cFast ) { };
         
         /* Normalize */
         double minOmega = POTLP_MIN(pOmega, dOmega);
@@ -129,14 +123,15 @@ static pot_int POT_FNAME(potLpNewtonStep) ( potlp_solver *potlp ) {
     
     pot_int retcode = RETCODE_OK;
     double simp = 2 * potlp->nCol + 2;
+    
     POT_CALL(LpNewtonOneStep(potlp->ipm, potlp->lpObj, potlp->lpRHS, potlp->colMatBeg,
                              potlp->colMatIdx, potlp->colMatElem, potlp->colVal, potlp->rowDual,
                              potlp->colDual, &potlp->kappa, &potlp->tau, potlp->pRes, potlp->dRes,
-                             potlp->pObjVal * potlp->tau, potlp->dObjVal * potlp->tau, simp));
+                             potlp->pObjInternal, potlp->dObjInternal, simp));
     
     pot_solver *pot = potlp->potIterator;
     
-    /* TODO: Write solution back */
+    /* TODO: Write solution back more elegantly */
     potVecCopy(pot->xVec, pot->xVecOld);
     double *xNew = pot->xVec->x;
     
@@ -300,18 +295,6 @@ static void POT_FNAME(potLpObjFImplMonitor)( void *objFData, void *info ) {
         
         POT_FNAME(LPSolverIRetrieveSolution)(potlp);
         
-        /* Interior point solver */
-        int useIPM = 1;
-        if ( useIPM ) {
-            int icode = POT_FNAME(potLpNewtonStep)(potlp);
-            if ( icode != RETCODE_OK ) {
-                potlp->Lpstatus = POTLP_NUMERICAL;
-                intInfo = (int *) info;
-                *intInfo = 1;
-                return;
-            }
-        }
-        
         double relOptTol = potlp->dblParams[DBL_PARAM_RELOPTTOL];
         double relFeasTol = potlp->dblParams[DBL_PARAM_RELFEASTOL];
         double elapsedTime = potUtilGetTimeStamp() - potlp->startT;
@@ -394,6 +377,19 @@ static void POT_FNAME(potLpObjFImplMonitor)( void *objFData, void *info ) {
                    dInfeas, potlp->kappa / potlp->tau,
                    elapsedTime / 3600.0 );
         }
+        
+        /* Interior point solver */
+        int useIPM = 1;
+        if ( useIPM && !intInfo ) {
+            int icode = POT_FNAME(potLpNewtonStep)(potlp);
+            if ( icode != RETCODE_OK ) {
+                potlp->Lpstatus = POTLP_NUMERICAL;
+                intInfo = (int *) info;
+                *intInfo = 1;
+                return;
+            }
+        }
+        
 #ifdef MATLAB_MEX_FILE
         /* Let MATLAB show log immediately */
         mexEvalString("drawnow;");
@@ -412,7 +408,7 @@ static void POT_FNAME(potLpObjFImplMonitor)( void *objFData, void *info ) {
     return;
 }
 
-static void POT_FNAME(LPSolverIScale)( potlp_solver *potlp ) {
+static void POT_FNAME(LPSolverIObjScale)( potlp_solver *potlp ) {
     
     double rhsOneNorm = 0.0;
     double objOneNorm = 0.0;
@@ -439,29 +435,19 @@ static void POT_FNAME(LPSolverIScale)( potlp_solver *potlp ) {
         int iMaxAbsc = idamax(&potlp->nCol, lpObj, &potIntConstantOne);
         double maxAbsb = fabs(lpRHS[iMaxAbsb]);
         double maxAbsc = fabs(lpObj[iMaxAbsc]);
+                
+        potlp->objScaler = maxAbsc + 1.0;
+        potlp->rhsScaler = maxAbsb + 1.0;
         
-        double scal = POTLP_MAX(maxAbsb, maxAbsc);
-        
-        if ( scal > 1e+04 ) {
-            scal = 1e+04;
-        }
-        
-        if ( scal < 1e-04 ) {
-            scal = 1.0;
-        }
-        
-        double objScaler = scal; // objOneNorm + 1.0;
-        double rhsScaler = scal; // rhsOneNorm + 1.0;
-        
-        potlp->objScaler = objScaler;
-        potlp->rhsScaler = rhsScaler;
+        potlp->objScaler = POTLP_MIN(potlp->objScaler, 1e+06);
+        potlp->rhsScaler = POTLP_MIN(potlp->rhsScaler, 1e+06);
         
         for ( int i = 0; i < potlp->nCol; ++i ) {
-            lpObj[i] = lpObj[i] / objScaler;
+            lpObj[i] = lpObj[i] / potlp->objScaler;
         }
 
         for ( int i = 0; i < potlp->nRow; ++i ) {
-            lpRHS[i] = lpRHS[i] / rhsScaler;
+            lpRHS[i] = lpRHS[i] / potlp->rhsScaler;
         }
     }
     
@@ -497,12 +483,12 @@ static pot_int POT_FNAME(LPSolverIScalInplace)( potlp_solver *potlp ) {
         goto exit_cleanup;
     }
     
-    /* Do 0 Ruiz */
+    /* Do 25 Ruiz */
     POT_CALL(spMatRuizScal(nRow, nCol, colMatBeg, colMatIdx, colMatElem,
-                           inpScalWorkRow, inpScalWorkCol, 0));
+                           inpScalWorkRow, inpScalWorkCol, 25));
     /* Do 1 L2 */
-//    POT_CALL(spMatL2Scal(nRow, nCol, colMatBeg, colMatIdx, colMatElem,
-//                         inpScalWorkRow, inpScalWorkCol));
+    POT_CALL(spMatL2Scal(nRow, nCol, colMatBeg, colMatIdx, colMatElem,
+                         inpScalWorkRow, inpScalWorkCol));
     
     /* Scale b and c */
     vvscl(&nRow, inpScalWorkRow, lpRHS);
@@ -625,36 +611,27 @@ static void POT_FNAME(LPSolverIRetrieveSolution)( potlp_solver *potlp ) {
     double objScaler = potlp->objScaler;
     double rhsScaler = potlp->rhsScaler;
     
-    double primalScaler = 1.0 / rhsScaler;
-    double dualScaler = 1.0 / objScaler;
-    
-    /* Scale back */
-    rscl(&nCol, &primalScaler, colVal, &potIntConstantOne);
-    rscl(&nCol, &dualScaler, colDual, &potIntConstantOne);
-    rscl(&nRow, &dualScaler, rowDual, &potIntConstantOne);
-    
     /* Verify errors */
+    /* The primal-dual objective always equal their true values for the original LP */
     double pObjVal = dot(&nCol, colVal, &potIntConstantOne, lpObj, &potIntConstantOne);
     double dObjVal = dot(&nRow, rowDual, &potIntConstantOne, lpRHS, &potIntConstantOne);
-    pObjVal = pObjVal * objScaler / tau;
-    dObjVal = dObjVal * rhsScaler / tau;
+    potlp->pObjInternal = pObjVal;
+    potlp->dObjInternal = dObjVal;
     
+    pObjVal = pObjVal * objScaler * rhsScaler / tau;
+    dObjVal = dObjVal * rhsScaler * objScaler / tau;
+    
+    /* Primal-dual infeasibilities are fed into the IPM with b and c scaled */
     double *pRes = potlp->pRes;
     double *dRes = potlp->dRes;
     
-    double rhsScalerTau = rhsScaler * tau;
     for ( int i = 0; i < nRow; ++i ) {
-        pRes[i] = - lpRHS[i] * rhsScalerTau;
+        pRes[i] = - lpRHS[i] * tau;
     }
     
-    double objScalerTau = objScaler * tau;
     for ( int i = 0; i < nCol; ++i ) {
-        dRes[i] = - colDual[i] + lpObj[i] * objScalerTau;
+        dRes[i] = - colDual[i] + lpObj[i] * tau;
     }
-    
-    /* Scaler when evaluating errors */
-    objScaler = potlp->lpObjNorm + 1.0;
-    rhsScaler = potlp->lpRHSNorm + 1.0;
     
     /* Primal infeasibility A * x  - b * tau */
     spMatAxpy(nCol, potlp->colMatBeg, potlp->colMatIdx, potlp->colMatElem, 1.0, colVal, pRes);
@@ -662,10 +639,15 @@ static void POT_FNAME(LPSolverIRetrieveSolution)( potlp_solver *potlp ) {
     /* Dual infeasibility - s + c * tau - A' * y */
     spMatATxpy(nCol, potlp->colMatBeg, potlp->colMatIdx, potlp->colMatElem, -1.0, rowDual, dRes);
     
-    double pInfeas = nrm2(&nRow, pRes, &potIntConstantOne) / tau;
-    double relpInfeas = pInfeas / rhsScaler;
-    double dInfeas = nrm2(&nCol, dRes, &potIntConstantOne) / tau;
-    double reldInfeas = dInfeas / objScaler;
+    /* Scaler when evaluating errors */
+    double objOneNorm = potlp->lpObjNorm + 1.0;
+    double rhsOneNorm = potlp->lpRHSNorm + 1.0;
+    
+    /* Infeasibilities are printed and thus must be true for the original LP */
+    double pInfeas = nrm2(&nRow, pRes, &potIntConstantOne) * rhsScaler / tau;
+    double relpInfeas = pInfeas / rhsOneNorm;
+    double dInfeas = nrm2(&nCol, dRes, &potIntConstantOne) * objScaler / tau;
+    double reldInfeas = dInfeas / objOneNorm;
     double compGap = fabs(pObjVal - dObjVal);
     double rGap = compGap / ( 1 + fabs(pObjVal) + fabs(dObjVal) );
     
@@ -885,7 +867,7 @@ extern pot_int POT_FNAME(LPSolverOptimize)( potlp_solver *potlp ) {
         POT_FNAME(LPSolverIScalInplace(potlp));
     }
     
-    POT_FNAME(LPSolverIScale)(potlp);
+    POT_FNAME(LPSolverIObjScale)(potlp);
     POT_FNAME(LPSovlerIPrintLPStats)(potlp);
     POT_CALL(POT_FNAME(LPSolverISetupQMatrix(potlp)));
     POT_CALL(POT_FNAME(LPSolverIRuizScale(potlp)));

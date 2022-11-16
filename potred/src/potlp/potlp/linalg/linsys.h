@@ -8,11 +8,14 @@ typedef struct {
     int   nCol;
     void *solver;
     
+    int  backUpLin;
+    
     int  (*LCreate)  ( void **, int );
     void (*LDestroy) ( void ** );
     
     int  (*LSFac)  ( void *, int *, int * );
     int  (*LNFac)  ( void *, int *, int *, double * );
+    int  (*LNFacBackup)  ( void *, int *, int *, double * );
     int  (*LSolve) ( void *, double * );
 
 } pot_linsys;
@@ -22,6 +25,7 @@ extern pot_int potLinsysInit( pot_linsys *potLinsys, pot_int nCol );
 extern pot_int potLinsysSymFactorize( pot_linsys *potLinsys, pot_int *colMatBeg, pot_int *colMatIdx );
 extern pot_int potLinsysNumFactorize( pot_linsys *potLinsys, int *colMatBeg, int *colMatIdx, double *colMatElem );
 extern pot_int potLinsysSolve( pot_linsys *potLinsys, double *rhsVec, double *solVec );
+extern void potLinsysSwitchToBackup( pot_linsys *potLinsys );
 extern void potLinsysClear( pot_linsys *potLinsys );
 extern void potLinsysDestroy( pot_linsys **ppotLinsys );
 

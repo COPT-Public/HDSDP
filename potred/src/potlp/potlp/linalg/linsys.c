@@ -121,6 +121,32 @@ static int ldlSolve( void *ldl, double *bx ) {
     
     return RETCODE_OK;
 }
+
+static void ldlDestroy( void **pldl ) {
+    
+    if ( !pldl ) {
+        return;
+    }
+    
+    qdldl_linsys *qdldl = (qdldl_linsys *) (*pldl);
+    
+    if ( qdldl ) {
+        
+        POTLP_FREE(qdldl->P);
+        POTLP_FREE(qdldl->iWork);
+        POTLP_FREE(qdldl->dWork);
+        POTLP_FREE(qdldl->Lnz);
+        POTLP_FREE(qdldl->Lp);
+        POTLP_FREE(qdldl->Li);
+        POTLP_FREE(qdldl->Lx);
+        
+        POTLP_ZERO(qdldl, qdldl_linsys, 1);
+    }
+    
+    POTLP_FREE(*pldl);
+    
+    return;
+}
 #endif
 
 static int pdsCreate( void **pldl, int n ) {
@@ -147,8 +173,7 @@ static int pdsCreate( void **pldl, int n ) {
     
     set_pardiso_param(pds->iparm, PARDISO_PARAM_NONDEFAULT, 1);
     set_pardiso_param(pds->iparm, PARDISO_PARAM_SYMBOLIC, PARDISO_PARAM_SYMBOLIC_MMD);
-    set_pardiso_param(pds->iparm, PARDISO_PARAM_PERTURBATION, 6);
-    set_pardiso_param(pds->iparm, PARDISO_PARAM_REFINEMENT, 2);
+    set_pardiso_param(pds->iparm, PARDISO_PARAM_PERTURBATION, 3);
     set_pardiso_param(pds->iparm, PARDISO_PARAM_INPLACE, 1);
     set_pardiso_param(pds->iparm, PARDISO_PARAM_INDEX, PARDISO_PARAM_INDEX_C);
     
@@ -156,6 +181,7 @@ exit_cleanup:
     return retcode;
 }
 
+#define SHOW_ORDERING(ord) // printf("Using ordering %s. \n", ord)
 static int pdsSymbolic( void *ldl, int *Ap, int *Ai ) {
     
     int retcode = RETCODE_OK;
@@ -172,9 +198,63 @@ static int pdsSymbolic( void *ldl, int *Ap, int *Ai ) {
     
     int maxfct = 1, mnum = 1, mtype = PARDISO_SYM_INDEFINITE, phase = PARDISO_PHASE_SYM;
     int idummy = 0, msg = 0, pdsret = PARDISO_RET_OK;
-        
+    
+    /* Use amd first */
+    int amdFactorNnz = 0;
+    set_pardiso_param(pds->iparm, PARDISO_PARAM_SYMBOLIC, PARDISO_PARAM_SYMBOLIC_MMD);
+    set_pardiso_param(pds->iparm, PARDISO_PARAM_FACNNZ, -1);
+    
     pardiso(pds->pt, &maxfct, &mnum, &mtype, &phase,
             &pds->n, NULL, Ap, Ai, &idummy, &idummy,
+            pds->iparm, &msg, NULL, NULL, &pdsret);
+    
+    if ( pdsret != PARDISO_RET_OK ) {
+        retcode = RETCODE_FAILED;
+        goto exit_cleanup;
+    }
+    
+    amdFactorNnz = get_pardiso_output(pds->iparm, PARDISO_PARAM_FACNNZ);
+    
+    /* See if nested dissection is better */
+    int ndFactorNnz = 0;
+    set_pardiso_param(pds->iparm, PARDISO_PARAM_SYMBOLIC, PARDISO_PARAM_SYMBOLIC_ND);
+    set_pardiso_param(pds->iparm, PARDISO_PARAM_FACNNZ, -1);
+    pardiso(pds->pt, &maxfct, &mnum, &mtype, &phase,
+            &pds->n, NULL, Ap, Ai, &idummy, &idummy,
+            pds->iparm, &msg, NULL, NULL, &pdsret);
+    
+    if ( pdsret != PARDISO_RET_OK ) {
+        retcode = RETCODE_FAILED;
+        goto exit_cleanup;
+    }
+    
+    ndFactorNnz = get_pardiso_output(pds->iparm, PARDISO_PARAM_FACNNZ);
+    if ( ndFactorNnz > amdFactorNnz ) {
+        set_pardiso_param(pds->iparm, PARDISO_PARAM_SYMBOLIC, PARDISO_PARAM_SYMBOLIC_MMD);
+        SHOW_ORDERING("Minimum degree");
+    } else {
+        SHOW_ORDERING("Nested dissection");
+    }
+    
+exit_cleanup:
+    return retcode;
+}
+
+static int pdsScalNumeric( void *ldl, int *Ap, int *Ai, double *Ax ) {
+    
+    /* Rescue the IPM if factorization fails due to the highly indefinite system */
+    int retcode = RETCODE_OK;
+    pds_linsys *pds = (pds_linsys *) ldl;
+    pds->Ax = Ax;
+    
+    int maxfct = 1, mnum = 1, mtype = PARDISO_SYM_INDEFINITE, phase = PARDISO_PHASE_SYM_FAC;
+    int idummy = 0, msg = 0, pdsret = PARDISO_RET_OK;
+    
+    set_pardiso_param(pds->iparm, PARDISO_PARAM_SCALING, 1);
+    set_pardiso_param(pds->iparm, PARDISO_PARAM_MATCHING, 1);
+    
+    pardiso(pds->pt, &maxfct, &mnum, &mtype, &phase,
+            &pds->n, Ax, Ap, Ai, &idummy, &idummy,
             pds->iparm, &msg, NULL, NULL, &pdsret);
     
     if ( pdsret != PARDISO_RET_OK ) {
@@ -228,32 +308,6 @@ static int pdsSolve( void *ldl, double *bx ) {
     return retcode;
 }
 
-static void ldlDestroy( void **pldl ) {
-    
-    if ( !pldl ) {
-        return;
-    }
-    
-    qdldl_linsys *qdldl = (qdldl_linsys *) (*pldl);
-    
-    if ( qdldl ) {
-        
-        POTLP_FREE(qdldl->P);
-        POTLP_FREE(qdldl->iWork);
-        POTLP_FREE(qdldl->dWork);
-        POTLP_FREE(qdldl->Lnz);
-        POTLP_FREE(qdldl->Lp);
-        POTLP_FREE(qdldl->Li);
-        POTLP_FREE(qdldl->Lx);
-        
-        POTLP_ZERO(qdldl, qdldl_linsys, 1);
-    }
-    
-    POTLP_FREE(*pldl);
-    
-    return;
-}
-
 static void pdsDestroy( void **pldl ) {
     
     if ( !pldl ) {
@@ -299,10 +353,12 @@ extern pot_int potLinsysCreate( pot_linsys **ppotLinsys ) {
     
     POTLP_ZERO(potLinsys, pot_linsys, 1);
     
+    potLinsys->backUpLin = 0;
     potLinsys->LCreate = pdsCreate;
     potLinsys->LDestroy = pdsDestroy;
     potLinsys->LSFac = pdsSymbolic;
     potLinsys->LNFac = pdsNumeric;
+    potLinsys->LNFacBackup = pdsScalNumeric;
     potLinsys->LSolve = pdsSolve;
     
     *ppotLinsys = potLinsys;
@@ -344,14 +400,27 @@ exit_cleanup:
 extern pot_int potLinsysNumFactorize( pot_linsys *potLinsys, int *colMatBeg, int *colMatIdx, double *colMatElem ) {
     
     pot_int retcode = RETCODE_OK;
-    retcode = potLinsys->LNFac(potLinsys->solver, colMatBeg, colMatIdx, colMatElem);
     
-    if ( retcode != RETCODE_OK ) {
-        retcode = RETCODE_FAILED;
-        goto exit_cleanup;
+    if ( potLinsys->backUpLin ) {
+        retcode = potLinsys->LNFacBackup(potLinsys->solver, colMatBeg, colMatIdx, colMatElem);
+        if ( retcode != RETCODE_OK ) {
+            retcode = RETCODE_FAILED;
+            goto exit_cleanup;
+        }
+    } else {
+        retcode = potLinsys->LNFac(potLinsys->solver, colMatBeg, colMatIdx, colMatElem);
+        if ( retcode != RETCODE_OK ) {
+            /* Use a backup factorization */
+            retcode = potLinsys->LNFacBackup(potLinsys, colMatBeg, colMatIdx, colMatElem);
+            if ( retcode != RETCODE_OK ) {
+                retcode = RETCODE_FAILED;
+                goto exit_cleanup;
+            }
+        }
     }
     
 exit_cleanup:
+    potLinsys->backUpLin = 0;
     return retcode;
 }
 
@@ -366,6 +435,11 @@ extern pot_int potLinsysSolve( pot_linsys *potLinsys, double *rhsVec, double *so
     }
     
     return retcode;
+}
+
+extern void potLinsysSwitchToBackup( pot_linsys *potLinsys ) {
+    
+    potLinsys->backUpLin = 1;
 }
 
 extern void potLinsysClear( pot_linsys *potLinsys ) {
