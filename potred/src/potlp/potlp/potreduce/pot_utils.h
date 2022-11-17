@@ -20,5 +20,6 @@ extern void potUtilPrintIParams( double dblParams[NUM_DBL_PARAM], int intParams[
 extern void potUtilPrintDblContent( int n, double *d );
 extern void potUtilPrintIntContent( int n, int *d );
 extern void potUtilPrintDblSum( int n, double *d );
+extern int potUtilVerifyNeighbour( int n, double *d, double r );
 
 #endif /* pot_utils_h */

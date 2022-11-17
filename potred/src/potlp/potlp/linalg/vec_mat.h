@@ -15,6 +15,7 @@ extern double dot( pot_int *n, double *x, pot_int *incx, double *y, pot_int *inc
 extern void scal( pot_int *n, double *sa, double *sx, pot_int *incx );
 extern void rscl( pot_int *n, double *sa, double *sx, pot_int *incx );
 extern pot_int idamax( pot_int *n, double *x, pot_int *incx );
+extern pot_int idamin( pot_int *n, double *x, pot_int *incx );
 
 extern pot_int psyev( pot_int n, double *U, double *d, double *Y,
                      double *work, pot_int *iwork, pot_int lwork, pot_int liwork );

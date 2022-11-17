@@ -180,6 +180,7 @@ static double potReductionPotLineSearch( pot_fx *objFunc, double rhoVal, double 
     return potVal;
 }
 
+#define CONIC_STATS(ConeMin) printf("Conic Minimum %10.5e. \n", ConeMin);
 static pot_int potReductionOneStep( pot_solver *pot ) {
     
     pot_int retcode = RETCODE_OK;
@@ -366,7 +367,7 @@ exit_cleanup:
 }
 
 #if 0
-/* TODO: Implement a Hessian vector product */
+/* TODO: Implement a Hessian vector product for testing */
 static void potLPPotentialHVec( void *pot, pot_vec *vVec, pot_vec *vVecP ) {
     
     return;
@@ -467,6 +468,7 @@ extern pot_int potLPCreate( pot_solver **ppot ) {
     
     POTLP_ZERO(pot, pot_solver, 1);
     
+    pot->fVal = POTLP_INFINITY;
     pot->potVal = POTLP_INFINITY;
     pot->zVal = 0.0;
     
@@ -602,7 +604,7 @@ extern pot_int potReductionSolve( pot_solver *pot ) {
         }
         
         /* TODO: Consider using internal error instead of returning */
-//        retcode = potReductionOneStep(pot);
+        retcode = potReductionOneStep(pot);
         potObjFMonitor(pot->objFunc, &info);
         
         if ( retcode != RETCODE_OK ) {

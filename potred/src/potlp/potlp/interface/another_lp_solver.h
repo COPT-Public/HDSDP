@@ -47,8 +47,10 @@ typedef struct {
     double *cplRes;
     
     double pObjVal;
+    double pObjInternal;
     double pObjBest;
     double dObjVal;
+    double dObjInternal;
     double dObjBest;
     
     double pInfeas;

@@ -70,6 +70,7 @@ extern pot_int LpNewtonCreate( lp_newton **pnewton ) {
     
     nt->beta = 0.995;
     nt->gamma = 0.7;
+    nt->badNewton = 0;
     
     *pnewton = nt;
     
@@ -225,8 +226,8 @@ extern pot_int LpNewtonOneStep( lp_newton *newton, double *lpObj, double *lpRHS,
     /* Compute dtau to assemble directions */
     double auxTd1 = dot(&nNt, daux, &potIntConstantOne, d1, &potIntConstantOne);
     double auxTd2 = dot(&nNt, daux, &potIntConstantOne, d2, &potIntConstantOne);
-    dtau = auxTd2 + dObjVal - pObjVal - mugamma / tval;
-    dtau = - dtau / (kval / tval - auxTd1);
+    dtau = auxTd2 * tval + (dObjVal - pObjVal) * tval - mugamma;
+    dtau = - dtau / (kval - auxTd1 * tval);
     
     /* Solving for the steps */
     for ( int i = 0; i < nNt; ++i ) {
@@ -271,9 +272,15 @@ extern pot_int LpNewtonOneStep( lp_newton *newton, double *lpObj, double *lpRHS,
     
     newton->alpha = alpha;
     
-    if ( alpha < 1e-05 ) {
-        retcode = RETCODE_FAILED;
-        goto exit_cleanup;
+    if ( alpha < 1e-04 ) {
+        if ( newton->badNewton >= 2 ) {
+            retcode = RETCODE_FAILED;
+            goto exit_cleanup;
+        } else {
+            /* Try to rescue the system using scaling and matching */
+            potLinsysSwitchToBackup(newton->lpLinsys);
+            newton->badNewton += 1;
+        }
     }
     
 exit_cleanup:

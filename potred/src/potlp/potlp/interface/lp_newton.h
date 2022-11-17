@@ -34,6 +34,9 @@ typedef struct {
     double *dx;
     double *dy;
     double *ds;
+    
+    /* Signal ill-conditioning Newton*/
+    int badNewton;
 
 } lp_newton;
 

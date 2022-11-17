@@ -58,6 +58,7 @@ typedef int pot_int;
 #define INT_PARAM_CURVATURE     3
 #define INT_PARAM_CURVINTERVAL  4
 #define INT_PARAM_RSCALFREQ     5
+#define INT_PARAM_SCALSIMPLEX   6
 
 // Double Parameters
 #define DBL_PARAM_RELFEASTOL    0
