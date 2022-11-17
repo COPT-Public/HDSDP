@@ -213,6 +213,13 @@ static pot_int potReductionOneStep( pot_solver *pot ) {
     /* Build the gradient of the potential function */
     potAssembleGrad(rhoVal, fVal, gkVec, gVec, xPres);
     
+    /* Check minimum conic entry */
+    double xMinVal = potVecConeMin(xPres);
+    
+    if ( xMinVal < 1e-08 && (0) ) {
+        CONIC_STATS(xMinVal);
+    }
+    
     /* Prepare the second direction */
     if ( pot->useCurvature && pot->allowCurvature ) {
         /* Use negative curvature */
