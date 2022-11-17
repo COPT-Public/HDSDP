@@ -180,6 +180,7 @@ static double potReductionPotLineSearch( pot_fx *objFunc, double rhoVal, double 
     return potVal;
 }
 
+#define CONIC_STATS(ConeMin) printf("Conic Minimum %10.5e. \n", ConeMin);
 static pot_int potReductionOneStep( pot_solver *pot ) {
     
     pot_int retcode = RETCODE_OK;
@@ -603,7 +604,7 @@ extern pot_int potReductionSolve( pot_solver *pot ) {
         }
         
         /* TODO: Consider using internal error instead of returning */
-//        retcode = potReductionOneStep(pot);
+        retcode = potReductionOneStep(pot);
         potObjFMonitor(pot->objFunc, &info);
         
         if ( retcode != RETCODE_OK ) {

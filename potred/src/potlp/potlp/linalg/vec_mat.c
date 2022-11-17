@@ -123,6 +123,21 @@ extern pot_int idamax( pot_int *n, double *x, pot_int *incx ) {
     return idmax;
 }
 
+extern pot_int idamin( pot_int *n, double *x, pot_int *incx ) {
+    
+    pot_int idmin = 0;
+    double damin = x[0];
+    
+    for ( int i = 0; i < *n; ++i ) {
+        double ax = fabs(x[i]);
+        if ( ax < damin ) {
+            damin = ax; idmin = i;
+        }
+    }
+    
+    return idmin;
+}
+
 #ifdef UNDERBLAS
 #define eig dsyevr_
 #else

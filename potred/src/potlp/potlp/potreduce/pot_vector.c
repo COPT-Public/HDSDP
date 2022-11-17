@@ -199,6 +199,14 @@ extern void potVecSimplexProj( pot_vec *pVecX ) {
     return;
 }
 
+extern double potVecConeMin( pot_vec *pVecX ) {
+    
+    int ishift = pVecX->n - pVecX->ncone;
+    int idmin = idamin(&pVecX->ncone, pVecX->x + ishift, &potIntConstantOne);
+    
+    return pVecX->x[ishift + idmin];
+}
+
 extern double potVecLogDet( pot_vec *pVecX ) {
     
     return sumlogdet(&pVecX->ncone, pVecX->x + pVecX->n - pVecX->ncone);

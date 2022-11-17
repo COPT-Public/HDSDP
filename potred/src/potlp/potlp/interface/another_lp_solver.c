@@ -122,7 +122,11 @@ static void POT_FNAME(potLpReWeight) ( potlp_solver *potlp ) {
 static pot_int POT_FNAME(potLpNewtonStep) ( potlp_solver *potlp ) {
     
     pot_int retcode = RETCODE_OK;
-    double simp = 2 * potlp->nCol + 2;
+    
+    double simp = 1.0;
+    if ( potlp->intParams[INT_PARAM_SCALSIMPLEX] ) {
+         simp = 2 * potlp->nCol + 2;
+    }
     
     POT_CALL(LpNewtonOneStep(potlp->ipm, potlp->lpObj, potlp->lpRHS, potlp->colMatBeg,
                              potlp->colMatIdx, potlp->colMatElem, potlp->colVal, potlp->rowDual,
@@ -160,10 +164,17 @@ exit_cleanup:
 /* Constraint methods */
 static void POT_FNAME(potLpConstrMatImplPrepareX)( void *AMatData, pot_vec *xInit ) {
     
+    potlp_solver *potlp = (potlp_solver *) AMatData;
+    
+    double spxInit = 1.0 / xInit->ncone;
+    if ( potlp->intParams[INT_PARAM_SCALSIMPLEX] ) {
+        spxInit = 1.0;
+    }
+    
     potVecReset(xInit);
 
     for ( int i = xInit->n - xInit->ncone; i < xInit->n; ++i ) {
-        xInit->x[i] = 1.0;
+        xInit->x[i] = spxInit;
     }
     
     return;
@@ -379,7 +390,7 @@ static void POT_FNAME(potLpObjFImplMonitor)( void *objFData, void *info ) {
         }
         
         /* Interior point solver */
-        int useIPM = 1;
+        int useIPM = 0;
         if ( useIPM && !intInfo ) {
             int icode = POT_FNAME(potLpNewtonStep)(potlp);
             if ( icode != RETCODE_OK ) {
@@ -584,7 +595,7 @@ static void POT_FNAME(LPSolverIHeurInitialize)( potlp_solver *potlp ) {
     /* Initialize residual weight */
     potlp->pResOmega = 1.0;
     potlp->dResOmega = 1.0;
-    potlp->cplResOmega = 1.0;
+    potlp->cplResOmega = 10;
     
     return;
 }
@@ -816,7 +827,7 @@ extern pot_int POT_FNAME(LPSolverSetData)( potlp_solver *potlp, pot_int *Ap, pot
     POTLP_INIT(potlp->rowDual, double, nRow);
     
     POTLP_INIT(potlp->scalVals, double, 2 * nCol + 2 * nRow + 2);
-//    POTLP_INIT(potlp->isColBasic, int, 2 * nCol + 2 * nRow + 2);
+    POTLP_INIT(potlp->isColBasic, int, 2 * nCol + 2 * nRow + 2);
     
     if ( !potlp->colMatBeg || !potlp->colMatIdx || !potlp->colMatElem ||
          !potlp->lpObj || !potlp->lpRHS || !potlp->pdcRes ||

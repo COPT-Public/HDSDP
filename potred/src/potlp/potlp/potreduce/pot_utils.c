@@ -1,6 +1,7 @@
 #include "pot_utils.h"
 #include "pot_param.h"
 
+#include <math.h>
 #include <sys/time.h>
 
 /* TODO: Add compatibility for Windows platform */
@@ -34,6 +35,8 @@ extern void potUtilGetDefaultParams( double dblParams[NUM_DBL_PARAM], int intPar
     intParams[INT_PARAM_CURVATURE] = 20;
     /* Frequency of switching the weight of the residuals */
     intParams[INT_PARAM_RSCALFREQ] = -1;
+    /* Whether to scale simplex to start from all-one */
+    intParams[INT_PARAM_SCALSIMPLEX] = 1;
     
     /* Internal parameters */
     dblParams[DBL_IPARAM_RESTARTRATE] = 20.0;
@@ -51,6 +54,7 @@ extern void potUtilPrintParams( double dblParams[NUM_DBL_PARAM], int intParams[N
     printf("Curvature   is set to %d \n", intParams[INT_PARAM_CURVATURE]);
     printf("CInterVal   is set to %d \n", intParams[INT_PARAM_CURVINTERVAL]);
     printf("RScalFreq   is set to %d \n", intParams[INT_PARAM_RSCALFREQ]);
+    printf("ScalSpx     is set to %d \n", intParams[INT_PARAM_SCALSIMPLEX]);
     printf("RelFeasTol  is set to %3.3e \n", dblParams[DBL_PARAM_RELFEASTOL]);
     printf("RelOptTol   is set to %3.3e \n", dblParams[DBL_PARAM_RELOPTTOL]);
     printf("TimeLimit   is set to %.0fs \n", dblParams[DBL_PARAM_TIMELIMIT]);
@@ -97,4 +101,17 @@ extern void potUtilPrintDblSum( int n, double *d ) {
     
     printf("Sum = %10.6e \n", ds);
     return;
+}
+
+extern int potUtilVerifyNeighbour( int n, double *d, double r ) {
+    /* Check if log(d_i) >= r */
+    int inNeighbour = 1;
+    for ( int i = 0; i < n; ++i ) {
+        if ( log(d[i]) < r ) {
+            inNeighbour = 0;
+            break;
+        }
+    }
+    
+    return inNeighbour;
 }
