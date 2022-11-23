@@ -170,8 +170,6 @@ static void POT_FNAME(potLpConstrMatImplPrepareX)( void *AMatData, pot_vec *xIni
     if ( potlp->intParams[INT_PARAM_SCALSIMPLEX] ) {
         spxInit = 1.0;
     }
-    
-    potVecReset(xInit);
 
     for ( int i = xInit->n - xInit->ncone; i < xInit->n; ++i ) {
         xInit->x[i] = spxInit;
@@ -432,6 +430,17 @@ static void POT_FNAME(potLpObjFImplMonitor)( void *objFData, void *info ) {
     return;
 }
 
+/** @brief Implement objective scaling method
+ * In the context of LP, this method multiply  A by X and get AX
+ */
+static void POT_FNAME(potLpObjFImplScal)( void *objFData, pot_vec *xVec ) {
+    
+    potlp_solver *potlp = (potlp_solver *) objFData;
+    LPQMatProjTransform(potlp->potQMatrix, xVec->n - xVec->ncone, xVec->x);
+
+    return;
+}
+
 static void POT_FNAME(LPSolverIObjScale)( potlp_solver *potlp ) {
     
     double rhsOneNorm = 0.0;
@@ -570,7 +579,9 @@ exit_cleanup:
 static pot_int POT_FNAME(LPSolverIL2Scale)( potlp_solver *potlp ) {
     
     pot_int retcode = RETCODE_OK;
-    POT_CALL(LPQMatL2Scal(potlp->potQMatrix));
+    if ( potlp->intParams[INT_PARAM_L2SCALE] ) {
+        POT_CALL(LPQMatL2Scal(potlp->potQMatrix));
+    }
     
 exit_cleanup:
     return retcode;
@@ -817,6 +828,7 @@ extern pot_int POT_FNAME(LPSolverInit)( potlp_solver *potlp, pot_int nCol, pot_i
     potlp->potObjF->objFHess = POT_FNAME(potLpObjFImplHess);
     potlp->potObjF->objFHVec = POT_FNAME(potLpObjFImplHVec);
     potlp->potObjF->objFMonitor = POT_FNAME(potLpObjFImplMonitor);
+    potlp->potObjF->objFScal = POT_FNAME(potLpObjFImplScal);
     
     /* Line data and methods to constraint  */
     potlp->potConstrMat->AMatData = potlp;
@@ -909,6 +921,7 @@ extern pot_int POT_FNAME(LPSolverOptimize)( potlp_solver *potlp ) {
     POT_CALL(POT_FNAME(LPSolverIRuizScale(potlp)));
     POT_CALL(POT_FNAME(LPSolverIPCScale(potlp)));
     POT_CALL(POT_FNAME(LPSolverIL2Scale(potlp)));
+    
     POT_FNAME(LPSolverIHeurInitialize)(potlp);
     
     /* Solve */

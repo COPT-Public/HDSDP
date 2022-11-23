@@ -54,6 +54,7 @@ typedef struct {
     void (*objFHess)  ( void *, pot_vec *, double * ); ///< Method of computing Hessian
     void (*objFHVec)  ( void *, pot_vec *, pot_vec * ); ///< Method of Hessian-vector product
     void (*objFMonitor) ( void *, void * ); ///< Method of internal progress monitor
+    void (*objFScal) ( void *x, pot_vec * ); ///< Change objective for restart 
     
 } pot_fx;
 

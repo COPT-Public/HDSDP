@@ -211,6 +211,15 @@ extern void potVecConeScal( pot_vec *pVecX, pot_vec *pVecY ) {
     return;
 }
 
+extern void potVecConeRScal( pot_vec *pVecX, pot_vec *pVecY ) {
+    
+    assert( pVecX->ncone == pVecY->ncone );
+    pot_int cShift = pVecX->n - pVecX->ncone;
+    vvrscl(&pVecX->ncone, pVecX->x + cShift, pVecY->x + cShift);
+    
+    return;
+}
+
 extern void potVecSimplexProj( pot_vec *pVecX ) {
     
     double coneSumVal =potVecSumCone(pVecX);

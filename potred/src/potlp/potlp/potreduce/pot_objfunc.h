@@ -15,6 +15,7 @@ extern void potObjFGrad( pot_fx *potObjF, pot_vec *xVec, pot_vec *fGrad );
 extern void potObjFHess( pot_fx *potObjF, pot_vec *xVec, double *fHess );
 extern void potObjFHVec( pot_fx *potObjF, pot_vec *vVec, pot_vec *fHvVec );
 extern void potObjFMonitor( pot_fx *potObjF, void *info );
+extern void potObjFScal( pot_fx *potObjF, pot_vec *xVec );
 extern void potObjFDestroy( pot_fx **ppotObjF );
 
 #ifdef __cplusplus

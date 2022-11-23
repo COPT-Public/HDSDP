@@ -27,6 +27,7 @@ extern pot_int LPQMatPCScal( lp_qmatrix *QMat, int maxIter );
 extern pot_int LPQMatL2Scal( lp_qmatrix *QMat );
 extern void LPQMatMultiply( lp_qmatrix *QMat, int *isColBasic, double *xVal, double *qxVal );
 extern void LPQMatTransMultiply( lp_qmatrix *QMat, int *isColBasic, double *yVal, double *qtyVal );
+extern void LPQMatProjTransform( lp_qmatrix *QMat, int coneStart, double *xVal );
 extern void LPQMatScal( lp_qmatrix *QMat, double *xVal );
 extern void LPQMatScalBack( lp_qmatrix *QMat, double *xVal );
 extern void LPQMatClear( lp_qmatrix *QMat );

@@ -85,6 +85,13 @@ extern void potObjFMonitor( pot_fx *potObjF, void *info ) {
     return;
 }
 
+extern void potObjFScal( pot_fx *potObjF, pot_vec *xVec ) {
+    
+    potObjF->objFScal(potObjF->objFData, xVec);
+    
+    return;
+}
+
 extern void potObjFClear( pot_fx *potObjF ) {
     
     if ( !potObjF ) {

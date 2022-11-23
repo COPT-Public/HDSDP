@@ -112,8 +112,9 @@ static double potReductionTrustRegionSolve( double alpha[2], double projH[4], do
     
     /* Trace back by Bisection */
     double diff = lamUpBound - lamLowBound;
+    double dBound = diff * 1e-08;
     
-    while ( diff > 1e-08 ) {
+    while ( diff > dBound ) {
         
         double lamCurrent = lamLowBound + diff * 0.5;
         HplusLamG[0] = projH[0] + lamCurrent * projG[0];
@@ -159,7 +160,7 @@ static double potReductionPotLineSearch( pot_fx *objFunc, double rhoVal, double 
     
     double fVal = 0.0;
     double potVal = POTLP_INFINITY;
-    double targetPotVal = potValTmp; // ( potValTmp > 0.0 ) ? 0.9 * potValTmp : 1.05 * potValTmp;
+    double targetPotVal = ( potValTmp > 0.0 ) ? 0.9 * potValTmp : 1.05 * potValTmp;
     
     for ( ; ratio > 1.0; ) {
         potVecCopy(xVec, auxVec);
@@ -180,8 +181,8 @@ static double potReductionPotLineSearch( pot_fx *objFunc, double rhoVal, double 
     return potVal;
 }
 
-#define CONIC_STATS(ConeMin) // printf("Conic Minimum %10.5e. \n", ConeMin);
-#define POTLP_DEBUG // printf
+#define CONIC_STATS(ConeMin) printf("Conic Minimum %10.5e. \n", ConeMin);
+#define POTLP_DEBUG(x) // printf
 static pot_int potReductionOneStep( pot_solver *pot ) {
     
     pot_int retcode = RETCODE_OK;
@@ -199,6 +200,31 @@ static pot_int potReductionOneStep( pot_solver *pot ) {
     pot_vec *auxVec1 = pot->auxVec1;
     pot_vec *auxVec2 = pot->auxVec2;
     
+    /* Check minimum conic entry */
+    double xMinVal = potVecConeMin(xPres);
+    double xMaxVal = potVecConeMax(xPres);
+    
+    if ( xMinVal < 0.0 ) {
+        assert( 0 );
+    }
+    
+    if ( xMinVal / xMaxVal < 1e-05 && (0) ) {
+        CONIC_STATS(xMinVal);
+        CONIC_STATS(xMaxVal);
+    }
+    
+    /* Restart from center of simplex */
+    if ( xMinVal < 0.01 ) {
+        /* Scale previous x */
+        potVecConeRScal(xPres, xPrev);
+        /* Reset objective */
+        potObjFScal(objFunc, xPres);
+        /* Reset initial point*/
+        potConstrMatPrepareX(AMat, xPres);
+        /* Reset potential solver */
+        potReductionRestart(pot);
+    }
+    
     /* [f, g] = fpot(A, ATA, x_pres); */
     pot->fVal = potObjFVal(objFunc, xPres);
     potObjFGrad(objFunc, xPres, gVec);
@@ -209,15 +235,6 @@ static pot_int potReductionOneStep( pot_solver *pot ) {
     
     /* Build the gradient of the potential function */
     potAssembleGrad(rhoVal, fVal, gkVec, gVec, xPres);
-    
-    /* Check minimum conic entry */
-    double xMinVal = potVecConeMin(xPres);
-    double xMaxVal = potVecConeMax(xPres);
-    
-    if ( xMinVal / xMaxVal < 1e-05 && (0) ) {
-        CONIC_STATS(xMinVal);
-        CONIC_STATS(xMaxVal);
-    }
     
     /* Prepare the second direction */
     if ( pot->useCurvature && pot->allowCurvature ) {
@@ -300,16 +317,15 @@ static pot_int potReductionOneStep( pot_solver *pot ) {
         
         double alphaStep[2] = {0.0, 0.0};
         double modelVal = potReductionTrustRegionSolve(alphaStep, pot->projHessMat, pot->projgVec,
-                                                       pot->projGMat, pot->betaRadius * pot->betaRadius / 4,
-                                                       1e-08);
+                                                       pot->projGMat, pot->betaRadius * pot->betaRadius / 2.1,
+                                                       1e-12);
         
-        POTLP_DEBUG("beta = %e | a[0] = %e | a[1] = %e \n", pot->betaRadius, alphaStep[0], alphaStep[1]);
+        // POTLP_DEBUG("beta = %e | a[0] = %e | a[1] = %e \n", pot->betaRadius, alphaStep[0], alphaStep[1]);
         
         if ( modelVal > 0.0 || pot->betaRadius < 1e-05 ) {
             retcode = RETCODE_FAILED;
             goto exit_cleanup;
         }
-        
         
         /* Assemble the direction */
         potVeczAxpby(dXStep, alphaStep[0], gkVec, alphaStep[1], mkVec);
@@ -322,7 +338,7 @@ static pot_int potReductionOneStep( pot_solver *pot ) {
         
         if ( pot->curvInterval < 50 && (0) ) {
             potLineVal = potReductionPotLineSearch(objFunc, rhoVal, zVal, xPres,
-                                                   dXStep, auxVec2, potValTmp, 1e-08);
+                                                   dXStep, auxVec2, potValTmp, 1e-12);
         }
         
         potVecCopy(xPres, xPrev);
@@ -342,7 +358,7 @@ static pot_int potReductionOneStep( pot_solver *pot ) {
             // printf("\n");
         } else if ( potReduceRatio > 0.75 ) {
             pot->betaRadius *= 2.0;
-            pot->betaRadius = POTLP_MIN(pot->betaRadius, 1.0);
+            pot->betaRadius = POTLP_MIN(pot->betaRadius, 0.995);
             pot->potVal = potValTmp;
             break;
         } else {
@@ -645,7 +661,7 @@ extern pot_int potReductionSolve( pot_solver *pot ) {
     pot_int retcode = RETCODE_OK;
     
     /* Reset information */
-    pot->betaRadius = 1.0;
+    pot->betaRadius = 0.995;
     
     potVecReset(pot->xVec);
     potVecReset(pot->xVecOld);
@@ -691,7 +707,7 @@ extern pot_int potReductionSolve( pot_solver *pot ) {
 extern void potReductionRestart( pot_solver *pot ) {
     
     /* Restart the potential reduction solver */
-    pot->betaRadius = 1.0;
+    pot->betaRadius = 0.995;
     pot->potVal = POTLP_INFINITY;
     
     return;

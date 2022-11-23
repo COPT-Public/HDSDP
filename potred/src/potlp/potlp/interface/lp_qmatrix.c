@@ -199,6 +199,23 @@ extern void LPQMatTransMultiply( lp_qmatrix *QMat, int *isColBasic, double *yVal
     return;
 }
 
+/** @brief Q Matrix projective transformation
+ *
+ */
+extern void LPQMatProjTransform( lp_qmatrix *QMat, int coneStart, double *xVal ) {
+    
+    pot_int *QMatBeg = QMat->QMatBeg;
+    double  *QMatElem = QMat->QMatElem;
+    
+    for ( int i = coneStart, j; i < QMat->nColQ; ++i ) {
+        QMat->sclCol[i] = QMat->sclCol[i] * xVal[i];
+        for ( j = QMatBeg[i]; j < QMatBeg[i + 1]; ++j ) {
+            QMatElem[j] = QMatElem[j] * xVal[i];
+        }
+    }
+    return;
+}
+
 extern void LPQMatScal( lp_qmatrix *QMat, double *xVal ) {
     
     vvrscl(&QMat->nColQ, QMat->sclCol, xVal);
