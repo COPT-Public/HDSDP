@@ -139,7 +139,7 @@ static double potReductionTrustRegionSolve( double alpha[2], double projH[4], do
     }
     
     double modelVal = quadform2by2(projH, projh, alpha);
-    return modelVal > 0 ? -POTLP_INFINITY : modelVal;
+    return (modelVal > 0) ? -POTLP_INFINITY : modelVal;
 }
 
 static double potReductionComputePotValue( double rhoVal, double fVal, double zVal, pot_vec *xVec ) {
@@ -180,7 +180,8 @@ static double potReductionPotLineSearch( pot_fx *objFunc, double rhoVal, double 
     return potVal;
 }
 
-#define CONIC_STATS(ConeMin) printf("Conic Minimum %10.5e. \n", ConeMin);
+#define CONIC_STATS(ConeMin) // printf("Conic Minimum %10.5e. \n", ConeMin);
+#define POTLP_DEBUG // printf
 static pot_int potReductionOneStep( pot_solver *pot ) {
     
     pot_int retcode = RETCODE_OK;
@@ -198,10 +199,6 @@ static pot_int potReductionOneStep( pot_solver *pot ) {
     pot_vec *auxVec1 = pot->auxVec1;
     pot_vec *auxVec2 = pot->auxVec2;
     
-    /* Scale xPres */
-    potVecCopy(xPres, xNorm);
-    potVecConeNormalize(xNorm);
-    
     /* [f, g] = fpot(A, ATA, x_pres); */
     pot->fVal = potObjFVal(objFunc, xPres);
     potObjFGrad(objFunc, xPres, gVec);
@@ -215,9 +212,11 @@ static pot_int potReductionOneStep( pot_solver *pot ) {
     
     /* Check minimum conic entry */
     double xMinVal = potVecConeMin(xPres);
+    double xMaxVal = potVecConeMax(xPres);
     
-    if ( xMinVal < 1e-08 && (0) ) {
+    if ( xMinVal / xMaxVal < 1e-05 && (0) ) {
         CONIC_STATS(xMinVal);
+        CONIC_STATS(xMaxVal);
     }
     
     /* Prepare the second direction */
@@ -225,6 +224,11 @@ static pot_int potReductionOneStep( pot_solver *pot ) {
         /* Use negative curvature */
         double curvTStart = potUtilGetTimeStamp();
         pot->nCurvs += 1;
+        
+        /* Scale xPres */
+        potVecCopy(xPres, xNorm);
+        potVecConeNormalize(xNorm);
+        
         lczCode = potLanczosSolve(pot->lczTool, gVec, mkVec);
         pot->curvTime += potUtilGetTimeStamp() - curvTStart;
         potVecConeScal(xPres, mkVec);
@@ -294,15 +298,18 @@ static pot_int potReductionOneStep( pot_solver *pot ) {
     
     while (1) {
         
-        double alphaStep[2] = {0.0};
+        double alphaStep[2] = {0.0, 0.0};
         double modelVal = potReductionTrustRegionSolve(alphaStep, pot->projHessMat, pot->projgVec,
                                                        pot->projGMat, pot->betaRadius * pot->betaRadius / 4,
                                                        1e-08);
+        
+        POTLP_DEBUG("beta = %e | a[0] = %e | a[1] = %e \n", pot->betaRadius, alphaStep[0], alphaStep[1]);
         
         if ( modelVal > 0.0 || pot->betaRadius < 1e-05 ) {
             retcode = RETCODE_FAILED;
             goto exit_cleanup;
         }
+        
         
         /* Assemble the direction */
         potVeczAxpby(dXStep, alphaStep[0], gkVec, alphaStep[1], mkVec);
@@ -373,33 +380,87 @@ exit_cleanup:
     return retcode;
 }
 
-#if 0
-/* TODO: Implement a Hessian vector product for testing */
+/* TODO: Implement a standard Hessian vector product */
 static void potLPPotentialHVec( void *pot, pot_vec *vVec, pot_vec *vVecP ) {
+    
+    pot_solver *p = pot;
+    /* Assemble potential function Hessian-vector product
+     
+     v    <- Proj_e( v )
+     u[0] <- rho * (g' * v) * g
+     u[1] <- rho * f * Hess * v
+     u[2] <- [ 0      0        ] [ 0  ]
+             [ 0  f^2 * X^{-2} ] [ v2 ]
+     Pv    <- u[0] + u[1] + u[2]
+     Pv    <- Proj_e( Pv )
+     
+     */
+    
+    pot_constr_mat *AMat = p->AMat;
+    pot_fx *objFunc = p->objFunc;
+    
+    double rhoVal = p->rhoVal;
+    double fVal = p->fVal;
+    
+    double u0Coeff = rhoVal;
+    double u1Coeff = -rhoVal * fVal;
+    
+    /* Do not modify their contents */
+    pot_vec *gVec = p->gVec;
+    pot_vec *xVec = p->xVec;
+
+    /* Auxiliary */
+    pot_vec *auxVec1 = p->auxVec1;
+    pot_vec *auxVec2 = p->auxVec2;
+    
+    /* Reset data */
+    potVecReset(vVecP);
+    
+    /* a1 <- Proj_x( v ) */
+    potConstrMatProj(AMat, vVec, auxVec1);
+    
+    /* Store u[2] */
+    potVecConeAxinvsqrVpy(-fVal, xVec, auxVec1, vVecP);
+    
+    /* Add u[0] */
+    double gTv = potVecDot(gVec, auxVec1);
+    potVecAxpy(gTv * u0Coeff, gVec, vVecP);
+    
+    /* Add u[1] */
+    potObjFHVec(objFunc, auxVec1, auxVec2);
+    potVecAxpy(u1Coeff, auxVec2, vVecP);
+    
+    /* Pv <- Proj_e ( v ) */
+    potConstrMatProj(AMat, vVecP, NULL);
     
     return;
 }
-#endif
 
 static void potLPPotentialScaledHVec( void *pot, pot_vec *vVec, pot_vec *vVecP ) {
 
     pot_solver *p = pot;
-    /* Assemble potential function Hessian-vector product
+    /*
+      Assemble potential function Hessian-vector product
       
       v    <- Proj_x ( v )
       v    <- [ I  0 ]  [ x1 ]
               [ 0  X ]  [ x2 ]
-     
+
+      u[2] <- [    0    ]
+              [ - f * v2 ]
       u[0] <- (g' * v) * g
       u[1] <-  Hess * v
        
-      u[0] + u[1] <- S ( u[0] + u[1] )
+      u[0] + u[1] <- S ( rho / f * u[0] + rho * u[1] )
+                     # S is the [ I, 0; 0, X ] matrix
      
       u[2] <-  [  0 ]
                [ v2 ]
      
-      Pv  <- -rho / fVal * u[0] + rho * u[1] + f * u[2]
+      Pv  <- u[0] + u[1] + u[2]
       Pv  <- Proj_x ( v )
+     
+     The function would actually outputs - P XHX Pv for Lanczos to work
      */
     
     pot_constr_mat *AMat = p->AMat;
@@ -429,7 +490,7 @@ static void potLPPotentialScaledHVec( void *pot, pot_vec *vVec, pot_vec *vVecP )
     potVecReset(vVecP);
     potVecReset(auxVec2);
     
-    /* x <- Proj_x ( v ) */
+    /* v <- Proj_x ( v ) */
     potConstrMatScalProj(AMat, xVecNorm, vVec, NULL);
     
     /* Store u[2] */
@@ -536,6 +597,7 @@ extern pot_int potLPInit( pot_solver *pot, pot_int vDim, pot_int vConeDim ) {
     pot->rhoVal = 1.1 * (vConeDim + sqrt(vConeDim));
     POT_CALL(potLanczosInit(pot->lczTool, vDim, vConeDim));
     potLanczosInitData(pot->lczTool, pot, potLPPotentialScaledHVec);
+    // potLanczosInitData(pot->lczTool, pot, potLPPotentialHVec);
     
 #ifdef POT_DEBUG
     POTLP_INIT(pot->HessMat, double, vDim * vDim);

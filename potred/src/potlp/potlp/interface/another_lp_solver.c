@@ -182,8 +182,21 @@ static void POT_FNAME(potLpConstrMatImplPrepareX)( void *AMatData, pot_vec *xIni
 
 static void POT_FNAME(potLpConstrMatImplProject)( void *AMatData, pot_vec *xVec ) {
     
-    double eTx = potVecSumCone(xVec);
-    potVecConeAddConstant(xVec, -eTx / xVec->ncone);
+    potlp_solver *potlp = (potlp_solver *) AMatData;
+    
+    if ( potlp->isColBasic ) {
+        double eTx = 0.0;
+        for ( int i = xVec->n - xVec->ncone; i < xVec->n; ++i ) {
+            if ( potlp->isColBasic[i] ) {
+                eTx += xVec->x[i];
+            }
+        }
+        
+        
+    } else {
+        double eTx = potVecSumCone(xVec);
+        potVecConeAddConstant(xVec, -eTx / xVec->ncone);
+    }
     
     return;
 }
@@ -472,6 +485,7 @@ static pot_int POT_FNAME(LPSolverIScalInplace)( potlp_solver *potlp ) {
     
     printf("\n[Warning!] Inplace scaling is on. The original LP is destroyed. \n");
     potlp->intParams[INT_PARAM_MAXRUIZITER] = 0;
+    potlp->intParams[INT_PARAM_MAXPCITER] = 0;
     potlp->intParams[INT_PARAM_COEFSCALE] = 0;
     
     pot_int nRow = potlp->nRow;
@@ -544,6 +558,15 @@ exit_cleanup:
     return retcode;
 }
 
+static pot_int POT_FNAME(LPSolverIPCScale)( potlp_solver *potlp ) {
+    
+    pot_int retcode = RETCODE_OK;
+    POT_CALL(LPQMatPCScal(potlp->potQMatrix, potlp->intParams[INT_PARAM_MAXPCITER]));
+    
+exit_cleanup:
+    return retcode;
+}
+
 static pot_int POT_FNAME(LPSolverIL2Scale)( potlp_solver *potlp ) {
     
     pot_int retcode = RETCODE_OK;
@@ -592,10 +615,12 @@ static void POT_FNAME(LPSolverIHeurInitialize)( potlp_solver *potlp ) {
         }
     }
     
+    potlp->nColBasic = nColQ;
+    
     /* Initialize residual weight */
     potlp->pResOmega = 1.0;
     potlp->dResOmega = 1.0;
-    potlp->cplResOmega = 10;
+    potlp->cplResOmega = 1.0;
     
     return;
 }
@@ -827,7 +852,7 @@ extern pot_int POT_FNAME(LPSolverSetData)( potlp_solver *potlp, pot_int *Ap, pot
     POTLP_INIT(potlp->rowDual, double, nRow);
     
     POTLP_INIT(potlp->scalVals, double, 2 * nCol + 2 * nRow + 2);
-    POTLP_INIT(potlp->isColBasic, int, 2 * nCol + 2 * nRow + 2);
+    // POTLP_INIT(potlp->isColBasic, int, 2 * nCol + 2 * nRow + 2);
     
     if ( !potlp->colMatBeg || !potlp->colMatIdx || !potlp->colMatElem ||
          !potlp->lpObj || !potlp->lpRHS || !potlp->pdcRes ||
@@ -882,7 +907,8 @@ extern pot_int POT_FNAME(LPSolverOptimize)( potlp_solver *potlp ) {
     POT_FNAME(LPSovlerIPrintLPStats)(potlp);
     POT_CALL(POT_FNAME(LPSolverISetupQMatrix(potlp)));
     POT_CALL(POT_FNAME(LPSolverIRuizScale(potlp)));
-//    POT_CALL(POT_FNAME(LPSolverIL2Scale(potlp)));
+    POT_CALL(POT_FNAME(LPSolverIPCScale(potlp)));
+    POT_CALL(POT_FNAME(LPSolverIL2Scale(potlp)));
     POT_FNAME(LPSolverIHeurInitialize)(potlp);
     
     /* Solve */

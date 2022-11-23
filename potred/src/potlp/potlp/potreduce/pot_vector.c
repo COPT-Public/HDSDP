@@ -179,6 +179,29 @@ extern void potVecConeAxpy( double alpha, pot_vec *pVecX, pot_vec *pVecY ) {
     return;
 }
 
+/** @brief Used for setting up the the Hessian vector product
+ * alpha is expected to be a small coefficient that cancels the dimensions in x close to 0.0
+ */
+extern void potVecConeAxinvsqrVpy( double alpha, pot_vec *pVecX, pot_vec *pVecV, pot_vec *pVecY ) {
+    
+    double alphaInv = 1.0 / alpha;
+    double xinvalpha = 0.0;
+    
+    if ( alpha > 0.0 ) {
+        for ( int i = pVecX->n - pVecX->ncone; i < pVecX->n; ++i ) {
+            xinvalpha = alphaInv * pVecX->x[i];
+            pVecY->x[i] += pVecV->x[i] / (xinvalpha * xinvalpha);
+        }
+    } else {
+        for ( int i = pVecX->n - pVecX->ncone; i < pVecX->n; ++i ) {
+            xinvalpha = alphaInv * pVecX->x[i];
+            pVecY->x[i] -= pVecV->x[i] / (xinvalpha * xinvalpha);
+        }
+    }
+    
+    return;
+}
+
 extern void potVecConeScal( pot_vec *pVecX, pot_vec *pVecY ) {
     
     assert( pVecX->ncone == pVecY->ncone );
@@ -190,10 +213,7 @@ extern void potVecConeScal( pot_vec *pVecX, pot_vec *pVecY ) {
 
 extern void potVecSimplexProj( pot_vec *pVecX ) {
     
-    double coneSumVal = 0.0;
-    for ( int i = pVecX->ncone; i < pVecX->n; ++i ) {
-        coneSumVal += pVecX->x[i];
-    }
+    double coneSumVal =potVecSumCone(pVecX);
     rscl(&pVecX->n, &coneSumVal, pVecX->x, &potIntConstantOne);
     
     return;
@@ -203,6 +223,14 @@ extern double potVecConeMin( pot_vec *pVecX ) {
     
     int ishift = pVecX->n - pVecX->ncone;
     int idmin = idamin(&pVecX->ncone, pVecX->x + ishift, &potIntConstantOne);
+    
+    return pVecX->x[ishift + idmin];
+}
+
+extern double potVecConeMax( pot_vec *pVecX ) {
+    
+    int ishift = pVecX->n - pVecX->ncone;
+    int idmin = idamax(&pVecX->ncone, pVecX->x + ishift, &potIntConstantOne);
     
     return pVecX->x[ishift + idmin];
 }

@@ -80,7 +80,8 @@ extern void mexFunction( int nlhs, mxArray *plhs[], int nrhs, const mxArray *prh
     
     /* Get Parameters */
     int maxIter = 1000;
-    int maxRuizIter = 50;
+    int maxRuizIter = 10;
+    int maxPCIter = 10
     int coefScal = 0;
     int curvature = 1;
     int curvInterval = 500;
@@ -103,6 +104,9 @@ extern void mexFunction( int nlhs, mxArray *plhs[], int nrhs, const mxArray *prh
         
         param = mxGetField(params, 0, "maxRuizIter");
         if ( param ) { maxRuizIter = (int) (*mxGetPr(param)); }
+        
+        param = mxGetField(params, 0, "maxPCIter");
+        if ( param ) { maxPCIter = (int) (*mxGetPr(param)); }
         
         param = mxGetField(params, 0, "coefScal");
         if ( param ) { coefScal = (int) (*mxGetPr(param)); }
@@ -191,6 +195,7 @@ extern void mexFunction( int nlhs, mxArray *plhs[], int nrhs, const mxArray *prh
     /* Set parameters */
     potlp->intParams[INT_PARAM_MAXITER] = maxIter;
     potlp->intParams[INT_PARAM_MAXRUIZITER] = maxRuizIter;
+    potlp->intParams[INT_PARAM_PCITER] = maxPCIter;
     potlp->intParams[INT_PARAM_COEFSCALE] = coefScal;
     potlp->intParams[INT_PARAM_CURVATURE] = curvature;
     potlp->intParams[INT_PARAM_CURVINTERVAL] = curvInterval;

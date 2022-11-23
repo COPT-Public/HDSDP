@@ -77,7 +77,8 @@ typedef struct {
     double pResOmega;
     double dResOmega;
     double cplResOmega;
-    int *isColBasic;
+    int   *isColBasic;
+    int    nColBasic;
     
     lp_qmatrix *potQMatrix;
     pot_solver *potIterator;

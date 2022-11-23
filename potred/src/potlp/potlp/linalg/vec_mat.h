@@ -35,6 +35,7 @@ extern int spMatBuildQMat( int qm, int qn, int *Qp, int *Qi, double *Qx,
                            int am, int an, int *Ap, int *Ai, double *Ax,
                            double *b, double *c );
 extern int spMatRuizScal( int m, int n, int *Ap, int *Ai, double *Ax, double *D, double *E, int maxIter );
+extern int spMatPCScal( int m, int n, int *Ap, int *Ai, double *Ax, double *D, double *E, int maxIter );
 extern int spMatL2Scal( int m, int n, int *Ap, int *Ai, double *Ax, double *D, double *E );
 
 #endif /* vec_mat_h */

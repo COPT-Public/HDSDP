@@ -23,6 +23,7 @@ extern pot_int LPQMatInit( lp_qmatrix *QMat, pot_int nCol, pot_int nRow, pot_int
 extern pot_int LPQMatSetup( lp_qmatrix *QMat, pot_int nCol, pot_int nRow, pot_int *colMatBeg,
                             pot_int *colMatIdx, double *colMatElem, double *lpObj, double *lpRHS );
 extern pot_int LPQMatRuizScal( lp_qmatrix *QMat, int maxIter );
+extern pot_int LPQMatPCScal( lp_qmatrix *QMat, int maxIter );
 extern pot_int LPQMatL2Scal( lp_qmatrix *QMat );
 extern void LPQMatMultiply( lp_qmatrix *QMat, int *isColBasic, double *xVal, double *qxVal );
 extern void LPQMatTransMultiply( lp_qmatrix *QMat, int *isColBasic, double *yVal, double *qtyVal );

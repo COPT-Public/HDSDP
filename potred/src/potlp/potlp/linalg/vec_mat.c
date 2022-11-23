@@ -287,6 +287,28 @@ extern void spMatMaxColAbs( int n, int *Ap, int *Ai, double *Ax, double *col ) {
     return;
 }
 
+extern void spMatSumRowAbs( int n, int *Ap, int *Ai, double *Ax, double *row ) {
+    
+    for ( int i = 0, j; i < n; ++i ) {
+        for ( j = Ap[i]; j < Ap[i + 1]; ++j ) {
+            row[Ai[j]] += fabs(Ax[j]);
+        }
+    }
+    
+    return;
+}
+
+extern void spMatSumColAbs( int n, int *Ap, int *Ai, double *Ax, double *col ) {
+    
+    for ( int i = 0, j; i < n; ++i ) {
+        for ( j = Ap[i]; j < Ap[i + 1]; ++j ) {
+            col[i] += fabs(Ax[j]);
+        }
+    }
+    
+    return;
+}
+
 extern void spMatRowScal( int n, int *Ap, int *Ai, double *Ax, double *row ) {
     
     for ( int i = 0, j; i < n; ++i ) {
@@ -522,6 +544,63 @@ exit_cleanup:
     
     return retcode;
 }
+
+#define PC_DEBUG(info)
+extern int spMatPCScal( int m, int n, int *Ap, int *Ai, double *Ax, double *D, double *E, int maxIter ) {
+    
+    pot_int retcode = RETCODE_OK;
+    
+    pot_int nRow = m;
+    pot_int nCol = n;
+    
+    double *pcScalDiagRow = D;
+    double *pcScalDiagCol = E;
+    double *pcWorkDiagRow = NULL;
+    double *pcWorkDiagCol = NULL;
+    
+    /* Allocate workspace */
+    POTLP_INIT(pcWorkDiagRow, double, nRow);
+    POTLP_INIT(pcWorkDiagCol, double, nCol);
+
+    if ( !pcWorkDiagRow || !pcWorkDiagCol ) {
+        retcode = RETCODE_FAILED;
+        goto exit_cleanup;
+    }
+    
+    PC_DEBUG("Start PC-scaling \n");
+    
+    for ( int i = 0; i < maxIter; ++i ) {
+        
+        POTLP_ZERO(pcWorkDiagRow, double, nRow);
+        spMatSumRowAbs(nCol, Ap, Ai, Ax, pcWorkDiagRow);
+        POTLP_ZERO(pcWorkDiagCol, double, nCol);
+        spMatSumColAbs(nCol, Ap, Ai, Ax, pcWorkDiagCol);
+        
+        for ( int j = 0; j < nRow; ++j ) {
+            pcWorkDiagRow[j] = sqrtl(pcWorkDiagRow[j]);
+            pcScalDiagRow[j] = pcScalDiagRow[j] / pcWorkDiagRow[j];
+        }
+        
+        for ( int j = 0; j < nCol; ++j ) {
+            pcWorkDiagCol[j] = sqrtl(pcWorkDiagCol[j]);
+            pcScalDiagCol[j] = pcScalDiagCol[j] / pcWorkDiagCol[j];
+        }
+        
+        /* Scaling */
+        spMatRowScal(nCol, Ap, Ai, Ax, pcWorkDiagRow);
+        spMatColScal(nCol, Ap, Ai, Ax, pcWorkDiagCol);
+    }
+    
+    RUIZ_DEBUG("PC-scaling Ends %s\n", "");
+    
+exit_cleanup:
+    
+    POTLP_FREE(pcWorkDiagRow);
+    POTLP_FREE(pcWorkDiagCol);
+    
+    return retcode;
+}
+
 
 extern int spMatL2Scal( int m, int n, int *Ap, int *Ai, double *Ax, double *D, double *E ) {
     

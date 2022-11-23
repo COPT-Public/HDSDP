@@ -71,7 +71,7 @@ extern pot_int potLanczosInit( pot_lanczos *potLanczos, pot_int nCols, pot_int n
         goto exit_cleanup;
     }
     
-    potLanczos->maxIter = POTLP_MIN(nCols, 1000);
+    potLanczos->maxIter = POTLP_MIN(nCols, 100);
     
     POT_CALL(potVecCreate(&potLanczos->vVec));
     POT_CALL(potVecInit(potLanczos->vVec, nCols, nCones));
@@ -120,7 +120,7 @@ extern void potLanczosInitData( pot_lanczos *potLanczos, void *MMat, void (*lczM
     return;
 }
 
-#define LANCZOS_DEBUG(format, info)
+#define LANCZOS_DEBUG(format, info) // printf(format, info)
 
 /** @brief
  * Implement an abstract Lanczos method to find the negative curvature of the Hessian
@@ -225,7 +225,7 @@ extern pot_int potLanczosSolve( pot_lanczos *potLanczos, pot_vec *lczStart, pot_
             double resiVal = fabs( H(kPlus1, k) * YMat[kPlus1 + k] );
             LANCZOS_DEBUG("Lanczos outer resi value: %f \n", resiVal);
             
-            if ( resiVal < 1e-04 || k >= maxIter - 1 ) {
+            if ( resiVal < 0.01 || k >= maxIter - 1 ) {
                 
                 LANCZOS_DEBUG("Lanczos iteration %d \n", k);
                 

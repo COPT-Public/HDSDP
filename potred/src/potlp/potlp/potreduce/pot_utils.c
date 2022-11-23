@@ -27,8 +27,10 @@ extern void potUtilGetDefaultParams( double dblParams[NUM_DBL_PARAM], int intPar
     dblParams[DBL_PARAM_TIMELIMIT] = 600.0;
     /* Maximum iteration */
     intParams[INT_PARAM_MAXITER] = 10000;
-    /* Maximum maximum Ruiz iteration */
-    intParams[INT_PARAM_MAXRUIZITER] = 100;
+    /* Maximum Ruiz iteration */
+    intParams[INT_PARAM_MAXRUIZITER] = 10;
+    /* Maximum PC iteration */
+    intParams[INT_PARAM_MAXPCITER] = 10;
     /* Switch of coefficient scaling */
     intParams[INT_PARAM_COEFSCALE] = 0;
     /* Number of curvature usage */
@@ -50,6 +52,7 @@ extern void potUtilPrintParams( double dblParams[NUM_DBL_PARAM], int intParams[N
     printf("External parameter summary \n");
     printf("MaxIter     is set to %d \n", intParams[INT_PARAM_MAXITER]);
     printf("RuizMaxIter is set to %d \n", intParams[INT_PARAM_MAXRUIZITER]);
+    printf("PCMaxIter   is set to %d \n", intParams[INT_PARAM_MAXPCITER]);
     printf("CoeffScal   is set to %d \n", intParams[INT_PARAM_COEFSCALE]);
     printf("Curvature   is set to %d \n", intParams[INT_PARAM_CURVATURE]);
     printf("CInterVal   is set to %d \n", intParams[INT_PARAM_CURVINTERVAL]);
