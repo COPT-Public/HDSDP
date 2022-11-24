@@ -143,4 +143,3 @@ extern void vvrscl( int *n, double *s, double *x ) {
     
     return;
 }
-
