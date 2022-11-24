@@ -10,7 +10,9 @@ projidx = coneidx;
 nproj = length(projidx);
 rho = 1.1 * (ncone + sqrt(ncone));
 e = ones(nproj, 1);
-x_prev = zeros(n, 1);
+
+rng(24);
+x_prev = randn(n, 1);
 x_prev(coneidx) = 1.0;
 
 Abackup = A;
@@ -23,7 +25,11 @@ potold = rho * log(f) - sum(log(x_prev(coneidx)));
 x_pres = x_prev;
 recompute = true;
 
-beta = 1.0;
+fvals = zeros(maxiter, 1);
+potrds = zeros(maxiter, 1);
+
+betamax = 1.0;
+beta = betamax;
 
 tic;
 fprintf("%5s  %8s  %8s  %10s  %10s %10s %10s\n",...
@@ -40,12 +46,15 @@ alpha = [1, 1];
 Xbuff = zeros(64, n);
 rcount = 0;
 
+potred = -100;
+
 for i = 1:maxiter
     
     rcount = rcount + 1;
 %     Xbuff(rcount, :) = x_pres;
+    assert(min(x_pres(coneidx)) > 0);
         
-    if mod(i, 500) == 0
+    if mod(i, 500) == 0 && 0
 %         fprintf("Restart \n");
 %         keyboard;
         % Projective transformation
@@ -66,6 +75,8 @@ for i = 1:maxiter
         
         [f, g] = fpot(A, ATA, x_pres);
         
+        fvals(i) = f;
+        
         % Prepare momentum
         mk = x_pres - x_prev;
         
@@ -78,20 +89,19 @@ for i = 1:maxiter
         
         if usecurvature && allowcurv
             logstar = "*";
-            method = "lanczos";
+            method = "direct";
             [mk, ~] = findnegacurv(x_pres, m, coneidx, projidx, rho, g, f, ATA, AT, A, [], method);
             usecurvature = false;
         end % End if 
          
-%         vmin = min(x_pres(coneidx));
-%         
-%         if (vmin < 0.001 * f^0.5)
-%             [vmin, idmin] = mink(x_pres(coneidx), 5);
-%             [vmax, idmax] = maxk(x_pres(coneidx), 5);
-%             mk = zeros(n, 1);
-%             mk(idmin + m) = -1;
-%             mk(idmax + m) = 1;
-%         end % End if 
+        % vmin = min(x_pres(coneidx));
+        if potred > -0.5 && potred < -0.1
+            [vmin, idmin] = mink(x_pres(coneidx), 5);
+            [vmax, idmax] = maxk(x_pres(coneidx), 5);
+            rdir = rand(5, 1);
+%             mk(idmin + m) = rdir;
+%             mk(idmax + m) = -rdir;
+        end % End if 
         
         gk(projidx) = gk(projidx) - e * sum(gk(projidx)) / nproj;
         mk(projidx) = mk(projidx) - e * sum(mk(projidx)) / nproj;
@@ -132,13 +142,15 @@ for i = 1:maxiter
         
     end % End if
     
-    [alpha, mval] = subtrust(H, h, M, beta^2 / 4, 1e-05);
+    [alpha, mval] = subtrust(H, h, M, beta^2 / 2.25, 1e-10);
     d = alpha(1) * gk + alpha(2) * mk;
     
     xtmp = x_pres + d;
     [ftmp, ~] = fpot(A, ATA, xtmp);
     potnew = rho * log(ftmp) - sum(log(xtmp(coneidx)));
     potred = potnew - potold;
+    
+    potrds(i) = potred;
     
     ratio = potred / mval;
     
@@ -155,7 +167,7 @@ for i = 1:maxiter
         recompute = false;
         continue;
     elseif ratio > 0.75
-        beta = min(beta * 2, 0.99995);
+        beta = min(beta * 2, betamax);
     else
         
     end % End if
@@ -185,5 +197,7 @@ fprintf("%5d  %+8.2e  %+8.2e  %+8.2e  %+8.2e  %+8.2e  %+8.2e  %3.3f\n",...
 
 x_pres(coneidx) = x_pres(coneidx) .* x_cum(coneidx);
 x = x_pres;
+% semilogy(fvals, 'LineWidth', 2);
+% hold on;
 
 end % End function
