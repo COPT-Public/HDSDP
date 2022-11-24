@@ -202,27 +202,10 @@ static pot_int potReductionOneStep( pot_solver *pot ) {
     
     /* Check minimum conic entry */
     double xMinVal = potVecConeMin(xPres);
-    double xMaxVal = potVecConeMax(xPres);
+    // double xMaxVal = potVecConeMax(xPres);
     
     if ( xMinVal < 0.0 ) {
         assert( 0 );
-    }
-    
-    if ( xMinVal / xMaxVal < 1e-05 && (0) ) {
-        CONIC_STATS(xMinVal);
-        CONIC_STATS(xMaxVal);
-    }
-    
-    /* Restart from center of simplex */
-    if ( xMinVal < 0.01 ) {
-        /* Scale previous x */
-        potVecConeRScal(xPres, xPrev);
-        /* Reset objective */
-        potObjFScal(objFunc, xPres);
-        /* Reset initial point*/
-        potConstrMatPrepareX(AMat, xPres);
-        /* Reset potential solver */
-        potReductionRestart(pot);
     }
     
     /* [f, g] = fpot(A, ATA, x_pres); */
@@ -312,13 +295,13 @@ static pot_int potReductionOneStep( pot_solver *pot ) {
     /* Solve the trust region subproblem */
     double potVal = pot->potVal;
     double potReduce = 0.0;
+    double alphaStep[2] = {0.0, 0.0};
     
     while (1) {
         
-        double alphaStep[2] = {0.0, 0.0};
         double modelVal = potReductionTrustRegionSolve(alphaStep, pot->projHessMat, pot->projgVec,
-                                                       pot->projGMat, pot->betaRadius * pot->betaRadius / 2.1,
-                                                       1e-12);
+                                                       pot->projGMat, pot->betaRadius * pot->betaRadius / 3.0,
+                                                       xMinVal / 10);
         
         // POTLP_DEBUG("beta = %e | a[0] = %e | a[1] = %e \n", pot->betaRadius, alphaStep[0], alphaStep[1]);
         
@@ -366,6 +349,18 @@ static pot_int potReductionOneStep( pot_solver *pot ) {
             pot->potVal = potValTmp;
             break;
         }
+    }
+    
+    /* Restart from center of simplex */
+    if ( fabs(alphaStep[0]) + fabs(alphaStep[1]) < 1e-05 ) {
+        /* Scale previous x */
+        potVecConeRScal(xPres, xPrev);
+        /* Reset objective */
+        potObjFScal(objFunc, xPres);
+        /* Reset initial point*/
+        potConstrMatPrepareX(AMat, xPres);
+        /* Reset potential solver */
+        potReductionRestart(pot);
     }
     
     double potReduceEps = -1e-03; // * pot->n;

@@ -464,13 +464,16 @@ static void POT_FNAME(LPSolverIObjScale)( potlp_solver *potlp ) {
     
     if ( potlp->intParams[INT_PARAM_COEFSCALE] ) {
         
-        int iMaxAbsb = idamax(&potlp->nRow, lpRHS, &potIntConstantOne);
-        int iMaxAbsc = idamax(&potlp->nCol, lpObj, &potIntConstantOne);
-        double maxAbsb = fabs(lpRHS[iMaxAbsb]);
-        double maxAbsc = fabs(lpObj[iMaxAbsc]);
-                
-        potlp->objScaler = maxAbsc + 1.0;
-        potlp->rhsScaler = maxAbsb + 1.0;
+//        int iMaxAbsb = idamax(&potlp->nRow, lpRHS, &potIntConstantOne);
+//        int iMaxAbsc = idamax(&potlp->nCol, lpObj, &potIntConstantOne);
+//        double maxAbsb = fabs(lpRHS[iMaxAbsb]);
+//        double maxAbsc = fabs(lpObj[iMaxAbsc]);
+//
+//        potlp->objScaler = maxAbsc + 1.0;
+//        potlp->rhsScaler = maxAbsb + 1.0;
+        
+        potlp->objScaler = objOneNorm + 1.0;
+        potlp->rhsScaler = rhsOneNorm + 1.0;
         
         potlp->objScaler = POTLP_MIN(potlp->objScaler, 1e+06);
         potlp->rhsScaler = POTLP_MIN(potlp->rhsScaler, 1e+06);
