@@ -45,10 +45,10 @@ typedef struct {
     void   *coneData;
     
     /* Conic data interface */
-    hdsdp_retcode (*coneInit)        ( void *, cone_type );
+    hdsdp_retcode (*coneInitData)    ( void ** );
     hdsdp_retcode (*coneSetData)     ( void *, void * );
     hdsdp_retcode (*coneProcData)    ( void * );
-    void          (*coneDestroyData) ( void * );
+    void          (*coneDestroyData) ( void ** );
     
     /* Conic algorithm interface */
     void   (*coneSetStart)    ( void *, double );
@@ -56,19 +56,16 @@ typedef struct {
     double (*coneRatioTest)   ( void *, double, double * );
     
     /* Schur complement and algorithm iterates */
-    void   (*coneGetSymNnz)   ( void * );
-    void   (*coneAddSymNz)    ( void *, int * );
-    void   (*coneBuildM)      ( void *, void * );
-    void   (*coneBuildAs)     ( void *, double * );
-    void   (*coneBuildAscs)   ( void *, double * );
-    void   (*coneBuildCs2c)   ( void *, double * );
+    int64_t (*coneGetSymNnz)   ( void * );
+    void    (*coneAddSymNz)    ( void *, int * );
+    void    (*coneBuildSchur)  ( void *, void * );
     
     /* Barrier, projection and recovery */
-    double (*coneGetBarrier)  ( void *, double, double * );
-    int    (*conePFeasCheck)  ( void *, double, double * );
-    void   (*conePRecover )   ( void *, double * );
+    double  (*coneGetBarrier)  ( void *, double, double * );
+    int     (*conePFeasCheck)  ( void *, double, double * );
+    void    (*conePRecover )   ( void *, double * );
     
-    void   (*coneScal)        ( void *, double );
+    void    (*coneScal)        ( void *, double );
     
 } hdsdp_cone;
 

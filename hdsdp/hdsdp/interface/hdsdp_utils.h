@@ -26,4 +26,17 @@
 #define HDSDP_MAX(x, y) (x) >= (y) ? (x) : (y);
 #define HDSDP_MIN(x, y) (x) <= (y) ? (x) : (y);
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
+extern double HUtilGetTimeStamp( void );
+extern void HUtilPrintDblContent( int n, double *d );
+extern void HUtilPrintIntContent( int n, int *d );
+extern void HUtilPrintDblSum( int n, double *d );
+
+#ifdef __cplusplus
+}
+#endif
+
 #endif /* hdsdp_utils_h */

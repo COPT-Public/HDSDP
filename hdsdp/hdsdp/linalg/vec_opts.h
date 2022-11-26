@@ -1,6 +1,9 @@
 #ifndef vec_opts_h
 #define vec_opts_h
 
+#ifdef __cplusplus
+extern "C" {
+#endif
 
 extern double nrm2( int *n, double *x, int *incx );
 extern void axpy( int *n, double *a, double *x, int *incx, double *y, int *incy );
@@ -11,5 +14,9 @@ extern int idamax( int *n, double *x, int *incx );
 extern double sumlogdet( int *n, double *x );
 extern void vvscl( int *n, double *s, double *x );
 extern void vvrscl( int *n, double *s, double *x );
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif /* vec_opts_h */
