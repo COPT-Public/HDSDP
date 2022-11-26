@@ -1,5 +1,7 @@
 #include "vec_opts.h"
+
 #include <math.h>
+#include <assert.h>
 
 /* Blas functions */
 extern double dnrm2( int *n, double *x, int *incx );
@@ -142,4 +144,17 @@ extern void vvrscl( int *n, double *s, double *x ) {
     }
     
     return;
+}
+
+extern double sum1( int *n, double *x, int *incx ) {
+
+    assert( *incx == 1 );
+    
+    double nrm = 0.0;
+    
+    for ( int i = 0; i < *n; ++i ) {
+        nrm += fabs(x[i]);
+    }
+    
+    return nrm;
 }

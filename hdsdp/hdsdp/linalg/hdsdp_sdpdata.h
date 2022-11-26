@@ -57,6 +57,7 @@ typedef struct {
 typedef struct {
     
     int     nSDPCol;
+    double  spR1FactorSign;
     int     nSpR1FactorElem;
     int    *spR1MatIdx;
     double *spR1MatElem;
@@ -67,9 +68,29 @@ typedef struct {
 typedef struct {
     
     int     nSDPCol;
+    double  r1FactorSign;
     double *r1MatFactor;
     
 } sdpRankOneDenseData;
 
+extern void dataMatScalSparse( void *A, double alpha );
+extern void dataMatScalDense( void *A, double alpha );
+extern void dataMatScalRankOneSparse( void *A, double alpha );
+extern void dataMatScalRankOneDense( void *A, double alpha );
+
+extern double dataMatNormSparse( void *A, int type );
+extern double dataMatNormDense( void *A, int type );
+extern double dataMatNormRankOneSparse( void *A, int type );
+extern double dataMatNormRankOneDense( void *A, int type );
+
+extern int dataMatGetNnzSparse( void *A );
+extern int dataMatGetNnzDense( void *A );
+extern int dataMatGetNnzRankOneSparse( void *A );
+extern int dataMatGetNnzRankOneDense( void *A );
+
+extern void dataMatDumpSparse( void *A, double *v );
+extern void dataMatDumpDense( void *A, double *v );
+extern void dataMatDumpRankOneSparse( void *A, double *v );
+extern void dataMatDumpRankOneDense( void *A, double *v );
 
 #endif /* hdsdp_sdpdata_h */
