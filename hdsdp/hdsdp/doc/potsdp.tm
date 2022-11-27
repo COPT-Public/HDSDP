@@ -206,12 +206,49 @@
 
   <section|Algorithm and conic interface>
 
-  To add a cone to the solver, it should support the following operations
+  A general conic interface for HDSDP contains space for
+  <math|<around*|(|x,s,\<Delta\>s|)>>
 
   <\itemize>
-    <item>
+    <item>Initialize
 
-    <item>
+    We generally initialize from a well centered dual solution
+
+    <item>Maintenance
+
+    Conic interface should keep track of the dual slacks during the dual
+    algorithm
+
+    <item>Assembly
+
+    Adding <math|<fa>s<rsup|-1>c s<rsup|-1>,<around*|\<langle\>|c,s<rsup|-1>c
+    s<rsup|-1>|\<rangle\>>,<fa>s<rsup|-2><fa><rsup|\<ast\>>> to the final
+    schur complement
+
+    both numerically and symbolically
+
+    <item>Ratio test
+
+    Given <math|\<Delta\>y,\<Delta\>\<tau\>>, the conic interface should be
+    able to compute <math|max<around*|{|\<alpha\>:s+\<alpha\>\<Delta\>s\<geq\>0|}>>
+
+    <item>Conic barrier
+
+    The conic interface should be able to output the barrier value of the
+    current iterate
+
+    <item>Conic projection
+
+    Determine if a primal solution is recoverable and the corresponding
+    pseudo-primal step
+
+    <item>Primal variable recovery
+
+    Explicitly compute the primal variable
+
+    <item>Cone de-homogenize
+
+    Restore conic variable in the original scale with <math|\<tau\>>.
   </itemize>
 
   <section|SDP data structures>
@@ -551,7 +588,7 @@
     <associate|auto-15|<tuple|3.3|5>>
     <associate|auto-16|<tuple|3.4|5>>
     <associate|auto-17|<tuple|4|?>>
-    <associate|auto-18|<tuple|5|?>>
+    <associate|auto-18|<tuple|4|?>>
     <associate|auto-2|<tuple|1.1|1>>
     <associate|auto-3|<tuple|1.2|1>>
     <associate|auto-4|<tuple|1.3|2>>
