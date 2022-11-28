@@ -12,7 +12,7 @@
 
 /** @brief A = alpha \* A for sparse matrix A
  *  @param[in] A sdpSparseData pointer
- *  @param[in] alpha scale parameter
+ *  @param[in] alpha Scale parameter
  */
 extern void dataMatScalSparseImpl( void *A, double alpha ) {
     
@@ -26,7 +26,7 @@ extern void dataMatScalSparseImpl( void *A, double alpha ) {
 
 /** @brief A = alpha \* A for dense matrix A
  *  @param[in] A sdpDenseData pointer
- *  @param[in] alpha scale parameter
+ *  @param[in] alpha Scale parameter
  */
 extern void dataMatScalDenseImpl( void *A, double alpha ) {
     
@@ -41,56 +41,40 @@ extern void dataMatScalDenseImpl( void *A, double alpha ) {
 
 /** @brief A = alpha \* A for rank one sparse matrix A
  *  @param[in] A sdpRankOneSparseData pointer
- *  @param[in] alpha scale parameter
+ *  @param[in] alpha Scale parameter
  */
 extern void dataMatScalRankOneSparseImpl( void *A, double alpha ) {
     
-    /* avoid alpha = 0.0 case */
-    assert( fabs(alpha) >= 1e-8 );
+    /* Avoid alpha = 0.0 case */
+    assert( fabs(alpha) >= 1e-08 );
     
     sdpRankOneSparseData *spR1A = (sdpRankOneSparseData *) A;
-    int incx = 1;
     
-    /* check whether sign changes */
-    if ( alpha < 0.0 ) {
-        spR1A->spR1FactorSign = -spR1A->spR1FactorSign;
-        alpha = -alpha;
-    }
-    alpha = sqrt(alpha);
-    
-    scal(&spR1A->nSpR1FactorElem, &alpha, spR1A->spR1MatElem, &incx);
+    spR1A->spR1FactorSign = spR1A->spR1FactorSign * alpha;
     
     return;
 }
 
 /** @brief A = alpha \* A for rank one dense matrix A
  *  @param[in] A sdpRankOneDenseData pointer
- *  @param[in] alpha scale parameter
+ *  @param[in] alpha Scale parameter
  */
 extern void dataMatScalRankOneDenseImpl( void *A, double alpha ) {
     
-    /* avoid alpha = 0.0 case */
-    assert( fabs(alpha) >= 1e-8 );
+    /* Avoid alpha = 0.0 case */
+    assert( fabs(alpha) >= 1e-08 );
     
     sdpRankOneDenseData *dsR1A = (sdpRankOneDenseData *) A;
-    int incx = 1;
     
-    /* check whether sign changes */
-    if ( alpha < 0.0 ) {
-        dsR1A->r1FactorSign = -dsR1A->r1FactorSign;
-        alpha = -alpha;
-    }
-    alpha = sqrt(alpha);
-    
-    scal(&dsR1A->nSDPCol, &alpha, dsR1A->r1MatFactor, &incx);
+    dsR1A->r1FactorSign = dsR1A->r1FactorSign * alpha;
     
     return;
 }
 
 /** @brief Calculate norm of sparse matrix A
  *  @param[in] A sdpSparseData pointer
- *  @param[in] type type of norm
- *  @return norm of A
+ *  @param[in] type Type of norm
+ *  @return Norm of A
  */
 extern double dataMatNormSparseImpl( void *A, int type ) {
     
@@ -117,8 +101,8 @@ extern double dataMatNormSparseImpl( void *A, int type ) {
 
 /** @brief Calculate norm of dense matrix A
  *  @param[in] A sdpDenseData pointer
- *  @param[in] type type of norm
- *  @return norm of A
+ *  @param[in] type Type of norm
+ *  @return Norm of A
  */
 extern double dataMatNormDenseImpl( void *A, int type ) {
     
@@ -126,8 +110,8 @@ extern double dataMatNormDenseImpl( void *A, int type ) {
     double nrmA = 0.0;
     int nCol = dsA->nSDPCol;
     int incx = 1;
-    int colLen; ///< exclude diagonal
-    double colNrm; ///< exclude diagonal
+    int colLen; ///< Exclude diagonal
+    double colNrm; ///< Exclude diagonal
     double *p = dsA->dsMatElem;
     
     if ( type == F_NORM ) {
@@ -153,8 +137,8 @@ extern double dataMatNormDenseImpl( void *A, int type ) {
 
 /** @brief Calculate norm of rank one sparse matrix A
  *  @param[in] A sdpRankOneSparseData pointer
- *  @param[in] type type of norm
- *  @return norm of A
+ *  @param[in] type Type of norm
+ *  @return Norm of A
  */
 extern double dataMatNormRankOneSparseImpl( void *A, int type ) {
     
@@ -164,10 +148,10 @@ extern double dataMatNormRankOneSparseImpl( void *A, int type ) {
     
     if ( type == F_NORM ) {
         nrmA = nrm2(&spR1A->nSpR1FactorElem, spR1A->spR1MatElem, &incx);
-        nrmA = nrmA * nrmA;
+        nrmA = nrmA * nrmA * fabs(spR1A->spR1FactorSign);
     } else if ( type == ABS_NORM ) {
         nrmA = nrm1(&spR1A->nSpR1FactorElem, spR1A->spR1MatElem, &incx);
-        nrmA = nrmA * nrmA;
+        nrmA = nrmA * nrmA * fabs(spR1A->spR1FactorSign);
     }
     
     return nrmA;
@@ -175,8 +159,8 @@ extern double dataMatNormRankOneSparseImpl( void *A, int type ) {
 
 /** @brief Calculate norm of rank one densematrix A
  *  @param[in] A sdpRankOneDenseData pointer
- *  @param[in] type type of norm
- *  @return norm of A
+ *  @param[in] type Type of norm
+ *  @return Norm of A
  */
 extern double dataMatNormRankOneDenseImpl( void *A, int type ) {
     
@@ -186,10 +170,10 @@ extern double dataMatNormRankOneDenseImpl( void *A, int type ) {
     
     if ( type == F_NORM ) {
         nrmA = nrm2(&dsR1A->nSDPCol, dsR1A->r1MatFactor, &incx);
-        nrmA = nrmA * nrmA;
+        nrmA = nrmA * nrmA * fabs(dsR1A->r1FactorSign);
     } else if ( type == ABS_NORM ) {
         nrmA = nrm1(&dsR1A->nSDPCol, dsR1A->r1MatFactor, &incx);
-        nrmA = nrmA * nrmA;
+        nrmA = nrmA * nrmA * fabs(dsR1A->r1FactorSign);
     }
     
     return nrmA;
@@ -197,7 +181,7 @@ extern double dataMatNormRankOneDenseImpl( void *A, int type ) {
 
 /** @brief Calculate number of nonzero elements in sparse matrix A
  *  @param[in] A sdpSparseData pointer
- *  @return number of nonzero elements in A
+ *  @return Number of nonzero elements in A
  */
 extern int dataMatGetNnzSparseImpl( void *A ) {
     
@@ -208,7 +192,7 @@ extern int dataMatGetNnzSparseImpl( void *A ) {
 
 /** @brief Calculate number of nonzero elements in dense matrix A
  *  @param[in] A sdpDenseData pointer
- *  @return number of nonzero elements in A
+ *  @return Number of nonzero elements in A
  */
 extern int dataMatGetNnzDenseImpl( void *A ) {
     
@@ -219,7 +203,7 @@ extern int dataMatGetNnzDenseImpl( void *A ) {
 
 /** @brief Calculate number of nonzero elements in rank one sparse matrix A
  *  @param[in] A sdpRankOneSparseData pointer
- *  @return number of nonzero elements in A
+ *  @return Number of nonzero elements in A
  */
 extern int dataMatGetNnzRankOneSparseImpl( void *A ) {
     
@@ -230,7 +214,7 @@ extern int dataMatGetNnzRankOneSparseImpl( void *A ) {
 
 /** @brief Calculate number of nonzero elements in rank one dense matrix A
  *  @param[in] A sdpRankOneDenseData pointer
- *  @return number of nonzero elements in A
+ *  @return Number of nonzero elements in A
  */
 extern int dataMatGetNnzRankOneDenseImpl( void *A ) {
     
@@ -241,7 +225,7 @@ extern int dataMatGetNnzRankOneDenseImpl( void *A ) {
 
 /** @brief Construct full matrix from sparse matrix A
  *  @param[in] A sdpSparseData pointer
- *  @param[out] v store full matrix
+ *  @param[out] v Store full matrix
  */
 extern void dataMatDumpSparseImpl( void *A, double *v ) {
     
@@ -251,7 +235,9 @@ extern void dataMatDumpSparseImpl( void *A, double *v ) {
     
     for ( int i = 0; i < spA->nTriMatElem; ++i ) {
         v[spA->triMatCol[i] * nCol + spA->triMatRow[i]] = spA->triMatElem[i];
-        v[spA->triMatRow[i] * nCol + spA->triMatCol[i]] = spA->triMatElem[i];
+        if ( spA->triMatCol[i] != spA->triMatRow[i] ) {
+            v[spA->triMatRow[i] * nCol + spA->triMatCol[i]] = spA->triMatElem[i];
+        }
     }
     
     return;
@@ -259,16 +245,18 @@ extern void dataMatDumpSparseImpl( void *A, double *v ) {
 
 /** @brief Construct full matrix from dense matrix A
  *  @param[in] A sdpDenseData pointer
- *  @param[out] v store full matrix
+ *  @param[out] v Store full matrix
  */
 extern void dataMatDumpDenseImpl( void *A, double *v ) {
     
     sdpDenseData *dsA = (sdpDenseData *) A;
     int nCol = dsA->nSDPCol;
-    int dsIdx; // index for (col, row) = (i, j) in dsMatElem
+    int dsIdx; ///< Index for (col, row) = (i, j) in dsMatElem
     
-    for ( int i = 0, j; i < nCol; ++i) { // colIdx
-        for ( j = i; j < nCol; ++j ) { // rowIdx
+    for ( int i = 0, j; i < nCol; ++i) { // Column index
+        dsIdx = i * (nCol * 2 - i + 1) / 2;
+        v[i * nCol + i] = dsA->dsMatElem[dsIdx];
+        for ( j = i + 1; j < nCol; ++j ) { // Row index
             dsIdx = i * (nCol * 2 - i - 1) / 2 + j;
             v[i * nCol + j] = dsA->dsMatElem[dsIdx];
             v[j * nCol + i] = v[i * nCol + j];
@@ -280,7 +268,7 @@ extern void dataMatDumpDenseImpl( void *A, double *v ) {
 
 /** @brief Construct full matrix from rank one sparse matrix A
  *  @param[in] A sdpRankOneSparseData pointer
- *  @param[out] v store full matrix
+ *  @param[out] v Store full matrix
  */
 extern void dataMatDumpRankOneSparseImpl( void *A, double *v ) {
     
@@ -289,14 +277,14 @@ extern void dataMatDumpRankOneSparseImpl( void *A, double *v ) {
     int nCol = spR1A->nSDPCol;
     int *spR1MatIdx = spR1A->spR1MatIdx;
     
-    for ( int i = 0, j; i < spR1A->nSpR1FactorElem; ++i ) { // colIdx
-        for ( j = i; j < spR1A->nSpR1FactorElem; ++j ) { // rowIdx
+    for ( int i = 0, j; i < spR1A->nSpR1FactorElem; ++i ) { // Column index
+        v[spR1MatIdx[i] * nCol + spR1MatIdx[i]] = \
+        spR1A->spR1FactorSign * spR1A->spR1MatElem[i] * spR1A->spR1MatElem[i];
+        for ( j = i + 1; j < spR1A->nSpR1FactorElem; ++j ) { // Row index
             v[spR1MatIdx[i] * nCol + spR1MatIdx[j]] = \
             spR1A->spR1FactorSign * spR1A->spR1MatElem[i] * spR1A->spR1MatElem[j];
-            if ( j > i ) {
-                v[spR1MatIdx[j] * nCol + spR1MatIdx[i]] = \
-                v[spR1MatIdx[i] * nCol + spR1MatIdx[j]];
-            }
+            v[spR1MatIdx[j] * nCol + spR1MatIdx[i]] = \
+            v[spR1MatIdx[i] * nCol + spR1MatIdx[j]];
         }
     }
     
@@ -305,19 +293,19 @@ extern void dataMatDumpRankOneSparseImpl( void *A, double *v ) {
 
 /** @brief Construct full matrix from rank one dense matrix A
  *  @param[in] A sdpRankOneDenseData pointer
- *  @param[out] v store full matrix
+ *  @param[out] v Store full matrix
  */
 extern void dataMatDumpRankOneDenseImpl( void *A, double *v ) {
     
     sdpRankOneDenseData *dsR1A = (sdpRankOneDenseData *) A;
     
-    for ( int i = 0, j; i < dsR1A->nSDPCol; ++i ) { // colIdx
-        for ( j = i; j < dsR1A->nSDPCol; ++j ) { // rowIdx
+    for ( int i = 0, j; i < dsR1A->nSDPCol; ++i ) { // Column index
+        v[i * dsR1A->nSDPCol + i] = \
+        dsR1A->r1FactorSign * dsR1A->r1MatFactor[i] * dsR1A->r1MatFactor[i];
+        for ( j = i + 1; j < dsR1A->nSDPCol; ++j ) { // Row index
             v[i * dsR1A->nSDPCol + j] = \
             dsR1A->r1FactorSign * dsR1A->r1MatFactor[i] * dsR1A->r1MatFactor[j];
-            if ( j > i ) {
-                v[j * dsR1A->nSDPCol + i] = v[i * dsR1A->nSDPCol + j];
-            }
+            v[j * dsR1A->nSDPCol + i] = v[i * dsR1A->nSDPCol + j];
         }
     }
     

@@ -6,6 +6,9 @@
 
 #include "hdsdp.h"
 
+#define F_NORM 2
+#define ABS_NORM 1
+
 /** @struct eigFactor
  *  @brief The eigen decomposition structure
  */
@@ -57,7 +60,7 @@ typedef struct {
 typedef struct {
     
     int     nSDPCol;
-    double  spR1FactorSign;
+    double  spR1FactorSign; ///< Include scale, may not equal to +1.0 or -1.0
     int     nSpR1FactorElem;
     int    *spR1MatIdx;
     double *spR1MatElem;
@@ -68,29 +71,29 @@ typedef struct {
 typedef struct {
     
     int     nSDPCol;
-    double  r1FactorSign;
+    double  r1FactorSign; ///< Include scale, may not equal to +1.0 or -1.0
     double *r1MatFactor;
     
 } sdpRankOneDenseData;
 
-extern void dataMatScalSparse( void *A, double alpha );
-extern void dataMatScalDense( void *A, double alpha );
-extern void dataMatScalRankOneSparse( void *A, double alpha );
-extern void dataMatScalRankOneDense( void *A, double alpha );
+extern void dataMatScalSparseImpl( void *A, double alpha );
+extern void dataMatScalDenseImpl( void *A, double alpha );
+extern void dataMatScalRankOneSparseImpl( void *A, double alpha );
+extern void dataMatScalRankOneDenseImpl( void *A, double alpha );
 
-extern double dataMatNormSparse( void *A, int type );
-extern double dataMatNormDense( void *A, int type );
-extern double dataMatNormRankOneSparse( void *A, int type );
-extern double dataMatNormRankOneDense( void *A, int type );
+extern double dataMatNormSparseImpl( void *A, int type );
+extern double dataMatNormDenseImpl( void *A, int type );
+extern double dataMatNormRankOneSparseImpl( void *A, int type );
+extern double dataMatNormRankOneDenseImpl( void *A, int type );
 
-extern int dataMatGetNnzSparse( void *A );
-extern int dataMatGetNnzDense( void *A );
-extern int dataMatGetNnzRankOneSparse( void *A );
-extern int dataMatGetNnzRankOneDense( void *A );
+extern int dataMatGetNnzSparseImpl( void *A );
+extern int dataMatGetNnzDenseImpl( void *A );
+extern int dataMatGetNnzRankOneSparseImpl( void *A );
+extern int dataMatGetNnzRankOneDenseImpl( void *A );
 
-extern void dataMatDumpSparse( void *A, double *v );
-extern void dataMatDumpDense( void *A, double *v );
-extern void dataMatDumpRankOneSparse( void *A, double *v );
-extern void dataMatDumpRankOneDense( void *A, double *v );
+extern void dataMatDumpSparseImpl( void *A, double *v );
+extern void dataMatDumpDenseImpl( void *A, double *v );
+extern void dataMatDumpRankOneSparseImpl( void *A, double *v );
+extern void dataMatDumpRankOneDenseImpl( void *A, double *v );
 
 #endif /* hdsdp_sdpdata_h */
