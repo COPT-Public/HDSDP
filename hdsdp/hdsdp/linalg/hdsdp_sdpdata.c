@@ -10,6 +10,11 @@
 #include <math.h>
 #include <assert.h>
 
+extern void dataMatScalZeroImpl( void *A, double alpha ) {
+    
+    return;
+}
+
 /** @brief A = alpha \* A for sparse matrix A
  *  @param[in] A sdpSparseData pointer
  *  @param[in] alpha Scale parameter
@@ -71,6 +76,11 @@ extern void dataMatScalRankOneDenseImpl( void *A, double alpha ) {
     return;
 }
 
+extern double dataMatNormZeroImpl( void *A, int type ) {
+    
+    return 0.0;
+}
+
 /** @brief Calculate norm of sparse matrix A
  *  @param[in] A sdpSparseData pointer
  *  @param[in] type Type of norm
@@ -81,7 +91,7 @@ extern double dataMatNormSparseImpl( void *A, int type ) {
     sdpSparseData *spA = (sdpSparseData *) A;
     double nrmA = 0.0;
     
-    if ( type == F_NORM ) {
+    if ( type == FRO_NORM ) {
         for ( int i = 0; i < spA->nTriMatElem; ++i ) {
             nrmA += ( spA->triMatCol[i] == spA->triMatRow[i] ) ?
                       spA->triMatElem[i] * spA->triMatElem[i] :
@@ -114,7 +124,7 @@ extern double dataMatNormDenseImpl( void *A, int type ) {
     double colNrm; ///< Exclude diagonal
     double *p = dsA->dsMatElem;
     
-    if ( type == F_NORM ) {
+    if ( type == FRO_NORM ) {
         for ( int i = 0; i < nCol; ++i ) {
             nrmA += (*p) * (*p);
             colLen = nCol - i - 1;
@@ -146,7 +156,7 @@ extern double dataMatNormRankOneSparseImpl( void *A, int type ) {
     double nrmA = 0.0;
     int incx = 1;
     
-    if ( type == F_NORM ) {
+    if ( type == FRO_NORM ) {
         nrmA = nrm2(&spR1A->nSpR1FactorElem, spR1A->spR1MatElem, &incx);
         nrmA = nrmA * nrmA * fabs(spR1A->spR1FactorSign);
     } else if ( type == ABS_NORM ) {
@@ -168,7 +178,7 @@ extern double dataMatNormRankOneDenseImpl( void *A, int type ) {
     double nrmA = 0.0;
     int incx = 1;
     
-    if ( type == F_NORM ) {
+    if ( type == FRO_NORM ) {
         nrmA = nrm2(&dsR1A->nSDPCol, dsR1A->r1MatFactor, &incx);
         nrmA = nrmA * nrmA * fabs(dsR1A->r1FactorSign);
     } else if ( type == ABS_NORM ) {
@@ -177,6 +187,11 @@ extern double dataMatNormRankOneDenseImpl( void *A, int type ) {
     }
     
     return nrmA;
+}
+
+extern int dataMatGetNnzZeroImpl( void *A ) {
+    
+    return 0;
 }
 
 /** @brief Calculate number of nonzero elements in sparse matrix A
@@ -221,6 +236,14 @@ extern int dataMatGetNnzRankOneDenseImpl( void *A ) {
     sdpRankOneDenseData *dsR1A = (sdpRankOneDenseData *) A;
     
     return PACK_NNZ(dsR1A->nSDPCol);
+}
+
+extern void dataMatDumpZeroImpl( void *A, double *v ) {
+    
+    sdpZeroData *zeroA = (sdpZeroData *) A;
+    HDSDP_ZERO(v, double, zeroA->nSDPCol * zeroA->nSDPCol);
+    
+    return;
 }
 
 /** @brief Construct full matrix from sparse matrix A
