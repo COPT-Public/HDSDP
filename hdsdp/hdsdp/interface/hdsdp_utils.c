@@ -12,7 +12,7 @@ static double my_clock( void ) {
     
     struct timeval t;
     gettimeofday(&t, NULL);
-    return (1.0e-6 * t.tv_usec + t.tv_sec);
+    return (1e-06 * t.tv_usec + t.tv_sec);
 }
 
 extern double HUtilGetTimeStamp( void ) {

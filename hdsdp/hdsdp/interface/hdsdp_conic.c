@@ -85,7 +85,7 @@ extern hdsdp_retcode HConeInit( hdsdp_cone *HCone, cone_type cone ) {
         goto exit_cleanup;
     }
     
-    switch (cone) {
+    switch ( cone ) {
         case HDSDP_CONIC_LP:
             HConeISetLPMethods(HCone);
             break;
