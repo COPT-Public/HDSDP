@@ -28,4 +28,17 @@
 
 #define PACK_NNZ(n) ((n) * ((n) + 1) / 2)
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
+extern double HUtilGetTimeStamp( void );
+extern void HUtilPrintDblContent( int n, double *d );
+extern void HUtilPrintIntContent( int n, int *d );
+extern void HUtilPrintDblSum( int n, double *d );
+
+#ifdef __cplusplus
+}
+#endif
+
 #endif /* hdsdp_utils_h */
