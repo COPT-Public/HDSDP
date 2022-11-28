@@ -14,9 +14,9 @@
  *  @param[in] A sdpSparseData pointer
  *  @param[in] alpha scale parameter
  */
-extern void dataMatScalSparse( void *A, double alpha ) {
+extern void dataMatScalSparseImpl( void *A, double alpha ) {
     
-    sdpSparseData *spA = (sdpSparseData *)A;
+    sdpSparseData *spA = (sdpSparseData *) A;
     int incx = 1;
     
     scal(&spA->nTriMatElem, &alpha, spA->triMatElem, &incx);
@@ -28,12 +28,13 @@ extern void dataMatScalSparse( void *A, double alpha ) {
  *  @param[in] A sdpDenseData pointer
  *  @param[in] alpha scale parameter
  */
-extern void dataMatScalDense( void *A, double alpha ) {
+extern void dataMatScalDenseImpl( void *A, double alpha ) {
     
-    sdpDenseData *dnsA = (sdpDenseData *)A;
-    int nElem = dnsA->nSDPCol * (dnsA->nSDPCol + 1) / 2, incx = 1;
+    sdpDenseData *dsA = (sdpDenseData *) A;
+    int nElem = PACK_NNZ(dsA->nSDPCol);
+    int incx = 1;
     
-    scal(&nElem, &alpha, dnsA->dsMatElem, &incx);
+    scal(&nElem, &alpha, dsA->dsMatElem, &incx);
     
     return;
 }
@@ -42,13 +43,15 @@ extern void dataMatScalDense( void *A, double alpha ) {
  *  @param[in] A sdpRankOneSparseData pointer
  *  @param[in] alpha scale parameter
  */
-extern void dataMatScalRankOneSparse( void *A, double alpha ) {
+extern void dataMatScalRankOneSparseImpl( void *A, double alpha ) {
     
+    /* avoid alpha = 0.0 case */
     assert( fabs(alpha) >= 1e-8 );
     
-    sdpRankOneSparseData *spR1A = (sdpRankOneSparseData *)A;
+    sdpRankOneSparseData *spR1A = (sdpRankOneSparseData *) A;
     int incx = 1;
     
+    /* check whether sign changes */
     if ( alpha < 0.0 ) {
         spR1A->spR1FactorSign = -spR1A->spR1FactorSign;
         alpha = -alpha;
@@ -64,20 +67,22 @@ extern void dataMatScalRankOneSparse( void *A, double alpha ) {
  *  @param[in] A sdpRankOneDenseData pointer
  *  @param[in] alpha scale parameter
  */
-extern void dataMatScalRankOneDense( void *A, double alpha ) {
+extern void dataMatScalRankOneDenseImpl( void *A, double alpha ) {
     
+    /* avoid alpha = 0.0 case */
     assert( fabs(alpha) >= 1e-8 );
     
-    sdpRankOneDenseData *dnsR1A = (sdpRankOneDenseData *)A;
+    sdpRankOneDenseData *dsR1A = (sdpRankOneDenseData *) A;
     int incx = 1;
     
+    /* check whether sign changes */
     if ( alpha < 0.0 ) {
-        dnsR1A->r1FactorSign = -dnsR1A->r1FactorSign;
+        dsR1A->r1FactorSign = -dsR1A->r1FactorSign;
         alpha = -alpha;
     }
     alpha = sqrt(alpha);
     
-    scal(&dnsR1A->nSDPCol, &alpha, dnsR1A->r1MatFactor, &incx);
+    scal(&dsR1A->nSDPCol, &alpha, dsR1A->r1MatFactor, &incx);
     
     return;
 }
@@ -87,28 +92,23 @@ extern void dataMatScalRankOneDense( void *A, double alpha ) {
  *  @param[in] type type of norm
  *  @return norm of A
  */
-extern double dataMatNormSparse( void *A, int type ) {
+extern double dataMatNormSparseImpl( void *A, int type ) {
     
-    sdpSparseData *spA = (sdpSparseData *)A;
+    sdpSparseData *spA = (sdpSparseData *) A;
     double nrmA = 0.0;
-    int i;
     
-    if (type == 2) {
-        for ( i = 0; i < spA->nTriMatElem; ++i ) {
-            if ( spA->triMatCol[i] == spA->triMatRow[i] ) {
-                nrmA += spA->triMatElem[i] * spA->triMatElem[i];
-            } else {
-                nrmA += spA->triMatElem[i] * spA->triMatElem[i] * 2;
-            }
+    if ( type == F_NORM ) {
+        for ( int i = 0; i < spA->nTriMatElem; ++i ) {
+            nrmA += ( spA->triMatCol[i] == spA->triMatRow[i] ) ?
+                      spA->triMatElem[i] * spA->triMatElem[i] :
+                      spA->triMatElem[i] * spA->triMatElem[i] * 2;
         }
         nrmA = sqrt(nrmA);
-    } else if (type == 1) {
-        for ( i = 0; i < spA->nTriMatElem; ++i ) {
-            if ( spA->triMatCol[i] == spA->triMatRow[i] ) {
-                nrmA += fabs(spA->triMatElem[i]);
-            } else {
-                nrmA += fabs(spA->triMatElem[i]) * 2;
-            }
+    } else if ( type == ABS_NORM ) {
+        for ( int i = 0; i < spA->nTriMatElem; ++i ) {
+            nrmA += ( spA->triMatCol[i] == spA->triMatRow[i] ) ?
+                      fabs(spA->triMatElem[i]) :
+                      fabs(spA->triMatElem[i]) * 2;
         }
     }
     
@@ -120,28 +120,31 @@ extern double dataMatNormSparse( void *A, int type ) {
  *  @param[in] type type of norm
  *  @return norm of A
  */
-extern double dataMatNormDense( void *A, int type ) {
+extern double dataMatNormDenseImpl( void *A, int type ) {
     
-    sdpDenseData *dnsA = (sdpDenseData *)A;
+    sdpDenseData *dsA = (sdpDenseData *) A;
     double nrmA = 0.0;
+    int nCol = dsA->nSDPCol;
     int incx = 1;
-    int i, j, colStart, colLen;
+    int colLen; ///< exclude diagonal
+    double colNrm; ///< exclude diagonal
+    double *p = dsA->dsMatElem;
     
-    if (type == 2) {
-        for ( i = 0; i < dnsA->nSDPCol; ++i ) {
-            colStart = i * (dnsA->nSDPCol * 2 - i + 1) / 2;
-            colLen = dnsA->nSDPCol - i;
-            nrmA += dnsA->dsMatElem[colStart] * dnsA->dsMatElem[colStart];
-            for ( j = i + 1; j < colLen; ++j ) {
-                nrmA += dnsA->dsMatElem[colStart + j] * dnsA->dsMatElem[colStart + j] * 2;
-            }
+    if ( type == F_NORM ) {
+        for ( int i = 0; i < nCol; ++i ) {
+            nrmA += (*p) * (*p);
+            colLen = nCol - i - 1;
+            colNrm = nrm2(&colLen, p + 1, &incx);
+            nrmA += colNrm * colNrm * 2;
+            p = p + colLen + 1;
         }
         nrmA = sqrt(nrmA);
-    } else if (type == 1) {
-        for ( i = 0; i < dnsA->nSDPCol; ++i ) {
-            colStart = i * (dnsA->nSDPCol * 2 - i + 1) / 2;
-            colLen = dnsA->nSDPCol - i - 1;
-            nrmA += fabs(dnsA->dsMatElem[colStart]) + sum1(&colLen, dnsA->dsMatElem + colStart + 1, &incx) * 2;
+    } else if ( type == ABS_NORM ) {
+        for ( int i = 0; i < nCol; ++i ) {
+            nrmA += fabs(*p);
+            colLen = nCol - i - 1;
+            nrmA += nrm1(&colLen, p + 1, &incx) * 2;
+            p = p + colLen + 1;
         }
     }
     
@@ -153,17 +156,17 @@ extern double dataMatNormDense( void *A, int type ) {
  *  @param[in] type type of norm
  *  @return norm of A
  */
-extern double dataMatNormRankOneSparse( void *A, int type ) {
+extern double dataMatNormRankOneSparseImpl( void *A, int type ) {
     
-    sdpRankOneSparseData *spR1A = (sdpRankOneSparseData *)A;
+    sdpRankOneSparseData *spR1A = (sdpRankOneSparseData *) A;
     double nrmA = 0.0;
     int incx = 1;
     
-    if (type == 2) {
+    if ( type == F_NORM ) {
         nrmA = nrm2(&spR1A->nSpR1FactorElem, spR1A->spR1MatElem, &incx);
         nrmA = nrmA * nrmA;
-    } else if (type == 1) {
-        nrmA = sum1(&spR1A->nSpR1FactorElem, spR1A->spR1MatElem, &incx);
+    } else if ( type == ABS_NORM ) {
+        nrmA = nrm1(&spR1A->nSpR1FactorElem, spR1A->spR1MatElem, &incx);
         nrmA = nrmA * nrmA;
     }
     
@@ -175,17 +178,17 @@ extern double dataMatNormRankOneSparse( void *A, int type ) {
  *  @param[in] type type of norm
  *  @return norm of A
  */
-extern double dataMatNormRankOneDense( void *A, int type ) {
+extern double dataMatNormRankOneDenseImpl( void *A, int type ) {
     
-    sdpRankOneDenseData *dnsR1A = (sdpRankOneDenseData *)A;
+    sdpRankOneDenseData *dsR1A = (sdpRankOneDenseData *) A;
     double nrmA = 0.0;
     int incx = 1;
     
-    if (type == 2) {
-        nrmA = nrm2(&dnsR1A->nSDPCol, dnsR1A->r1MatFactor, &incx);
+    if ( type == F_NORM ) {
+        nrmA = nrm2(&dsR1A->nSDPCol, dsR1A->r1MatFactor, &incx);
         nrmA = nrmA * nrmA;
-    } else if (type == 1) {
-        nrmA = sum1(&dnsR1A->nSDPCol, dnsR1A->r1MatFactor, &incx);
+    } else if ( type == ABS_NORM ) {
+        nrmA = nrm1(&dsR1A->nSDPCol, dsR1A->r1MatFactor, &incx);
         nrmA = nrmA * nrmA;
     }
     
@@ -196,9 +199,9 @@ extern double dataMatNormRankOneDense( void *A, int type ) {
  *  @param[in] A sdpSparseData pointer
  *  @return number of nonzero elements in A
  */
-extern int dataMatGetNnzSparse( void *A ) {
+extern int dataMatGetNnzSparseImpl( void *A ) {
     
-    sdpSparseData *spA = (sdpSparseData *)A;
+    sdpSparseData *spA = (sdpSparseData *) A;
     
     return spA->nTriMatElem;
 }
@@ -207,47 +210,48 @@ extern int dataMatGetNnzSparse( void *A ) {
  *  @param[in] A sdpDenseData pointer
  *  @return number of nonzero elements in A
  */
-extern int dataMatGetNnzDense( void *A ) {
+extern int dataMatGetNnzDenseImpl( void *A ) {
     
-    sdpDenseData *dnsA = (sdpDenseData *)A;
+    sdpDenseData *dsA = (sdpDenseData *) A;
     
-    return dnsA->nSDPCol * (dnsA->nSDPCol + 1) / 2;
+    return PACK_NNZ(dsA->nSDPCol);
 }
 
 /** @brief Calculate number of nonzero elements in rank one sparse matrix A
  *  @param[in] A sdpRankOneSparseData pointer
  *  @return number of nonzero elements in A
  */
-extern int dataMatGetNnzRankOneSparse( void *A ) {
+extern int dataMatGetNnzRankOneSparseImpl( void *A ) {
     
-    sdpRankOneSparseData *spR1A = (sdpRankOneSparseData *)A;
+    sdpRankOneSparseData *spR1A = (sdpRankOneSparseData *) A;
     
-    return spR1A->nSpR1FactorElem * (spR1A->nSpR1FactorElem + 1) / 2;
+    return PACK_NNZ(spR1A->nSpR1FactorElem);
 }
 
 /** @brief Calculate number of nonzero elements in rank one dense matrix A
  *  @param[in] A sdpRankOneDenseData pointer
  *  @return number of nonzero elements in A
  */
-extern int dataMatGetNnzRankOneDense( void *A ) {
+extern int dataMatGetNnzRankOneDenseImpl( void *A ) {
     
-    sdpRankOneDenseData *dnsR1A = (sdpRankOneDenseData *)A;
+    sdpRankOneDenseData *dsR1A = (sdpRankOneDenseData *) A;
     
-    return dnsR1A->nSDPCol * (dnsR1A->nSDPCol + 1) / 2;
+    return PACK_NNZ(dsR1A->nSDPCol);
 }
 
 /** @brief Construct full matrix from sparse matrix A
  *  @param[in] A sdpSparseData pointer
  *  @param[out] v store full matrix
  */
-extern void dataMatDumpSparse( void *A, double *v ) {
+extern void dataMatDumpSparseImpl( void *A, double *v ) {
     
-    sdpSparseData *spA = (sdpSparseData *)A;
+    sdpSparseData *spA = (sdpSparseData *) A;
     HDSDP_ZERO(v, double, spA->nSDPCol * spA->nSDPCol);
+    int nCol = spA->nSDPCol;
     
     for ( int i = 0; i < spA->nTriMatElem; ++i ) {
-        v[spA->triMatCol[i] * spA->nSDPCol + spA->triMatRow[i]] = spA->triMatElem[i];
-        v[spA->triMatRow[i] * spA->nSDPCol + spA->triMatCol[i]] = spA->triMatElem[i];
+        v[spA->triMatCol[i] * nCol + spA->triMatRow[i]] = spA->triMatElem[i];
+        v[spA->triMatRow[i] * nCol + spA->triMatCol[i]] = spA->triMatElem[i];
     }
     
     return;
@@ -257,17 +261,17 @@ extern void dataMatDumpSparse( void *A, double *v ) {
  *  @param[in] A sdpDenseData pointer
  *  @param[out] v store full matrix
  */
-extern void dataMatDumpDense( void *A, double *v ) {
+extern void dataMatDumpDenseImpl( void *A, double *v ) {
     
-    sdpDenseData *dnsA = (sdpDenseData *)A;
-    int nElem = dnsA->nSDPCol * (dnsA->nSDPCol + 1) / 2;
-    HDSDP_MEMCPY(v, dnsA->dsMatElem, double, nElem);
-    int i, j;
+    sdpDenseData *dsA = (sdpDenseData *) A;
+    int nCol = dsA->nSDPCol;
+    int dsIdx; // index for (col, row) = (i, j) in dsMatElem
     
-    for ( i = 0; i < dnsA->nSDPCol; ++i) {
-        for ( j = i; j < dnsA->nSDPCol; ++j ) {
-            v[i * dnsA->nSDPCol + j] = dnsA->dsMatElem[i * (dnsA->nSDPCol * 2 - i - 1) / 2 + j];
-            v[j * dnsA->nSDPCol + i] = v[i * dnsA->nSDPCol + j];
+    for ( int i = 0, j; i < nCol; ++i) { // colIdx
+        for ( j = i; j < nCol; ++j ) { // rowIdx
+            dsIdx = i * (nCol * 2 - i - 1) / 2 + j;
+            v[i * nCol + j] = dsA->dsMatElem[dsIdx];
+            v[j * nCol + i] = v[i * nCol + j];
         }
     }
     
@@ -278,17 +282,21 @@ extern void dataMatDumpDense( void *A, double *v ) {
  *  @param[in] A sdpRankOneSparseData pointer
  *  @param[out] v store full matrix
  */
-extern void dataMatDumpRankOneSparse( void *A, double *v ) {
+extern void dataMatDumpRankOneSparseImpl( void *A, double *v ) {
     
-    sdpRankOneSparseData *spR1A = (sdpRankOneSparseData *)A;
+    sdpRankOneSparseData *spR1A = (sdpRankOneSparseData *) A;
     HDSDP_ZERO(v, double, spR1A->nSDPCol * spR1A->nSDPCol);
+    int nCol = spR1A->nSDPCol;
+    int *spR1MatIdx = spR1A->spR1MatIdx;
     
-    int i, j;
-    
-    for ( i = 0; i < spR1A->nSpR1FactorElem; ++i ) { // colIdx
+    for ( int i = 0, j; i < spR1A->nSpR1FactorElem; ++i ) { // colIdx
         for ( j = i; j < spR1A->nSpR1FactorElem; ++j ) { // rowIdx
-            v[spR1A->spR1MatIdx[i] * spR1A->nSDPCol + spR1A->spR1MatIdx[j]] = spR1A->spR1FactorSign * spR1A->spR1MatElem[i] * spR1A->spR1MatElem[j];
-            v[spR1A->spR1MatIdx[j] * spR1A->nSDPCol + spR1A->spR1MatIdx[i]] = v[spR1A->spR1MatIdx[i] * spR1A->nSDPCol + spR1A->spR1MatIdx[j]];
+            v[spR1MatIdx[i] * nCol + spR1MatIdx[j]] = \
+            spR1A->spR1FactorSign * spR1A->spR1MatElem[i] * spR1A->spR1MatElem[j];
+            if ( j > i ) {
+                v[spR1MatIdx[j] * nCol + spR1MatIdx[i]] = \
+                v[spR1MatIdx[i] * nCol + spR1MatIdx[j]];
+            }
         }
     }
     
@@ -299,16 +307,17 @@ extern void dataMatDumpRankOneSparse( void *A, double *v ) {
  *  @param[in] A sdpRankOneDenseData pointer
  *  @param[out] v store full matrix
  */
-extern void dataMatDumpRankOneDense( void *A, double *v ) {
+extern void dataMatDumpRankOneDenseImpl( void *A, double *v ) {
     
-    sdpRankOneDenseData *dnsR1A = (sdpRankOneDenseData *)A;
+    sdpRankOneDenseData *dsR1A = (sdpRankOneDenseData *) A;
     
-    int i, j;
-    
-    for ( i = 0; i < dnsR1A->nSDPCol; ++i ) { // colIdx
-        for ( j = i; j < dnsR1A->nSDPCol; ++j ) { // rowIdx
-            v[i * dnsR1A->nSDPCol + j] = dnsR1A->r1FactorSign * dnsR1A->r1MatFactor[i] * dnsR1A->r1MatFactor[j];
-            v[j * dnsR1A->nSDPCol + i] = v[i * dnsR1A->nSDPCol + j];
+    for ( int i = 0, j; i < dsR1A->nSDPCol; ++i ) { // colIdx
+        for ( j = i; j < dsR1A->nSDPCol; ++j ) { // rowIdx
+            v[i * dsR1A->nSDPCol + j] = \
+            dsR1A->r1FactorSign * dsR1A->r1MatFactor[i] * dsR1A->r1MatFactor[j];
+            if ( j > i ) {
+                v[j * dsR1A->nSDPCol + i] = v[i * dsR1A->nSDPCol + j];
+            }
         }
     }
     

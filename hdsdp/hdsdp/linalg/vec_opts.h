@@ -11,6 +11,6 @@ extern int idamax( int *n, double *x, int *incx );
 extern double sumlogdet( int *n, double *x );
 extern void vvscl( int *n, double *s, double *x );
 extern void vvrscl( int *n, double *s, double *x );
-extern double sum1( int *n, double *x, int *incx );
+extern double nrm1( int *n, double *x, int *incx );
 
 #endif /* vec_opts_h */

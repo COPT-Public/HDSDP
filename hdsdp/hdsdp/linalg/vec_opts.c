@@ -146,7 +146,7 @@ extern void vvrscl( int *n, double *s, double *x ) {
     return;
 }
 
-extern double sum1( int *n, double *x, int *incx ) {
+extern double nrm1( int *n, double *x, int *incx ) {
 
     assert( *incx == 1 );
     
