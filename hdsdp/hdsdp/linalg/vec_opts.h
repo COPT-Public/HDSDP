@@ -5,6 +5,7 @@
 extern "C" {
 #endif
 
+extern double nrm1( int *n, double *x, int *incx );
 extern double nrm2( int *n, double *x, int *incx );
 extern void axpy( int *n, double *a, double *x, int *incx, double *y, int *incy );
 extern double dot( int *n, double *x, int *incx, double *y, int *incy );

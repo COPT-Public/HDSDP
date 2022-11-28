@@ -26,6 +26,8 @@
 #define HDSDP_MAX(x, y) (x) >= (y) ? (x) : (y);
 #define HDSDP_MIN(x, y) (x) <= (y) ? (x) : (y);
 
+#define PACK_NNZ(n) ((n) * ((n) + 1) / 2)
+
 #ifdef __cplusplus
 extern "C" {
 #endif
