@@ -92,7 +92,7 @@ typedef struct {
     int *sdpConePerm;
     
     /* SDP block statistics */
-    int sdpConeStats[5];
+    int sdpConeStats[5]; ///< Number of coefficients of each type
     
 } hdsdp_cone_sdp_dense;
 

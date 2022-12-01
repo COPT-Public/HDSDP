@@ -6,12 +6,12 @@
 #ifndef hdsdp_utils_h
 #define hdsdp_utils_h
 
+#include "hdsdp.h"
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include <assert.h>
-
-#include "hdsdp.h"
 
 /* Define macros */
 #define HDSDP_FREE(var) do {free((var)); (var) = NULL;} while (0)
@@ -28,8 +28,8 @@
                              goto exit_cleanup;                 \
                          }
 
-#define HDSDP_MAX(x, y) (x) >= (y) ? (x) : (y);
-#define HDSDP_MIN(x, y) (x) <= (y) ? (x) : (y);
+#define HDSDP_MAX(x, y) (x) >= (y) ? (x) : (y)
+#define HDSDP_MIN(x, y) (x) <= (y) ? (x) : (y)
 
 #define PACK_NNZ(n) ((n) * ((n) + 1) / 2)
 #define PACK_ENTRY(A, n, i, j) (A[(int)((2 * (n) - (j) - 1) * (j) / 2) + (i)])
