@@ -5,7 +5,30 @@
 #include "hdsdp_utils.h"
 #include "def_hdsdp_conic.h"
 
-static void HConeISetSDPMethods( hdsdp_cone *HCone ) {
+static void HConeISetDenseSDPMethods( hdsdp_cone *HCone ) {
+    
+    HCone->coneInitData = NULL;
+    HCone->coneSetData = NULL;
+    HCone->coneProcData = NULL;
+    HCone->coneDestroyData = NULL;
+    
+    HCone->coneSetStart = NULL;
+    HCone->coneUpdate = NULL;
+    HCone->coneRatioTest = NULL;
+    
+    HCone->coneGetSymNnz = NULL;
+    HCone->coneAddSymNz = NULL;
+    HCone->coneBuildSchur = NULL;
+    
+    HCone->coneGetBarrier = NULL;
+    HCone->conePFeasCheck = NULL;
+    HCone->conePRecover = NULL;
+    HCone->coneScal = NULL;
+    
+    return;
+}
+
+static void HConeISetSparseSDPMethods( hdsdp_cone *HCone ) {
     
     HCone->coneInitData = NULL;
     HCone->coneSetData = NULL;
@@ -86,13 +109,16 @@ extern hdsdp_retcode HConeInit( hdsdp_cone *HCone, cone_type cone ) {
     }
     
     switch ( cone ) {
-        case HDSDP_CONIC_LP:
+        case HDSDP_CONETYPE_LP:
             HConeISetLPMethods(HCone);
             break;
-        case HDSDP_CONIC_SDP:
-            HConeISetSDPMethods(HCone);
+        case HDSDP_CONETYPE_DENSE_SDP:
+            HConeISetDenseSDPMethods(HCone);
             break;
-        case HDSDP_CONIC_SOCP:
+        case HDSDP_CONETYPE_SPARSE_SDP:
+            HConeISetSparseSDPMethods(HCone);
+            break;
+        case HDSDP_CONETYPE_SOCP:
             retcode = HDSDP_RETCODE_FAILED;
             goto exit_cleanup;
         default:

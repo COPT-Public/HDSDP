@@ -8,7 +8,6 @@
 #include "hdsdp_utils.h"
 
 #include <math.h>
-#include <assert.h>
 
 extern void dataMatScalZeroImpl( void *A, double alpha ) {
     
@@ -21,7 +20,7 @@ extern void dataMatScalZeroImpl( void *A, double alpha ) {
  */
 extern void dataMatScalSparseImpl( void *A, double alpha ) {
     
-    sdpSparseData *spA = (sdpSparseData *) A;
+    sdp_coeff_sparse *spA = (sdp_coeff_sparse *) A;
     int incx = 1;
     
     scal(&spA->nTriMatElem, &alpha, spA->triMatElem, &incx);
@@ -35,7 +34,7 @@ extern void dataMatScalSparseImpl( void *A, double alpha ) {
  */
 extern void dataMatScalDenseImpl( void *A, double alpha ) {
     
-    sdpDenseData *dsA = (sdpDenseData *) A;
+    sdp_coeff_dense *dsA = (sdp_coeff_dense *) A;
     int nElem = PACK_NNZ(dsA->nSDPCol);
     int incx = 1;
     
@@ -53,7 +52,7 @@ extern void dataMatScalRankOneSparseImpl( void *A, double alpha ) {
     /* Avoid alpha = 0.0 case */
     assert( fabs(alpha) >= 1e-08 );
     
-    sdpRankOneSparseData *spR1A = (sdpRankOneSparseData *) A;
+    sdp_coeff_spr1 *spR1A = (sdp_coeff_spr1 *) A;
     
     spR1A->spR1FactorSign = spR1A->spR1FactorSign * alpha;
     
@@ -69,8 +68,7 @@ extern void dataMatScalRankOneDenseImpl( void *A, double alpha ) {
     /* Avoid alpha = 0.0 case */
     assert( fabs(alpha) >= 1e-08 );
     
-    sdpRankOneDenseData *dsR1A = (sdpRankOneDenseData *) A;
-    
+    sdp_coeff_dsr1 *dsR1A = (sdp_coeff_dsr1 *) A;
     dsR1A->r1FactorSign = dsR1A->r1FactorSign * alpha;
     
     return;
@@ -88,21 +86,21 @@ extern double dataMatNormZeroImpl( void *A, int type ) {
  */
 extern double dataMatNormSparseImpl( void *A, int type ) {
     
-    sdpSparseData *spA = (sdpSparseData *) A;
+    sdp_coeff_sparse *spA = (sdp_coeff_sparse *) A;
     double nrmA = 0.0;
     
     if ( type == FRO_NORM ) {
         for ( int i = 0; i < spA->nTriMatElem; ++i ) {
             nrmA += ( spA->triMatCol[i] == spA->triMatRow[i] ) ?
                       spA->triMatElem[i] * spA->triMatElem[i] :
-                      spA->triMatElem[i] * spA->triMatElem[i] * 2;
+                      spA->triMatElem[i] * spA->triMatElem[i] * 2.0;
         }
         nrmA = sqrt(nrmA);
     } else if ( type == ABS_NORM ) {
         for ( int i = 0; i < spA->nTriMatElem; ++i ) {
             nrmA += ( spA->triMatCol[i] == spA->triMatRow[i] ) ?
                       fabs(spA->triMatElem[i]) :
-                      fabs(spA->triMatElem[i]) * 2;
+                      fabs(spA->triMatElem[i]) * 2.0;
         }
     }
     
@@ -116,7 +114,7 @@ extern double dataMatNormSparseImpl( void *A, int type ) {
  */
 extern double dataMatNormDenseImpl( void *A, int type ) {
     
-    sdpDenseData *dsA = (sdpDenseData *) A;
+    sdp_coeff_dense *dsA = (sdp_coeff_dense *) A;
     double nrmA = 0.0;
     int nCol = dsA->nSDPCol;
     int incx = 1;
@@ -126,16 +124,16 @@ extern double dataMatNormDenseImpl( void *A, int type ) {
     
     if ( type == FRO_NORM ) {
         for ( int i = 0; i < nCol; ++i ) {
-            nrmA += (*p) * (*p);
+            nrmA += p[0] * p[0];
             colLen = nCol - i - 1;
             colNrm = nrm2(&colLen, p + 1, &incx);
-            nrmA += colNrm * colNrm * 2;
+            nrmA += colNrm * colNrm * 2.0;
             p = p + colLen + 1;
         }
         nrmA = sqrt(nrmA);
     } else if ( type == ABS_NORM ) {
         for ( int i = 0; i < nCol; ++i ) {
-            nrmA += fabs(*p);
+            nrmA += fabs(p[0]);
             colLen = nCol - i - 1;
             nrmA += nrm1(&colLen, p + 1, &incx) * 2;
             p = p + colLen + 1;
@@ -152,7 +150,7 @@ extern double dataMatNormDenseImpl( void *A, int type ) {
  */
 extern double dataMatNormRankOneSparseImpl( void *A, int type ) {
     
-    sdpRankOneSparseData *spR1A = (sdpRankOneSparseData *) A;
+    sdp_coeff_spr1 *spR1A = (sdp_coeff_spr1 *) A;
     double nrmA = 0.0;
     int incx = 1;
     
@@ -174,7 +172,7 @@ extern double dataMatNormRankOneSparseImpl( void *A, int type ) {
  */
 extern double dataMatNormRankOneDenseImpl( void *A, int type ) {
     
-    sdpRankOneDenseData *dsR1A = (sdpRankOneDenseData *) A;
+    sdp_coeff_dsr1 *dsR1A = (sdp_coeff_dsr1 *) A;
     double nrmA = 0.0;
     int incx = 1;
     
@@ -200,7 +198,7 @@ extern int dataMatGetNnzZeroImpl( void *A ) {
  */
 extern int dataMatGetNnzSparseImpl( void *A ) {
     
-    sdpSparseData *spA = (sdpSparseData *) A;
+    sdp_coeff_sparse *spA = (sdp_coeff_sparse *) A;
     
     return spA->nTriMatElem;
 }
@@ -211,7 +209,7 @@ extern int dataMatGetNnzSparseImpl( void *A ) {
  */
 extern int dataMatGetNnzDenseImpl( void *A ) {
     
-    sdpDenseData *dsA = (sdpDenseData *) A;
+    sdp_coeff_dense *dsA = (sdp_coeff_dense *) A;
     
     return PACK_NNZ(dsA->nSDPCol);
 }
@@ -222,7 +220,7 @@ extern int dataMatGetNnzDenseImpl( void *A ) {
  */
 extern int dataMatGetNnzRankOneSparseImpl( void *A ) {
     
-    sdpRankOneSparseData *spR1A = (sdpRankOneSparseData *) A;
+    sdp_coeff_spr1 *spR1A = (sdp_coeff_spr1 *) A;
     
     return PACK_NNZ(spR1A->nSpR1FactorElem);
 }
@@ -233,14 +231,14 @@ extern int dataMatGetNnzRankOneSparseImpl( void *A ) {
  */
 extern int dataMatGetNnzRankOneDenseImpl( void *A ) {
     
-    sdpRankOneDenseData *dsR1A = (sdpRankOneDenseData *) A;
+    sdp_coeff_dsr1 *dsR1A = (sdp_coeff_dsr1 *) A;
     
     return PACK_NNZ(dsR1A->nSDPCol);
 }
 
 extern void dataMatDumpZeroImpl( void *A, double *v ) {
     
-    sdpZeroData *zeroA = (sdpZeroData *) A;
+    sdp_coeff_zero *zeroA = (sdp_coeff_zero *) A;
     HDSDP_ZERO(v, double, zeroA->nSDPCol * zeroA->nSDPCol);
     
     return;
@@ -252,7 +250,7 @@ extern void dataMatDumpZeroImpl( void *A, double *v ) {
  */
 extern void dataMatDumpSparseImpl( void *A, double *v ) {
     
-    sdpSparseData *spA = (sdpSparseData *) A;
+    sdp_coeff_sparse *spA = (sdp_coeff_sparse *) A;
     HDSDP_ZERO(v, double, spA->nSDPCol * spA->nSDPCol);
     int nCol = spA->nSDPCol;
     
@@ -272,7 +270,7 @@ extern void dataMatDumpSparseImpl( void *A, double *v ) {
  */
 extern void dataMatDumpDenseImpl( void *A, double *v ) {
     
-    sdpDenseData *dsA = (sdpDenseData *) A;
+    sdp_coeff_dense *dsA = (sdp_coeff_dense *) A;
     int nCol = dsA->nSDPCol;
     int dsIdx; ///< Index for (col, row) = (i, j) in dsMatElem
     
@@ -295,7 +293,7 @@ extern void dataMatDumpDenseImpl( void *A, double *v ) {
  */
 extern void dataMatDumpRankOneSparseImpl( void *A, double *v ) {
     
-    sdpRankOneSparseData *spR1A = (sdpRankOneSparseData *) A;
+    sdp_coeff_spr1 *spR1A = (sdp_coeff_spr1 *) A;
     HDSDP_ZERO(v, double, spR1A->nSDPCol * spR1A->nSDPCol);
     int nCol = spR1A->nSDPCol;
     int *spR1MatIdx = spR1A->spR1MatIdx;
@@ -320,7 +318,7 @@ extern void dataMatDumpRankOneSparseImpl( void *A, double *v ) {
  */
 extern void dataMatDumpRankOneDenseImpl( void *A, double *v ) {
     
-    sdpRankOneDenseData *dsR1A = (sdpRankOneDenseData *) A;
+    sdp_coeff_dsr1 *dsR1A = (sdp_coeff_dsr1 *) A;
     
     for ( int i = 0, j; i < dsR1A->nSDPCol; ++i ) { // Column index
         v[i * dsR1A->nSDPCol + i] = \

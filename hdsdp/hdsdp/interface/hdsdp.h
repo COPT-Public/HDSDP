@@ -35,6 +35,8 @@ typedef enum {
     
 } hdsdp_status;
 
+typedef struct hdsdp_solver_internal hdsdp;
+
 // Integer Parameters
 #define INT_PARAM_MAXITER       0
 

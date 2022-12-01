@@ -20,6 +20,20 @@ extern double HUtilGetTimeStamp( void ) {
     return my_clock();
 }
 
+/** @brief Symmetrize an n by n matrix whose lower triangular is filled
+ *
+ */
+extern void HUtilMatSymmetrize( int n, double *v ) {
+    
+    for ( int i = 0, j; i < n; ++i ) {
+        for ( j = i + 1; j < n; ++j ) {
+            FULL_ENTRY(v, n, i, j) = FULL_ENTRY(v, n, j, i);
+        }
+    }
+    
+    return;
+}
+
 /* Debugging */
 extern void HUtilPrintDblContent( int n, double *d ) {
     

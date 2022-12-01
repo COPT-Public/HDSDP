@@ -1,7 +1,7 @@
 #include "vec_opts.h"
+#include "hdsdp_utils.h"
 
 #include <math.h>
-#include <assert.h>
 
 /* Blas functions */
 extern double dnrm2( int *n, double *x, int *incx );
@@ -9,6 +9,7 @@ extern void daxpy( int *n, double *a, double *x, int *incx, double *y, int *incy
 extern double ddot( int *n, double *x, int *incx, double *y, int *incy );
 extern void dscal( int *n, double *sa, double *sx, int *incx );
 extern void drscl( int *n, double *sa, double *sx, int *incx );
+extern void dsyr( char *uplo, int *n, double *alpha, double *x, int *incx, double *a, int *lda );
 extern int idamax( int *n, double *x, int *incx );
 extern void dgemv( char *trans, int *m, int *n, double *alpha,
                    double *a, int *lda, double *x, int *incx,
@@ -100,6 +101,13 @@ extern void rscl( int *n, double *sa, double *sx, int *incx ) {
 #else
     drscl(n, sa, sx, incx);
 #endif
+    return;
+}
+
+extern void syr( char *uplo, int *n, double *alpha, double *x, int *incx, double *a, int *lda ) {
+    
+    dsyr(uplo, n, alpha, x, incx, a, lda);
+    
     return;
 }
 
