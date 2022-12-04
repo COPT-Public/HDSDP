@@ -301,7 +301,7 @@ static pot_int potReductionOneStep( pot_solver *pot ) {
         
         double modelVal = potReductionTrustRegionSolve(alphaStep, pot->projHessMat, pot->projgVec,
                                                        pot->projGMat, pot->betaRadius * pot->betaRadius / 3.0,
-                                                       xMinVal / 10);
+                                                       1e-10);
         
         // POTLP_DEBUG("beta = %e | a[0] = %e | a[1] = %e \n", pot->betaRadius, alphaStep[0], alphaStep[1]);
         
@@ -319,7 +319,7 @@ static pot_int potReductionOneStep( pot_solver *pot ) {
         double potValTmp = potReductionComputePotValue(rhoVal, fValTmp, zVal, auxVec1);
         double potLineVal = POTLP_INFINITY;
         
-        if ( pot->curvInterval < 50 && (0) ) {
+        if ( pot->curvInterval < 50 || (1) ) {
             potLineVal = potReductionPotLineSearch(objFunc, rhoVal, zVal, xPres,
                                                    dXStep, auxVec2, potValTmp, 1e-12);
         }

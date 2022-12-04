@@ -5,10 +5,10 @@ function [x] = potreduceLp(A, ydim, maxiter, ncurv, linesearch, neweigs, printle
 warning off;
 [~, n] = size(A); m = ydim;
 ncone = n - m; coneidx = ydim + 1 : n;
-% projidx = coneidx;
-projidx = n - 1 : n; 
+projidx = coneidx;
+% projidx = n - 1 : n; 
 nproj = length(projidx);
-rho = (ncone + sqrt(ncone));
+rho = 1.1 * (ncone + sqrt(ncone));
 e = ones(nproj, 1);
 x_prev = zeros(n, 1);
 x_prev(coneidx) = 1;
@@ -21,7 +21,7 @@ potold = rho * log(f) - sum(log(x_prev(coneidx)));
 x_pres = x_prev;
 recompute = true;
 
-beta = 0.7;
+beta = 1.0;
 
 tic;
 if printlevel
@@ -32,7 +32,7 @@ end % End if
 usecurvature = true;
 logstar = "*";
 nstar = 0;
-
+vk = [];
 for i = 1:maxiter
     
     % Start potential reduction
@@ -50,13 +50,13 @@ for i = 1:maxiter
         gk = g;
         gk(coneidx) = gk(coneidx) - (f ./ x_pres(coneidx)) / rho;
 
-        if usecurvature && ncurv
+        if (usecurvature && ncurv)
             nstar = nstar + 1;
             logstar = "*";
             % Consider negative curvature of Hessian
             % Hess = rho * (- (g * g') / f + ATA) + diag(f * d);
-            method = "direct";
-            mk = findnegacurv(x_pres, m, coneidx, projidx, rho, g, f, ATA, AT, A, method);
+            method = "lanczos";
+            [mk, vk] = findnegacurv(x_pres, m, coneidx, projidx, rho, g, f, ATA, AT, A, vk, method);
             usecurvature = false;
         end % End if 
         
@@ -144,7 +144,7 @@ for i = 1:maxiter
         ratio = 0;
     end % End if
     
-    if f < 1e-12 || beta < 1e-05
+    if f < 1e-20 || beta < 1e-05
         break;
     end % End if
     
@@ -167,12 +167,12 @@ for i = 1:maxiter
         ncurv = false;
     end % End if 
     
-    if mod(i, 500) == 1 && printlevel
+    if mod(i, 500) && printlevel
         fprintf("%5d  %+8.2e  %+8.2e  %+8.2e  %+8.2e  %+8.2e  %+8.2e %1.1s %3.3f %+3.3e\n",...
             i, f, potnew, alpha(1), alpha(2), beta, potred, logstar, toc, min(x_pres(coneidx)));
     end % End if
     logstar = "";
-    
+     
     if potred > -0.01 || (mod(i, 100) == 1 && potred > -10)
         usecurvature = true;
     end % End if

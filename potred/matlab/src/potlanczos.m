@@ -1,23 +1,31 @@
-function [zfin, lam, delta] = potlanczos(x, coneidx, rho, g, f, ATA, AT, A, scale)
+function [zfin, lam, delta] = potlanczos(x, coneidx, rho, g, f, ATA, AT, A, scale, vstart)
 % Compute minimum eigen-value using Lanczos iteration for projected Hessian
 % matrix
 %
 %       H = P * [- (g * g') / f + ATA) + diag(d * f / rho)] * P
 %
 % The matrix-vector multiplication is specially processed
+
+if nargin < 10
+    vstart = [];
+end % End if
+
 rng(24);
 n = size(AT, 1);
 maxiter = 1000;
 
+if isempty(vstart)
 if scale
 %     v = x;
 %     v(coneidx) = 1.0;
     v = g;
     v(coneidx) = v(coneidx) .* x(coneidx);
 else
-    v = x;
+    v = g;
 end % End if
-
+else
+    v = vstart;
+end % End if
 
 % v = randn(n, 1);
 V = zeros(n, maxiter + 1);
@@ -54,7 +62,7 @@ for k = 1:maxiter
     w = w - alp * V(:, k);
     H(k, k) = alp;
     
-    if (norm(w) <= 0.9 * norm(wold))
+    if (norm(w) <= 0.99 * norm(wold) || 1)
         s = (w' * V(:,1:k))';
         w = w - V(:,1:k) * s;
         H(1:k, k) = H(1:k, k) + s;
@@ -118,6 +126,7 @@ for k = 1:maxiter
             delta = min(res, res^2 / beta);
             
             if delta <= tol || (lam > 0 && lam - abs(delta) > 0)
+                fprintf("Lanzos iteration %d \n", k);
                 break;
             end % End if
             

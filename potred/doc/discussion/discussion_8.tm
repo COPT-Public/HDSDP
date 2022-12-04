@@ -66,7 +66,7 @@
 
       <date|>
     </author-affiliation>>>>
-  </hidden>|<\hidden>
+  </hidden>|<\shown>
     <tit|Current Progress>
 
     \;
@@ -105,7 +105,7 @@
     </itemize>
 
     \;
-  </hidden>|<\shown>
+  </shown>|<\hidden>
     <tit|One useful observation>
 
     \;
@@ -146,7 +146,7 @@
     <strong|HDSDP>
 
     Now integrating HDSDP into the next COPT release
-  </shown>>
+  </hidden>>
 </body>
 
 <\initial>

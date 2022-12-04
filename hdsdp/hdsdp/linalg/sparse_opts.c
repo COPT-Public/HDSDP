@@ -160,4 +160,3 @@ extern void tsp_dump( int n, int nnz, int *Ai, int *Aj, double *Ax, double *v ) 
     
     return;
 }
-

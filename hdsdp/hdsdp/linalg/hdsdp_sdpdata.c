@@ -9,6 +9,58 @@
 
 #include <math.h>
 
+extern hdsdp_retcode sdpDataMatCreate( sdp_coeff **psdpCoeff ) {
+    
+    hdsdp_retcode retcode = HDSDP_RETCODE_OK;
+    
+    if ( !psdpCoeff ) {
+        retcode = HDSDP_RETCODE_FAILED;
+        goto exit_cleanup;
+    }
+    
+    sdp_coeff *sdpCoeff = NULL;
+    HDSDP_INIT(sdpCoeff, sdp_coeff, 1);
+    HDSDP_MEMCHECK(sdpCoeff);
+    
+    *psdpCoeff = sdpCoeff;
+    
+exit_cleanup:
+    
+    return retcode;
+}
+
+#define SPARSE_THRESHOLD (0.3)
+
+/** @brief Set SDP data matrix. This routine selects data type and assiciate structure with their operations
+ * 
+ *
+ */
+extern hdsdp_retcode sdpDataMatSetData( sdp_coeff *sdpCoeff, int nSDPCol, int dataMatNnz, int *dataMatIdx, double *dataMatElem ) {
+    
+    hdsdp_retcode retcode = HDSDP_RETCODE_OK;
+    
+    
+    
+    
+    
+    
+exit_cleanup:
+    
+    return retcode;
+}
+
+/* Wrapper for the operations */
+extern void sdpDataMataApB( sdp_coeff *A, double alpha, void *B ) {
+    
+    A->dataMataApB(A->dataMat, alpha, B);
+    
+    return;
+}
+
+/* TODO: Wrapper for the other operations */
+
+
+/* TODO: The name dataMat may be changed for SDP context */
 extern void dataMatScalZeroImpl( void *A, double alpha ) {
     
     return;

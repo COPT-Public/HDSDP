@@ -10,6 +10,18 @@
 		192D10CB292544990054068A /* main.c in Sources */ = {isa = PBXBuildFile; fileRef = 192D10CA292544990054068A /* main.c */; };
 		192D10D72925455F0054068A /* sparse_opts.c in Sources */ = {isa = PBXBuildFile; fileRef = 192D10D62925455F0054068A /* sparse_opts.c */; };
 		192D10DB292546DE0054068A /* vec_opts.c in Sources */ = {isa = PBXBuildFile; fileRef = 192D10DA292546DE0054068A /* vec_opts.c */; };
+		196D05BC29324A4400247357 /* def_hdsdp_conic.h in Sources */ = {isa = PBXBuildFile; fileRef = 196D05BB2931F4FE00247357 /* def_hdsdp_conic.h */; };
+		19B174FF2937DF2D004CBA56 /* dense_opts.c in Sources */ = {isa = PBXBuildFile; fileRef = 19B174FE2937DF2D004CBA56 /* dense_opts.c */; };
+		19B175082937E9BD004CBA56 /* r1_opts.c in Sources */ = {isa = PBXBuildFile; fileRef = 19B175072937E9BD004CBA56 /* r1_opts.c */; };
+		19C898E72931C53E00C9961F /* Accelerate.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 19C898E62931C53E00C9961F /* Accelerate.framework */; };
+		19C898EA2931C55D00C9961F /* hdsdp_sdpdata.c in Sources */ = {isa = PBXBuildFile; fileRef = 19C898E92931C55D00C9961F /* hdsdp_sdpdata.c */; };
+		19C898EE2931C58100C9961F /* hdsdp_utils.c in Sources */ = {isa = PBXBuildFile; fileRef = 19C898ED2931C58100C9961F /* hdsdp_utils.c */; };
+		19C898F62931EE8800C9961F /* hdsdp_conic.c in Sources */ = {isa = PBXBuildFile; fileRef = 19C898F52931EE8800C9961F /* hdsdp_conic.c */; };
+		19FC25092934B5FD00D625EA /* hdsdp_conic_sdp.c in Sources */ = {isa = PBXBuildFile; fileRef = 19FC25082934B5FD00D625EA /* hdsdp_conic_sdp.c */; };
+		19FC250B2934B8F100D625EA /* hdsdp.h in Sources */ = {isa = PBXBuildFile; fileRef = 19C898EC2931C58100C9961F /* hdsdp.h */; };
+		19FC250C2934BC9300D625EA /* def_hdsdp_sdpdata.h in Sources */ = {isa = PBXBuildFile; fileRef = 19FC250A2934B66600D625EA /* def_hdsdp_sdpdata.h */; };
+		19FC250F2934C9D200D625EA /* hdsdp_user_data.c in Sources */ = {isa = PBXBuildFile; fileRef = 19FC250E2934C9D200D625EA /* hdsdp_user_data.c */; };
+		19FC25112935FA8C00D625EA /* hdsdp.c in Sources */ = {isa = PBXBuildFile; fileRef = 19FC25102935FA8C00D625EA /* hdsdp.c */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXCopyFilesBuildPhase section */
@@ -31,6 +43,26 @@
 		192D10D62925455F0054068A /* sparse_opts.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = sparse_opts.c; sourceTree = "<group>"; };
 		192D10D9292546DE0054068A /* vec_opts.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = vec_opts.h; sourceTree = "<group>"; };
 		192D10DA292546DE0054068A /* vec_opts.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = vec_opts.c; sourceTree = "<group>"; };
+		196D05BB2931F4FE00247357 /* def_hdsdp_conic.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = def_hdsdp_conic.h; sourceTree = "<group>"; };
+		198742F5293A3E1E00E42C82 /* def_hdsdp_user_data.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = def_hdsdp_user_data.h; sourceTree = "<group>"; };
+		19B174FD2937DF2D004CBA56 /* dense_opts.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = dense_opts.h; sourceTree = "<group>"; };
+		19B174FE2937DF2D004CBA56 /* dense_opts.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = dense_opts.c; sourceTree = "<group>"; };
+		19B175062937E9BD004CBA56 /* r1_opts.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = r1_opts.h; sourceTree = "<group>"; };
+		19B175072937E9BD004CBA56 /* r1_opts.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = r1_opts.c; sourceTree = "<group>"; };
+		19C898E62931C53E00C9961F /* Accelerate.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = Accelerate.framework; path = System/Library/Frameworks/Accelerate.framework; sourceTree = SDKROOT; };
+		19C898E82931C55D00C9961F /* hdsdp_sdpdata.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = hdsdp_sdpdata.h; sourceTree = "<group>"; };
+		19C898E92931C55D00C9961F /* hdsdp_sdpdata.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = hdsdp_sdpdata.c; sourceTree = "<group>"; };
+		19C898EB2931C58100C9961F /* hdsdp_utils.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = hdsdp_utils.h; sourceTree = "<group>"; };
+		19C898EC2931C58100C9961F /* hdsdp.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = hdsdp.h; sourceTree = "<group>"; };
+		19C898ED2931C58100C9961F /* hdsdp_utils.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = hdsdp_utils.c; sourceTree = "<group>"; };
+		19C898F42931EE8800C9961F /* hdsdp_conic.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = hdsdp_conic.h; sourceTree = "<group>"; };
+		19C898F52931EE8800C9961F /* hdsdp_conic.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = hdsdp_conic.c; sourceTree = "<group>"; };
+		19FC25072934B5FD00D625EA /* hdsdp_conic_sdp.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = hdsdp_conic_sdp.h; sourceTree = "<group>"; };
+		19FC25082934B5FD00D625EA /* hdsdp_conic_sdp.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = hdsdp_conic_sdp.c; sourceTree = "<group>"; };
+		19FC250A2934B66600D625EA /* def_hdsdp_sdpdata.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = def_hdsdp_sdpdata.h; sourceTree = "<group>"; };
+		19FC250D2934C9D200D625EA /* hdsdp_user_data.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = hdsdp_user_data.h; sourceTree = "<group>"; };
+		19FC250E2934C9D200D625EA /* hdsdp_user_data.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = hdsdp_user_data.c; sourceTree = "<group>"; };
+		19FC25102935FA8C00D625EA /* hdsdp.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = hdsdp.c; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -38,6 +70,7 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				19C898E72931C53E00C9961F /* Accelerate.framework in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -49,6 +82,7 @@
 			children = (
 				192D10C9292544990054068A /* hdsdp */,
 				192D10C8292544990054068A /* Products */,
+				19C898E52931C53E00C9961F /* Frameworks */,
 			);
 			sourceTree = "<group>";
 		};
@@ -76,6 +110,13 @@
 		192D10D1292544B00054068A /* linalg */ = {
 			isa = PBXGroup;
 			children = (
+				19FC250A2934B66600D625EA /* def_hdsdp_sdpdata.h */,
+				19C898E92931C55D00C9961F /* hdsdp_sdpdata.c */,
+				19C898E82931C55D00C9961F /* hdsdp_sdpdata.h */,
+				19B175062937E9BD004CBA56 /* r1_opts.h */,
+				19B175072937E9BD004CBA56 /* r1_opts.c */,
+				19B174FD2937DF2D004CBA56 /* dense_opts.h */,
+				19B174FE2937DF2D004CBA56 /* dense_opts.c */,
 				192D10D52925455F0054068A /* sparse_opts.h */,
 				192D10D62925455F0054068A /* sparse_opts.c */,
 				192D10D9292546DE0054068A /* vec_opts.h */,
@@ -87,6 +128,18 @@
 		192D10D2292544BC0054068A /* interface */ = {
 			isa = PBXGroup;
 			children = (
+				19FC25102935FA8C00D625EA /* hdsdp.c */,
+				196D05BB2931F4FE00247357 /* def_hdsdp_conic.h */,
+				19C898F42931EE8800C9961F /* hdsdp_conic.h */,
+				19C898F52931EE8800C9961F /* hdsdp_conic.c */,
+				19C898EC2931C58100C9961F /* hdsdp.h */,
+				19C898ED2931C58100C9961F /* hdsdp_utils.c */,
+				19C898EB2931C58100C9961F /* hdsdp_utils.h */,
+				19FC25072934B5FD00D625EA /* hdsdp_conic_sdp.h */,
+				19FC25082934B5FD00D625EA /* hdsdp_conic_sdp.c */,
+				19FC250D2934C9D200D625EA /* hdsdp_user_data.h */,
+				198742F5293A3E1E00E42C82 /* def_hdsdp_user_data.h */,
+				19FC250E2934C9D200D625EA /* hdsdp_user_data.c */,
 			);
 			path = interface;
 			sourceTree = "<group>";
@@ -110,6 +163,14 @@
 			children = (
 			);
 			path = structures;
+			sourceTree = "<group>";
+		};
+		19C898E52931C53E00C9961F /* Frameworks */ = {
+			isa = PBXGroup;
+			children = (
+				19C898E62931C53E00C9961F /* Accelerate.framework */,
+			);
+			name = Frameworks;
 			sourceTree = "<group>";
 		};
 /* End PBXGroup section */
@@ -169,9 +230,20 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				19B174FF2937DF2D004CBA56 /* dense_opts.c in Sources */,
 				192D10CB292544990054068A /* main.c in Sources */,
+				19B175082937E9BD004CBA56 /* r1_opts.c in Sources */,
 				192D10D72925455F0054068A /* sparse_opts.c in Sources */,
 				192D10DB292546DE0054068A /* vec_opts.c in Sources */,
+				19FC25112935FA8C00D625EA /* hdsdp.c in Sources */,
+				19C898EA2931C55D00C9961F /* hdsdp_sdpdata.c in Sources */,
+				19FC250F2934C9D200D625EA /* hdsdp_user_data.c in Sources */,
+				19C898F62931EE8800C9961F /* hdsdp_conic.c in Sources */,
+				19C898EE2931C58100C9961F /* hdsdp_utils.c in Sources */,
+				19FC25092934B5FD00D625EA /* hdsdp_conic_sdp.c in Sources */,
+				19FC250B2934B8F100D625EA /* hdsdp.h in Sources */,
+				19FC250C2934BC9300D625EA /* def_hdsdp_sdpdata.h in Sources */,
+				196D05BC29324A4400247357 /* def_hdsdp_conic.h in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

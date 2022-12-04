@@ -7,6 +7,6 @@ end % End if
 data = rmfield(data, 'objcon');
 data = rmfield(data, 'lb');
 
-save(fullfile('../', 'src/potlp/potlp/', 'test/', fname) + ".mat", 'data');
+save(fullfile('/Users/gaowenzhi/Desktop/gwz/potred/', 'src/potlp/potlp/', 'test/', fname) + ".mat", 'data');
 
 end % End function

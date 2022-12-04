@@ -1,4 +1,4 @@
-function [] = test_netlib(fname, maxiter, maxtime, maxmn, minmn)
+function [] = test_netlib(fname, maxiter, maxtime, maxmn, minmn, fileID)
 
 data = preprocess(fname);
 A = data.A;
@@ -11,42 +11,58 @@ c = data.c;
 % neweigs = false;
 
 if max(m, n) > maxmn || min(m, n) < minmn
-   return;
+    % Prob pObj dObj pInf dInf rGap Time Status
+    fprintf(fileID, "| %30s | %+3.1e | %+3.1e | %3.1e | %3.1e | %3.1e | %5.1f | %s \n",...
+        fname, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, "Ignored");
+    return;
 end % End if
 
 params.maxIter = maxiter;
-params.maxRuizIter = 200;
+params.maxRuizIter = 0;
 params.maxTime = maxtime;
-params.coefScal = 1;
-[x, y, s] = potlp(A, b, c, params);
+params.coefScal = 0;
+params.curvature = 0;
+params.curvInterval = 0;
+params.RScalFreq = 1000000;
+params.PI_RestartMax = 1.0;
+params.PI_RestartRate = -1;
+params.relFeasTol = 1e-06;
+params.relOptTol = 1e-06;
 
-if abs(c' * x - b' * y) / (1 + abs(c' * x) + abs(b' * y)) > 1.1e-04
-    params.coefScal = 0;
-    [x, y, s] = potlp(A, b, c, params);
+% scaler = max([abs(b); abs(c)]);
+% if scaler > 1e+04
+%     scaler = 1e+04;
+% elseif scaler < 1e-04
+%     scaler = 1;
+% end % End if
+
+scaler = 1;
+
+tic;
+
+[x, y, s] = potlp(A, b, c, params);
+t = toc;
+
+x = x * scaler;
+s = s * scaler;
+y = y * scaler;
+
+pobj = c' * x;
+dobj = b' * y;
+pres = norm(A * x - b) / ( 1 + norm(b, 1) );
+dres = norm(A' * y + s - c) / ( 1 + norm(c, 1) );
+cpl = abs(pobj - dobj) / (1 + abs(pobj) + abs(dobj));
+max1 = max([pres, dres, cpl]);
+mm = max1;
+
+if mm < 1e-04
+    status = "Optimal";
+elseif mm < 1e-03
+    status = "Inaccurate";
+else
+    status = "Failed";
 end % End if
 
-% nrmb = norm(b, 1); nrmc = norm(c, 1);
-% b = b / (nrmb + 1); c = c / (nrmc + 1);
-% 
-% HSDAA = [sparse(m, m), A, sparse(m, n), sparse(m, 1), -b;
-%          -A',         sparse(n, n),  -speye(n), sparse(n, 1), c;
-%          b',          -c',  sparse(1, n), -1, 0];
-% 
-% [D, E, HSDA] = ruizscale(HSDAA, 30);
-% lpsol = potreduceLp(HSDA, m, maxiter, true, linesearch, neweigs, 0);
-% sol = lpsol .* E;
-% 
-% kappa = sol(end - 1);
-% tau = sol(end);
-% y = sol(1:m);
-% y = y / tau;
-% s = sol(m + n + 1 : m + 2 * n) / tau;
-% x = sol(m + 1: m + n) / tau;
-% 
-% fname = char(fname);
-% 
-% fprintf("%-12s %10.3e %10.3e  %10.3e  %10.3e \n", fname(11:end-8), c' * x, ...
-%     norm(A * x - b) / (1 + norm(b, 1)), norm(A' * y + s - c) / (norm(c, 1) + 1), ...
-%     (c' * x - b' * y) / (abs(c' * x) + abs(b' * y) + 1));
-
+fprintf(fileID, "| %30s | %+3.1e | %+3.1e | %3.1e | %3.1e | %3.1e | %5.1f | %s \n",...
+        fname, pobj, dobj, pres, dres, cpl, t, status);
 end % End function

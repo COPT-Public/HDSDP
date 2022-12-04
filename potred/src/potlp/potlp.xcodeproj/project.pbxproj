@@ -10,11 +10,16 @@
 		19116826291BB999009385FE /* lp_newton.c in Sources */ = {isa = PBXBuildFile; fileRef = 19116825291BB999009385FE /* lp_newton.c */; };
 		19116829291BBBF1009385FE /* linsys.c in Sources */ = {isa = PBXBuildFile; fileRef = 19116828291BBBF1009385FE /* linsys.c */; };
 		1911682C291BBF2C009385FE /* qdldl.c in Sources */ = {isa = PBXBuildFile; fileRef = 1911682B291BBF2C009385FE /* qdldl.c */; };
-		1964F0C228F7BC9700E6458B /* Accelerate.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 1964F0C128F7BC9700E6458B /* Accelerate.framework */; };
 		19BC6B1228EA14AB00C7A150 /* vec_mat.c in Sources */ = {isa = PBXBuildFile; fileRef = 19BC6B1128EA14AB00C7A150 /* vec_mat.c */; };
 		19BC6B1528EA1C4A00C7A150 /* pot_lanczos.c in Sources */ = {isa = PBXBuildFile; fileRef = 19BC6B1428EA1C4A00C7A150 /* pot_lanczos.c */; };
+		19D1C18E291E254C00D5F463 /* libmkl_core.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 19D1C18B291E253700D5F463 /* libmkl_core.a */; };
+		19D1C18F291E254C00D5F463 /* libmkl_intel_lp64.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 19D1C18D291E253700D5F463 /* libmkl_intel_lp64.a */; };
+		19D1C190291E254C00D5F463 /* libmkl_sequential.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 19D1C18C291E253700D5F463 /* libmkl_sequential.a */; };
 		19DCD82628DB5662006B6B01 /* main.c in Sources */ = {isa = PBXBuildFile; fileRef = 19DCD82528DB5662006B6B01 /* main.c */; };
 		19DCD83228DB587A006B6B01 /* pot_solver.c in Sources */ = {isa = PBXBuildFile; fileRef = 19DCD83128DB587A006B6B01 /* pot_solver.c */; };
+		19E84B43293BAED500F9E115 /* libmkl_sequential.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 19E84B40293BAED500F9E115 /* libmkl_sequential.a */; };
+		19E84B44293BAED500F9E115 /* libmkl_intel_lp64.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 19E84B41293BAED500F9E115 /* libmkl_intel_lp64.a */; };
+		19E84B45293BAED500F9E115 /* libmkl_core.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 19E84B42293BAED500F9E115 /* libmkl_core.a */; };
 		19F175CD28E41874004265A0 /* pot_utils.c in Sources */ = {isa = PBXBuildFile; fileRef = 19F175CC28E41874004265A0 /* pot_utils.c */; };
 		19F6C41E290EBA8300C66DE8 /* another_lp_solver.c in Sources */ = {isa = PBXBuildFile; fileRef = 19F6C41D290EBA8300C66DE8 /* another_lp_solver.c */; };
 		19F6C421290EBC7A00C66DE8 /* lp_qmatrix.c in Sources */ = {isa = PBXBuildFile; fileRef = 19F6C420290EBC7A00C66DE8 /* lp_qmatrix.c */; };
@@ -42,17 +47,25 @@
 		19116828291BBBF1009385FE /* linsys.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = linsys.c; sourceTree = "<group>"; };
 		1911682A291BBF27009385FE /* qdldl.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = qdldl.h; sourceTree = "<group>"; };
 		1911682B291BBF2C009385FE /* qdldl.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = qdldl.c; sourceTree = "<group>"; };
+		191DD2C4293C69E200C4BABA /* qp_avg.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = qp_avg.h; sourceTree = "<group>"; };
+		191DD2C5293C69E200C4BABA /* qp_avg.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = qp_avg.c; sourceTree = "<group>"; };
 		1955F02828EDF76400CD7B84 /* pot_solver.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = pot_solver.h; sourceTree = "<group>"; };
-		1964F0C128F7BC9700E6458B /* Accelerate.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = Accelerate.framework; path = System/Library/Frameworks/Accelerate.framework; sourceTree = SDKROOT; };
 		19BC6B1028EA14AB00C7A150 /* vec_mat.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = vec_mat.h; sourceTree = "<group>"; };
 		19BC6B1128EA14AB00C7A150 /* vec_mat.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = vec_mat.c; sourceTree = "<group>"; };
 		19BC6B1328EA1C4A00C7A150 /* pot_lanczos.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = pot_lanczos.h; sourceTree = "<group>"; };
 		19BC6B1428EA1C4A00C7A150 /* pot_lanczos.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = pot_lanczos.c; sourceTree = "<group>"; };
+		19D1C18A291D7B7800D5F463 /* pardiso.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = pardiso.h; sourceTree = "<group>"; };
+		19D1C18B291E253700D5F463 /* libmkl_core.a */ = {isa = PBXFileReference; lastKnownFileType = archive.ar; name = libmkl_core.a; path = ../../../../../../../opt/intel/oneapi/mkl/2021.2.0/lib/libmkl_core.a; sourceTree = "<group>"; };
+		19D1C18C291E253700D5F463 /* libmkl_sequential.a */ = {isa = PBXFileReference; lastKnownFileType = archive.ar; name = libmkl_sequential.a; path = ../../../../../../../opt/intel/oneapi/mkl/2021.2.0/lib/libmkl_sequential.a; sourceTree = "<group>"; };
+		19D1C18D291E253700D5F463 /* libmkl_intel_lp64.a */ = {isa = PBXFileReference; lastKnownFileType = archive.ar; name = libmkl_intel_lp64.a; path = ../../../../../../../opt/intel/oneapi/mkl/2021.2.0/lib/libmkl_intel_lp64.a; sourceTree = "<group>"; };
 		19DCD82228DB5662006B6B01 /* potlp */ = {isa = PBXFileReference; explicitFileType = "compiled.mach-o.executable"; includeInIndex = 0; path = potlp; sourceTree = BUILT_PRODUCTS_DIR; };
 		19DCD82528DB5662006B6B01 /* main.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = main.c; sourceTree = "<group>"; };
 		19DCD83028DB587A006B6B01 /* pot_def.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = pot_def.h; sourceTree = "<group>"; };
 		19DCD83128DB587A006B6B01 /* pot_solver.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = pot_solver.c; sourceTree = "<group>"; };
 		19E194E22908CB42003BEFD3 /* data.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = data.h; path = potlp/test/data.h; sourceTree = "<group>"; };
+		19E84B40293BAED500F9E115 /* libmkl_sequential.a */ = {isa = PBXFileReference; lastKnownFileType = archive.ar; name = libmkl_sequential.a; path = ../../../../../../../opt/intel/oneapi/mkl/2021.2.0/lib/libmkl_sequential.a; sourceTree = "<group>"; };
+		19E84B41293BAED500F9E115 /* libmkl_intel_lp64.a */ = {isa = PBXFileReference; lastKnownFileType = archive.ar; name = libmkl_intel_lp64.a; path = ../../../../../../../opt/intel/oneapi/mkl/2021.2.0/lib/libmkl_intel_lp64.a; sourceTree = "<group>"; };
+		19E84B42293BAED500F9E115 /* libmkl_core.a */ = {isa = PBXFileReference; lastKnownFileType = archive.ar; name = libmkl_core.a; path = ../../../../../../../opt/intel/oneapi/mkl/2021.2.0/lib/libmkl_core.a; sourceTree = "<group>"; };
 		19F175CA28E4155B004265A0 /* pot_param.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = pot_param.h; sourceTree = "<group>"; };
 		19F175CB28E41874004265A0 /* pot_utils.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = pot_utils.h; sourceTree = "<group>"; };
 		19F175CC28E41874004265A0 /* pot_utils.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = pot_utils.c; sourceTree = "<group>"; };
@@ -75,7 +88,9 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				1964F0C228F7BC9700E6458B /* Accelerate.framework in Frameworks */,
+				19D1C18F291E254C00D5F463 /* libmkl_intel_lp64.a in Frameworks */,
+				19D1C18E291E254C00D5F463 /* libmkl_core.a in Frameworks */,
+				19D1C190291E254C00D5F463 /* libmkl_sequential.a in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -85,6 +100,9 @@
 		1964F0C028F7BC9700E6458B /* Frameworks */ = {
 			isa = PBXGroup;
 			children = (
+				19D1C18B291E253700D5F463 /* libmkl_core.a */,
+				19D1C18D291E253700D5F463 /* libmkl_intel_lp64.a */,
+				19D1C18C291E253700D5F463 /* libmkl_sequential.a */,
 				1964F0C128F7BC9700E6458B /* Accelerate.framework */,
 			);
 			name = Frameworks;
@@ -124,6 +142,8 @@
 		19DCD82C28DB57C2006B6B01 /* interface */ = {
 			isa = PBXGroup;
 			children = (
+				191DD2C4293C69E200C4BABA /* qp_avg.h */,
+				191DD2C5293C69E200C4BABA /* qp_avg.c */,
 				19116824291BB999009385FE /* lp_newton.h */,
 				19116825291BB999009385FE /* lp_newton.c */,
 				19F6C41C290EBA8300C66DE8 /* another_lp_solver.h */,
@@ -158,6 +178,7 @@
 		19DCD82E28DB57D5006B6B01 /* linalg */ = {
 			isa = PBXGroup;
 			children = (
+				19D1C18A291D7B7800D5F463 /* pardiso.h */,
 				1911682B291BBF2C009385FE /* qdldl.c */,
 				1911682A291BBF27009385FE /* qdldl.h */,
 				19116827291BBBF1009385FE /* linsys.h */,
@@ -246,6 +267,7 @@
 				19F9A0A928E3B8AE00C7710E /* pot_vector.c in Sources */,
 				19DCD83228DB587A006B6B01 /* pot_solver.c in Sources */,
 				19116829291BBBF1009385FE /* linsys.c in Sources */,
+				191DD2C6293C69E200C4BABA /* qp_avg.c in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -366,6 +388,10 @@
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				CODE_SIGN_STYLE = Automatic;
+				LIBRARY_SEARCH_PATHS = (
+					"$(inherited)",
+					/opt/intel/oneapi/mkl/2021.2.0/lib,
+				);
 				PRODUCT_NAME = "$(TARGET_NAME)";
 			};
 			name = Debug;
@@ -374,6 +400,10 @@
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				CODE_SIGN_STYLE = Automatic;
+				LIBRARY_SEARCH_PATHS = (
+					"$(inherited)",
+					/opt/intel/oneapi/mkl/2021.2.0/lib,
+				);
 				PRODUCT_NAME = "$(TARGET_NAME)";
 			};
 			name = Release;

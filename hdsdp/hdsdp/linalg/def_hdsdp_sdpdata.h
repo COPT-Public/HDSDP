@@ -15,10 +15,24 @@ typedef struct {
     
 } eig_factor;
 
+/* Implementations of the SDP coefficient matrix */
+typedef enum {
+    
+    SDP_COEFF_ZERO,
+    SDP_COEFF_SPARSE,
+    SDP_COEFF_DENSE,
+    SDP_COEFF_SPR1,
+    SDP_COEFF_DSR1
+    
+} sdp_coeff_type;
+
 typedef struct {
     
     int        nSDPCol;
+    
+    sdp_coeff_type dataType;
     void      *dataMat;
+    
     eig_factor *eig;
     
     void (*dataMataApB)          ( void *, double, void * );
@@ -30,17 +44,6 @@ typedef struct {
     void (*dataMatDump)          ( void *, double * );
     
 } sdp_coeff;
-
-/* Implementations of the SDP coefficient matrix */
-typedef enum {
-    
-    SDP_COEFF_ZERO,
-    SDP_COEFF_SPARSE,
-    SDP_COEFF_DENSE,
-    SDP_COEFF_SPR1,
-    SDP_COEFF_DSE1
-    
-} sdp_coeff_type;
 
 typedef struct {
     

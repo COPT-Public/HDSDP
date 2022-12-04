@@ -1,35 +1,19 @@
 /** @file hdsdp\_user\_data.c
  *
  */
+
+#include "def_hdsdp_user_data.h"
 #include "hdsdp_user_data.h"
 #include "hdsdp_utils.h"
 #include "hdsdp_conic.h"
 #include "sparse_opts.h"
 
-/* Interface of user data */
-
-/** @struct hdsdp\_user\_data
- *  @brief HDSDP user conic data for SDP and LP
- *
- */
-struct hdsdp_user_data {
-    
-    cone_type cone;
-    
-    int     nConicRow;
-    int     nConicCol;
-    int    *coneMatBeg;
-    int    *coneMatIdx;
-    double *coneMatElem;
-    
-};
 
 /** @brief Check if LP data implies bound constraint on y
  *
  */
 static int HUserDataICheckLpBound( int nCol, int nRow, int *colMatBeg, int *colMatIdx, double *colMatElem ) {
-    
-    
+    /* TODO: Check if an LP is bound */
     
     return 0;
 }
@@ -84,7 +68,9 @@ extern cone_type HUserDataChooseCone( user_data *Hdata ) {
         return ( nzCoeffs > 0.3 * Hdata->nConicRow ) ? \
                 HDSDP_CONETYPE_DENSE_SDP : HDSDP_CONETYPE_SPARSE_SDP;
     } else if ( Hdata->cone == HDSDP_CONETYPE_LP ) {
-        
+        int isLpBound = HUserDataICheckLpBound(Hdata->nConicCol, Hdata->nConicRow,
+                                               Hdata->coneMatBeg, Hdata->coneMatIdx, Hdata->coneMatElem);
+        return ( isLpBound ) ? HDSDP_CONETYPE_BOUND : HDSDP_CONETYPE_LP;
     }
     
     return HDSDP_CONETYPE_UNKNOWN;
