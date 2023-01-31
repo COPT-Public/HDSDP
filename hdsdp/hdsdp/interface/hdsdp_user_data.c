@@ -27,11 +27,19 @@ struct hdsdp_user_data {
 /** @brief Check if LP data implies bound constraint on y
  *
  */
-static int HUserDataICheckLpBound( int nCol, int nRow, int *colMatBeg, int *colMatIdx, double *colMatElem ) {
+static int HUserDataICheckLpBound( user_data *Hdata ) {
     
+    if ( Hdata->cone != HDSDP_CONETYPE_LP ) {
+        return 0;
+    }
     
+    for ( int i = 0; i < Hdata->nConicRow; ++i ) {
+        if ( Hdata->coneMatBeg[i + 1] - Hdata->coneMatBeg[i] >= 2 ) {
+            return 0;
+        }
+    }
     
-    return 0;
+    return 1;
 }
 
 extern hdsdp_retcode HUserDataCreate( user_data **pHdata ) {
@@ -84,7 +92,11 @@ extern cone_type HUserDataChooseCone( user_data *Hdata ) {
         return ( nzCoeffs > 0.3 * Hdata->nConicRow ) ? \
                 HDSDP_CONETYPE_DENSE_SDP : HDSDP_CONETYPE_SPARSE_SDP;
     } else if ( Hdata->cone == HDSDP_CONETYPE_LP ) {
-        
+        if ( HUserDataICheckLpBound(Hdata) ) {
+            return HDSDP_CONETYPE_BOUND;
+        } else {
+            return HDSDP_CONETYPE_LP;
+        }
     }
     
     return HDSDP_CONETYPE_UNKNOWN;

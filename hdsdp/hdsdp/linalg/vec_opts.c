@@ -1,6 +1,7 @@
 #include "vec_opts.h"
 #include "hdsdp_utils.h"
 
+#include <Accelerate/Accelerate.h>
 #include <math.h>
 
 /* Blas functions */

@@ -14,8 +14,8 @@
 typedef enum {
     
     HDSDP_CONETYPE_UNKNOWN,
-    HDSDP_CONETYPE_LP,
-    HDSDP_CONETYPE_BOUND,
+    HDSDP_CONETYPE_LP,         /* A' * y <= c */
+    HDSDP_CONETYPE_BOUND,      /*      y <= u */
     HDSDP_CONETYPE_DENSE_SDP,
     HDSDP_CONETYPE_SPARSE_SDP,
     HDSDP_CONETYPE_SOCP
