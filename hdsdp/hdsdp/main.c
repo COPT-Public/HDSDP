@@ -1,10 +1,9 @@
 #include <stdio.h>
+#include <stdlib.h>
 
-#include "def_hdsdp_conic.h"
+int test_file_io( void );
 
 int main(int argc, const char * argv[]) {
     
-    // insert code here...
-    printf("Hello, World!\n");
-    return 0;
+    test_file_io();
 }

@@ -46,7 +46,7 @@ typedef struct hdsdp_solver_internal hdsdp;
 #define DBL_PARAM_TIMELIMIT     2
 
 // Version information
-#define VERSION_MAJOR           2
+#define VERSION_MAJOR           1
 #define VERSION_MINOR           0
 #define VERSION_TECHNICAL       0
 

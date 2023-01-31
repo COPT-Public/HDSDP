@@ -2,11 +2,12 @@
  *
  */
 
-#include "def_hdsdp_user_data.h"
-#include "hdsdp_user_data.h"
-#include "hdsdp_utils.h"
-#include "hdsdp_conic.h"
-#include "sparse_opts.h"
+#include "interface/def_hdsdp_user_data.h"
+#include "interface/hdsdp_user_data.h"
+#include "interface/hdsdp_utils.h"
+#include "interface/hdsdp_conic.h"
+
+#include "linalg/sparse_opts.h"
 
 
 /** @brief Check if LP data implies bound constraint on y
@@ -14,11 +15,11 @@
  */
 static int HUserDataICheckLpBound( user_data *Hdata ) {
     
-    return 0;
     if ( Hdata->cone != HDSDP_CONETYPE_LP ) {
         return 0;
     }
     
+    /* If each column holds at most one variable, then it is bound */
     for ( int i = 0; i < Hdata->nConicRow; ++i ) {
         if ( Hdata->coneMatBeg[i + 1] - Hdata->coneMatBeg[i] >= 2 ) {
             return 0;
@@ -70,12 +71,14 @@ extern void HUserDataSetConeData( user_data *Hdata, int *coneMatBeg, int *coneMa
 extern cone_type HUserDataChooseCone( user_data *Hdata ) {
     
     assert( Hdata->cone != HDSDP_CONETYPE_SPARSE_SDP );
+    
+    /* Automatic choice between different cone types*/
     if ( Hdata->cone == HDSDP_CONETYPE_SOCP || Hdata->cone == HDSDP_CONETYPE_BOUND ||
          Hdata->cone == HDSDP_CONETYPE_SPARSE_SDP ) {
         return Hdata->cone;
     } else if ( Hdata->cone == HDSDP_CONETYPE_DENSE_SDP ) {
-        int nzCoeffs = csp_nnz_cols(Hdata->nConicRow + 1, Hdata->coneMatBeg);
-        return ( nzCoeffs > 0.3 * Hdata->nConicRow ) ? \
+        int nzSDPCoeffs = csp_nnz_cols(Hdata->nConicRow + 1, Hdata->coneMatBeg);
+        return ( nzSDPCoeffs > 0.3 * Hdata->nConicRow ) ? \
                 HDSDP_CONETYPE_DENSE_SDP : HDSDP_CONETYPE_SPARSE_SDP;
     } else if ( Hdata->cone == HDSDP_CONETYPE_LP ) {
         if ( HUserDataICheckLpBound(Hdata) ) {

@@ -3,9 +3,10 @@
  *  @date 11/24/2022
  */
 
-#include "hdsdp_sdpdata.h"
-#include "vec_opts.h"
-#include "hdsdp_utils.h"
+#include "interface/hdsdp_utils.h"
+
+#include "linalg/hdsdp_sdpdata.h"
+#include "linalg/vec_opts.h"
 
 #include <math.h>
 

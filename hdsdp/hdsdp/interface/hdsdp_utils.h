@@ -6,7 +6,7 @@
 #ifndef hdsdp_utils_h
 #define hdsdp_utils_h
 
-#include "hdsdp.h"
+#include "interface/hdsdp.h"
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -22,16 +22,17 @@
                                 retcode = HDSDP_RETCODE_MEMORY; \
                                 goto exit_cleanup;              \
                             }
-
+#define HDSDP_ERROR_TRACE printf("File [%30s] Line [%d]", __FILE__, __LINE__)
 #define HDSDP_CALL(func) retcode = (func);                      \
                          if (retcode != HDSDP_RETCODE_OK) {     \
                              goto exit_cleanup;                 \
                          }
 
-#define HDSDP_MAX(x, y) (x) >= (y) ? (x) : (y)
-#define HDSDP_MIN(x, y) (x) <= (y) ? (x) : (y)
+#define HDSDP_MAX(x, y) ((x) > (y) ? (x) : (y))
+#define HDSDP_MIN(x, y) ((x) < (y) ? (x) : (y))
 
 #define PACK_NNZ(n) ((n) * ((n) + 1) / 2)
+#define PACK_IDX(n, i, j) (int)((2 * (n) - (j) - 1) * (j) / 2) + (i)
 #define PACK_ENTRY(A, n, i, j) (A[(int)((2 * (n) - (j) - 1) * (j) / 2) + (i)])
 #define FULL_ENTRY(A, n, i, j) (A[(j) * (n) + (i)])
 

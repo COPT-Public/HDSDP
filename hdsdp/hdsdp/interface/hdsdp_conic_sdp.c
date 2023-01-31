@@ -1,7 +1,7 @@
-#include "hdsdp_conic_sdp.h"
-#include "def_hdsdp_user_data.h"
-#include "hdsdp_user_data.h"
-#include "hdsdp_utils.h"
+#include "interface/hdsdp_conic_sdp.h"
+#include "interface/def_hdsdp_user_data.h"
+#include "interface/hdsdp_user_data.h"
+#include "interface/hdsdp_utils.h"
 
 /** @brief Choose type of an SDP ceofficient matrix
  *

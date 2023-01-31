@@ -1,7 +1,7 @@
 #ifndef def_hdsdp_sdpdata_h
 #define def_hdsdp_sdpdata_h
 
-#include "hdsdp.h"
+#include "interface/hdsdp.h"
 
 /** @struct eigFactor
  *  @brief The eigen decomposition structure

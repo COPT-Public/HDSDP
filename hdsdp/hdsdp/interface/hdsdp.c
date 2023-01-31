@@ -2,10 +2,10 @@
  *  @brief A homogeneous dual-scaling interior point solver
  */
 
-#include "hdsdp.h"
-#include "hdsdp_conic.h"
-#include "hdsdp_utils.h"
-#include "hdsdp_user_data.h"
+#include "interface/hdsdp.h"
+#include "interface/hdsdp_conic.h"
+#include "interface/hdsdp_utils.h"
+#include "interface/hdsdp_user_data.h"
 
 struct hdsdp_solver_internal {
     

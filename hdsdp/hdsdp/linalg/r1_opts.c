@@ -1,6 +1,7 @@
-#include "r1_opts.h"
-#include "hdsdp_utils.h"
-#include "vec_opts.h"
+#include "interface/hdsdp_utils.h"
+
+#include "linalg/r1_opts.h"
+#include "linalg/vec_opts.h"
 
 #include <math.h>
 

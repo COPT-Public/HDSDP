@@ -2,8 +2,8 @@
  *  @brief Implement HDSDP general conic interface
  */
 
-#include "hdsdp_utils.h"
-#include "def_hdsdp_conic.h"
+#include "interface/hdsdp_utils.h"
+#include "interface/def_hdsdp_conic.h"
 
 static void HConeISetDenseSDPMethods( hdsdp_cone *HCone ) {
     

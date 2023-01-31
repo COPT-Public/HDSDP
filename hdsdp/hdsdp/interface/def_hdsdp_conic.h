@@ -5,8 +5,9 @@
 #ifndef def_hdsdp_conic_h
 #define def_hdsdp_conic_h
 
-#include "hdsdp.h"
-#include "def_hdsdp_sdpdata.h"
+#include "interface/hdsdp.h"
+
+#include "linalg/def_hdsdp_sdpdata.h"
 
 #include <stdint.h>
 

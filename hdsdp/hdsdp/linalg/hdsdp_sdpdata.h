@@ -4,8 +4,9 @@
 #ifndef hdsdp_sdpdata_h
 #define hdsdp_sdpdata_h
 
-#include "hdsdp.h"
-#include "def_hdsdp_sdpdata.h"
+#include "interface/hdsdp.h"
+
+#include "linalg/def_hdsdp_sdpdata.h"
 
 #ifdef __cplusplus
 extern "C" {

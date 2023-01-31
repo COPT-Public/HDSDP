@@ -1,5 +1,6 @@
-#include "vec_opts.h"
-#include "hdsdp_utils.h"
+#include "interface/hdsdp_utils.h"
+
+#include "linalg/vec_opts.h"
 
 #include <Accelerate/Accelerate.h>
 #include <math.h>

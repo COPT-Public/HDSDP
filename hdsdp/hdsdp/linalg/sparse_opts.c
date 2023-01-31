@@ -3,8 +3,8 @@
  *
  */
 
-#include "sparse_opts.h"
-#include "vec_opts.h"
+#include "linalg/sparse_opts.h"
+#include "linalg/vec_opts.h"
 
 #include <math.h>
 
