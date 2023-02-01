@@ -19,8 +19,8 @@ struct hdsdp_user_data {
     
     cone_type cone;
     
-    int     nConicRow;
-    int     nConicCol;
+    int     nConicRow; /* Number of constraints */
+    int     nConicCol; /* For SDP cone: conic dimension, for LP cone: number of LP columns */
     int    *coneMatBeg;
     int    *coneMatIdx;
     double *coneMatElem;

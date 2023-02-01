@@ -48,12 +48,13 @@ typedef enum {
 typedef struct {
     
     cone_type cone; ///< What cone is it?
-    void   *coneData;
+    
+    void  *usrData;
+    void  *coneData;
     
     /* Conic data interface */
-    hdsdp_retcode (*coneInitData)    ( void ** );
-    hdsdp_retcode (*coneSetData)     ( void *, void * );
-    hdsdp_retcode (*coneProcData)    ( void * );
+    hdsdp_retcode (*coneCreate)    ( void ** );
+    hdsdp_retcode (*coneProcData)    ( void *, int, int, int *, int *, double * );
     void          (*coneDestroyData) ( void ** );
     
     /* Conic algorithm interface */
@@ -88,7 +89,7 @@ typedef struct {
     void *sdpDualStep;
     
     sdp_coeff **sdpRow;
-    sdp_coeff   sdpRHS;
+    sdp_coeff  *sdpObj;
     
     int *sdpConePerm;
     
@@ -107,8 +108,9 @@ typedef struct {
     void *sdpDualStep;
     
     int nRowElem;
-    int *sdplRowIdx;
+    int *rowIdx;
     sdp_coeff **sdpRow;
+    sdp_coeff  *sdpObj;
     
     int sdpConeStats[5];
     

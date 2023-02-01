@@ -55,3 +55,12 @@ extern void pds_dump( int n, double *A, double *v ) {
     
     return;
 }
+
+extern void pds_decompress( int nnz, int *Ci, double *Cx, double *A ) {
+    
+    for ( int k = 0; k < nnz; ++k ) {
+        A[Ci[k]] = Cx[k];
+    }
+    
+    return;
+}

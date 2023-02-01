@@ -3,18 +3,6 @@
 
 #include "interface/hdsdp.h"
 
-/** @struct eigFactor
- *  @brief The eigen decomposition structure
- */
-typedef struct {
-    
-    int     nCol;
-    int     rank;
-    double *eVals;
-    double *eVecs;
-    
-} eig_factor;
-
 /* Implementations of the SDP coefficient matrix */
 typedef enum {
     
@@ -33,15 +21,19 @@ typedef struct {
     sdp_coeff_type dataType;
     void      *dataMat;
     
-    eig_factor *eig;
+    int eigRank;
+    double *eigVals;
+    double *eigVecs;
     
-    void (*dataMataApB)          ( void *, double, void * );
-    double (*dataMatDot)         ( void *, double * );
-    void (*dataMatScal)          ( void *, double );
-    void (*dataMatNorm)          ( void *, int );
-    hdsdp_retcode (*dataMatEig)  ( void *, eig_factor ** );
-    int (*dataMatGetNnz)         ( void * );
-    void (*dataMatDump)          ( void *, double * );
+    hdsdp_retcode (*create) ( void **, int, int, int *, double * );
+    double (*dot)         ( void *, double * );
+    void (*scal)          ( void *, double );
+    double (*norm)        ( void *, int );
+    hdsdp_retcode (*eig)  ( void *, int *, double *, double *, double * );
+    int (*getNnz)         ( void * );
+    void (*dump)          ( void *, double * );
+    void (*clear)         ( void * );
+    void (*view)          ( void * );
     
 } sdp_coeff;
 

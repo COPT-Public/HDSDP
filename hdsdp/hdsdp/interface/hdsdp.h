@@ -14,6 +14,8 @@
 #else
 #endif
 
+#define HDSDP_CONIC_DEBUG
+
 typedef enum {
     
     HDSDP_RETCODE_OK,

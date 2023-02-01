@@ -7,62 +7,136 @@
 
 #include "linalg/hdsdp_sdpdata.h"
 #include "linalg/vec_opts.h"
+#include "linalg/sparse_opts.h"
+#include "linalg/dense_opts.h"
+#include "linalg/r1_opts.h"
+
+#include "external/hdsdp_cs.h"
 
 #include <math.h>
 
-extern hdsdp_retcode sdpDataMatCreate( sdp_coeff **psdpCoeff ) {
+static hdsdp_retcode dataMatCreateZeroImpl( void **pA, int nSDPCol, int dataMatNnz, int *dataMatIdx, double *dataMatElem ) {
     
     hdsdp_retcode retcode = HDSDP_RETCODE_OK;
     
-    if ( !psdpCoeff ) {
+    if ( !pA ) {
         retcode = HDSDP_RETCODE_FAILED;
         goto exit_cleanup;
     }
     
-    sdp_coeff *sdpCoeff = NULL;
-    HDSDP_INIT(sdpCoeff, sdp_coeff, 1);
-    HDSDP_MEMCHECK(sdpCoeff);
+    sdp_coeff_zero *zero = NULL;
+    HDSDP_INIT(zero, sdp_coeff_zero, 1);
+    HDSDP_MEMCHECK(zero);
     
-    *psdpCoeff = sdpCoeff;
+    zero->nSDPCol = nSDPCol;
+    *pA = (void *) zero;
     
 exit_cleanup:
     
     return retcode;
 }
 
-#define SPARSE_THRESHOLD (0.3)
-
-/** @brief Set SDP data matrix. This routine selects data type and assiciate structure with their operations
- * 
- *
- */
-extern hdsdp_retcode sdpDataMatSetData( sdp_coeff *sdpCoeff, int nSDPCol, int dataMatNnz, int *dataMatIdx, double *dataMatElem ) {
+static hdsdp_retcode dataMatCreateSparseImpl( void **pA, int nSDPCol, int dataMatNnz, int *dataMatIdx, double *dataMatElem ) {
     
     hdsdp_retcode retcode = HDSDP_RETCODE_OK;
     
+    if ( !pA ) {
+        retcode = HDSDP_RETCODE_FAILED;
+        goto exit_cleanup;
+    }
     
+    sdp_coeff_sparse *sparse = NULL;
+    HDSDP_INIT(sparse, sdp_coeff_sparse, 1);
+    HDSDP_MEMCHECK(sparse);
     
+    sparse->nSDPCol = nSDPCol;
+    sparse->nTriMatElem = dataMatNnz;
     
+    HDSDP_INIT(sparse->triMatRow, int, dataMatNnz);
+    HDSDP_INIT(sparse->triMatCol, int, dataMatNnz);
+    HDSDP_INIT(sparse->triMatElem, double, dataMatNnz);
     
+    HDSDP_MEMCHECK(sparse->triMatRow);
+    HDSDP_MEMCHECK(sparse->triMatCol);
+    HDSDP_MEMCHECK(sparse->triMatElem);
+    
+    tsp_decompress(sparse->nSDPCol, sparse->nTriMatElem, dataMatIdx, dataMatElem,
+                   sparse->triMatRow, sparse->triMatCol, sparse->triMatElem);
+    
+    *pA = (void *) sparse;
     
 exit_cleanup:
     
     return retcode;
 }
 
-/* Wrapper for the operations */
-extern void sdpDataMataApB( sdp_coeff *A, double alpha, void *B ) {
+static hdsdp_retcode dataMatCreateDenseImpl( void **pA, int nSDPCol, int dataMatNnz, int *dataMatIdx, double *dataMatElem ) {
     
-    A->dataMataApB(A->dataMat, alpha, B);
+    hdsdp_retcode retcode = HDSDP_RETCODE_OK;
     
-    return;
+    if ( !pA ) {
+        retcode = HDSDP_RETCODE_FAILED;
+        goto exit_cleanup;
+    }
+    
+    sdp_coeff_dense *dense = NULL;
+    HDSDP_INIT(dense, sdp_coeff_dense, 1);
+    HDSDP_MEMCHECK(dense);
+    
+    dense->nSDPCol = nSDPCol;
+    HDSDP_INIT(dense->dsMatElem, double, PACK_NNZ(nSDPCol));
+    HDSDP_MEMCHECK(dense->dsMatElem);
+    
+    pds_decompress(dataMatNnz, dataMatIdx, dataMatElem, dense->dsMatElem);
+
+    *pA = (void *) dense;
+    
+exit_cleanup:
+               
+    return retcode;
 }
 
-/* TODO: Wrapper for the other operations */
+/* Rank-one matrices cannot be directly created */
+static hdsdp_retcode dataMatCreateRankOneSparseImpl( void **pA, int nSDPCol, int dataMatNnz, int *dataMatIdx, double *dataMatElem ) {
+    
+    return HDSDP_RETCODE_FAILED;
+}
 
+static hdsdp_retcode dataMatCreateRankOneDenseImpl( void **pA, int nSDPCol, int dataMatNnz, int *dataMatIdx, double *dataMatElem ) {
+    
+    return HDSDP_RETCODE_FAILED;
+}
 
-/* TODO: The name dataMat may be changed for SDP context */
-extern void dataMatScalZeroImpl( void *A, double alpha ) {
+static double dataMatDotFullZeroImpl( void *A, double *dFullMatrix ) {
+    
+    return 0.0;
+}
+
+static double dataMatDotFullSparseImpl( void *A, double *dFullMatrix ) {
+    
+    /* TODO: */
+    return 0.0;
+}
+
+static double dataMatDotFullDenseImpl( void *A, double *dFullMatrix ) {
+    
+    /* TODO: */
+    return 0.0;
+}
+
+static double dataMatDotFullRankOneSparseImpl( void *A, double *dFullMatrix ) {
+    
+    /* TODO: */
+    return 0.0;
+}
+
+static double dataMatDotFullRankOneDenseImpl( void *A, double *dFullMatrix ) {
+    
+    /* TODO: */
+    return 0.0;
+}
+
+static void dataMatScalZeroImpl( void *A, double alpha ) {
     
     return;
 }
@@ -71,7 +145,7 @@ extern void dataMatScalZeroImpl( void *A, double alpha ) {
  *  @param[in] A sdpSparseData pointer
  *  @param[in] alpha Scale parameter
  */
-extern void dataMatScalSparseImpl( void *A, double alpha ) {
+static void dataMatScalSparseImpl( void *A, double alpha ) {
     
     sdp_coeff_sparse *spA = (sdp_coeff_sparse *) A;
     int incx = 1;
@@ -85,7 +159,7 @@ extern void dataMatScalSparseImpl( void *A, double alpha ) {
  *  @param[in] A sdpDenseData pointer
  *  @param[in] alpha Scale parameter
  */
-extern void dataMatScalDenseImpl( void *A, double alpha ) {
+static void dataMatScalDenseImpl( void *A, double alpha ) {
     
     sdp_coeff_dense *dsA = (sdp_coeff_dense *) A;
     int nElem = PACK_NNZ(dsA->nSDPCol);
@@ -100,7 +174,7 @@ extern void dataMatScalDenseImpl( void *A, double alpha ) {
  *  @param[in] A sdpRankOneSparseData pointer
  *  @param[in] alpha Scale parameter
  */
-extern void dataMatScalRankOneSparseImpl( void *A, double alpha ) {
+static void dataMatScalRankOneSparseImpl( void *A, double alpha ) {
     
     /* Avoid alpha = 0.0 case */
     assert( fabs(alpha) >= 1e-08 );
@@ -116,7 +190,7 @@ extern void dataMatScalRankOneSparseImpl( void *A, double alpha ) {
  *  @param[in] A sdpRankOneDenseData pointer
  *  @param[in] alpha Scale parameter
  */
-extern void dataMatScalRankOneDenseImpl( void *A, double alpha ) {
+static void dataMatScalRankOneDenseImpl( void *A, double alpha ) {
     
     /* Avoid alpha = 0.0 case */
     assert( fabs(alpha) >= 1e-08 );
@@ -127,7 +201,7 @@ extern void dataMatScalRankOneDenseImpl( void *A, double alpha ) {
     return;
 }
 
-extern double dataMatNormZeroImpl( void *A, int type ) {
+static double dataMatNormZeroImpl( void *A, int type ) {
     
     return 0.0;
 }
@@ -137,7 +211,7 @@ extern double dataMatNormZeroImpl( void *A, int type ) {
  *  @param[in] type Type of norm
  *  @return Norm of A
  */
-extern double dataMatNormSparseImpl( void *A, int type ) {
+static double dataMatNormSparseImpl( void *A, int type ) {
     
     sdp_coeff_sparse *spA = (sdp_coeff_sparse *) A;
     double nrmA = 0.0;
@@ -165,7 +239,7 @@ extern double dataMatNormSparseImpl( void *A, int type ) {
  *  @param[in] type Type of norm
  *  @return Norm of A
  */
-extern double dataMatNormDenseImpl( void *A, int type ) {
+static double dataMatNormDenseImpl( void *A, int type ) {
     
     sdp_coeff_dense *dsA = (sdp_coeff_dense *) A;
     double nrmA = 0.0;
@@ -201,7 +275,7 @@ extern double dataMatNormDenseImpl( void *A, int type ) {
  *  @param[in] type Type of norm
  *  @return Norm of A
  */
-extern double dataMatNormRankOneSparseImpl( void *A, int type ) {
+static double dataMatNormRankOneSparseImpl( void *A, int type ) {
     
     sdp_coeff_spr1 *spR1A = (sdp_coeff_spr1 *) A;
     double nrmA = 0.0;
@@ -223,7 +297,7 @@ extern double dataMatNormRankOneSparseImpl( void *A, int type ) {
  *  @param[in] type Type of norm
  *  @return Norm of A
  */
-extern double dataMatNormRankOneDenseImpl( void *A, int type ) {
+static double dataMatNormRankOneDenseImpl( void *A, int type ) {
     
     sdp_coeff_dsr1 *dsR1A = (sdp_coeff_dsr1 *) A;
     double nrmA = 0.0;
@@ -240,7 +314,7 @@ extern double dataMatNormRankOneDenseImpl( void *A, int type ) {
     return nrmA;
 }
 
-extern int dataMatGetNnzZeroImpl( void *A ) {
+static int dataMatGetNnzZeroImpl( void *A ) {
     
     return 0;
 }
@@ -249,7 +323,7 @@ extern int dataMatGetNnzZeroImpl( void *A ) {
  *  @param[in] A sdpSparseData pointer
  *  @return Number of nonzero elements in A
  */
-extern int dataMatGetNnzSparseImpl( void *A ) {
+static int dataMatGetNnzSparseImpl( void *A ) {
     
     sdp_coeff_sparse *spA = (sdp_coeff_sparse *) A;
     
@@ -260,7 +334,7 @@ extern int dataMatGetNnzSparseImpl( void *A ) {
  *  @param[in] A sdpDenseData pointer
  *  @return Number of nonzero elements in A
  */
-extern int dataMatGetNnzDenseImpl( void *A ) {
+static int dataMatGetNnzDenseImpl( void *A ) {
     
     sdp_coeff_dense *dsA = (sdp_coeff_dense *) A;
     
@@ -271,7 +345,7 @@ extern int dataMatGetNnzDenseImpl( void *A ) {
  *  @param[in] A sdpRankOneSparseData pointer
  *  @return Number of nonzero elements in A
  */
-extern int dataMatGetNnzRankOneSparseImpl( void *A ) {
+static int dataMatGetNnzRankOneSparseImpl( void *A ) {
     
     sdp_coeff_spr1 *spR1A = (sdp_coeff_spr1 *) A;
     
@@ -282,14 +356,14 @@ extern int dataMatGetNnzRankOneSparseImpl( void *A ) {
  *  @param[in] A sdpRankOneDenseData pointer
  *  @return Number of nonzero elements in A
  */
-extern int dataMatGetNnzRankOneDenseImpl( void *A ) {
+static int dataMatGetNnzRankOneDenseImpl( void *A ) {
     
     sdp_coeff_dsr1 *dsR1A = (sdp_coeff_dsr1 *) A;
     
     return PACK_NNZ(dsR1A->nSDPCol);
 }
 
-extern void dataMatDumpZeroImpl( void *A, double *v ) {
+static void dataMatDumpZeroImpl( void *A, double *v ) {
     
     sdp_coeff_zero *zeroA = (sdp_coeff_zero *) A;
     HDSDP_ZERO(v, double, zeroA->nSDPCol * zeroA->nSDPCol);
@@ -301,7 +375,7 @@ extern void dataMatDumpZeroImpl( void *A, double *v ) {
  *  @param[in] A sdpSparseData pointer
  *  @param[out] v Store full matrix
  */
-extern void dataMatDumpSparseImpl( void *A, double *v ) {
+static void dataMatDumpSparseImpl( void *A, double *v ) {
     
     sdp_coeff_sparse *spA = (sdp_coeff_sparse *) A;
     HDSDP_ZERO(v, double, spA->nSDPCol * spA->nSDPCol);
@@ -321,7 +395,7 @@ extern void dataMatDumpSparseImpl( void *A, double *v ) {
  *  @param[in] A sdpDenseData pointer
  *  @param[out] v Store full matrix
  */
-extern void dataMatDumpDenseImpl( void *A, double *v ) {
+static void dataMatDumpDenseImpl( void *A, double *v ) {
     
     sdp_coeff_dense *dsA = (sdp_coeff_dense *) A;
     int nCol = dsA->nSDPCol;
@@ -344,7 +418,7 @@ extern void dataMatDumpDenseImpl( void *A, double *v ) {
  *  @param[in] A sdpRankOneSparseData pointer
  *  @param[out] v Store full matrix
  */
-extern void dataMatDumpRankOneSparseImpl( void *A, double *v ) {
+static void dataMatDumpRankOneSparseImpl( void *A, double *v ) {
     
     sdp_coeff_spr1 *spR1A = (sdp_coeff_spr1 *) A;
     HDSDP_ZERO(v, double, spR1A->nSDPCol * spR1A->nSDPCol);
@@ -369,7 +443,7 @@ extern void dataMatDumpRankOneSparseImpl( void *A, double *v ) {
  *  @param[in] A sdpRankOneDenseData pointer
  *  @param[out] v Store full matrix
  */
-extern void dataMatDumpRankOneDenseImpl( void *A, double *v ) {
+static void dataMatDumpRankOneDenseImpl( void *A, double *v ) {
     
     sdp_coeff_dsr1 *dsR1A = (sdp_coeff_dsr1 *) A;
     
@@ -382,6 +456,320 @@ extern void dataMatDumpRankOneDenseImpl( void *A, double *v ) {
             v[j * dsR1A->nSDPCol + i] = v[i * dsR1A->nSDPCol + j];
         }
     }
+    
+    return;
+}
+
+static void dataMatClearZeroImpl( void *A ) {
+    
+    HDSDP_ZERO(A, sdp_coeff_zero, 1);
+    
+    return;
+}
+
+static void dataMatClearSparseImpl( void *A ) {
+    
+    sdp_coeff_sparse *sparse = (sdp_coeff_sparse *) A;
+    
+    HDSDP_FREE(sparse->triMatRow);
+    HDSDP_FREE(sparse->triMatCol);
+    HDSDP_FREE(sparse->triMatElem);
+    HDSDP_ZERO(A, sdp_coeff_sparse, 1);
+    
+    return;
+}
+
+static void dataMatClearDenseImpl( void *A ) {
+    
+    sdp_coeff_dense *dense = (sdp_coeff_dense *) A;
+    
+    HDSDP_FREE(dense->dsMatElem);
+    HDSDP_ZERO(A, sdp_coeff_dense, 1);
+    
+    return;
+}
+
+static void dataMatClearRankOneSparseImpl( void *A ) {
+    
+    sdp_coeff_spr1 *spr1 = (sdp_coeff_spr1 *) A;
+    
+    HDSDP_FREE(spr1->spR1MatElem);
+    HDSDP_FREE(spr1->spR1MatIdx);
+    
+    HDSDP_ZERO(A, sdp_coeff_spr1, 1);
+    
+    return;
+}
+
+static void dataMatClearRankOneDenseImpl( void *A ) {
+    
+    sdp_coeff_dsr1 *dsr1 = (sdp_coeff_dsr1 *) A;
+    
+    HDSDP_FREE(dsr1->r1MatFactor);
+    HDSDP_ZERO(A, sdp_coeff_dsr1, 1);
+    
+    return;
+}
+
+static void dataMatViewZeroImpl( void *A ) {
+    
+    printf("Zero matrix L1 = [%5.3e] L2 = [%5.3e] \n", 0.0, 0.0);
+    
+    return;
+}
+
+static void dataMatViewSparseImpl( void *A ) {
+    
+    sdp_coeff_sparse *sparse = (sdp_coeff_sparse *) A;
+    
+    printf("Sparse matrix L1 = [%5.3e] L2 = [%5.3e]. \n", dataMatNormSparseImpl(sparse, ABS_NORM),
+           dataMatNormSparseImpl(A, FRO_NORM));
+    
+#if 0
+    dcs dcsMat;
+    dcsMat.n = sparse->nSDPCol;
+    dcsMat.m = sparse->nSDPCol;
+    dcsMat.nz = sparse->nTriMatElem;
+    dcsMat.nzmax = sparse->nTriMatElem;
+    dcsMat.p = sparse->triMatCol;
+    dcsMat.i = sparse->triMatRow;
+    dcsMat.x = sparse->triMatElem;
+    dcs_print(&dcsMat, 1);
+#endif
+    
+    return;
+}
+
+static void dataMatViewDenseImpl( void *A ) {
+    
+    sdp_coeff_dense *dense = (sdp_coeff_dense *) A;
+    printf("Dense matrix L1 = [%5.3e] L2 = [%5.3e]. \n", dataMatNormDenseImpl(dense, ABS_NORM),
+           dataMatNormDenseImpl(dense, FRO_NORM));
+    
+    return;
+}
+
+static void dataMatViewRankOneSparseImpl( void *A ) {
+    
+    sdp_coeff_spr1 *spr1 = (sdp_coeff_spr1 *) A;
+    printf("Sparse rank-one matrix L1 = [%5.3e] L2 = [%5.3e]. \n", dataMatNormRankOneSparseImpl(spr1, ABS_NORM),
+           dataMatNormRankOneSparseImpl(spr1, FRO_NORM));
+    
+    return;
+}
+
+static void dataMatViewRankOneDenseImpl( void *A ) {
+    
+    sdp_coeff_dsr1 *dsr1 = (sdp_coeff_dsr1 *) A;
+    printf("Dense rank-one matrix L1 = [%5.3e] L2 = [%5.3e]. \n", dataMatNormRankOneDenseImpl(dsr1, ABS_NORM),
+           dataMatNormRankOneDenseImpl(dsr1, FRO_NORM));
+    
+    return;
+}
+
+static void sdpDataMatIChooseType( sdp_coeff *sdpCoeff, sdp_coeff_type dataType ) {
+    
+    sdpCoeff->dataType = dataType;
+     
+    switch ( dataType ) {
+        case SDP_COEFF_ZERO:
+            sdpCoeff->create = dataMatCreateZeroImpl;
+            sdpCoeff->dot = dataMatDotFullZeroImpl;
+            sdpCoeff->scal = dataMatScalZeroImpl;
+            sdpCoeff->norm = dataMatNormZeroImpl;
+            sdpCoeff->eig = NULL;
+            sdpCoeff->getNnz = dataMatGetNnzZeroImpl;
+            sdpCoeff->dump = dataMatDumpZeroImpl;
+            sdpCoeff->clear = dataMatClearZeroImpl;
+            sdpCoeff->view = dataMatViewZeroImpl;
+            break;
+        case SDP_COEFF_SPARSE:
+            sdpCoeff->create = dataMatCreateSparseImpl;
+            sdpCoeff->dot = dataMatDotFullSparseImpl;
+            sdpCoeff->scal = dataMatScalSparseImpl;
+            sdpCoeff->norm = dataMatNormSparseImpl;
+            sdpCoeff->eig = NULL;
+            sdpCoeff->getNnz = dataMatGetNnzSparseImpl;
+            sdpCoeff->dump = dataMatDumpSparseImpl;
+            sdpCoeff->clear = dataMatClearSparseImpl;
+            sdpCoeff->view = dataMatViewSparseImpl;
+            break;
+        case SDP_COEFF_DENSE:
+            sdpCoeff->create = dataMatCreateDenseImpl;
+            sdpCoeff->dot = dataMatDotFullDenseImpl;
+            sdpCoeff->scal = dataMatScalDenseImpl;
+            sdpCoeff->norm = dataMatNormDenseImpl;
+            sdpCoeff->eig = NULL;
+            sdpCoeff->getNnz = dataMatGetNnzDenseImpl;
+            sdpCoeff->dump = dataMatDumpDenseImpl;
+            sdpCoeff->clear = dataMatClearDenseImpl;
+            sdpCoeff->view = dataMatViewDenseImpl;
+            break;
+        case SDP_COEFF_SPR1:
+            sdpCoeff->create = dataMatCreateRankOneSparseImpl;
+            sdpCoeff->dot = dataMatDotFullRankOneSparseImpl;
+            sdpCoeff->scal = dataMatScalRankOneSparseImpl;
+            sdpCoeff->norm = dataMatNormRankOneSparseImpl;
+            sdpCoeff->eig = NULL;
+            sdpCoeff->getNnz = dataMatGetNnzRankOneSparseImpl;
+            sdpCoeff->dump = dataMatDumpRankOneSparseImpl;
+            sdpCoeff->clear = dataMatClearRankOneSparseImpl;
+            sdpCoeff->view = dataMatViewRankOneSparseImpl;
+            break;
+        case SDP_COEFF_DSR1:
+            sdpCoeff->create = dataMatCreateRankOneDenseImpl;
+            sdpCoeff->dot = dataMatDotFullRankOneDenseImpl;
+            sdpCoeff->scal = dataMatScalRankOneDenseImpl;
+            sdpCoeff->norm = dataMatNormRankOneDenseImpl;
+            sdpCoeff->eig = NULL;
+            sdpCoeff->getNnz = dataMatGetNnzRankOneDenseImpl;
+            sdpCoeff->dump = dataMatDumpRankOneDenseImpl;
+            sdpCoeff->clear = dataMatClearRankOneDenseImpl;
+            sdpCoeff->view = dataMatViewRankOneDenseImpl;
+            break;
+        default:
+            assert( 0 );
+            break;
+    }
+    
+    return;
+}
+
+extern hdsdp_retcode sdpDataMatCreate( sdp_coeff **psdpCoeff ) {
+    
+    hdsdp_retcode retcode = HDSDP_RETCODE_OK;
+    
+    if ( !psdpCoeff ) {
+        retcode = HDSDP_RETCODE_FAILED;
+        goto exit_cleanup;
+    }
+    
+    sdp_coeff *sdpCoeff = NULL;
+    HDSDP_INIT(sdpCoeff, sdp_coeff, 1);
+    HDSDP_MEMCHECK(sdpCoeff);
+    
+    /* -1 means there is no eigen-decomposition available */
+    sdpCoeff->eigRank = -1;
+    *psdpCoeff = sdpCoeff;
+    
+exit_cleanup:
+    
+    return retcode;
+}
+
+/** @brief Set SDP data matrix. This routine selects data type and assiciate structure with their operations
+ * 
+ *
+ */
+extern hdsdp_retcode sdpDataMatSetData( sdp_coeff *sdpCoeff, int nSDPCol, int dataMatNnz, int *dataMatIdx, double *dataMatElem ) {
+    
+    hdsdp_retcode retcode = HDSDP_RETCODE_OK;
+    
+    /* Choose data matrix type */
+    int nPack = PACK_NNZ(nSDPCol);
+    
+    /* At this stage, only sparse, zero and dense matrices are classified */
+    if ( dataMatNnz == 0 ) {
+        sdpDataMatIChooseType(sdpCoeff, SDP_COEFF_ZERO);
+    } else if ( dataMatNnz > 0.3 * nPack ) {
+        sdpDataMatIChooseType(sdpCoeff, SDP_COEFF_DENSE);
+    } else {
+        sdpDataMatIChooseType(sdpCoeff, SDP_COEFF_SPARSE);
+    }
+    
+    /* Create data */
+    HDSDP_CALL(sdpCoeff->create(&sdpCoeff->dataMat, nSDPCol,
+                                dataMatNnz, dataMatIdx, dataMatElem));
+    
+exit_cleanup:
+    
+    return retcode;
+}
+
+extern int sdpDataMatGetRank( sdp_coeff *sdpCoeff ) {
+    
+    if ( sdpCoeff->dataType == SDP_COEFF_ZERO ) {
+        return 0;
+    } else if ( sdpCoeff->dataType == SDP_COEFF_DSR1 || sdpCoeff->dataType == SDP_COEFF_SPR1 ) {
+        return 1;
+    } else if ( sdpCoeff->eigRank != -1 ) {
+        return sdpCoeff->eigRank;
+    }
+    
+    return sdpCoeff->nSDPCol;
+}
+
+extern double sdpDataMatDot( sdp_coeff *sdpCoeff, double *dFullMatrix ) {
+    
+    return sdpCoeff->dot(sdpCoeff->dataMat, dFullMatrix);
+}
+
+extern void sdpDataMatScal( sdp_coeff *sdpCoeff, double scal ) {
+    
+    sdpCoeff->scal(sdpCoeff->dataMat, scal);
+    
+    return;
+}
+
+extern double sdpDataMatNorm( sdp_coeff *sdpCoeff, int type ) {
+    
+    return sdpCoeff->norm(sdpCoeff->dataMat, type);
+}
+
+/* Used in presolving and low-rank structure detection */
+extern hdsdp_retcode sdpDataMatFatorize( sdp_coeff *sdpCoeff, double *dAuxFullMatrix ) {
+    
+    /* TODO: Add factorization routine */
+    
+    return HDSDP_RETCODE_OK;
+}
+
+extern int sdpDataMatGetNnz( sdp_coeff *sdpCoeff ) {
+    
+    return sdpCoeff->getNnz(sdpCoeff->dataMat);
+}
+
+extern void sdpDataMatDump( sdp_coeff *sdpCoeff, double *dFullMatrix ) {
+    
+    return sdpCoeff->dump(sdpCoeff->dataMat, dFullMatrix);
+}
+
+extern int sdpDataMatGetType( sdp_coeff *sdpCoeff ) {
+    
+    return sdpCoeff->dataType;
+}
+
+extern void sdpDataMatClear( sdp_coeff *sdpCoeff ) {
+    
+    if ( !sdpCoeff ) {
+        return;
+    }
+    
+    sdpCoeff->clear(sdpCoeff->dataMat);
+    HDSDP_FREE(sdpCoeff->dataMat);
+    HDSDP_FREE(sdpCoeff->eigVals);
+    HDSDP_FREE(sdpCoeff->eigVecs);
+    
+    HDSDP_ZERO(sdpCoeff, sdp_coeff, 1);
+    
+    return;
+}
+
+extern void sdpDataMatDestroy( sdp_coeff **psdpCoeff ) {
+    
+    if ( !psdpCoeff ) {
+        return;
+    }
+    
+    sdpDataMatClear(*psdpCoeff);
+    HDSDP_FREE(psdpCoeff);
+    
+    return;
+}
+
+extern void sdpDataMatView( sdp_coeff *sdpCoeff ) {
+    
+    sdpCoeff->view(sdpCoeff->dataMat);
     
     return;
 }

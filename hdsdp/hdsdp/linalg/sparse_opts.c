@@ -114,6 +114,22 @@ extern void csp_dump( int n, int *Ap, int *Ai, double *Ax, double *v ) {
     return;
 }
 
+/* Decompress a column */
+extern void tsp_decompress( int n, int nnz, int *Ci, double *Cx, int *Ai, int *Aj, double *Ax ) {
+    
+    int i = 0, j = 0, idthresh = n;
+    
+    for ( int k = 0; k < nnz; ++k ) {
+        while ( Ci[k] >= idthresh ) {
+            j += 1;
+            idthresh += n - j;
+        }
+        Ai[k] = Ci[k] - idthresh + n;
+        Aj[k] = j;
+    }
+    
+    return;
+}
 
 /* Lower triplet operations */
 /** @brief Scale a triplet matrix

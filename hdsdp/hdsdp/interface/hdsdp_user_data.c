@@ -69,23 +69,27 @@ extern void HUserDataSetConeData( user_data *Hdata, int *coneMatBeg, int *coneMa
 }
 
 extern cone_type HUserDataChooseCone( user_data *Hdata ) {
-    
-    assert( Hdata->cone != HDSDP_CONETYPE_SPARSE_SDP );
-    
+        
     /* Automatic choice between different cone types*/
     if ( Hdata->cone == HDSDP_CONETYPE_SOCP || Hdata->cone == HDSDP_CONETYPE_BOUND ||
          Hdata->cone == HDSDP_CONETYPE_SPARSE_SDP ) {
+        
         return Hdata->cone;
+        
     } else if ( Hdata->cone == HDSDP_CONETYPE_DENSE_SDP ) {
+        
         int nzSDPCoeffs = csp_nnz_cols(Hdata->nConicRow + 1, Hdata->coneMatBeg);
         return ( nzSDPCoeffs > 0.3 * Hdata->nConicRow ) ? \
                 HDSDP_CONETYPE_DENSE_SDP : HDSDP_CONETYPE_SPARSE_SDP;
+        
     } else if ( Hdata->cone == HDSDP_CONETYPE_LP ) {
+        
         if ( HUserDataICheckLpBound(Hdata) ) {
             return HDSDP_CONETYPE_BOUND;
         } else {
             return HDSDP_CONETYPE_LP;
         }
+        
     }
     
     return HDSDP_CONETYPE_UNKNOWN;

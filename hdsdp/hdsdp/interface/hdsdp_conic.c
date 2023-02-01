@@ -3,76 +3,10 @@
  */
 
 #include "interface/hdsdp_utils.h"
+#include "interface/def_hdsdp_user_data.h"
+#include "interface/hdsdp_user_data.h"
 #include "interface/def_hdsdp_conic.h"
-
-static void HConeISetDenseSDPMethods( hdsdp_cone *HCone ) {
-    
-    HCone->coneInitData = NULL;
-    HCone->coneSetData = NULL;
-    HCone->coneProcData = NULL;
-    HCone->coneDestroyData = NULL;
-    
-    HCone->coneSetStart = NULL;
-    HCone->coneUpdate = NULL;
-    HCone->coneRatioTest = NULL;
-    
-    HCone->coneGetSymNnz = NULL;
-    HCone->coneAddSymNz = NULL;
-    HCone->coneBuildSchur = NULL;
-    
-    HCone->coneGetBarrier = NULL;
-    HCone->conePFeasCheck = NULL;
-    HCone->conePRecover = NULL;
-    HCone->coneScal = NULL;
-    
-    return;
-}
-
-static void HConeISetSparseSDPMethods( hdsdp_cone *HCone ) {
-    
-    HCone->coneInitData = NULL;
-    HCone->coneSetData = NULL;
-    HCone->coneProcData = NULL;
-    HCone->coneDestroyData = NULL;
-    
-    HCone->coneSetStart = NULL;
-    HCone->coneUpdate = NULL;
-    HCone->coneRatioTest = NULL;
-    
-    HCone->coneGetSymNnz = NULL;
-    HCone->coneAddSymNz = NULL;
-    HCone->coneBuildSchur = NULL;
-    
-    HCone->coneGetBarrier = NULL;
-    HCone->conePFeasCheck = NULL;
-    HCone->conePRecover = NULL;
-    HCone->coneScal = NULL;
-    
-    return;
-}
-
-static void HConeISetLPMethods( hdsdp_cone *HCone ) {
-    
-    HCone->coneInitData = NULL;
-    HCone->coneSetData = NULL;
-    HCone->coneProcData = NULL;
-    HCone->coneDestroyData = NULL;
-    
-    HCone->coneSetStart = NULL;
-    HCone->coneUpdate = NULL;
-    HCone->coneRatioTest = NULL;
-    
-    HCone->coneGetSymNnz = NULL;
-    HCone->coneAddSymNz = NULL;
-    HCone->coneBuildSchur = NULL;
-    
-    HCone->coneGetBarrier = NULL;
-    HCone->conePFeasCheck = NULL;
-    HCone->conePRecover = NULL;
-    HCone->coneScal = NULL;
-    
-    return;
-}
+#include "interface/hdsdp_conic_sdp.h"
 
 extern hdsdp_retcode HConeCreate( hdsdp_cone **pHCone ) {
     
@@ -99,24 +33,69 @@ exit_cleanup:
     return retcode;
 }
 
-extern hdsdp_retcode HConeInit( hdsdp_cone *HCone, cone_type cone ) {
+extern void HConeInit( hdsdp_cone *HCone ) {
+        
+    if ( !HCone ) {
+        return;
+    }
+    
+    HCone->cone = HDSDP_CONETYPE_UNKNOWN;
+    
+    return;
+}
+
+extern hdsdp_retcode HConeSetData( hdsdp_cone *HCone, user_data *usrData ) {
     
     hdsdp_retcode retcode = HDSDP_RETCODE_OK;
     
-    if ( !HCone ) {
-        retcode = HDSDP_RETCODE_FAILED;
-        goto exit_cleanup;
-    }
+    HCone->usrData = usrData;
+    HCone->cone = HUserDataChooseCone(usrData);
     
-    switch ( cone ) {
+    switch ( HCone->cone ) {
         case HDSDP_CONETYPE_LP:
-            HConeISetLPMethods(HCone);
+            HCone->coneCreate = NULL;
+            HCone->coneProcData = NULL;
+            HCone->coneDestroyData = NULL;
+            HCone->coneSetStart = NULL;
+            HCone->coneUpdate = NULL;
+            HCone->coneRatioTest = NULL;
+            HCone->coneGetSymNnz = NULL;
+            HCone->coneAddSymNz = NULL;
+            HCone->coneBuildSchur = NULL;
+            HCone->coneGetBarrier = NULL;
+            HCone->conePFeasCheck = NULL;
+            HCone->conePRecover = NULL;
+            HCone->coneScal = NULL;
             break;
         case HDSDP_CONETYPE_DENSE_SDP:
-            HConeISetDenseSDPMethods(HCone);
+            HCone->coneCreate = sdpDenseConeCreateImpl;
+            HCone->coneProcData = sdpDenseConeProcDataImpl;
+            HCone->coneDestroyData = NULL;
+            HCone->coneSetStart = sdpDenseConeSetStartImpl;
+            HCone->coneUpdate = sdpDenseConeUpdateImpl;
+            HCone->coneRatioTest = sdpDenseConeRatioTestImpl;
+            HCone->coneGetSymNnz = sdpDenseConeGetSymNnzImpl;
+            HCone->coneAddSymNz = sdpDenseConeAddSymNnzImpl;
+            HCone->coneBuildSchur = NULL;
+            HCone->coneGetBarrier = NULL;
+            HCone->conePFeasCheck = NULL;
+            HCone->conePRecover = NULL;
+            HCone->coneScal = NULL;
             break;
         case HDSDP_CONETYPE_SPARSE_SDP:
-            HConeISetSparseSDPMethods(HCone);
+            HCone->coneCreate = sdpSparseConeCreateImpl;
+            HCone->coneProcData = sdpSparseConeProcDataImpl;
+            HCone->coneDestroyData = NULL;
+            HCone->coneSetStart = sdpSparseConeSetStartImpl;
+            HCone->coneUpdate = sdpSparseConeUpdateImpl;
+            HCone->coneRatioTest = sdpSparseConeRatioTestImpl;
+            HCone->coneGetSymNnz = sdpSparseConeGetSymNnzImpl;
+            HCone->coneAddSymNz = sdpSparseConeAddSymNnzImpl;
+            HCone->coneBuildSchur = NULL;
+            HCone->coneGetBarrier = NULL;
+            HCone->conePFeasCheck = NULL;
+            HCone->conePRecover = NULL;
+            HCone->coneScal = NULL;
             break;
         case HDSDP_CONETYPE_SOCP:
             retcode = HDSDP_RETCODE_FAILED;
@@ -126,28 +105,21 @@ extern hdsdp_retcode HConeInit( hdsdp_cone *HCone, cone_type cone ) {
             goto exit_cleanup;
     }
     
-    HCone->cone = cone;
-    
 exit_cleanup:
     
     return retcode;
 }
 
-/* Conic data interface */
-extern hdsdp_retcode HConeInitData( hdsdp_cone *HCone ) {
+extern hdsdp_retcode HConeCreateData( hdsdp_cone *HCone ) {
     
-    return HCone->coneInitData(&HCone->coneData);
-}
-
-
-extern hdsdp_retcode HConeSetData( hdsdp_cone *HCone, void *coneData ) {
-    
-    return HCone->coneSetData(HCone->coneData, coneData);
+    return HCone->coneCreate(&HCone->coneData);
 }
 
 extern hdsdp_retcode HConeProcData( hdsdp_cone *HCone ) {
     
-    return HCone->coneProcData(HCone->coneData);
+    user_data *usrData = (user_data *) HCone->usrData;
+    return HCone->coneProcData(HCone->coneData, usrData->nConicRow, usrData->nConicCol,
+                               usrData->coneMatBeg, usrData->coneMatIdx, usrData->coneMatElem);
 }
 
 extern void HConeDestroyData( hdsdp_cone *HCone ) {

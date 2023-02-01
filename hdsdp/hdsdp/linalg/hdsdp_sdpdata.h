@@ -12,32 +12,23 @@
 extern "C" {
 #endif
 
+extern hdsdp_retcode sdpDataMatCreate( sdp_coeff **psdpCoeff );
+extern hdsdp_retcode sdpDataMatSetData( sdp_coeff *sdpCoeff, int nSDPCol, int dataMatNnz, int *dataMatIdx, double *dataMatElem );
+extern int sdpDataMatGetRank( sdp_coeff *sdpCoeff );
+extern double sdpDataMatDot( sdp_coeff *sdpCoeff, double *dFullMatrix );
+extern void sdpDataMatScal( sdp_coeff *sdpCoeff, double scal );
+
 #define ABS_NORM 1
 #define FRO_NORM 2
+extern double sdpDataMatNorm( sdp_coeff *sdpCoeff, int type );
 
-extern void dataMatScalZeroImpl( void *A, double alpha );
-extern void dataMatScalSparseImpl( void *A, double alpha );
-extern void dataMatScalDenseImpl( void *A, double alpha );
-extern void dataMatScalRankOneSparseImpl( void *A, double alpha );
-extern void dataMatScalRankOneDenseImpl( void *A, double alpha );
-
-extern double dataMatNormZeroImpl( void *A, int type );
-extern double dataMatNormSparseImpl( void *A, int type );
-extern double dataMatNormDenseImpl( void *A, int type );
-extern double dataMatNormRankOneSparseImpl( void *A, int type );
-extern double dataMatNormRankOneDenseImpl( void *A, int type );
-
-extern int dataMatGetNnzZeroImpl( void *A );
-extern int dataMatGetNnzSparseImpl( void *A );
-extern int dataMatGetNnzDenseImpl( void *A );
-extern int dataMatGetNnzRankOneSparseImpl( void *A );
-extern int dataMatGetNnzRankOneDenseImpl( void *A );
-
-extern void dataMatDumpZeroImpl( void *A, double *v );
-extern void dataMatDumpSparseImpl( void *A, double *v );
-extern void dataMatDumpDenseImpl( void *A, double *v );
-extern void dataMatDumpRankOneSparseImpl( void *A, double *v );
-extern void dataMatDumpRankOneDenseImpl( void *A, double *v );
+extern hdsdp_retcode sdpDataMatFatorize( sdp_coeff *sdpCoeff, double *dAuxFullMatrix );
+extern int sdpDataMatGetNnz( sdp_coeff *sdpCoeff );
+extern void sdpDataMatDump( sdp_coeff *sdpCoeff, double *dFullMatrix );
+extern int sdpDataMatGetType( sdp_coeff *sdpCoeff );
+extern void sdpDataMatClear( sdp_coeff *sdpCoeff );
+extern void sdpDataMatDestroy( sdp_coeff **psdpCoeff );
+extern void sdpDataMatView( sdp_coeff *sdpCoeff );
 
 #ifdef __cplusplus
 }
