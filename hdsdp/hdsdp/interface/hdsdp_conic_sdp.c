@@ -121,6 +121,8 @@ extern hdsdp_retcode sdpSparseConeProcDataImpl( hdsdp_cone_sdp_sparse *cone, int
         }
     }
     
+    cone->nRowElem = nRowElem;
+    
 #ifdef HDSDP_CONIC_DEBUG
     assert( nRowElem == nRowElemTmp );
 #endif
@@ -267,7 +269,7 @@ extern void sdpDenseConeViewImpl( hdsdp_cone_sdp_dense *cone ) {
         sdpDataMatView(cone->sdpRow[iRow]);
     }
     
-    printf("\nConic statistics: Zero %d Sp %d Ds %d SpR1%d DsR1 %d \n", cone->sdpConeStats[SDP_COEFF_ZERO],
+    printf("\nConic statistics: Zero %d Sp %d Ds %d SpR1 %d DsR1 %d \n", cone->sdpConeStats[SDP_COEFF_ZERO],
            cone->sdpConeStats[SDP_COEFF_SPARSE], cone->sdpConeStats[SDP_COEFF_DENSE],
            cone->sdpConeStats[SDP_COEFF_SPR1], cone->sdpConeStats[SDP_COEFF_DSR1]);
     
@@ -286,7 +288,7 @@ extern void sdpSparseConeViewImpl( hdsdp_cone_sdp_sparse *cone ) {
         sdpDataMatView(cone->sdpRow[iRow]);
     }
     
-    printf("\nConic statistics: Zero %d Sp %d Ds %d SpR1%d DsR1 %d \n", cone->sdpConeStats[SDP_COEFF_ZERO],
+    printf("\nConic statistics: Zero %d Sp %d Ds %d SpR1 %d DsR1 %d \n", cone->sdpConeStats[SDP_COEFF_ZERO],
            cone->sdpConeStats[SDP_COEFF_SPARSE], cone->sdpConeStats[SDP_COEFF_DENSE],
            cone->sdpConeStats[SDP_COEFF_SPR1], cone->sdpConeStats[SDP_COEFF_DSR1]);
     

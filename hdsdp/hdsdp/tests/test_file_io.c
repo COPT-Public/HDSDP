@@ -29,17 +29,18 @@ int test_file_io( char *fname ) {
     HDSDP_CALL(HReadSDPA(fname, &nConstrs, &nBlks, &BlkDims, &rowRHS, &coneMatBeg,
                          &coneMatIdx, &coneMatElem, &nLpCols, &LpMatBeg, &LpMatIdx, &LpMatElem, &nElem));
     HDSDP_CALL(HUserDataCreate(&SDPData));
-    HDSDP_CALL(HConeCreate(&SDPCone));
     
     for ( int iBlk = 0; iBlk < nBlks; ++iBlk ) {
         HUserDataSetConeData(SDPData, HDSDP_CONETYPE_DENSE_SDP, nConstrs, BlkDims[iBlk],
                              coneMatBeg[iBlk], coneMatIdx[iBlk], coneMatElem[iBlk]);
         cone_type cone = HUserDataChooseCone(SDPData);
         
+        HDSDP_CALL(HConeCreate(&SDPCone));
         HDSDP_CALL(HConeSetData(SDPCone, SDPData));
         HDSDP_CALL(HConeProcData(SDPCone));
         HConeView(SDPCone);
         HUserDataClear(SDPData);
+        HConeDestroy(&SDPCone);
     }
     
 exit_cleanup:
