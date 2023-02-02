@@ -757,7 +757,7 @@ extern hdsdp_retcode sdpDataMatSetData( sdp_coeff *sdpCoeff, int nSDPCol, int da
     /* At this stage, only sparse, zero and dense matrices are classified */
     if ( dataMatNnz == 0 ) {
         sdpDataMatIChooseType(sdpCoeff, SDP_COEFF_ZERO);
-    } else if ( dataMatNnz > 0 * nPack ) {
+    } else if ( dataMatNnz > 0.3 * nPack ) {
         sdpDataMatIChooseType(sdpCoeff, SDP_COEFF_DENSE);
     } else {
         sdpDataMatIChooseType(sdpCoeff, SDP_COEFF_SPARSE);

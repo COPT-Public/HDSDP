@@ -1,6 +1,6 @@
 clear;
 
-[At, b, c, K] = readsdpa(fullfile('/Users/gaowenzhi/Desktop/dsdp6/hsd/benchmark/sdplib', 'arch8.dat-s'));
+[At, b, c, K] = readsdpa(fullfile('/Users/gaowenzhi/Desktop/dsdp6/hsd/benchmark/sdplib', 'gpp100.dat-s'));
 
 try
     [nsqr, ~] = size(At);
@@ -15,8 +15,8 @@ s = length(K.s);
 Amat = cell(m, s);
 Cmat = cell(1, s);
 
+counter = 1 + l;
 for q = 1:s
-    counter = 1 + l;
     n = K.s(q);
     Cmat{q} = reshape(c(counter:counter + n * n - 1), n, n);
     counter = counter + n * n;
@@ -47,7 +47,7 @@ for q = 1:s
         fprintf("| %4d | %10.3e %10.3e \n", i, absnorm(Acoef), norm(Acoef, 'fro'));
         if length(nonzeros(tril(Acoef))) == 0 %#ok
             zero = zero + 1;
-        elseif nonzeros(tril(Acoef)) < 0.3 * (n * (n + 1)) / 2
+        elseif length(nonzeros(tril(Acoef))) < 0.3 * (n * (n + 1)) / 2
             sps = sps + 1;
         else
             ds = ds + 1;

@@ -115,6 +115,7 @@ extern hdsdp_retcode sdpSparseConeProcDataImpl( hdsdp_cone_sdp_sparse *cone, int
             assert( coeffType != SDP_COEFF_ZERO );
 #endif
             cone->sdpConeStats[coeffType] += 1;
+            cone->rowIdx[nRowElemTmp] = iRow;
             nRowElemTmp += 1;
         } else {
             cone->sdpConeStats[SDP_COEFF_ZERO] += 1;

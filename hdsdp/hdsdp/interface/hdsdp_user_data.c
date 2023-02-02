@@ -74,7 +74,6 @@ extern cone_type HUserDataChooseCone( user_data *Hdata ) {
     } else if ( Hdata->cone == HDSDP_CONETYPE_DENSE_SDP ) {
         
         int nzSDPCoeffs = csp_nnz_cols(Hdata->nConicRow, &Hdata->coneMatBeg[1]);
-        printf("Nnz = %d \n", nzSDPCoeffs);
         return ( nzSDPCoeffs > 0.3 * Hdata->nConicRow ) ? \
                 HDSDP_CONETYPE_DENSE_SDP : HDSDP_CONETYPE_SPARSE_SDP;
         
