@@ -50,17 +50,12 @@ exit_cleanup:
     return retcode;
 }
 
-extern void HUserDataSetConeInfo( user_data *Hdata, cone_type cone, int nRow, int nCol ) {
+extern void HUserDataSetConeData( user_data *Hdata, cone_type cone, int nRow, int nCol,
+                                  int *coneMatBeg, int *coneMatIdx, double *coneMatElem ) {
     
     Hdata->cone = cone;
     Hdata->nConicRow = nRow;
     Hdata->nConicCol = nCol;
-    
-    return;
-}
-
-extern void HUserDataSetConeData( user_data *Hdata, int *coneMatBeg, int *coneMatIdx, double *coneMatElem ) {
-    
     Hdata->coneMatBeg = coneMatBeg;
     Hdata->coneMatIdx = coneMatIdx;
     Hdata->coneMatElem = coneMatElem;
@@ -78,7 +73,8 @@ extern cone_type HUserDataChooseCone( user_data *Hdata ) {
         
     } else if ( Hdata->cone == HDSDP_CONETYPE_DENSE_SDP ) {
         
-        int nzSDPCoeffs = csp_nnz_cols(Hdata->nConicRow + 1, Hdata->coneMatBeg);
+        int nzSDPCoeffs = csp_nnz_cols(Hdata->nConicRow, &Hdata->coneMatBeg[1]);
+        printf("Nnz = %d \n", nzSDPCoeffs);
         return ( nzSDPCoeffs > 0.3 * Hdata->nConicRow ) ? \
                 HDSDP_CONETYPE_DENSE_SDP : HDSDP_CONETYPE_SPARSE_SDP;
         

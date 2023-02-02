@@ -2,18 +2,18 @@
 
 #include "interface/hdsdp.h"
 #include "interface/hdsdp_utils.h"
+#include "interface/hdsdp_user_data.h"
 #include "interface/hdsdp_file_io.h"
+#include "interface/hdsdp_conic.h"
 
-int test_file_io( void ) {
+int test_file_io( char *fname ) {
     
     
     hdsdp_retcode retcode = HDSDP_RETCODE_OK;
     
-    char *fname = "/Users/gaowenzhi/Desktop/dsdp6/hsd/benchmark/sdplib/hinf4.dat-s";
-    
     int nConstrs = 0;
     int nBlks = 0;
-    int *nBlkDims = NULL;
+    int *BlkDims = NULL;
     double *rowRHS = NULL;
     int **coneMatBeg = NULL;
     int **coneMatIdx = NULL;
@@ -23,11 +23,31 @@ int test_file_io( void ) {
     int *LpMatIdx = NULL;
     double *LpMatElem = NULL;
     int nElem = 0;
+    user_data *SDPData = NULL;
+    hdsdp_cone *SDPCone = NULL;
     
-    HDSDP_CALL(HReadSDPA(fname, &nConstrs, &nBlks, &nBlkDims, &rowRHS, &coneMatBeg,
+    HDSDP_CALL(HReadSDPA(fname, &nConstrs, &nBlks, &BlkDims, &rowRHS, &coneMatBeg,
                          &coneMatIdx, &coneMatElem, &nLpCols, &LpMatBeg, &LpMatIdx, &LpMatElem, &nElem));
+    HDSDP_CALL(HUserDataCreate(&SDPData));
+    HDSDP_CALL(HConeCreate(&SDPCone));
     
-    HDSDP_FREE(nBlkDims);
+    for ( int iBlk = 0; iBlk < nBlks; ++iBlk ) {
+        HUserDataSetConeData(SDPData, HDSDP_CONETYPE_DENSE_SDP, nConstrs, BlkDims[iBlk],
+                             coneMatBeg[iBlk], coneMatIdx[iBlk], coneMatElem[iBlk]);
+        cone_type cone = HUserDataChooseCone(SDPData);
+        
+        HDSDP_CALL(HConeSetData(SDPCone, SDPData));
+        HDSDP_CALL(HConeProcData(SDPCone));
+        HConeView(SDPCone);
+        HUserDataClear(SDPData);
+    }
+    
+exit_cleanup:
+    
+    HUserDataDestroy(&SDPData);
+    HConeDestroy(&SDPCone);
+    
+    HDSDP_FREE(BlkDims);
     HDSDP_FREE(rowRHS);
     
     for ( int iBlk = 0; iBlk < nBlks; ++iBlk ) {
@@ -40,11 +60,13 @@ int test_file_io( void ) {
     HDSDP_FREE(coneMatIdx);
     HDSDP_FREE(coneMatElem);
     
-    HDSDP_FREE(LpMatBeg);
-    HDSDP_FREE(LpMatIdx);
-    HDSDP_FREE(LpMatElem);
+    if ( nLpCols > 0 ) {
+        HDSDP_FREE(LpMatBeg);
+        HDSDP_FREE(LpMatIdx);
+        HDSDP_FREE(LpMatElem);
+    }
     
-exit_cleanup:
+    
     
     return retcode;
 }

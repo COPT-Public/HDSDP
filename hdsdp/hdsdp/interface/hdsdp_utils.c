@@ -15,6 +15,27 @@ static double my_clock( void ) {
     return (1e-06 * t.tv_usec + t.tv_sec);
 }
 
+static int partition( int *ind, double *val, int l, int h ) {
+    
+    double tmp2 = 0, tmp3, p = val[l];
+    int tmp = l;
+    
+    while ( l < h ) {
+        while ( l < h && val[h] >= p ) { --h; }
+        while ( l < h && val[l] <= p ) { ++l; }
+        
+        if ( l < h ) {
+            tmp2 = val[l]; val[l] = val[h]; val[h] = tmp2;
+            tmp3 = ind[l]; ind[l] = ind[h]; ind[h] = tmp3;
+        }
+    }
+    
+    tmp2 = val[l]; val[l] = val[tmp]; val[tmp] = tmp2;
+    tmp3 = ind[l]; ind[l] = ind[tmp]; ind[tmp] = tmp3;
+    
+    return l;
+}
+
 extern double HUtilGetTimeStamp( void ) {
     
     return my_clock();
@@ -62,5 +83,16 @@ extern void HUtilPrintDblSum( int n, double *d ) {
     }
     
     printf("Sum = %10.6e \n", ds);
+    return;
+}
+
+extern void HUtilSortbyDbl( int *ind, double *val, int low, int high ) {
+    
+    if ( low < high ) {
+        int p = partition(ind, val, low, high);
+        HUtilSortbyDbl(ind, val, low, p - 1);
+        HUtilSortbyDbl(ind, val, p + 1, high);
+    }
+    
     return;
 }

@@ -117,7 +117,7 @@ extern void csp_dump( int n, int *Ap, int *Ai, double *Ax, double *v ) {
 /* Decompress a column */
 extern void tsp_decompress( int n, int nnz, int *Ci, double *Cx, int *Ai, int *Aj, double *Ax ) {
     
-    int i = 0, j = 0, idthresh = n;
+    int j = 0, idthresh = n;
     
     for ( int k = 0; k < nnz; ++k ) {
         while ( Ci[k] >= idthresh ) {
@@ -126,6 +126,7 @@ extern void tsp_decompress( int n, int nnz, int *Ci, double *Cx, int *Ai, int *A
         }
         Ai[k] = Ci[k] - idthresh + n;
         Aj[k] = j;
+        Ax[k] = Cx[k];
     }
     
     return;

@@ -11,8 +11,8 @@ extern "C" {
 #endif
 
 extern hdsdp_retcode HUserDataCreate( user_data **pHdata );
-extern void HUserDataSetConeInfo( user_data *Hdata, cone_type cone, int nRow, int nCol );
-extern void HUserDataSetConeData( user_data *Hdata, int *coneMatBeg, int *coneMatIdx, double *coneMatElem );
+extern void HUserDataSetConeData( user_data *Hdata, cone_type cone, int nRow, int nCol,
+                                  int *coneMatBeg, int *coneMatIdx, double *coneMatElem );
 extern cone_type HUserDataChooseCone( user_data *Hdata );
 extern void HUserDataClear( user_data *Hdata );
 extern void HUserDataDestroy( user_data **pHdata );

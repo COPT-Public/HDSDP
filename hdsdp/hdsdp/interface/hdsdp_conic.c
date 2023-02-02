@@ -11,37 +11,16 @@
 extern hdsdp_retcode HConeCreate( hdsdp_cone **pHCone ) {
     
     hdsdp_retcode retcode = HDSDP_RETCODE_OK;
-    
-    if ( !pHCone ) {
-        retcode = HDSDP_RETCODE_FAILED;
-        goto exit_cleanup;
-    }
-    
+    HDSDP_NULLCHECK(pHCone);
     hdsdp_cone *HCone = NULL;
     HDSDP_INIT(HCone, hdsdp_cone, 1);
-    
-    if ( !HCone ) {
-        retcode = HDSDP_RETCODE_MEMORY;
-        goto exit_cleanup;
-    }
-    
+    HDSDP_MEMCHECK(HCone);
     HDSDP_ZERO(HCone, hdsdp_cone, 1);
     *pHCone = HCone;
     
 exit_cleanup:
     
     return retcode;
-}
-
-extern void HConeInit( hdsdp_cone *HCone ) {
-        
-    if ( !HCone ) {
-        return;
-    }
-    
-    HCone->cone = HDSDP_CONETYPE_UNKNOWN;
-    
-    return;
 }
 
 extern hdsdp_retcode HConeSetData( hdsdp_cone *HCone, user_data *usrData ) {
@@ -52,6 +31,21 @@ extern hdsdp_retcode HConeSetData( hdsdp_cone *HCone, user_data *usrData ) {
     HCone->cone = HUserDataChooseCone(usrData);
     
     switch ( HCone->cone ) {
+        case HDSDP_CONETYPE_BOUND:
+            HCone->coneCreate = NULL;
+            HCone->coneProcData = NULL;
+            HCone->coneDestroyData = NULL;
+            HCone->coneSetStart = NULL;
+            HCone->coneUpdate = NULL;
+            HCone->coneRatioTest = NULL;
+            HCone->coneGetSymNnz = NULL;
+            HCone->coneAddSymNz = NULL;
+            HCone->coneBuildSchur = NULL;
+            HCone->coneGetBarrier = NULL;
+            HCone->conePFeasCheck = NULL;
+            HCone->conePRecover = NULL;
+            HCone->coneScal = NULL;
+            break;
         case HDSDP_CONETYPE_LP:
             HCone->coneCreate = NULL;
             HCone->coneProcData = NULL;
@@ -70,7 +64,7 @@ extern hdsdp_retcode HConeSetData( hdsdp_cone *HCone, user_data *usrData ) {
         case HDSDP_CONETYPE_DENSE_SDP:
             HCone->coneCreate = sdpDenseConeCreateImpl;
             HCone->coneProcData = sdpDenseConeProcDataImpl;
-            HCone->coneDestroyData = NULL;
+            HCone->coneDestroyData = sdpDenseConeDestroyImpl;
             HCone->coneSetStart = sdpDenseConeSetStartImpl;
             HCone->coneUpdate = sdpDenseConeUpdateImpl;
             HCone->coneRatioTest = sdpDenseConeRatioTestImpl;
@@ -81,11 +75,12 @@ extern hdsdp_retcode HConeSetData( hdsdp_cone *HCone, user_data *usrData ) {
             HCone->conePFeasCheck = NULL;
             HCone->conePRecover = NULL;
             HCone->coneScal = NULL;
+            HCone->coneView = sdpDenseConeViewImpl;
             break;
         case HDSDP_CONETYPE_SPARSE_SDP:
             HCone->coneCreate = sdpSparseConeCreateImpl;
             HCone->coneProcData = sdpSparseConeProcDataImpl;
-            HCone->coneDestroyData = NULL;
+            HCone->coneDestroyData = sdpSparseConeDestroyImpl;
             HCone->coneSetStart = sdpSparseConeSetStartImpl;
             HCone->coneUpdate = sdpSparseConeUpdateImpl;
             HCone->coneRatioTest = sdpSparseConeRatioTestImpl;
@@ -96,6 +91,7 @@ extern hdsdp_retcode HConeSetData( hdsdp_cone *HCone, user_data *usrData ) {
             HCone->conePFeasCheck = NULL;
             HCone->conePRecover = NULL;
             HCone->coneScal = NULL;
+            HCone->coneView = sdpSparseConeViewImpl;
             break;
         case HDSDP_CONETYPE_SOCP:
             retcode = HDSDP_RETCODE_FAILED;
@@ -110,22 +106,49 @@ exit_cleanup:
     return retcode;
 }
 
-extern hdsdp_retcode HConeCreateData( hdsdp_cone *HCone ) {
+extern void HConeClear( hdsdp_cone *HCone ) {
     
-    return HCone->coneCreate(&HCone->coneData);
+    if ( !HCone ) {
+        return;
+    }
+    
+    HCone->coneDestroyData(&HCone->coneData);
+    HDSDP_ZERO(HCone, hdsdp_cone, 1);
+    
+    return;
+}
+
+extern void HConeDestroy( hdsdp_cone **pHCone ) {
+    
+    if ( !pHCone ) {
+        return;
+    }
+    
+    HConeClear(*pHCone);
+    HDSDP_FREE(*pHCone);
+    
+    return;;
+}
+
+extern void HConeView( hdsdp_cone *HCone ) {
+     
+    HCone->coneView(HCone->coneData);
+    
+    return;
 }
 
 extern hdsdp_retcode HConeProcData( hdsdp_cone *HCone ) {
     
+    hdsdp_retcode retcode = HDSDP_RETCODE_OK;
     user_data *usrData = (user_data *) HCone->usrData;
-    return HCone->coneProcData(HCone->coneData, usrData->nConicRow, usrData->nConicCol,
-                               usrData->coneMatBeg, usrData->coneMatIdx, usrData->coneMatElem);
-}
-
-extern void HConeDestroyData( hdsdp_cone *HCone ) {
     
-    HCone->coneDestroyData(&HCone->coneData);
-    return;
+    HDSDP_CALL(HCone->coneCreate(&HCone->coneData));
+    HDSDP_CALL(HCone->coneProcData(HCone->coneData, usrData->nConicRow, usrData->nConicCol,
+                                   usrData->coneMatBeg, usrData->coneMatIdx, usrData->coneMatElem));
+    
+exit_cleanup:
+    
+    return retcode;
 }
 
 /* Conic algorithm interface */

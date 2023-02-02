@@ -36,6 +36,12 @@ exit_cleanup:
     return retcode;
 }
 
+static void dataMatViewZeroImpl( void *A );
+static void dataMatViewSparseImpl( void *A );
+static void dataMatViewDenseImpl( void *A );
+static void dataMatViewRankOneSparseImpl( void *A );
+static void dataMatViewRankOneDenseImpl( void *A );
+
 static hdsdp_retcode dataMatCreateSparseImpl( void **pA, int nSDPCol, int dataMatNnz, int *dataMatIdx, double *dataMatElem ) {
     
     hdsdp_retcode retcode = HDSDP_RETCODE_OK;
@@ -462,12 +468,20 @@ static void dataMatDumpRankOneDenseImpl( void *A, double *v ) {
 
 static void dataMatClearZeroImpl( void *A ) {
     
+    if ( !A ) {
+        return;
+    }
+    
     HDSDP_ZERO(A, sdp_coeff_zero, 1);
     
     return;
 }
 
 static void dataMatClearSparseImpl( void *A ) {
+    
+    if ( !A ) {
+        return;
+    }
     
     sdp_coeff_sparse *sparse = (sdp_coeff_sparse *) A;
     
@@ -481,6 +495,10 @@ static void dataMatClearSparseImpl( void *A ) {
 
 static void dataMatClearDenseImpl( void *A ) {
     
+    if ( !A ) {
+        return;
+    }
+    
     sdp_coeff_dense *dense = (sdp_coeff_dense *) A;
     
     HDSDP_FREE(dense->dsMatElem);
@@ -490,6 +508,10 @@ static void dataMatClearDenseImpl( void *A ) {
 }
 
 static void dataMatClearRankOneSparseImpl( void *A ) {
+    
+    if ( !A ) {
+        return;
+    }
     
     sdp_coeff_spr1 *spr1 = (sdp_coeff_spr1 *) A;
     
@@ -503,10 +525,74 @@ static void dataMatClearRankOneSparseImpl( void *A ) {
 
 static void dataMatClearRankOneDenseImpl( void *A ) {
     
+    if ( !A ) {
+        return;
+    }
+    
     sdp_coeff_dsr1 *dsr1 = (sdp_coeff_dsr1 *) A;
     
     HDSDP_FREE(dsr1->r1MatFactor);
     HDSDP_ZERO(A, sdp_coeff_dsr1, 1);
+    
+    return;
+}
+
+static void dataMatDestroyZeroImpl( void **pA ) {
+    
+    if ( !pA ) {
+        return;
+    }
+    
+    dataMatClearZeroImpl(*pA);
+    HDSDP_FREE(*pA);
+    
+    return;
+}
+
+static void dataMatDestroySparseImpl( void **pA ) {
+    
+    if ( !pA ) {
+        return;
+    }
+    
+    dataMatClearSparseImpl(*pA);
+    HDSDP_FREE(*pA);
+    
+    return;
+}
+
+static void dataMatDestroyDenseImpl( void **pA ) {
+    
+    if ( !pA ) {
+        return;
+    }
+    
+    dataMatClearDenseImpl(*pA);
+    HDSDP_FREE(*pA);
+    
+    return;
+}
+
+static void dataMatDestroyRankOneSparseImpl( void **pA ) {
+    
+    if ( !pA ) {
+        return;
+    }
+    
+    dataMatClearRankOneSparseImpl(*pA);
+    HDSDP_FREE(*pA);
+    
+    return;
+}
+
+static void dataMatDestroyRankOneDenseImpl( void **pA ) {
+    
+    if ( !pA ) {
+        return;
+    }
+    
+    dataMatClearRankOneDenseImpl(*pA);
+    HDSDP_FREE(*pA);
     
     return;
 }
@@ -580,7 +666,7 @@ static void sdpDataMatIChooseType( sdp_coeff *sdpCoeff, sdp_coeff_type dataType 
             sdpCoeff->eig = NULL;
             sdpCoeff->getNnz = dataMatGetNnzZeroImpl;
             sdpCoeff->dump = dataMatDumpZeroImpl;
-            sdpCoeff->clear = dataMatClearZeroImpl;
+            sdpCoeff->destroy = dataMatDestroyZeroImpl;
             sdpCoeff->view = dataMatViewZeroImpl;
             break;
         case SDP_COEFF_SPARSE:
@@ -591,7 +677,7 @@ static void sdpDataMatIChooseType( sdp_coeff *sdpCoeff, sdp_coeff_type dataType 
             sdpCoeff->eig = NULL;
             sdpCoeff->getNnz = dataMatGetNnzSparseImpl;
             sdpCoeff->dump = dataMatDumpSparseImpl;
-            sdpCoeff->clear = dataMatClearSparseImpl;
+            sdpCoeff->destroy = dataMatDestroySparseImpl;
             sdpCoeff->view = dataMatViewSparseImpl;
             break;
         case SDP_COEFF_DENSE:
@@ -602,7 +688,7 @@ static void sdpDataMatIChooseType( sdp_coeff *sdpCoeff, sdp_coeff_type dataType 
             sdpCoeff->eig = NULL;
             sdpCoeff->getNnz = dataMatGetNnzDenseImpl;
             sdpCoeff->dump = dataMatDumpDenseImpl;
-            sdpCoeff->clear = dataMatClearDenseImpl;
+            sdpCoeff->destroy = dataMatDestroyDenseImpl;
             sdpCoeff->view = dataMatViewDenseImpl;
             break;
         case SDP_COEFF_SPR1:
@@ -613,7 +699,7 @@ static void sdpDataMatIChooseType( sdp_coeff *sdpCoeff, sdp_coeff_type dataType 
             sdpCoeff->eig = NULL;
             sdpCoeff->getNnz = dataMatGetNnzRankOneSparseImpl;
             sdpCoeff->dump = dataMatDumpRankOneSparseImpl;
-            sdpCoeff->clear = dataMatClearRankOneSparseImpl;
+            sdpCoeff->destroy = dataMatDestroyRankOneSparseImpl;
             sdpCoeff->view = dataMatViewRankOneSparseImpl;
             break;
         case SDP_COEFF_DSR1:
@@ -624,7 +710,7 @@ static void sdpDataMatIChooseType( sdp_coeff *sdpCoeff, sdp_coeff_type dataType 
             sdpCoeff->eig = NULL;
             sdpCoeff->getNnz = dataMatGetNnzRankOneDenseImpl;
             sdpCoeff->dump = dataMatDumpRankOneDenseImpl;
-            sdpCoeff->clear = dataMatClearRankOneDenseImpl;
+            sdpCoeff->destroy = dataMatDestroyRankOneDenseImpl;
             sdpCoeff->view = dataMatViewRankOneDenseImpl;
             break;
         default:
@@ -671,7 +757,7 @@ extern hdsdp_retcode sdpDataMatSetData( sdp_coeff *sdpCoeff, int nSDPCol, int da
     /* At this stage, only sparse, zero and dense matrices are classified */
     if ( dataMatNnz == 0 ) {
         sdpDataMatIChooseType(sdpCoeff, SDP_COEFF_ZERO);
-    } else if ( dataMatNnz > 0.3 * nPack ) {
+    } else if ( dataMatNnz > 0 * nPack ) {
         sdpDataMatIChooseType(sdpCoeff, SDP_COEFF_DENSE);
     } else {
         sdpDataMatIChooseType(sdpCoeff, SDP_COEFF_SPARSE);
@@ -745,10 +831,12 @@ extern void sdpDataMatClear( sdp_coeff *sdpCoeff ) {
         return;
     }
     
-    sdpCoeff->clear(sdpCoeff->dataMat);
-    HDSDP_FREE(sdpCoeff->dataMat);
-    HDSDP_FREE(sdpCoeff->eigVals);
-    HDSDP_FREE(sdpCoeff->eigVecs);
+    sdpCoeff->destroy(&sdpCoeff->dataMat);
+    
+    if ( sdpCoeff->eigRank != -1 ) {
+        HDSDP_FREE(sdpCoeff->eigVals);
+        HDSDP_FREE(sdpCoeff->eigVecs);
+    }
     
     HDSDP_ZERO(sdpCoeff, sdp_coeff, 1);
     
@@ -762,7 +850,7 @@ extern void sdpDataMatDestroy( sdp_coeff **psdpCoeff ) {
     }
     
     sdpDataMatClear(*psdpCoeff);
-    HDSDP_FREE(psdpCoeff);
+    HDSDP_FREE(*psdpCoeff);
     
     return;
 }

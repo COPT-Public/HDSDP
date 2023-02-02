@@ -32,7 +32,7 @@ typedef struct {
     hdsdp_retcode (*eig)  ( void *, int *, double *, double *, double * );
     int (*getNnz)         ( void * );
     void (*dump)          ( void *, double * );
-    void (*clear)         ( void * );
+    void (*destroy)       ( void ** );
     void (*view)          ( void * );
     
 } sdp_coeff;

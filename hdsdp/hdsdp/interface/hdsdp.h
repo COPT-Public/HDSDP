@@ -15,6 +15,11 @@
 #endif
 
 #define HDSDP_CONIC_DEBUG
+#define HDSDP_CONIC_PRINT
+#ifndef MEMWATCH
+#define MEMWATCH
+#include "external/memwatch.h"
+#endif
 
 typedef enum {
     

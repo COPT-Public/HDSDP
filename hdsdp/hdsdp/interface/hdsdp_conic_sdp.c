@@ -3,6 +3,7 @@
 #include "interface/hdsdp_utils.h"
 
 #include "linalg/hdsdp_sdpdata.h"
+#include "linalg/sparse_opts.h"
 
 /** @brief Create a dense sdp cone
  *
@@ -96,11 +97,7 @@ extern hdsdp_retcode sdpSparseConeProcDataImpl( hdsdp_cone_sdp_sparse *cone, int
     int nRowElem = 0;
     
     /* Count #Nonzeros */
-    for ( int iRow = 0; iRow < nRow; ++iRow ) {
-        if ( coneMatBeg[iRow + 2] - coneMatBeg[iRow + 1] > 0 ) {
-            nRowElem += 1;
-        }
-    }
+    nRowElem = csp_nnz_cols(nRow, &coneMatBeg[1]);
     
     HDSDP_INIT(cone->sdpRow, sdp_coeff *, nRowElem);
     HDSDP_INIT(cone->rowIdx, int, nRowElem);
