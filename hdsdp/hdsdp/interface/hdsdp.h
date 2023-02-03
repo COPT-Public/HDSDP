@@ -15,7 +15,8 @@
 #endif
 
 #define HDSDP_CONIC_DEBUG
-#define HDSDP_CONIC_PRINT
+#define HDSDP_LINSYS_DEBUG
+
 #ifndef MEMWATCH
 #define MEMWATCH
 #include "external/memwatch.h"

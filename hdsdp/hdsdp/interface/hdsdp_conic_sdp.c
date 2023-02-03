@@ -261,16 +261,16 @@ extern void sdpSparseConeDestroyImpl( hdsdp_cone_sdp_sparse **pCone ) {
 
 extern void sdpDenseConeViewImpl( hdsdp_cone_sdp_dense *cone ) {
     
-    printf("Dense SDP cone of %d rows. \n", cone->nRow);
-    printf("Objective: \n");
+    printf("- Dense SDP cone of %d rows. \n", cone->nRow);
+    printf("- Objective: \n");
     sdpDataMatView(cone->sdpObj);
     
-    printf("Constraint: \n");
+    printf("- Constraint: \n");
     for ( int iRow = 0; iRow < cone->nRow; ++iRow ) {
         sdpDataMatView(cone->sdpRow[iRow]);
     }
     
-    printf("\nConic statistics: Zero %d Sp %d Ds %d SpR1 %d DsR1 %d \n", cone->sdpConeStats[SDP_COEFF_ZERO],
+    printf("- Conic statistics: Zero %d Sp %d Ds %d SpR1 %d DsR1 %d \n\n", cone->sdpConeStats[SDP_COEFF_ZERO],
            cone->sdpConeStats[SDP_COEFF_SPARSE], cone->sdpConeStats[SDP_COEFF_DENSE],
            cone->sdpConeStats[SDP_COEFF_SPR1], cone->sdpConeStats[SDP_COEFF_DSR1]);
     
@@ -279,17 +279,17 @@ extern void sdpDenseConeViewImpl( hdsdp_cone_sdp_dense *cone ) {
 
 extern void sdpSparseConeViewImpl( hdsdp_cone_sdp_sparse *cone ) {
     
-    printf("Sparse SDP cone of %d rows and %d nonzeros. \n", cone->nRow, cone->nRowElem);
-    printf("Objective: \n");
+    printf("- Sparse SDP cone of %d rows and %d nonzeros. \n", cone->nRow, cone->nRowElem);
+    printf("- Objective: \n");
     sdpDataMatView(cone->sdpObj);
     
-    printf("Constraint: \n");
+    printf("- Constraint: \n");
     for ( int iRow = 0; iRow < cone->nRowElem; ++iRow ) {
-        printf("\nRow index %d \n", cone->rowIdx[iRow]);
+        printf("%d: ", cone->rowIdx[iRow]);
         sdpDataMatView(cone->sdpRow[iRow]);
     }
     
-    printf("\nConic statistics: Zero %d Sp %d Ds %d SpR1 %d DsR1 %d \n", cone->sdpConeStats[SDP_COEFF_ZERO],
+    printf("Conic statistics: Zero %d Sp %d Ds %d SpR1 %d DsR1 %d \n\n", cone->sdpConeStats[SDP_COEFF_ZERO],
            cone->sdpConeStats[SDP_COEFF_SPARSE], cone->sdpConeStats[SDP_COEFF_DENSE],
            cone->sdpConeStats[SDP_COEFF_SPR1], cone->sdpConeStats[SDP_COEFF_DSR1]);
     
