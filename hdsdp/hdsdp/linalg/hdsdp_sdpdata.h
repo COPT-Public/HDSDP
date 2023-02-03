@@ -18,8 +18,8 @@ extern int sdpDataMatGetRank( sdp_coeff *sdpCoeff );
 extern double sdpDataMatDot( sdp_coeff *sdpCoeff, double *dFullMatrix );
 extern void sdpDataMatScal( sdp_coeff *sdpCoeff, double scal );
 
-#define ABS_NORM 1
-#define FRO_NORM 2
+#define ABS_NORM (1)
+#define FRO_NORM (2)
 extern double sdpDataMatNorm( sdp_coeff *sdpCoeff, int type );
 
 extern hdsdp_retcode sdpDataMatFatorize( sdp_coeff *sdpCoeff, double *dAuxFullMatrix );

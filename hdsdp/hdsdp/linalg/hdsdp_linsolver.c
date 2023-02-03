@@ -2,7 +2,6 @@
 
 #include "linalg/def_hdsdp_linsolver.h"
 #include "linalg/hdsdp_linsolver.h"
-#include "linalg/hdsdp_pardiso.h"
 
 /* Sparse direct solver interface */
 static hdsdp_retcode pardisoLinSolverCreate( void **pchol, int nCol ) {
