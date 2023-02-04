@@ -387,9 +387,158 @@ static hdsdp_retcode lapackLinSolverSymbolic( void *chol, int *dummy1, int *dumm
 static hdsdp_retcode lapackLinSolverNumeric( void *chol, int *dummy1, int *dummy2, double *dFullMatrix ) {
     
     hdsdp_retcode retcode = HDSDP_RETCODE_OK;
+    lapack_linsys *lap = (lapack_linsys *) chol;
     
-    int info = 0;
+    HDSDP_MEMCPY(lap->dFullMatElem, dFullMatrix, double, lap->nCol * lap->nCol);
     
+    int info = LAPACK_RET_OK;
+    char uplolow = LAPACK_UPLOW_LOW;
+    dpotrf(&uplolow, &lap->nCol, lap->dFullMatElem, &lap->nCol, &info);
     
+    if ( info != LAPACK_RET_OK ) {
+        retcode = HDSDP_RETCODE_FAILED;
+        goto exit_cleanup;
+    }
+    
+exit_cleanup:
     return retcode;
+}
+
+static hdsdp_retcode lapackLinSolverPsdCheck( void *chol, int *dummy1, int *dummy2, double *dFullMatrix, int *isPsd ) {
+    
+    hdsdp_retcode retcode = HDSDP_RETCODE_OK;
+    lapack_linsys *lap = (lapack_linsys *) chol;
+    
+    HDSDP_MEMCPY(lap->dFullMatElem, dFullMatrix, double, lap->nCol * lap->nCol);
+    
+    int info = LAPACK_RET_OK;
+    char uplolow = LAPACK_UPLOW_LOW;
+    dpotrf(&uplolow, &lap->nCol, lap->dFullMatElem, &lap->nCol, &info);
+    
+    if ( info == LAPACK_RET_OK ) {
+        *isPsd = 1;
+    } else if ( info > 0 ) {
+        *isPsd = 0;
+    } else {
+        retcode = HDSDP_RETCODE_FAILED;
+        goto exit_cleanup;
+    }
+ 
+exit_cleanup:
+    return retcode;
+}
+
+static void lapackLinSolverForwardN( void *chol, int nRhs, double *rhsVec, double *solVec ) {
+    
+    lapack_linsys *lap = (lapack_linsys *) chol;
+    
+    int info = LAPACK_RET_OK;
+    char uplolow = LAPACK_UPLOW_LOW, sideleft = LAPACK_SIDE_LEFT, notrans = LAPACK_NOTRANS, nonunit = LAPACK_DIAG_NONUNIT;
+    double done = 1.0;
+    
+    if ( solVec ) {
+        HDSDP_MEMCPY(solVec, rhsVec, double, nRhs * lap->nCol);
+        dtrsm(&sideleft, &uplolow, &notrans, &nonunit, &lap->nCol, &nRhs,
+              &done, lap->dFullMatElem, &lap->nCol, solVec, &lap->nCol);
+    } else {
+        dtrsm(&sideleft, &uplolow, &notrans, &nonunit, &lap->nCol, &nRhs,
+              &done, lap->dFullMatElem, &lap->nCol, rhsVec, &lap->nCol);
+    }
+ 
+    return;
+}
+
+static void lapackLinSolverBackwardN( void *chol, int nRhs, double *rhsVec, double *solVec ) {
+    
+    lapack_linsys *lap = (lapack_linsys *) chol;
+    
+    int info = LAPACK_RET_OK;
+    char uplolow = LAPACK_UPLOW_LOW, sideleft = LAPACK_SIDE_LEFT, trans = LAPACK_TRANS, nonunit = LAPACK_DIAG_NONUNIT;
+    double done = 1.0;
+    
+    if ( solVec ) {
+        HDSDP_MEMCPY(solVec, rhsVec, double, nRhs * lap->nCol);
+        dtrsm(&sideleft, &uplolow, &trans, &nonunit, &lap->nCol, &nRhs,
+              &done, lap->dFullMatElem, &lap->nCol, solVec, &lap->nCol);
+    } else {
+        dtrsm(&sideleft, &uplolow, &trans, &nonunit, &lap->nCol, &nRhs,
+              &done, lap->dFullMatElem, &lap->nCol, rhsVec, &lap->nCol);
+    }
+ 
+    return;
+}
+
+static void lapackLinSolverSolveN( void *chol, int nRhs, double *rhsVec, double *solVec ) {
+    
+    lapack_linsys *lap = (lapack_linsys *) chol;
+    
+    int info = LAPACK_RET_OK;
+    char uplolow = LAPACK_UPLOW_LOW;
+    
+    if ( solVec ) {
+        HDSDP_MEMCPY(solVec, rhsVec, double, nRhs * lap->nCol);
+        dpotrs(&uplolow, &lap->nCol, &nRhs, lap->dFullMatElem,
+               &lap->nCol, solVec, &lap->nCol, &info);
+    } else {
+        dpotrs(&uplolow, &lap->nCol, &nRhs, lap->dFullMatElem,
+               &lap->nCol, rhsVec, &lap->nCol, &info);
+    }
+    
+    assert( info == LAPACK_RET_OK );
+    
+    return;
+}
+
+static hdsdp_retcode lapackLinSolverGetDiag( void *chol, double *diagVec ) {
+    
+    lapack_linsys *lap = (lapack_linsys *) chol;
+    
+    for ( int iRow = 0; iRow < lap->nCol; ++iRow ) {
+        diagVec[iRow] = lap->dFullMatElem[iRow * lap->nCol + iRow];
+    }
+    
+    return HDSDP_RETCODE_OK;
+}
+
+static void lapackLinSolverInvert( void *chol, double *dFullMatrix, double *dAuxiMatrix ) {
+    
+    (void) dAuxiMatrix;
+    lapack_linsys *lap = (lapack_linsys *) chol;
+    HDSDP_MEMCPY(dFullMatrix, lap->dFullMatElem, double, lap->nCol * lap->nCol);
+    
+    int info = LAPACK_RET_OK;
+    char uplolow = LAPACK_UPLOW_LOW;
+    
+    dpotri(&uplolow, &lap->nCol, dFullMatrix, &lap->nCol, &info);
+    HUtilMatSymmetrize(lap->nCol, dFullMatrix);
+    
+    assert( info == LAPACK_RET_OK );
+    
+    return;
+}
+
+static void lapackLinSolverClear( void *chol ) {
+    
+    if ( !chol ) {
+        return;
+    }
+    
+    lapack_linsys *lap = (lapack_linsys *) chol;
+    HDSDP_FREE(lap->dFullMatElem);
+    
+    HDSDP_ZERO(lap, lapack_linsys, 1);
+    
+    return;
+}
+
+static void lapackLinSolverDestroy( void **pchol ) {
+    
+    if ( !pchol ) {
+        return;
+    }
+    
+    lapackLinSolverClear(*pchol);
+    HDSDP_FREE(*pchol);
+    
+    return;
 }

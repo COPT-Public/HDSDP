@@ -71,15 +71,46 @@ typedef struct {
     
 } small_linsys;
 
-/* Sparse/dense iterative */
+typedef struct {
+    
+    int maxIter;
+    int nRestartFreq;
+    double absTol;
+    double relTol;
+    
+} iterative_params;
+
+/* Dense iterative */
 typedef struct {
     
     int nCol;
-    int isDense;
     
-    int *colMatBeg;
-    int *colMatIdx;
-    double *colMatElem;
+    double *dFullMatElem;
+    double *iterResi;
+    double *iterResiNew;
+    double *iterDirection;
+    double *preInvResi;
+    double *MTimesDirection;
+    double *iterVec;
+    double *iterVecAuxi;
+    double *rhsBuffer;
+    
+    /* Pre-conditioner */
+    int useJacobi;
+    double *JacobiPrecond;
+    lapack_linsys *chol;
+    
+    /* Statistics */
+    double iterResiNorm;
+    double avgSolveTime;
+    double avgFactorTime;
+    
+    int nIters;
+    int solStatus;
+    int nFactors;
+    int nSolves;
+    
+    iterative_params params;
     
 } iterative_linsys;
 
@@ -124,7 +155,19 @@ extern void pardiso_getdiag ( const void *, void *, void *, const int *, int * )
 
 
 /* Dense direct */
-#define LAPACK_RET_OK (0)
+#define LAPACK_RET_OK    ( 0 )
+#define LAPACK_UPLOW_LOW ('L')
+#define LAPACK_NOTRANS   ('N')
+#define LAPACK_TRANS     ('T')
+#define LAPACK_SIDE_LEFT ('L')
+#define LAPACK_DIAG_NONUNIT ('N')
+
+extern void dtrsv( const char *uplo, const char *trans, const char *diag,
+                   const int *n, const double *a, const int *lda, double *x,
+                   const int *incx );
+void dtrsm( const char *side, const char *uplo, const char *transa,
+            const char *diag, const int *m, const int *n, const double *alpha,
+            const double *a, const int *lda, double *b, const int *ldb );
 void dpotrf ( const char *uplo, const int *n, double *a, const int *lda, int *info );
 void dpotri( const char *uplo, const int *n, double *a, const int *lda, int *info );
 void dpotrs( const char *uplo, const int *n, const int *nrhs, const double *a,
