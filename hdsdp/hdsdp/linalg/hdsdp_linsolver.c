@@ -257,7 +257,7 @@ static void pardisoLinSolverBackwardN( void *chol, int nRhs, double *rhsVec, dou
     return;
 }
 
-static void pardisoLinSolverSolveN( void *chol, int nRhs, double *rhsVec, double *solVec ) {
+static hdsdp_retcode pardisoLinSolverSolveN( void *chol, int nRhs, double *rhsVec, double *solVec ) {
     
     pardiso_linsys *pds = (pardiso_linsys *) chol;
     
@@ -279,7 +279,7 @@ static void pardisoLinSolverSolveN( void *chol, int nRhs, double *rhsVec, double
                 pds->iparm, &msg, rhsVec, pds->dWork, &pdsret);
     }
     
-    return;
+    return HDSDP_RETCODE_OK;
 }
 
 static hdsdp_retcode pardisoLinSolverGetDiag( void *chol, double *diagVec ) {
@@ -383,7 +383,6 @@ static hdsdp_retcode lapackLinSolverSymbolic( void *chol, int *dummy1, int *dumm
     return HDSDP_RETCODE_OK;
 }
 
-
 static hdsdp_retcode lapackLinSolverNumeric( void *chol, int *dummy1, int *dummy2, double *dFullMatrix ) {
     
     hdsdp_retcode retcode = HDSDP_RETCODE_OK;
@@ -468,7 +467,7 @@ static void lapackLinSolverBackwardN( void *chol, int nRhs, double *rhsVec, doub
     return;
 }
 
-static void lapackLinSolverSolveN( void *chol, int nRhs, double *rhsVec, double *solVec ) {
+static hdsdp_retcode lapackLinSolverSolveN( void *chol, int nRhs, double *rhsVec, double *solVec ) {
     
     lapack_linsys *lap = (lapack_linsys *) chol;
     
@@ -486,7 +485,7 @@ static void lapackLinSolverSolveN( void *chol, int nRhs, double *rhsVec, double 
     
     assert( info == LAPACK_RET_OK );
     
-    return;
+    return HDSDP_RETCODE_OK;
 }
 
 static hdsdp_retcode lapackLinSolverGetDiag( void *chol, double *diagVec ) {
@@ -538,6 +537,124 @@ static void lapackLinSolverDestroy( void **pchol ) {
     }
     
     lapackLinSolverClear(*pchol);
+    HDSDP_FREE(*pchol);
+    
+    return;
+}
+
+/* Dense iterative solver interface */
+static hdsdp_retcode conjGradLinSolverCreate( void **pchol, int nCol ) {
+    
+    hdsdp_retcode retcode = HDSDP_RETCODE_OK;
+    HDSDP_NULLCHECK(pchol);
+    
+    iterative_linsys *cg = NULL;
+    HDSDP_INIT(cg, iterative_linsys, 1);
+    HDSDP_MEMCHECK(cg);
+    HDSDP_ZERO(cg, iterative_linsys, 1);
+    
+    cg->nCol = nCol;
+    
+    HDSDP_INIT(cg->iterResi, double, nCol);
+    HDSDP_INIT(cg->iterResiNew, double, nCol);
+    HDSDP_INIT(cg->iterDirection, double, nCol);
+    HDSDP_INIT(cg->preInvResi, double, nCol);
+    HDSDP_INIT(cg->MTimesDirection, double, nCol);
+    HDSDP_INIT(cg->iterVec, double, nCol);
+    HDSDP_INIT(cg->iterVecAuxi, double, nCol);
+    HDSDP_INIT(cg->rhsBuffer, double, nCol);
+    
+    cg->useJacobi = 1;
+    HDSDP_INIT(cg->JacobiPrecond, double, nCol);
+    HDSDP_CALL(lapackLinSolverCreate((void **)&cg->lap, nCol));
+    
+    /* Set parameters */
+    cg->params.absTol = 1e-06;
+    cg->params.relTol = 1e-06;
+    cg->params.maxIter = HDSDP_MAX(50, nCol / 20);
+    cg->params.nRestartFreq = 20;
+        
+exit_cleanup:
+    return retcode;
+}
+
+static void conjGradLinSolverSetParam( void *chol, void *iterParams ) {
+    
+    iterative_linsys *cg = (iterative_linsys *) chol;
+    iterative_params *params = (iterative_params *) iterParams;
+    
+    cg->params.absTol = params->absTol;
+    cg->params.relTol = params->relTol;
+    cg->params.maxIter = params->maxIter;
+    cg->params.nRestartFreq = params->nRestartFreq;
+    
+    return;
+}
+
+static hdsdp_retcode conjGradNumeric( void *chol, int *dummy1, int *dummy2, double *dFullMatrix ) {
+    
+    (void) chol;
+    (void) dummy1;
+    (void) dummy2;
+    
+    iterative_linsys *cg = (iterative_linsys *) chol;
+    cg->pFullMatElem = dFullMatrix;
+    
+    return HDSDP_RETCODE_OK;
+}
+
+static hdsdp_retcode conjGradSolve( void *chol, double *rhsVec, double *solVec ) {
+    
+    hdsdp_retcode retcode = HDSDP_RETCODE_OK;
+    /* TODO: Implement the conjugate gradient solver */
+    
+    return retcode;
+}
+
+static hdsdp_retcode conjGradSolveN( void *chol, int nRhs, double *rhsVec, double *solVec ) {
+    
+    hdsdp_retcode retcode = HDSDP_RETCODE_OK;
+    iterative_linsys *cg = (iterative_linsys *) chol;
+    
+    for ( int iCol = 0; iCol < nRhs; ++iCol ) {
+        HDSDP_CALL(conjGradSolve(chol, rhsVec + iCol * cg->nCol, solVec + iCol * cg->nCol))
+    }
+    
+exit_cleanup:
+    
+    return retcode;
+}
+
+static void conjGradClear( void *chol ) {
+    
+    if ( !chol ) {
+        return;
+    }
+    
+    iterative_linsys *cg = (iterative_linsys *) chol;
+    
+    HDSDP_FREE(cg->iterResi);
+    HDSDP_FREE(cg->iterResiNew);
+    HDSDP_FREE(cg->iterDirection);
+    HDSDP_FREE(cg->preInvResi);
+    HDSDP_FREE(cg->MTimesDirection);
+    HDSDP_FREE(cg->iterVec);
+    HDSDP_FREE(cg->iterVecAuxi);
+    HDSDP_FREE(cg->rhsBuffer);
+    HDSDP_FREE(cg->JacobiPrecond);
+    
+    lapackLinSolverDestroy((void **) &cg->lap);
+    
+    return;
+}
+
+static void conjGradDestroy( void **pchol ) {
+    
+    if ( !pchol ) {
+        return;
+    }
+    
+    conjGradClear(*pchol);
     HDSDP_FREE(*pchol);
     
     return;

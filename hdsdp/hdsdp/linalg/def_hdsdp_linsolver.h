@@ -33,7 +33,7 @@ typedef struct {
     
     void (*cholFSolve) ( void *, int, double *, double * );
     void (*cholBSolve) ( void *, int, double *, double * );
-    void (*cholSolve) ( void *, int, double * );
+    hdsdp_retcode (*cholSolve) ( void *, int, double * );
     hdsdp_retcode (*cholGetDiag) ( void *, double * );
     void (*cholInvert) ( void *, double *, double * );
     
@@ -80,12 +80,21 @@ typedef struct {
     
 } iterative_params;
 
+typedef enum {
+    
+    ITERATIVE_STATUS_OK,
+    ITERATIVE_STATUS_NUMERICAL,
+    ITERATIVE_STATUS_MAXITER,
+    ITERATIVE_STATUS_FAILED
+    
+} iter_status;
+
 /* Dense iterative */
 typedef struct {
     
     int nCol;
     
-    double *dFullMatElem;
+    double *pFullMatElem;
     double *iterResi;
     double *iterResiNew;
     double *iterDirection;
@@ -98,7 +107,7 @@ typedef struct {
     /* Pre-conditioner */
     int useJacobi;
     double *JacobiPrecond;
-    lapack_linsys *chol;
+    lapack_linsys *lap;
     
     /* Statistics */
     double iterResiNorm;
@@ -106,7 +115,7 @@ typedef struct {
     double avgFactorTime;
     
     int nIters;
-    int solStatus;
+    iter_status solStatus;
     int nFactors;
     int nSolves;
     
@@ -173,6 +182,7 @@ void dpotri( const char *uplo, const int *n, double *a, const int *lda, int *inf
 void dpotrs( const char *uplo, const int *n, const int *nrhs, const double *a,
              const int *lda, double *b, const int *ldb, int *info );
 
-/* Small */
+
+
 
 #endif /* def_hdsdp_linsolver_h */
