@@ -26,7 +26,7 @@
  * In a word we insert data into CSparse triplet format and then compress it
  */
 hdsdp_retcode HReadSDPA( char *fname, int *pnConstrs, int *pnBlks, int **pblkDims, double **prowRHS,
-                         int ***pconeMatBeg, int ***pconeMatIdx, double ***pconeMatElem, int *pnLPCols,
+                         int ***pconeMatBeg, int ***pconeMatIdx, double ***pconeMatElem, int *pnCols, int *pnLPCols,
                          int **pLpMatBeg, int **pLpMatIdx, double **pLpMatElem, int *pnElems ) {
     
     hdsdp_retcode retcode = HDSDP_RETCODE_OK;
@@ -107,7 +107,7 @@ hdsdp_retcode HReadSDPA( char *fname, int *pnConstrs, int *pnBlks, int **pblkDim
                 retcode = HDSDP_RETCODE_FAILED;
                 goto exit_cleanup;
             }
-            nCols += blkDim;
+            nCols += blkDim * blkDim;
             blkDims[iBlk] = blkDim;
             
         } else {
@@ -124,7 +124,7 @@ hdsdp_retcode HReadSDPA( char *fname, int *pnConstrs, int *pnBlks, int **pblkDim
             nLPCols = -blkDim;
         } else {
             blkDims[iBlk] = blkDim;
-            nCols += blkDim;
+            nCols += blkDim * blkDim;
         }
     }
     
@@ -304,6 +304,7 @@ hdsdp_retcode HReadSDPA( char *fname, int *pnConstrs, int *pnBlks, int **pblkDim
     *pconeMatBeg = coneMatBeg;
     *pconeMatIdx = coneMatIdx;
     *pconeMatElem = coneMatElem;
+    *pnCols = nCols;
     *pnLPCols = nLPCols;
     *pLpMatBeg = LpMatBeg;
     *pLpMatIdx = LpMatIdx;

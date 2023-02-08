@@ -16,6 +16,7 @@
 
 #define HDSDP_CONIC_DEBUG
 #define HDSDP_LINSYS_DEBUG
+#define HDSDP_CONJGRAD_DEBUG
 
 #ifndef MEMWATCH
 #define MEMWATCH

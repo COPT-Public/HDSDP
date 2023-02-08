@@ -62,7 +62,7 @@ typedef struct {
     int nCol;
     double *dFullMatElem;
     
-} lapack_linsys;
+} lapack_flinsys;
 
 typedef struct {
     
@@ -73,6 +73,7 @@ typedef struct {
 
 typedef struct {
     
+    int useJacobi;
     int maxIter;
     int nRestartFreq;
     double absTol;
@@ -94,29 +95,26 @@ typedef struct {
     
     int nCol;
     
-    double *pFullMatElem;
+    double *fullMatElem;
     double *iterResi;
     double *iterResiNew;
     double *iterDirection;
     double *preInvResi;
     double *MTimesDirection;
     double *iterVec;
-    double *iterVecAuxi;
     double *rhsBuffer;
     
     /* Pre-conditioner */
     int useJacobi;
     double *JacobiPrecond;
-    lapack_linsys *lap;
+    lapack_flinsys *lap;
     
     /* Statistics */
     double iterResiNorm;
-    double avgSolveTime;
-    double avgFactorTime;
+    double solveTime;
     
     int nIters;
     iter_status solStatus;
-    int nFactors;
     int nSolves;
     
     iterative_params params;

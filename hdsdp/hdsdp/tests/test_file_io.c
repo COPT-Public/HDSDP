@@ -22,12 +22,14 @@ int test_file_io( char *fname ) {
     int *LpMatBeg = NULL;
     int *LpMatIdx = NULL;
     double *LpMatElem = NULL;
+    int nCols = 0;
     int nElem = 0;
     user_data *SDPData = NULL;
     hdsdp_cone *SDPCone = NULL;
     
     HDSDP_CALL(HReadSDPA(fname, &nConstrs, &nBlks, &BlkDims, &rowRHS, &coneMatBeg,
-                         &coneMatIdx, &coneMatElem, &nLpCols, &LpMatBeg, &LpMatIdx, &LpMatElem, &nElem));
+                         &coneMatIdx, &coneMatElem, &nCols, &nLpCols, &LpMatBeg,
+                         &LpMatIdx, &LpMatElem, &nElem));
     HDSDP_CALL(HUserDataCreate(&SDPData));
     
     for ( int iBlk = 0; iBlk < nBlks; ++iBlk ) {

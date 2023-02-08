@@ -5,6 +5,22 @@
 
 #include <math.h>
 
+extern void dsymv( const char *uplo, const int *n, const double *alpha,
+                   const double *a, const int *lda, const double *x,
+                   const int *incx, const double *beta, double *y, const int *incy );
+
+
+/* Full dense operations */
+extern void fds_symv( int n, double alpha, double *A, double *x, double beta, double *y ) {
+    
+    char uplo = 'L';
+    int one = 1;
+    
+    dsymv(&uplo, &n, &alpha, A, &n, x, &one, &beta, y, &one);
+    
+    return;
+}
+
 /** @brief Scale a packed dense matrix
  *
  */

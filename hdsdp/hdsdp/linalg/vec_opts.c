@@ -46,6 +46,15 @@ extern void axpy( int *n, double *a, double *x, int *incx, double *y, int *incy 
     return;
 }
 
+extern void axpby( int *n, double *a, double *x, int *incx, double *b, double *y, int *incy ) {
+    
+    for ( int i = 0; i < *n; ++i ) {
+        y[i] = (*a) * x[i] + (*b) * y[i];
+    }
+    
+    return;
+}
+
 extern double dot( int *n, double *x, int *incx, double *y, int *incy ) {
 #ifdef MYBLAS
     assert( *incx == 1 && *incy == 1 );
