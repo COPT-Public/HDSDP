@@ -26,7 +26,7 @@
                                 retcode = HDSDP_RETCODE_MEMORY; \
                                 goto exit_cleanup;              \
                             }
-#define HDSDP_ERROR_TRACE printf("File [%30s] Line [%d]", __FILE__, __LINE__)
+#define HDSDP_ERROR_TRACE printf("File [%30s] Line [%d]\n", __FILE__, __LINE__)
 #define HDSDP_CALL(func) retcode = (func);                      \
                          if (retcode != HDSDP_RETCODE_OK) {     \
                              goto exit_cleanup;                 \
