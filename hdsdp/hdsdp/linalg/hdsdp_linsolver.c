@@ -582,9 +582,19 @@ static void conjGradLinSolverSetParam( void *chol, void *iterParams ) {
     iterative_linsys *cg = (iterative_linsys *) chol;
     iterative_params *params = (iterative_params *) iterParams;
     
-    cg->params.absTol = params->absTol;
-    cg->params.relTol = params->relTol;
-    cg->params.maxIter = params->maxIter;
+    if ( params->absTol > 0 ) {
+        cg->params.absTol = params->absTol;
+    }
+    
+    if ( params->relTol > 0 ) {
+        cg->params.relTol = params->relTol;
+    }
+    
+    if ( params->maxIter > 0 ) {
+        cg->params.maxIter = params->maxIter;
+    }
+    
+    if ( params->nRestartFreq > 0 )
     cg->params.nRestartFreq = params->nRestartFreq;
     
     return;
@@ -736,6 +746,10 @@ static hdsdp_retcode conjGradSolve( iterative_linsys *cg, double *rhsVec, double
             goto exit_cleanup;
         }
         
+#ifdef HDSDP_CONJGRAD_DEBUG
+        printf("Conjugate iteration %d. Resi: %10.3e", iter, resiNorm);
+#endif
+        
         if ( resiNorm < cgTol ) {
             cg->solStatus = ITERATIVE_STATUS_OK;
             retcode = HDSDP_RETCODE_FAILED;
@@ -760,7 +774,7 @@ exit_cleanup:
     return retcode;
 }
 
-static hdsdp_retcode conjGradSolveN( void *chol, int nRhs, double *rhsVec, double *solVec ) {
+static hdsdp_retcode conjGradLinSolverSolveN( void *chol, int nRhs, double *rhsVec, double *solVec ) {
     
     hdsdp_retcode retcode = HDSDP_RETCODE_OK;
     iterative_linsys *cg = (iterative_linsys *) chol;
@@ -782,7 +796,7 @@ exit_cleanup:
     return retcode;
 }
 
-static void conjGradClear( void *chol ) {
+static void conjGradLinSolverClear( void *chol ) {
     
     if ( !chol ) {
         return;
@@ -804,14 +818,205 @@ static void conjGradClear( void *chol ) {
     return;
 }
 
-static void conjGradDestroy( void **pchol ) {
+static void conjGradLinSolverDestroy( void **pchol ) {
     
     if ( !pchol ) {
         return;
     }
     
-    conjGradClear(*pchol);
+    conjGradLinSolverClear(*pchol);
     HDSDP_FREE(*pchol);
+    
+    return;
+}
+
+extern hdsdp_retcode HFpLinsysCreate( hdsdp_linsys_fp **pHLin, int nCol, linsys_type Ltype ) {
+    
+    hdsdp_retcode retcode = HDSDP_RETCODE_OK;
+    
+    HDSDP_NULLCHECK(pHLin);
+    
+    hdsdp_linsys_fp *HLinsys = NULL;
+    HDSDP_INIT(HLinsys, hdsdp_linsys_fp, 1);
+    HDSDP_MEMCHECK(HLinsys);
+    
+    HLinsys->LinType = Ltype;
+    HLinsys->nCol = nCol;
+    
+    switch ( Ltype ) {
+        case HDSDP_LINSYS_DENSE_DIRECT:
+            HLinsys->cholCreate = lapackLinSolverCreate;
+            HLinsys->cholSetParam = lapackLinSolverSetParamsDummy;
+            HLinsys->cholSymbolic = lapackLinSolverSymbolic;
+            HLinsys->cholNumeric = lapackLinSolverNumeric;
+            HLinsys->cholPsdCheck = lapackLinSolverPsdCheck;
+            HLinsys->cholFSolve = lapackLinSolverForwardN;
+            HLinsys->cholBSolve = lapackLinSolverBackwardN;
+            HLinsys->cholSolve = lapackLinSolverSolveN;
+            HLinsys->cholGetDiag = lapackLinSolverGetDiag;
+            HLinsys->cholInvert = lapackLinSolverInvert;
+            HLinsys->cholDestroy = lapackLinSolverDestroy;
+            break;
+        case HDSDP_LINSYS_SPARSE_DIRECT:
+            HLinsys->cholCreate = pardisoLinSolverCreate;
+            HLinsys->cholSetParam = pardisoLinSolverSetThreads;
+            HLinsys->cholSymbolic = pardisoLinSolverSymbolic;
+            HLinsys->cholNumeric = pardisoLinSolverNumeric;
+            HLinsys->cholPsdCheck = pardisoLinSolverPsdCheck;
+            HLinsys->cholFSolve = pardisoLinSolverForwardN;
+            HLinsys->cholBSolve = pardisoLinSolverBackwardN;
+            HLinsys->cholSolve = pardisoLinSolverSolveN;
+            HLinsys->cholGetDiag = pardisoLinSolverGetDiag;
+            HLinsys->cholInvert = pardisoLinSolverInvert;
+            HLinsys->cholDestroy = pardisoLinSolverDestroy;
+            break;
+        case HDSDP_LINSYS_DENSE_ITERATIVE:
+            HLinsys->cholCreate = conjGradLinSolverCreate;
+            HLinsys->cholSetParam = conjGradLinSolverSetParam;
+            HLinsys->cholSymbolic = NULL;
+            HLinsys->cholNumeric = NULL;
+            HLinsys->cholPsdCheck = NULL;
+            HLinsys->cholFSolve = NULL;
+            HLinsys->cholBSolve = NULL;
+            HLinsys->cholSolve = conjGradLinSolverSolveN;
+            HLinsys->cholGetDiag = NULL;
+            HLinsys->cholInvert = NULL;
+            HLinsys->cholDestroy = conjGradLinSolverDestroy;
+            break;
+        /* Not implementd */
+        case HDSDP_LINSYS_SMALL_DIRECT:
+            retcode = HDSDP_RETCODE_FAILED;
+            goto exit_cleanup;
+            break;
+        default:
+            retcode = HDSDP_RETCODE_FAILED;
+            goto exit_cleanup;
+    }
+    
+    *pHLin = HLinsys;
+    
+    HDSDP_CALL(HLinsys->cholCreate(&HLinsys->chol, nCol));
+    
+exit_cleanup:
+    
+    return retcode;
+}
+
+extern void HFpLinsysSetParam( hdsdp_linsys_fp *HLin, double relTol, double absTol, int nThreads, int maxIter, int nRestartFreq ) {
+    
+    if ( HLin->LinType == HDSDP_LINSYS_DENSE_ITERATIVE ) {
+        
+        iterative_params params;
+        params.absTol = absTol;
+        params.relTol = relTol;
+        params.maxIter = relTol;
+        params.nRestartFreq = nRestartFreq;
+        HLin->cholSetParam(HLin->chol, &params);
+        
+    } else if ( HLin->LinType == HDSDP_LINSYS_SPARSE_DIRECT ) {
+        
+        void *pnThreads = (void *) (&nThreads);
+        HLin->cholSetParam(HLin->chol, pnThreads);
+        
+    }
+    
+    return;
+}
+
+extern hdsdp_retcode HFpLinsysSymbolic( hdsdp_linsys_fp *HLin, int *colMatBeg, int *colMatIdx ) {
+    
+    hdsdp_retcode retcode = HDSDP_RETCODE_OK;
+    HDSDP_CALL(HLin->cholSymbolic(HLin->chol, colMatBeg, colMatIdx));
+    
+exit_cleanup:
+    
+    return retcode;
+}
+
+extern hdsdp_retcode HFpLinsysNumeric( hdsdp_linsys_fp *HLin, int *colMatBeg, int *colMatIdx, double *colMatElem ) {
+    
+    hdsdp_retcode retcode = HDSDP_RETCODE_OK;
+    HDSDP_CALL(HLin->cholNumeric(HLin->chol, colMatBeg, colMatIdx, colMatElem));
+    
+exit_cleanup:
+    
+    return retcode;
+}
+
+extern hdsdp_retcode HFpLinsysPsdCheck( hdsdp_linsys_fp *HLin, int *colMatBeg, int *colMatIdx, double *colMatElem, int *isPsd ) {
+    
+    hdsdp_retcode retcode = HDSDP_RETCODE_OK;
+    HDSDP_CALL(HLin->cholPsdCheck(HLin->chol, colMatBeg, colMatIdx, colMatElem, isPsd));
+    
+exit_cleanup:
+    
+    return retcode;
+}
+
+
+extern void HFpLinsysFSolve( hdsdp_linsys_fp *HLin, int nRhs, double *rhsVec, double *solVec ) {
+    
+    HLin->cholFSolve(HLin->chol, nRhs, rhsVec, solVec);
+    
+    return;
+}
+
+extern void HFpLinsysBSolve( hdsdp_linsys_fp *HLin, int nRhs, double *rhsVec, double *solVec ) {
+    
+    HLin->cholBSolve(HLin->chol, nRhs, rhsVec, solVec);
+    
+    return;
+}
+
+
+extern hdsdp_retcode HFpLinsysSolve( hdsdp_linsys_fp *HLin, int nRhs, double *rhsVec, double *solVec ) {
+    
+    hdsdp_retcode retcode = HDSDP_RETCODE_OK;
+    HDSDP_CALL(HLin->cholSolve(HLin->chol, nRhs, rhsVec, solVec));
+    
+exit_cleanup:
+    
+    return retcode;
+}
+
+extern hdsdp_retcode HFpLinsysGetDiag( hdsdp_linsys_fp *HLin, double *diagElem ) {
+    
+    hdsdp_retcode retcode = HDSDP_RETCODE_OK;
+    HLin->cholGetDiag(HLin->chol, diagElem);
+    
+exit_cleanup:
+    
+    return retcode;
+}
+
+
+extern void HFpLinsysInvert( hdsdp_linsys_fp *HLin, double *dFullMatrix, double *dAuxiMatrix ) {
+    
+    HLin->cholInvert(HLin->chol, dFullMatrix, dAuxiMatrix);
+    
+    return;
+}
+
+extern void HFpLinsysClear( hdsdp_linsys_fp *HLin ) {
+    
+    if ( !HLin ) {
+        return;
+    }
+    
+    HLin->nCol = 0;
+    HLin->cholDestroy(&HLin->chol);
+    
+    return;
+}
+
+extern void HFpLinsysDestroy( hdsdp_linsys_fp **HLin ) {
+    
+    if ( !HLin ) {
+        return;
+    }
+    
+    HFpLinsysClear(*HLin);
+    HDSDP_FREE(HLin);
     
     return;
 }

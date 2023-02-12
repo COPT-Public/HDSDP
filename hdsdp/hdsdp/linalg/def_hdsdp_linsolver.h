@@ -14,11 +14,10 @@ typedef enum {
     
     /* Iterative solver is only used for Schur complement */
     HDSDP_LINSYS_DENSE_ITERATIVE,
-    HDSDP_LINSYS_SPARSE_ITERATIVE
     
 } linsys_type;
 
-/* Define linear system solver */
+/* Define linear system solver using function pointer */
 typedef struct {
     
     int nCol;
@@ -33,13 +32,22 @@ typedef struct {
     
     void (*cholFSolve) ( void *, int, double *, double * );
     void (*cholBSolve) ( void *, int, double *, double * );
-    hdsdp_retcode (*cholSolve) ( void *, int, double * );
+    hdsdp_retcode (*cholSolve) ( void *, int, double *, double * );
     hdsdp_retcode (*cholGetDiag) ( void *, double * );
     void (*cholInvert) ( void *, double *, double * );
     
     void (*cholDestroy) ( void ** );
     
-} hdsdp_linsys;
+} hdsdp_linsys_fp;
+
+/* Same implementation using switch statement */
+typedef struct {
+    
+    int nCol;
+    void *chol;
+    linsys_type LinType;
+    
+} hdsdp_linsys_sw;
 
 /* Sparse direct */
 typedef struct {
