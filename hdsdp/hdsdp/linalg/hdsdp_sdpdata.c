@@ -599,7 +599,8 @@ static void dataMatDestroyRankOneDenseImpl( void **pA ) {
 
 static void dataMatViewZeroImpl( void *A ) {
     
-    printf("Zero matrix L1 = [%5.3e] L2 = [%5.3e] \n", 0.0, 0.0);
+    printf("Zero matrix of size %d L1 = [%5.3e] L2 = [%5.3e] \n",
+           ((sdp_coeff_zero *) A)->nSDPCol, 0.0, 0.0);
     
     return;
 }
@@ -608,7 +609,9 @@ static void dataMatViewSparseImpl( void *A ) {
     
     sdp_coeff_sparse *sparse = (sdp_coeff_sparse *) A;
     
-    printf("Sparse matrix L1 = [%5.3e] L2 = [%5.3e]. \n", dataMatNormSparseImpl(sparse, ABS_NORM),
+    printf("Sparse matrix of size %d and %d nnzs L1 = [%5.3e] L2 = [%5.3e]. \n",
+           sparse->nSDPCol, sparse->nTriMatElem,
+           dataMatNormSparseImpl(sparse, ABS_NORM),
            dataMatNormSparseImpl(A, FRO_NORM));
     
 #if 0
@@ -629,7 +632,8 @@ static void dataMatViewSparseImpl( void *A ) {
 static void dataMatViewDenseImpl( void *A ) {
     
     sdp_coeff_dense *dense = (sdp_coeff_dense *) A;
-    printf("Dense matrix L1 = [%5.3e] L2 = [%5.3e]. \n", dataMatNormDenseImpl(dense, ABS_NORM),
+    printf("Dense matrix of size %d L1 = [%5.3e] L2 = [%5.3e]. \n",
+           dense->nSDPCol, dataMatNormDenseImpl(dense, ABS_NORM),
            dataMatNormDenseImpl(dense, FRO_NORM));
     
     return;
@@ -638,7 +642,8 @@ static void dataMatViewDenseImpl( void *A ) {
 static void dataMatViewRankOneSparseImpl( void *A ) {
     
     sdp_coeff_spr1 *spr1 = (sdp_coeff_spr1 *) A;
-    printf("Sparse rank-one matrix L1 = [%5.3e] L2 = [%5.3e]. \n", dataMatNormRankOneSparseImpl(spr1, ABS_NORM),
+    printf("Sparse rank-one matrix of size %d L1 = [%5.3e] L2 = [%5.3e]. \n", spr1->nSDPCol,
+           dataMatNormRankOneSparseImpl(spr1, ABS_NORM),
            dataMatNormRankOneSparseImpl(spr1, FRO_NORM));
     
     return;
@@ -647,7 +652,8 @@ static void dataMatViewRankOneSparseImpl( void *A ) {
 static void dataMatViewRankOneDenseImpl( void *A ) {
     
     sdp_coeff_dsr1 *dsr1 = (sdp_coeff_dsr1 *) A;
-    printf("Dense rank-one matrix L1 = [%5.3e] L2 = [%5.3e]. \n", dataMatNormRankOneDenseImpl(dsr1, ABS_NORM),
+    printf("Dense rank-one matrix of size %d L1 = [%5.3e] L2 = [%5.3e]. \n", dsr1->nSDPCol,
+           dataMatNormRankOneDenseImpl(dsr1, ABS_NORM),
            dataMatNormRankOneDenseImpl(dsr1, FRO_NORM));
     
     return;

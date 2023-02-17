@@ -6,6 +6,7 @@
 #include "linalg/sparse_opts.h"
 #include "linalg/vec_opts.h"
 
+#include <assert.h>
 #include <math.h>
 
 /* Compressed column operations */
@@ -131,6 +132,67 @@ extern void tsp_decompress( int n, int nnz, int *Ci, double *Cx, int *Ai, int *A
     
     return;
 }
+
+/** @brief Check if the matrix is rank-one
+ *
+ * a is an n by one auxiliary vector and on exit, the returned integer values tells
+ * if the matrix is rank-one and a would contain the rank-one element
+ *
+ * In a word A = sgn \* a \* a'
+ *
+ */
+extern int tsp_r1_extract( int n, int nnz, int *Ai, int *Aj, double *Ax, double *sgn, double *a ) {
+    
+    assert( nnz > 0 );
+    
+    /* Get the first nonzero */
+    int i = Ai[0];
+    int j = Aj[0];
+    double v = Ax[0];
+    
+    if ( i != j ) {
+        return 0;
+    }
+    
+    double s = ( v > 0 ) ? 1.0 : -1.0;
+    v = sqrt(fabs(v));
+    
+    /* Assume that the matrix is rank-one */
+    int k = 0;
+    for ( k = 0; k < nnz; ++k ) {
+        a[Ai[k]] = Ax[k] / v;
+        if ( Aj[k] > i ) {
+            break;
+        }
+    }
+    
+    if ( k == n ) {
+        return 0;
+    }
+    
+    /* Now a contains the rank-one components */
+    double eps = 0.0;
+    
+    if ( s == 1.0 ) {
+        /* If condition is broken into two cases */
+        for ( int k = 0; k < nnz; ++k ) {
+            eps += fabs(Ax[k] - a[Ai[k]] * a[Aj[k]]);
+        }
+    } else {
+        for ( int k = 0; k < nnz; ++k ) {
+            eps += fabs(Ax[k] - a[Ai[k]] * a[Aj[k]]);
+        }
+    }
+    
+    if ( eps > 1e-10 ) {
+        return 0;
+    }
+    
+    *sgn = s;
+    
+    return 1;
+}
+
 
 /* Lower triplet operations */
 /** @brief Scale a triplet matrix

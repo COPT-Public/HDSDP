@@ -372,6 +372,7 @@ exit_cleanup:
 
 static void lapackLinSolverSetParamsDummy( void *chol, void *param ) {
     
+    (void) chol;
     (void) param;
     
     return;
@@ -379,6 +380,7 @@ static void lapackLinSolverSetParamsDummy( void *chol, void *param ) {
 
 static hdsdp_retcode lapackLinSolverSymbolic( void *chol, int *dummy1, int *dummy2 ) {
     
+    (void) chol;
     (void) dummy1;
     (void) dummy2;
     
@@ -600,7 +602,16 @@ static void conjGradLinSolverSetParam( void *chol, void *iterParams ) {
     return;
 }
 
-static hdsdp_retcode conjGradNumeric( void *chol, int *dummy1, int *dummy2, double *dFullMatrix ) {
+static hdsdp_retcode conjGradLinSolverSymbolic( void *chol, int *dummy1, int *dummy2 ) {
+    
+    (void) chol;
+    (void) dummy1;
+    (void) dummy2;
+    
+    return HDSDP_RETCODE_OK;
+}
+
+static hdsdp_retcode conjGradLinSolverNumeric( void *chol, int *dummy1, int *dummy2, double *dFullMatrix ) {
     
     (void) chol;
     (void) dummy1;
@@ -610,6 +621,37 @@ static hdsdp_retcode conjGradNumeric( void *chol, int *dummy1, int *dummy2, doub
     cg->fullMatElem = dFullMatrix;
     
     return HDSDP_RETCODE_OK;
+}
+
+static hdsdp_retcode conjGradLinSolverPsdCheck( void *chol, int *dummy1, int *dummy2, double *dummy3, int *dummy4 ) {
+    
+    (void) chol;
+    (void) dummy1;
+    (void) dummy2;
+    (void) dummy3;
+    (void) dummy4;
+    
+    return HDSDP_RETCODE_FAILED;
+}
+
+static void conjGradLinSolverForwardN( void *chol, int dummy1, double *dummy2, double *dummy3 ) {
+    
+    (void) chol;
+    (void) dummy1;
+    (void) dummy2;
+    (void) dummy3;
+    
+    return;
+}
+
+static void conjGradLinSolverBackwardN( void *chol, int dummy1, double *dummy2, double *dummy3 ) {
+    
+    (void) chol;
+    (void) dummy1;
+    (void) dummy2;
+    (void) dummy3;
+    
+    return;
 }
 
 static hdsdp_retcode conjGradBuildPreconditioner( iterative_linsys *cg ) {
@@ -796,6 +838,23 @@ exit_cleanup:
     return retcode;
 }
 
+static hdsdp_retcode conjGradLinSolverGetDiag( void *chol, double *dummy ) {
+    
+    (void) chol;
+    (void) dummy;
+    
+    return HDSDP_RETCODE_FAILED;
+}
+
+static void conjGradLinSolverInvert( void *chol, double *dummy1, double *dummy2 ) {
+    
+    (void) chol;
+    (void) dummy1;
+    (void) dummy2;
+    
+    return;
+}
+
 static void conjGradLinSolverClear( void *chol ) {
     
     if ( !chol ) {
@@ -873,14 +932,14 @@ extern hdsdp_retcode HFpLinsysCreate( hdsdp_linsys_fp **pHLin, int nCol, linsys_
         case HDSDP_LINSYS_DENSE_ITERATIVE:
             HLinsys->cholCreate = conjGradLinSolverCreate;
             HLinsys->cholSetParam = conjGradLinSolverSetParam;
-            HLinsys->cholSymbolic = NULL;
-            HLinsys->cholNumeric = NULL;
-            HLinsys->cholPsdCheck = NULL;
-            HLinsys->cholFSolve = NULL;
-            HLinsys->cholBSolve = NULL;
+            HLinsys->cholSymbolic = conjGradLinSolverSymbolic;
+            HLinsys->cholNumeric = conjGradLinSolverNumeric;
+            HLinsys->cholPsdCheck = conjGradLinSolverPsdCheck;
+            HLinsys->cholFSolve = conjGradLinSolverForwardN;
+            HLinsys->cholBSolve = conjGradLinSolverBackwardN;
             HLinsys->cholSolve = conjGradLinSolverSolveN;
-            HLinsys->cholGetDiag = NULL;
-            HLinsys->cholInvert = NULL;
+            HLinsys->cholGetDiag = conjGradLinSolverGetDiag;
+            HLinsys->cholInvert = conjGradLinSolverInvert;
             HLinsys->cholDestroy = conjGradLinSolverDestroy;
             break;
         /* Not implementd */

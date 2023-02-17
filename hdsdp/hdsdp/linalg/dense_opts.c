@@ -80,3 +80,59 @@ extern void pds_decompress( int nnz, int *Ci, double *Cx, double *A ) {
     
     return;
 }
+
+/** @brief Check is the matrix is rank one
+ *
+ */
+extern int pds_r1_extract( int n, double *A, double *sgn, double *a ) {
+    
+    /* Get the first nonzero */
+    int i, j, k = 0;
+    for ( i = 0; i < n; ++i ) {
+        if ( A[k] != 0 ) {
+            break;
+        }
+        k += n - i;
+    }
+    
+    if ( i == n ) {
+        return 0;
+    }
+    
+    double s = ( A[k] > 0 ) ? 1.0 : 0.0;
+    double v = sqrt(fabs(A[k]));
+    double eps = 0.0;
+    
+    /* Extract diagonal */
+    for ( k = 0; k < n; ++k ) {
+        a[i] = PACK_ENTRY(A, n, k, i) / v;
+    }
+    
+    int id = 0;
+    double *pstart = NULL;
+    if ( s == 1.0 ) {
+        for ( i = 0; i < n; ++i ) {
+            pstart = A + id;
+            for ( j = 0; j < n - i; ++j ) {
+                eps += fabs(pstart[j] - a[i] * a[i + j]);
+            }
+            id += n - i;
+            if ( eps > 1e-10 ) {
+                return 0;
+            }
+        }
+    } else {
+        for ( i = 0; i < n; ++i ) {
+            pstart = A + id;
+            for ( j = 0; j < n - i; ++j ) {
+                eps += fabs(pstart[j] + a[i] * a[i + j]);
+            }
+            id += n - i;
+            if ( eps > 1e-10 ) {
+                return 0;
+            }
+        }
+    }
+    
+    return 0;
+}
