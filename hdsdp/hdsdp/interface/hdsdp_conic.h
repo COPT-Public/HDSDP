@@ -11,6 +11,7 @@ extern "C" {
 extern hdsdp_retcode HConeCreate( hdsdp_cone **pHCone );
 extern hdsdp_retcode HConeSetData( hdsdp_cone *HCone, user_data *coneData );
 extern hdsdp_retcode HConeProcData( hdsdp_cone *HCone );
+extern hdsdp_retcode HConePresolveData( hdsdp_cone *HCone );
 extern void HConeClear( hdsdp_cone *HCone );
 extern void HConeDestroy( hdsdp_cone **pHCone );
 extern void HConeView( hdsdp_cone *HCone );

@@ -36,10 +36,10 @@ int test_file_io( char *fname ) {
         HUserDataSetConeData(SDPData, HDSDP_CONETYPE_DENSE_SDP, nConstrs, BlkDims[iBlk],
                              coneMatBeg[iBlk], coneMatIdx[iBlk], coneMatElem[iBlk]);
         cone_type cone = HUserDataChooseCone(SDPData);
-        
         HDSDP_CALL(HConeCreate(&SDPCone));
         HDSDP_CALL(HConeSetData(SDPCone, SDPData));
         HDSDP_CALL(HConeProcData(SDPCone));
+        HDSDP_CALL(HConePresolveData(SDPCone));
         HConeView(SDPCone);
         HUserDataClear(SDPData);
         HConeDestroy(&SDPCone);

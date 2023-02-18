@@ -7,6 +7,7 @@
 #include "linalg/vec_opts.h"
 
 #include <assert.h>
+#include <stdio.h>
 #include <math.h>
 
 /* Compressed column operations */
@@ -154,16 +155,29 @@ extern int tsp_r1_extract( int n, int nnz, int *Ai, int *Aj, double *Ax, double 
         return 0;
     }
     
+    if ( nnz == 1 ) {
+        *sgn = Ax[0];
+        a[i] = 1.0;
+        return 1;
+    }
+    
     double s = ( v > 0 ) ? 1.0 : -1.0;
     v = sqrt(fabs(v));
     
     /* Assume that the matrix is rank-one */
     int k = 0;
+    int anz = 0;
     for ( k = 0; k < nnz; ++k ) {
-        a[Ai[k]] = Ax[k] / v;
         if ( Aj[k] > i ) {
             break;
         }
+        a[Ai[k]] = Ax[k] / v;
+        anz += 1;
+    }
+    
+    /* The number of nnzs in the submatrix must match */
+    if ( nnz != (int) (anz * ( anz + 1 ) / 2) ) {
+        return 0;
     }
     
     if ( k == n ) {
@@ -180,7 +194,7 @@ extern int tsp_r1_extract( int n, int nnz, int *Ai, int *Aj, double *Ax, double 
         }
     } else {
         for ( int k = 0; k < nnz; ++k ) {
-            eps += fabs(Ax[k] - a[Ai[k]] * a[Aj[k]]);
+            eps += fabs(Ax[k] + a[Ai[k]] * a[Aj[k]]);
         }
     }
     

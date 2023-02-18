@@ -29,7 +29,7 @@ typedef struct {
     double (*dot)         ( void *, double * );
     void (*scal)          ( void *, double );
     double (*norm)        ( void *, int );
-    hdsdp_retcode (*eig)  ( void *, int *, double *, double *, double * );
+    hdsdp_retcode (*eig)  ( void *, int *, double *, double **, double ** );
     int (*getNnz)         ( void * );
     void (*dump)          ( void *, double * );
     void (*destroy)       ( void ** );

@@ -54,6 +54,8 @@ hdsdp_retcode HReadSDPA( char *fname, int *pnConstrs, int *pnBlks, int **pblkDim
     double *LpMatElem = NULL;
     double **coneMatElem = NULL;
     
+    int warnTinyEntry = 1;
+    
     /* Auxiliary memory */
     dcs *LpConeData = NULL;
     dcs **pSDPConeData = NULL;
@@ -214,7 +216,10 @@ hdsdp_retcode HReadSDPA( char *fname, int *pnConstrs, int *pnBlks, int **pblkDim
             iCol -= 1;
             
             if ( fabs(dElem) < 1e-10 ) {
-                printf("[Warning] Entry smaller than 1e-10 is ignored. \n");
+                if ( warnTinyEntry ) {
+                    printf("[Warning] Entry smaller than 1e-10 is ignored. \n");
+                    warnTinyEntry = 0;
+                }
                 continue;
             }
             

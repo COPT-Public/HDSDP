@@ -105,7 +105,7 @@ extern int pds_r1_extract( int n, double *A, double *sgn, double *a ) {
     
     /* Extract diagonal */
     for ( k = 0; k < n; ++k ) {
-        a[i] = PACK_ENTRY(A, n, k, i) / v;
+        a[k] = PACK_ENTRY(A, n, k, i) / v;
     }
     
     int id = 0;
@@ -134,5 +134,6 @@ extern int pds_r1_extract( int n, double *A, double *sgn, double *a ) {
         }
     }
     
-    return 0;
+    *sgn = s;
+    return 1;
 }

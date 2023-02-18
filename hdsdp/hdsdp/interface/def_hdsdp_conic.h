@@ -55,6 +55,7 @@ typedef struct {
     /* Conic data interface */
     hdsdp_retcode (*coneCreate)    ( void ** );
     hdsdp_retcode (*coneProcData)    ( void *, int, int, int *, int *, double * );
+    hdsdp_retcode (*conePresolveData) ( void * );
     void          (*coneDestroyData) ( void ** );
     
     /* Conic algorithm interface */
@@ -83,6 +84,7 @@ typedef struct {
 typedef struct {
     
     int   nRow;
+    int   nCol;
     
     void *sdpDualVar;
     void *sdpDualChecker;
@@ -102,6 +104,7 @@ typedef struct {
 typedef struct {
     
     int   nRow;
+    int   nCol;
     
     void *sdpDualVar;
     void *sdpDualChecker;
@@ -121,6 +124,7 @@ typedef struct {
 typedef struct {
     
     int     nRow;
+    int     nCol;
     
     double *colDual;
     double *colDualChecker;

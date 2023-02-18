@@ -21,11 +21,10 @@ extern void sdpDataMatScal( sdp_coeff *sdpCoeff, double scal );
 #define ABS_NORM (1)
 #define FRO_NORM (2)
 extern double sdpDataMatNorm( sdp_coeff *sdpCoeff, int type );
-
-extern hdsdp_retcode sdpDataMatFatorize( sdp_coeff *sdpCoeff, double *dAuxFullMatrix );
+extern hdsdp_retcode sdpDataMatBuildUpEigs( sdp_coeff *sdpCoeff, double *dAuxFullMatrix );
 extern int sdpDataMatGetNnz( sdp_coeff *sdpCoeff );
 extern void sdpDataMatDump( sdp_coeff *sdpCoeff, double *dFullMatrix );
-extern int sdpDataMatGetType( sdp_coeff *sdpCoeff );
+extern sdp_coeff_type sdpDataMatGetType( sdp_coeff *sdpCoeff );
 extern void sdpDataMatClear( sdp_coeff *sdpCoeff );
 extern void sdpDataMatDestroy( sdp_coeff **psdpCoeff );
 extern void sdpDataMatView( sdp_coeff *sdpCoeff );

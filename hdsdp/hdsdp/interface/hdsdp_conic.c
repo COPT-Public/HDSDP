@@ -34,6 +34,7 @@ extern hdsdp_retcode HConeSetData( hdsdp_cone *HCone, user_data *usrData ) {
         case HDSDP_CONETYPE_BOUND:
             HCone->coneCreate = NULL;
             HCone->coneProcData = NULL;
+            HCone->conePresolveData = NULL;
             HCone->coneDestroyData = NULL;
             HCone->coneSetStart = NULL;
             HCone->coneUpdate = NULL;
@@ -49,6 +50,7 @@ extern hdsdp_retcode HConeSetData( hdsdp_cone *HCone, user_data *usrData ) {
         case HDSDP_CONETYPE_LP:
             HCone->coneCreate = NULL;
             HCone->coneProcData = NULL;
+            HCone->conePresolveData = NULL;
             HCone->coneDestroyData = NULL;
             HCone->coneSetStart = NULL;
             HCone->coneUpdate = NULL;
@@ -64,6 +66,7 @@ extern hdsdp_retcode HConeSetData( hdsdp_cone *HCone, user_data *usrData ) {
         case HDSDP_CONETYPE_DENSE_SDP:
             HCone->coneCreate = sdpDenseConeCreateImpl;
             HCone->coneProcData = sdpDenseConeProcDataImpl;
+            HCone->conePresolveData = sdpDenseConePresolveImpl;
             HCone->coneDestroyData = sdpDenseConeDestroyImpl;
             HCone->coneSetStart = sdpDenseConeSetStartImpl;
             HCone->coneUpdate = sdpDenseConeUpdateImpl;
@@ -80,6 +83,7 @@ extern hdsdp_retcode HConeSetData( hdsdp_cone *HCone, user_data *usrData ) {
         case HDSDP_CONETYPE_SPARSE_SDP:
             HCone->coneCreate = sdpSparseConeCreateImpl;
             HCone->coneProcData = sdpSparseConeProcDataImpl;
+            HCone->conePresolveData = sdpSparseConePresolveImpl;
             HCone->coneDestroyData = sdpSparseConeDestroyImpl;
             HCone->coneSetStart = sdpSparseConeSetStartImpl;
             HCone->coneUpdate = sdpSparseConeUpdateImpl;
@@ -145,6 +149,16 @@ extern hdsdp_retcode HConeProcData( hdsdp_cone *HCone ) {
     HDSDP_CALL(HCone->coneCreate(&HCone->coneData));
     HDSDP_CALL(HCone->coneProcData(HCone->coneData, usrData->nConicRow, usrData->nConicCol,
                                    usrData->coneMatBeg, usrData->coneMatIdx, usrData->coneMatElem));
+    
+exit_cleanup:
+    
+    return retcode;
+}
+
+extern hdsdp_retcode HConePresolveData( hdsdp_cone *HCone ) {
+    
+    hdsdp_retcode retcode = HDSDP_RETCODE_OK;
+    HDSDP_CALL(HCone->conePresolveData(HCone->coneData));
     
 exit_cleanup:
     

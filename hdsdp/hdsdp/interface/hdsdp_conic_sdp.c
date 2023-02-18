@@ -50,6 +50,7 @@ extern hdsdp_retcode sdpDenseConeProcDataImpl( hdsdp_cone_sdp_dense *cone, int n
     
     /* Create the cone */
     cone->nRow = nRow;
+    cone->nCol = nCol;
     
     HDSDP_INIT(cone->sdpRow, sdp_coeff *, nRow);
     HDSDP_MEMCHECK(cone->sdpRow);
@@ -86,6 +87,7 @@ extern hdsdp_retcode sdpSparseConeProcDataImpl( hdsdp_cone_sdp_sparse *cone, int
     
     /* Create the cone */
     cone->nRow = nRow;
+    cone->nCol = nCol;
     
     HDSDP_ZERO(cone->sdpConeStats, int, 5);
     
@@ -135,6 +137,50 @@ exit_cleanup:
     return retcode;
 }
 
+extern hdsdp_retcode sdpDenseConePresolveImpl( hdsdp_cone_sdp_dense *cone ) {
+    
+    hdsdp_retcode retcode = HDSDP_RETCODE_OK;
+    
+    double *preConeAuxi = NULL;
+    /* cone->nCol * cone->nCol for a Full matrix */
+    HDSDP_INIT(preConeAuxi, double, cone->nCol);
+    HDSDP_MEMCHECK(preConeAuxi);
+    
+    HDSDP_CALL(sdpDataMatBuildUpEigs(cone->sdpObj, preConeAuxi));
+    for ( int iRow = 0; iRow < cone->nRow; ++iRow ) {
+        /* Update conic statistics */
+        cone->sdpConeStats[sdpDataMatGetType(cone->sdpRow[iRow])] -= 1;
+        HDSDP_CALL(sdpDataMatBuildUpEigs(cone->sdpRow[iRow], preConeAuxi));
+        cone->sdpConeStats[sdpDataMatGetType(cone->sdpRow[iRow])] += 1;
+    }
+    
+exit_cleanup:
+    
+    HDSDP_FREE(preConeAuxi);
+    return retcode;
+}
+
+extern hdsdp_retcode sdpSparseConePresolveImpl( hdsdp_cone_sdp_sparse *cone ) {
+    
+    hdsdp_retcode retcode = HDSDP_RETCODE_OK;
+    
+    double *preConeAuxi = NULL;
+    /* cone->nCol * cone->nCol for a Full matrix */
+    HDSDP_INIT(preConeAuxi, double, cone->nCol);
+    HDSDP_MEMCHECK(preConeAuxi);
+    
+    HDSDP_CALL(sdpDataMatBuildUpEigs(cone->sdpObj, preConeAuxi));
+    for ( int iRow = 0; iRow < cone->nRowElem; ++iRow ) {
+        cone->sdpConeStats[sdpDataMatGetType(cone->sdpRow[iRow])] -= 1;
+        HDSDP_CALL(sdpDataMatBuildUpEigs(cone->sdpRow[iRow], preConeAuxi));
+        cone->sdpConeStats[sdpDataMatGetType(cone->sdpRow[iRow])] += 1;
+    }
+    
+exit_cleanup:
+    
+    HDSDP_FREE(preConeAuxi);
+    return retcode;
+}
 
 extern void sdpDenseConeSetStartImpl( hdsdp_cone_sdp_dense *cone, double rResi ) {
     
