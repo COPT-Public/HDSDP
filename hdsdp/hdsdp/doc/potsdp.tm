@@ -204,370 +204,97 @@
   When other cones are added, we only need to define their conic operations
   and add them together.
 
-  <section|Algorithm and conic interface>
-
-  A general conic interface for HDSDP contains space for
-  <math|<around*|(|x,s,\<Delta\>s|)>>
-
-  <\itemize>
-    <item>Initialize
-
-    We generally initialize from a well centered dual solution
-
-    <item>Maintenance
-
-    Conic interface should keep track of the dual slacks during the dual
-    algorithm
-
-    <item>Assembly
-
-    Adding <math|<fa>s<rsup|-1>c s<rsup|-1>,<around*|\<langle\>|c,s<rsup|-1>c
-    s<rsup|-1>|\<rangle\>>,<fa>s<rsup|-2><fa><rsup|\<ast\>>> to the final
-    schur complement
-
-    both numerically and symbolically
-
-    <item>Ratio test
-
-    Given <math|\<Delta\>y,\<Delta\>\<tau\>>, the conic interface should be
-    able to compute <math|max<around*|{|\<alpha\>:s+\<alpha\>\<Delta\>s\<geq\>0|}>>
-
-    <item>Conic barrier
-
-    The conic interface should be able to output the barrier value of the
-    current iterate
-
-    <item>Conic projection
-
-    Determine if a primal solution is recoverable and the corresponding
-    pseudo-primal step
-
-    <item>Primal variable recovery
-
-    Explicitly compute the primal variable
-
-    <item>Cone de-homogenize
-
-    Restore conic variable in the original scale with <math|\<tau\>>.
-  </itemize>
-
-  <section|SDP data structures>
-
-  <subsection|Factorized data>
-
-  The following structure stores the eigen-decomposition of a data matrix
-  <math|A=<big|sum><rsub|i=1><rsup|r>\<lambda\><rsub|i>u<rsub|i>u<rsub|i><rsup|\<top\>>>.
-  The structure should support the following operations.
-
-  <\itemize>
-    <item><math|<around*|\<langle\>|A,B|\<rangle\>>=<big|sum><rsub|i=1><rsup|r>\<lambda\><rsub|i>u<rsub|i><rsup|\<top\>>B
-    u<rsub|i>>
-
-    <item><math|B=S<rsup|-1>A S<rsup|-1>=<big|sum><rsub|i=1><rsup|r>\<lambda\><rsub|i><around*|(|S<rsup|-1>u<rsub|i>|)><around*|(|S<rsup|-1>u<rsub|i>|)><rsup|\<top\>>>
-
-    In this case the LHS serves as a buffer
-  </itemize>
-
-  <\listing>
-    <\verbatim>
-      typedef struct {
-    </verbatim>
-
-    \;
-
-    <\verbatim>
-      \ \ \ \ int \ \ \ \ rank;
-    </verbatim>
-
-    <space|2em><verbatim|double *evals;>
-
-    <space|2em><verbatim|double *evecs;>
-
-    \;
-
-    <verbatim|} eigFactor;>
-  </listing>
-
-  <subsection|SDP coefficient matrix>
-
-  <with|color|red|NOTE: Only lower triangular is stored.>\ 
-
-  We use the following structures to store <math|A> and <math|C> matrices
-  from SDP coefficients. They should support the following functionalities
-
-  <\itemize>
-    <item><math|B\<leftarrow\>\<alpha\>A+B>
-
-    <item><math|<around*|\<langle\>|A<rsub|i>,A<rsub|j>|\<rangle\>>> (TODO)
-
-    <item><math|<around*|\<\|\|\>|A|\<\|\|\>><rsub|F>>
-
-    <item><math|<big|sum><rsub|i j><around*|\||a<rsub|i j>|\|>>
-
-    <item><math|A\<leftarrow\>\<alpha\>A>
-
-    <item><verbatim|[V, e] = eig(A)> (TODO)
-
-    <item><verbatim|full(A)>
-  </itemize>
-
-  <\listing>
-    <\verbatim>
-      typedef struct {
-    </verbatim>
-
-    \;
-
-    <space|2em><verbatim|int \ \ \ \ \ \ nCol;>
-
-    <space|2em><verbatim|void \ \ \ \ \ *dataMat;>
-
-    <space|2em><verbatim|eigFactor *eig;>
-
-    <space|2em><verbatim|void \ \ \ \ \ (*dataMataApB) \ (void *, double,
-    void *);>
-
-    <space|2em><verbatim|void \ \ \ \ \ (*dataMatScal) \ (void *, double);>
-
-    <space|2em><verbatim|double \ \ \ (*dataMatNorm) \ (void *, int);>
-
-    <space|2em><verbatim|int \ \ \ \ \ \ (*dataMatEig) \ \ (void *, void
-    **);>
-
-    <space|2em><verbatim|int \ \ \ \ \ \ (*dataMatGetNnz)(void *);>
-
-    <space|2em><verbatim|void \ \ \ \ \ (*dataMatDump) \ (void *, double *);>
-
-    \;
-
-    <verbatim|} sdpCoeffMat;>
-  </listing>
-
-  <subsubsection|Sparse matrix>
-
-  <\listing>
-    <\verbatim>
-      typedef struct {
-    </verbatim>
-
-    \;
-
-    <space|1em><verbatim|int \ \ \ \ nSDPCol;>
-
-    <space|1em><verbatim|int \ \ \ \ nTriMatElem;>
-
-    <space|1em><verbatim|int \ \ \ *triMatCol;>
-
-    <space|1em><verbatim|int \ \ \ *triMatRow;>
-
-    <space|1em><verbatim|double *triMatElem;>
-
-    \;
-
-    <verbatim|} sdpSparseData;>
-  </listing>
-
-  <subsubsection|Dense matrix>
-
-  <\listing>
-    <\verbatim>
-      typedef struct {
-    </verbatim>
-
-    \;
-
-    <space|1em><verbatim|int \ \ \ \ nSDPCol;>
-
-    <space|1em><verbatim|double *dsMatElem;>
-
-    \;
-
-    <verbatim|} sdpDenseData;>
-  </listing>
-
-  <subsubsection|Rank-one sparse matrix>
-
-  <\listing>
-    <\verbatim>
-      typedef struct {
-    </verbatim>
-
-    \;
-
-    <space|1em><verbatim|int \ \ \ \ \ nSDPCol;>
-
-    <space|1em><verbatim|int \ \ \ \ \ nSpR1FactorElem;>
-
-    <space|1em><verbatim|int \ \ \ \ *spR1MatIdx;>
-
-    <space|1em><verbatim|double \ *spR1MatElem;>
-
-    \;
-
-    <verbatim|} sdpRankOneSpData;>
-  </listing>
-
-  <subsubsection|Rank-one dense matrix>
-
-  <\listing>
-    <\verbatim>
-      typedef struct {
-    </verbatim>
-
-    \;
-
-    <space|1em><verbatim|int \ \ \ \ nSDPCol;>
-
-    <space|1em><verbatim|double *r1MatFactor;>
-
-    \;
-
-    <verbatim|} sdpRankOneSpData;>
-  </listing>
-
-  <\subsection>
-    SDP variable and step
-  </subsection>
-
-  We use the following structures to store <math|S>.
-
-  <\itemize>
-    <item><math|S<rsup|-1>>
-
-    <item><verbatim|L = chol(S)>
-
-    <item><verbatim|L \\ z, L' \\ z>
-
-    <item><math|y\<leftarrow\>\<alpha\>S x+y>
-  </itemize>
-
-  coming<text-dots>
-
-  <subsection|Schur complement matrix>
-
-  <section|Contribution and formats>
-
-  <\itemize>
-    <item>Indentation, bracket
-
-    Default as in Xcode, following the samples below
-
-    <item>Doxygen string and comments
-
-    Using <verbatim|@file, @brief, /* */>
-
-    <item>Function with <verbatim|void> return value should
-    <verbatim|return;>
-
-    <item>Name style
-
-    Bottom-level routine: <verbatim|extern void csp_Axpby>
-
-    Medium-level routine: <verbatim|hdsdpSpMatTrace>
-
-    <item>Use <verbatim|assert> whenever necessary
-
-    <item>Static before extern
-
-    <item><text-dots>
-  </itemize>
-
-  <\frame>
-    <\cpp-code>
-      static int pdsCreate( void **pldl, int n ) {
-
-      \ \ \ \ 
-
-      \ \ \ \ int retcode = RETCODE_OK;
-
-      \ \ \ \ pds_linsys *pds = NULL;
-
-      \ \ \ \ 
-
-      \ \ \ \ POTLP_INIT(pds, pds_linsys, 1);
-
-      \ \ \ \ 
-
-      \ \ \ \ if ( !pds ) {
-
-      \ \ \ \ \ \ \ \ retcode = RETCODE_FAILED;
-
-      \ \ \ \ \ \ \ \ goto exit_cleanup;
-
-      \ \ \ \ }
-
-      \ \ \ \ 
-
-      \ \ \ \ \ pds-\<gtr\>n = n;
-
-      \ \ \ \ *pldl = pds;
-
-      \ \ \ \ 
-
-      \ \ \ \ /* Initialize pardiso */
-
-      \ \ \ \ POTLP_ZERO(pds-\<gtr\>pt, void *, 64);
-
-      \ \ \ \ POTLP_ZERO(pds-\<gtr\>iparm, int, 64);
-
-      \ \ \ \ 
-
-      \ \ \ \ int mtype = PARDISO_SYM_INDEFINITE;
-
-      \ \ \ \ pardisoinit(pds-\<gtr\>pt, &mtype, pds-\<gtr\>iparm);
-
-      \ \ \ \ 
-
-      \ \ \ \ set_pardiso_param(pds-\<gtr\>iparm, PARDISO_PARAM_NONDEFAULT,
-      1);
-
-      \ \ \ \ set_pardiso_param(pds-\<gtr\>iparm, PARDISO_PARAM_SYMBOLIC,
-      PARDISO_PARAM_SYMBOLIC_MMD);
-
-      \ \ \ \ set_pardiso_param(pds-\<gtr\>iparm, PARDISO_PARAM_PERTURBATION,
-      3);
-
-      \ \ \ \ set_pardiso_param(pds-\<gtr\>iparm, PARDISO_PARAM_INPLACE, 1);
-
-      \ \ \ \ set_pardiso_param(pds-\<gtr\>iparm, PARDISO_PARAM_INDEX,
-      PARDISO_PARAM_INDEX_C);
-
-      \ \ \ \ 
-
-      exit_cleanup:
-
-      \ \ \ \ return retcode;
-
-      }
-    </cpp-code>
-  </frame>
+  <subsection|Primal solution recovery and cone projection with
+  infeasibility>
+
+  Recall that in the dual formulation we have
+  <math|<around*|(|y,s,\<tau\>|)>> and it is desirable to recover some
+  <math|x> satisfying\ 
+
+  <\eqnarray*>
+    <tformat|<table|<row|<cell|\<cal-A\>x-b\<tau\>>|<cell|=>|<cell|0>>|<row|<cell|\<cal-A\><rsup|\<ast\>>y+s-c\<tau\>>|<cell|=>|<cell|0>>|<row|<cell|b<rsup|\<top\>>y-c<rsup|\<top\>>x-\<kappa\>>|<cell|=>|<cell|0>>|<row|<cell|x
+    s>|<cell|=>|<cell|\<mu\>e>>|<row|<cell|\<kappa\>\<tau\>>|<cell|=>|<cell|\<mu\>>>|<row|<cell|<around*|(|x,s,\<kappa\>,\<tau\>|)>>|<cell|\<geq\>>|<cell|0>>>>
+  </eqnarray*>
+
+  Substituting <math|x=\<mu\>s<rsup|-1>> gives
+
+  <\eqnarray*>
+    <tformat|<table|<row|<cell|\<mu\>\<cal-A\>s<rsup|-1>-b\<tau\>>|<cell|=>|<cell|0>>|<row|<cell|\<cal-A\><rsup|\<ast\>>y+s-c\<tau\>>|<cell|=>|<cell|0>>|<row|<cell|b<rsup|\<top\>>y-\<mu\>c<rsup|\<top\>>s<rsup|-1>-\<mu\>\<tau\><rsup|-1>>|<cell|=>|<cell|0>>|<row|<cell|<around*|(|s,\<tau\>|)>>|<cell|\<geq\>>|<cell|0>>>>
+  </eqnarray*>
+
+  Given <math|y,s,\<tau\>> such that <math|\<cal-A\><rsup|\<ast\>>y+s-c=r e>,
+  where <math|r> is the residual of the dual feasibility system the proximity
+  norm <math|\<delta\><rsub|\<mu\>><around*|(|y,s,\<tau\>|)>> and
+  <math|\<delta\><rsub|\<mu\>><around*|(|y,s|)>> are given by
+
+  <\eqnarray*>
+    <tformat|<table|<row|<cell|\<delta\><rsub|\<mu\>><around*|(|y,s,\<tau\>|)>>|<cell|\<assign\>>|<cell|min<rsub|x,\<kappa\>><frac|1|2><around*|\<\|\|\>|s
+    x-\<mu\>e|\<\|\|\>><rsup|2>+<frac|1|2><around*|(|\<kappa\>\<tau\>-\<mu\>|)><rsup|2>,>>|<row|<cell|<text|subject
+    to>>|<cell|>|<cell|\<cal-A\> x-b\<tau\>=0>>|<row|<cell|>|<cell|>|<cell|b<rsup|\<top\>>y-c<rsup|\<top\>>x-\<kappa\>=0>>>>
+  </eqnarray*>
+
+  <\eqnarray*>
+    <tformat|<table|<row|<cell|\<delta\><rsub|\<mu\>><around*|(|y,s|)>>|<cell|\<assign\>>|<cell|min<rsub|x,\<kappa\>><frac|1|2><around*|\<\|\|\>|s
+    x-\<mu\>e|\<\|\|\>><rsup|2>>>|<row|<cell|<text|subject
+    to>>|<cell|>|<cell|\<cal-A\> x-b=0,>>>>
+  </eqnarray*>
+
+  where we consider the subproblem
+
+  <hrule>
+
+  <\eqnarray*>
+    <tformat|<table|<row|<cell|L<around*|(|x,y|)>>|<cell|=>|<cell|<frac|1|2><around*|\<\|\|\>|s
+    x-\<mu\>e|\<\|\|\>><rsup|2>-\<mu\>\<Delta\>y<rsup|\<top\>><around*|(|\<cal-A\>
+    x-b|)>>>>>
+  </eqnarray*>
+
+  <\eqnarray*>
+    <tformat|<table|<row|<cell|s<rsup|2>x-\<mu\>s-\<mu\>\<cal-A\><rsup|*\<ast\>>\<Delta\>y>|<cell|=>|<cell|0>>|<row|<cell|\<cal-A\>x-b>|<cell|=>|<cell|0>>>>
+  </eqnarray*>
+
+  <\equation*>
+    x=\<mu\>s<rsup|-1>+\<mu\>s<rsup|-2>\<cal-A\><rsup|*\<ast\>>\<Delta\>y
+  </equation*>
+
+  <\equation*>
+    \<cal-A\>s<rsup|-2>\<cal-A\><rsup|*\<ast\>>\<Delta\>y=\<mu\><rsup|-1>b-\<cal-A\>s<rsup|-1>\<Rightarrow\>\<Delta\>y=\<mu\><rsup|-1>\<Delta\>y<rsub|1>-\<Delta\>y<rsub|2>
+  </equation*>
 
   \;
 
-  <\frame>
-    <\cpp-code>
-      extern void potVecScal( pot_vec *pVexX, double sVal ) {
+  <\eqnarray*>
+    <tformat|<table|<row|<cell|x>|<cell|=>|<cell|\<mu\>s<rsup|-1>+\<mu\>s<rsup|-2>\<cal-A\><rsup|*\<ast\>>\<Delta\>y>>|<row|<cell|>|<cell|=>|<cell|\<mu\>s<rsup|-1><around*|(|s-\<cal-A\><rsup|*\<ast\>>\<Delta\>y|)>s<rsup|-1>>>|<row|<cell|>|<cell|=>|<cell|\<mu\>s<rsup|-1><around*|(|c+r
+    e-\<cal-A\><rsup|\<ast\>><around*|(|y+\<mu\><rsup|-1>\<Delta\>y<rsub|1>-\<Delta\>y<rsub|2>|)>|)>s<rsup|-1>>>>>
+  </eqnarray*>
 
-      \ \ \ \ 
+  <\eqnarray*>
+    <tformat|<table|<row|<cell|>|<cell|>|<cell|c+r
+    e-\<cal-A\><rsup|\<ast\>><around*|(|y+<frac|1|\<mu\>>\<Delta\>y<rsub|1>-\<Delta\>y<rsub|2>|)>>>>>
+  </eqnarray*>
 
-      \ \ \ \ scal(&pVexX-\<gtr\>n, &sVal, pVexX-\<gtr\>x,
-      &potIntConstantOne);
+  <hrule>
 
-      \ \ \ \ 
+  <\eqnarray*>
+    <tformat|<table|<row|<cell|L<around*|(|x,\<kappa\>,v,\<lambda\>|)>>|<cell|=>|<cell|<frac|1|2><around*|\<\|\|\>|S
+    x-\<mu\>e|\<\|\|\>><rsup|2>+<frac|1|2><around*|(|\<kappa\>\<tau\>-\<mu\>|)><rsup|2>>>|<row|<cell|>|<cell|>|<cell|+v<rsup|\<top\>><around*|(|\<cal-A\>x-b\<tau\>|)>+\<lambda\><around*|(|b<rsup|\<top\>>y-c<rsup|\<top\>>x-\<kappa\>|)>>>|<row|<cell|>|<cell|=>|<cell|<frac|1|2><around*|\<\|\|\>|S
+    x-\<mu\>e|\<\|\|\>><rsup|2>+<frac|1|2><around*|(|\<kappa\>\<tau\>-\<mu\>|)><rsup|2>>>|<row|<cell|>|<cell|>|<cell|+<around*|(|\<cal-A\><rsup|\<ast\>>v-\<lambda\>c|)><rsup|\<top\>>x-b<rsup|\<top\>>v\<tau\>-\<kappa\>\<lambda\>>>>>
+  </eqnarray*>
 
-      \ \ \ \ if ( pVexX -\<gtr\>nrm != -1.0 ) {
+  <\eqnarray*>
+    <tformat|<table|<row|<cell|\<cal-A\>x-b\<tau\>>|<cell|=>|<cell|0>>|<row|<cell|b<rsup|\<top\>>y-c<rsup|\<top\>>x-\<kappa\>>|<cell|=>|<cell|0>>|<row|<cell|S<around*|(|S
+    x-\<mu\>e|)>+\<cal-A\><rsup|\<ast\>>v-\<lambda\>c>|<cell|=>|<cell|0>>|<row|<cell|\<tau\><around*|(|\<kappa\>\<tau\>-\<mu\>|)>-\<lambda\>>|<cell|=>|<cell|0>>>>
+  </eqnarray*>
 
-      \ \ \ \ \ \ \ \ pVexX-\<gtr\>nrm = pVexX-\<gtr\>nrm * fabs(sVal);
+  <\eqnarray*>
+    <tformat|<table|<row|<cell|\<kappa\>>|<cell|=>|<cell|\<lambda\>\<tau\><rsup|-2>+\<mu\>\<tau\><rsup|-1>>>|<row|<cell|S<rsup|2>x-\<mu\>s+\<cal-A\><rsup|\<ast\>>v-\<lambda\>c>|<cell|=>|<cell|0>>|<row|<cell|x>|<cell|=>|<cell|\<lambda\>S<rsup|-1>c-S<rsup|-1>\<cal-A\><rsup|\<ast\>>v+\<mu\>S<rsup|-1>e>>>>
+  </eqnarray*>
 
-      \ \ \ \ }
+  <\eqnarray*>
+    <tformat|<table|<row|<cell|>|<cell|>|<cell|\<cal-A\>x-b\<tau\>>>|<row|<cell|>|<cell|=>|<cell|\<lambda\>\<cal-A\>S<rsup|-1>c-\<cal-A\>S<rsup|-1>\<cal-A\><rsup|\<ast\>>v+\<mu\>\<cal-A\>S<rsup|-1>e-b\<tau\>>>|<row|<cell|>|<cell|>|<cell|>>|<row|<cell|>|<cell|>|<cell|b<rsup|\<top\>>y-c<rsup|\<top\>>x-\<kappa\>>>|<row|<cell|>|<cell|=>|<cell|b<rsup|\<top\>>y-c<rsup|\<top\>><around*|(|\<lambda\>S<rsup|-1>c-S<rsup|-1>\<cal-A\><rsup|\<ast\>>v+\<mu\>S<rsup|-1>e|)>-\<lambda\>\<tau\><rsup|-2>-\<mu\>\<tau\><rsup|-1>>>|<row|<cell|>|<cell|=>|<cell|b<rsup|\<top\>>y-\<lambda\>c<rsup|\<top\>>S<rsup|-1>c+c<rsup|\<top\>>S<rsup|-1>\<cal-A\><rsup|\<ast\>>v-\<mu\>c<rsup|\<top\>>S<rsup|-1>e-\<lambda\>\<tau\><rsup|-2>-\<mu\>\<tau\><rsup|-1>>>|<row|<cell|>|<cell|=>|<cell|b<rsup|\<top\>>y+<around*|(|\<cal-A\>S<rsup|-1>c|)><rsup|\<top\>>v-\<mu\>c<rsup|\<top\>>S<rsup|-1>e-\<lambda\><around*|(|c<rsup|\<top\>>S<rsup|-1>c+\<tau\><rsup|-2>|)>-\<mu\>\<tau\><rsup|-1>>>|<row|<cell|>|<cell|=>|<cell|0>>>>
+  </eqnarray*>
 
-      \ \ \ \ 
-
-      \ \ \ \ return;
-
-      }
-    </cpp-code>
-  </frame>
+  <hrule>
 </body>
 
 <\initial>
@@ -581,21 +308,20 @@
   <\collection>
     <associate|auto-1|<tuple|1|1>>
     <associate|auto-10|<tuple|3.2|4>>
-    <associate|auto-11|<tuple|3.2.1|4>>
+    <associate|auto-11|<tuple|3.2.1|5>>
     <associate|auto-12|<tuple|3.2.2|5>>
     <associate|auto-13|<tuple|3.2.3|5>>
     <associate|auto-14|<tuple|3.2.4|5>>
     <associate|auto-15|<tuple|3.3|5>>
     <associate|auto-16|<tuple|3.4|5>>
-    <associate|auto-17|<tuple|4|?>>
-    <associate|auto-18|<tuple|4|?>>
+    <associate|auto-17|<tuple|4|5>>
     <associate|auto-2|<tuple|1.1|1>>
     <associate|auto-3|<tuple|1.2|1>>
     <associate|auto-4|<tuple|1.3|2>>
     <associate|auto-5|<tuple|1.4|3>>
     <associate|auto-6|<tuple|1|3>>
-    <associate|auto-7|<tuple|2|3>>
-    <associate|auto-8|<tuple|3|3>>
+    <associate|auto-7|<tuple|1.5|3>>
+    <associate|auto-8|<tuple|3|4>>
     <associate|auto-9|<tuple|3.1|4>>
   </collection>
 </references>
@@ -627,45 +353,49 @@
       cones <datoms|<macro|x|<repeat|<arg|x>|<with|font-series|medium|<with|font-size|1|<space|0.2fn>.<space|0.2fn>>>>>|<htab|5mm>>
       <no-break><pageref|auto-5>>
 
-      <vspace*|1fn><with|font-series|<quote|bold>|math-font-series|<quote|bold>|2<space|2spc>SDP
-      Data structures> <datoms|<macro|x|<repeat|<arg|x>|<with|font-series|medium|<with|font-size|1|<space|0.2fn>.<space|0.2fn>>>>>|<htab|5mm>>
+      <vspace*|1fn><with|font-series|<quote|bold>|math-font-series|<quote|bold>|2<space|2spc>Algorithm
+      and conic interface> <datoms|<macro|x|<repeat|<arg|x>|<with|font-series|medium|<with|font-size|1|<space|0.2fn>.<space|0.2fn>>>>>|<htab|5mm>>
       <no-break><pageref|auto-7><vspace|0.5fn>
 
-      <with|par-left|<quote|1tab>|2.1<space|2spc>Factorized data
-      <datoms|<macro|x|<repeat|<arg|x>|<with|font-series|medium|<with|font-size|1|<space|0.2fn>.<space|0.2fn>>>>>|<htab|5mm>>
-      <no-break><pageref|auto-8>>
+      <vspace*|1fn><with|font-series|<quote|bold>|math-font-series|<quote|bold>|3<space|2spc>SDP
+      data structures> <datoms|<macro|x|<repeat|<arg|x>|<with|font-series|medium|<with|font-size|1|<space|0.2fn>.<space|0.2fn>>>>>|<htab|5mm>>
+      <no-break><pageref|auto-8><vspace|0.5fn>
 
-      <with|par-left|<quote|1tab>|2.2<space|2spc>SDP coefficient matrix
+      <with|par-left|<quote|1tab>|3.1<space|2spc>Factorized data
       <datoms|<macro|x|<repeat|<arg|x>|<with|font-series|medium|<with|font-size|1|<space|0.2fn>.<space|0.2fn>>>>>|<htab|5mm>>
       <no-break><pageref|auto-9>>
 
-      <with|par-left|<quote|2tab>|2.2.1<space|2spc>Sparse matrix
+      <with|par-left|<quote|1tab>|3.2<space|2spc>SDP coefficient matrix
       <datoms|<macro|x|<repeat|<arg|x>|<with|font-series|medium|<with|font-size|1|<space|0.2fn>.<space|0.2fn>>>>>|<htab|5mm>>
       <no-break><pageref|auto-10>>
 
-      <with|par-left|<quote|2tab>|2.2.2<space|2spc>Dense matrix
+      <with|par-left|<quote|2tab>|3.2.1<space|2spc>Sparse matrix
       <datoms|<macro|x|<repeat|<arg|x>|<with|font-series|medium|<with|font-size|1|<space|0.2fn>.<space|0.2fn>>>>>|<htab|5mm>>
       <no-break><pageref|auto-11>>
 
-      <with|par-left|<quote|2tab>|2.2.3<space|2spc>Rank-one sparse matrix
+      <with|par-left|<quote|2tab>|3.2.2<space|2spc>Dense matrix
       <datoms|<macro|x|<repeat|<arg|x>|<with|font-series|medium|<with|font-size|1|<space|0.2fn>.<space|0.2fn>>>>>|<htab|5mm>>
       <no-break><pageref|auto-12>>
 
-      <with|par-left|<quote|2tab>|2.2.4<space|2spc>Rank-one dense matrix
+      <with|par-left|<quote|2tab>|3.2.3<space|2spc>Rank-one sparse matrix
       <datoms|<macro|x|<repeat|<arg|x>|<with|font-series|medium|<with|font-size|1|<space|0.2fn>.<space|0.2fn>>>>>|<htab|5mm>>
       <no-break><pageref|auto-13>>
 
-      <with|par-left|<quote|1tab>|2.3<space|2spc>SDP variable and step
+      <with|par-left|<quote|2tab>|3.2.4<space|2spc>Rank-one dense matrix
       <datoms|<macro|x|<repeat|<arg|x>|<with|font-series|medium|<with|font-size|1|<space|0.2fn>.<space|0.2fn>>>>>|<htab|5mm>>
       <no-break><pageref|auto-14>>
 
-      <with|par-left|<quote|1tab>|2.4<space|2spc>Schur complement matrix
+      <with|par-left|<quote|1tab>|3.3<space|2spc>SDP variable and step
       <datoms|<macro|x|<repeat|<arg|x>|<with|font-series|medium|<with|font-size|1|<space|0.2fn>.<space|0.2fn>>>>>|<htab|5mm>>
       <no-break><pageref|auto-15>>
 
-      <vspace*|1fn><with|font-series|<quote|bold>|math-font-series|<quote|bold>|3<space|2spc>Contribution
+      <with|par-left|<quote|1tab>|3.4<space|2spc>Schur complement matrix
+      <datoms|<macro|x|<repeat|<arg|x>|<with|font-series|medium|<with|font-size|1|<space|0.2fn>.<space|0.2fn>>>>>|<htab|5mm>>
+      <no-break><pageref|auto-16>>
+
+      <vspace*|1fn><with|font-series|<quote|bold>|math-font-series|<quote|bold>|4<space|2spc>Contribution
       and formats> <datoms|<macro|x|<repeat|<arg|x>|<with|font-series|medium|<with|font-size|1|<space|0.2fn>.<space|0.2fn>>>>>|<htab|5mm>>
-      <no-break><pageref|auto-16><vspace|0.5fn>
+      <no-break><pageref|auto-17><vspace|0.5fn>
     </associate>
   </collection>
 </auxiliary>
