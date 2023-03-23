@@ -287,7 +287,8 @@
   </eqnarray*>
 
   <\eqnarray*>
-    <tformat|<table|<row|<cell|\<kappa\>>|<cell|=>|<cell|\<lambda\>\<tau\><rsup|-2>+\<mu\>\<tau\><rsup|-1>>>|<row|<cell|S<rsup|2>x-\<mu\>s+\<cal-A\><rsup|\<ast\>>v-\<lambda\>c>|<cell|=>|<cell|0>>|<row|<cell|x>|<cell|=>|<cell|\<lambda\>S<rsup|-1>c-S<rsup|-1>\<cal-A\><rsup|\<ast\>>v+\<mu\>S<rsup|-1>e>>>>
+    <tformat|<table|<row|<cell|\<kappa\>>|<cell|=>|<cell|\<lambda\>\<tau\><rsup|-2>+\<mu\>\<tau\><rsup|-1>
+    >>|<row|<cell|S<rsup|2>x-\<mu\>s+\<cal-A\><rsup|\<ast\>>v-\<lambda\>c>|<cell|=>|<cell|0>>|<row|<cell|x>|<cell|=>|<cell|\<lambda\>S<rsup|-1>c-S<rsup|-1>\<cal-A\><rsup|\<ast\>>v+\<mu\>S<rsup|-1>e>>>>
   </eqnarray*>
 
   <\eqnarray*>
@@ -307,22 +308,12 @@
 <\references>
   <\collection>
     <associate|auto-1|<tuple|1|1>>
-    <associate|auto-10|<tuple|3.2|4>>
-    <associate|auto-11|<tuple|3.2.1|5>>
-    <associate|auto-12|<tuple|3.2.2|5>>
-    <associate|auto-13|<tuple|3.2.3|5>>
-    <associate|auto-14|<tuple|3.2.4|5>>
-    <associate|auto-15|<tuple|3.3|5>>
-    <associate|auto-16|<tuple|3.4|5>>
-    <associate|auto-17|<tuple|4|5>>
     <associate|auto-2|<tuple|1.1|1>>
     <associate|auto-3|<tuple|1.2|1>>
     <associate|auto-4|<tuple|1.3|2>>
     <associate|auto-5|<tuple|1.4|3>>
     <associate|auto-6|<tuple|1|3>>
     <associate|auto-7|<tuple|1.5|3>>
-    <associate|auto-8|<tuple|3|4>>
-    <associate|auto-9|<tuple|3.1|4>>
   </collection>
 </references>
 
@@ -353,49 +344,9 @@
       cones <datoms|<macro|x|<repeat|<arg|x>|<with|font-series|medium|<with|font-size|1|<space|0.2fn>.<space|0.2fn>>>>>|<htab|5mm>>
       <no-break><pageref|auto-5>>
 
-      <vspace*|1fn><with|font-series|<quote|bold>|math-font-series|<quote|bold>|2<space|2spc>Algorithm
-      and conic interface> <datoms|<macro|x|<repeat|<arg|x>|<with|font-series|medium|<with|font-size|1|<space|0.2fn>.<space|0.2fn>>>>>|<htab|5mm>>
-      <no-break><pageref|auto-7><vspace|0.5fn>
-
-      <vspace*|1fn><with|font-series|<quote|bold>|math-font-series|<quote|bold>|3<space|2spc>SDP
-      data structures> <datoms|<macro|x|<repeat|<arg|x>|<with|font-series|medium|<with|font-size|1|<space|0.2fn>.<space|0.2fn>>>>>|<htab|5mm>>
-      <no-break><pageref|auto-8><vspace|0.5fn>
-
-      <with|par-left|<quote|1tab>|3.1<space|2spc>Factorized data
-      <datoms|<macro|x|<repeat|<arg|x>|<with|font-series|medium|<with|font-size|1|<space|0.2fn>.<space|0.2fn>>>>>|<htab|5mm>>
-      <no-break><pageref|auto-9>>
-
-      <with|par-left|<quote|1tab>|3.2<space|2spc>SDP coefficient matrix
-      <datoms|<macro|x|<repeat|<arg|x>|<with|font-series|medium|<with|font-size|1|<space|0.2fn>.<space|0.2fn>>>>>|<htab|5mm>>
-      <no-break><pageref|auto-10>>
-
-      <with|par-left|<quote|2tab>|3.2.1<space|2spc>Sparse matrix
-      <datoms|<macro|x|<repeat|<arg|x>|<with|font-series|medium|<with|font-size|1|<space|0.2fn>.<space|0.2fn>>>>>|<htab|5mm>>
-      <no-break><pageref|auto-11>>
-
-      <with|par-left|<quote|2tab>|3.2.2<space|2spc>Dense matrix
-      <datoms|<macro|x|<repeat|<arg|x>|<with|font-series|medium|<with|font-size|1|<space|0.2fn>.<space|0.2fn>>>>>|<htab|5mm>>
-      <no-break><pageref|auto-12>>
-
-      <with|par-left|<quote|2tab>|3.2.3<space|2spc>Rank-one sparse matrix
-      <datoms|<macro|x|<repeat|<arg|x>|<with|font-series|medium|<with|font-size|1|<space|0.2fn>.<space|0.2fn>>>>>|<htab|5mm>>
-      <no-break><pageref|auto-13>>
-
-      <with|par-left|<quote|2tab>|3.2.4<space|2spc>Rank-one dense matrix
-      <datoms|<macro|x|<repeat|<arg|x>|<with|font-series|medium|<with|font-size|1|<space|0.2fn>.<space|0.2fn>>>>>|<htab|5mm>>
-      <no-break><pageref|auto-14>>
-
-      <with|par-left|<quote|1tab>|3.3<space|2spc>SDP variable and step
-      <datoms|<macro|x|<repeat|<arg|x>|<with|font-series|medium|<with|font-size|1|<space|0.2fn>.<space|0.2fn>>>>>|<htab|5mm>>
-      <no-break><pageref|auto-15>>
-
-      <with|par-left|<quote|1tab>|3.4<space|2spc>Schur complement matrix
-      <datoms|<macro|x|<repeat|<arg|x>|<with|font-series|medium|<with|font-size|1|<space|0.2fn>.<space|0.2fn>>>>>|<htab|5mm>>
-      <no-break><pageref|auto-16>>
-
-      <vspace*|1fn><with|font-series|<quote|bold>|math-font-series|<quote|bold>|4<space|2spc>Contribution
-      and formats> <datoms|<macro|x|<repeat|<arg|x>|<with|font-series|medium|<with|font-size|1|<space|0.2fn>.<space|0.2fn>>>>>|<htab|5mm>>
-      <no-break><pageref|auto-17><vspace|0.5fn>
+      <with|par-left|<quote|1tab>|1.5<space|2spc>Primal solution recovery and
+      cone projection with infeasibility <datoms|<macro|x|<repeat|<arg|x>|<with|font-series|medium|<with|font-size|1|<space|0.2fn>.<space|0.2fn>>>>>|<htab|5mm>>
+      <no-break><pageref|auto-7>>
     </associate>
   </collection>
 </auxiliary>
