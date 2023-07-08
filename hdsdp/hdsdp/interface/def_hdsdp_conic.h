@@ -6,9 +6,8 @@
 #define def_hdsdp_conic_h
 
 #include "interface/hdsdp.h"
-
 #include "linalg/def_hdsdp_sdpdata.h"
-
+#include "linalg/def_hdsdp_linsolver.h"
 #include <stdint.h>
 
 /* Define conic type */
@@ -66,7 +65,7 @@ typedef struct {
     /* Schur complement and algorithm iterates */
     int64_t (*coneGetSymNnz)   ( void * );
     void    (*coneAddSymNz)    ( void *, int * );
-    void    (*coneBuildSchur)  ( void *, void * );
+    void    (*coneBuildSchur)  ( void *, int, void * );
     
     /* Barrier, projection and recovery */
     double  (*coneGetBarrier)  ( void *, double, double * );
@@ -86,9 +85,22 @@ typedef struct {
     int   nRow;
     int   nCol;
     
-    void *sdpDualVar;
-    void *sdpDualChecker;
-    void *sdpDualStep;
+    int  isDualSparse;
+    
+    /* Dual symbolic structure */
+    int  *dualMatBeg;
+    int  *dualMatIdx;
+    int  *dualPosToElemMap;
+    
+    /* Dual matrix */
+    double *dualMatElem;
+    /* Dual buffer for checking positive definiteness */
+    double *dualCheckerElem;
+    /* Dual step buffer */
+    double *dualStep;
+    /* Dual factorization */
+    hdsdp_linsys_fp *dualFactor;
+    /* Dual Lanczos*/
     
     sdp_coeff **sdpRow;
     sdp_coeff  *sdpObj;
@@ -106,9 +118,19 @@ typedef struct {
     int   nRow;
     int   nCol;
     
-    void *sdpDualVar;
-    void *sdpDualChecker;
-    void *sdpDualStep;
+    /* Dual symbolic structure */
+    int  *dualMatBeg;
+    int  *dualMatIdx;
+    int  *dualPosToElemMap;
+    
+    /* Dual matrix */
+    double *dualMatElem;
+    /* Dual checker */
+    double *dualCheckerElem;
+    /* Dual step buffer */
+    double *dualStep;
+    /* Dual factorization */
+    hdsdp_linsys_fp *dualFactor;
     
     int nRowElem;
     int *rowIdx;

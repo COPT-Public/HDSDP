@@ -20,7 +20,7 @@ extern void HConeSetStart( hdsdp_cone *HCone, double dConeStartVal );
 extern void HConeUpdate( hdsdp_cone *HCone, double barHsdTau, double *rowDual );
 extern double HConeRatioTest( hdsdp_cone *HCone, double barHsdTauStep, double *rowDualStep );
 extern int64_t HConeGetSymNnz( hdsdp_cone *HCone );
-extern void HConeAddSymNz( hdsdp_cone *HCone, int *schurMatCol );
+extern void HConeAddSymNz( hdsdp_cone *HCone, int iCol, int *schurMatCol );
 extern void HConeBuildSchurComplement( hdsdp_cone *HCone, void *schurMat );
 extern void HConeGetLogBarrier( hdsdp_cone *HCone, double barHsdTau, double *rowDual );
 extern int HConePFeasSolFound( hdsdp_cone *HCone, double barHsdTauStep, double *rowDualStep );

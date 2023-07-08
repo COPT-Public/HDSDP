@@ -942,11 +942,10 @@ extern hdsdp_retcode HFpLinsysCreate( hdsdp_linsys_fp **pHLin, int nCol, linsys_
             HLinsys->cholInvert = conjGradLinSolverInvert;
             HLinsys->cholDestroy = conjGradLinSolverDestroy;
             break;
-        /* Not implementd */
+        /* Not implemented */
         case HDSDP_LINSYS_SMALL_DIRECT:
             retcode = HDSDP_RETCODE_FAILED;
             goto exit_cleanup;
-            break;
         default:
             retcode = HDSDP_RETCODE_FAILED;
             goto exit_cleanup;

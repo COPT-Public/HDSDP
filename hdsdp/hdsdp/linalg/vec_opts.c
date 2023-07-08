@@ -2,8 +2,8 @@
 
 #include "linalg/vec_opts.h"
 
-#include <Accelerate/Accelerate.h>
 #include <math.h>
+
 
 /* Blas functions */
 extern double dnrm2( int *n, double *x, int *incx );

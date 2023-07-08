@@ -195,9 +195,9 @@ extern void HConeAddSymNz( hdsdp_cone *HCone, int *schurMatCol ) {
     return;
 }
 
-extern void HConeBuildSchurComplement( hdsdp_cone *HCone, void *schurMat ) {
+extern void HConeBuildSchurComplement( hdsdp_cone *HCone, int iCol, void *schurMat ) {
     
-    HCone->coneBuildSchur(HCone->coneData, schurMat);
+    HCone->coneBuildSchur(HCone->coneData, iCol, schurMat);
     return;
 }
 

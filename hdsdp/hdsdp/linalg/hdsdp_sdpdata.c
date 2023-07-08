@@ -19,6 +19,10 @@ static hdsdp_retcode dataMatCreateZeroImpl( void **pA, int nSDPCol, int dataMatN
     
     hdsdp_retcode retcode = HDSDP_RETCODE_OK;
     
+    (void) dataMatNnz;
+    (void) dataMatIdx;
+    (void) dataMatElem;
+    
     if ( !pA ) {
         retcode = HDSDP_RETCODE_FAILED;
         goto exit_cleanup;
@@ -390,7 +394,6 @@ exit_cleanup:
 }
 
 static hdsdp_retcode dataMatBuildUpRankOneSparseImpl( void *A, int *dummy1, double *dummy2, double **dummy3, double **dummy4 ) {
-    
     
     return HDSDP_RETCODE_FAILED;
 }

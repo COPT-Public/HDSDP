@@ -3,7 +3,19 @@
 
 #include "interface/hdsdp.h"
 
-/* Implementations of the SDP coefficient matrix */
+/* Implementations of the SDP coefficient matrix
+ In HDSDP, we implement five data structures for LP coefficient matrix
+ 
+ 1. Zero matrix
+ 2. Sparse matrix
+ 3. Dense matrix
+ 4. Sparse rank one matrix
+ 5. Denser rank one matrix
+ 
+ Each type of coefficient will be asociated with a data type, its eigen-decomposition
+ and several methods that make it work in the HDSDP solver.
+ 
+ */
 typedef enum {
     
     SDP_COEFF_ZERO,
@@ -39,12 +51,15 @@ typedef struct {
 
 typedef struct {
     
+    /* In a zero matrix. There is nothing but an integer recording matrix dimension */
+    
     int nSDPCol;
     
 } sdp_coeff_zero;
 
 typedef struct {
     
+    /* In a sparse matrix, we adopt the triplet format i, j, x */
     int     nSDPCol;
     int     nTriMatElem;
     int    *triMatCol;
@@ -56,6 +71,7 @@ typedef struct {
 
 typedef struct {
     
+    /* In a dense matrix, we store an n * (n + 1) / 2 array in packed format */
     int     nSDPCol;
     double *dsMatElem;
     
@@ -64,17 +80,32 @@ typedef struct {
 
 typedef struct {
     
+    /* In the sparse rank 1 structure, we store the number of
+       SDP columns as well as the coefficient sign, so that
+     
+       A = s * a * a',
+     
+       where a is represented using a triplet format.
+       Also a full vector is used to save the effort to expand the sparse vector
+     
+     */
+    
     int     nSDPCol;
     double  spR1FactorSign; ///< Include scale, may not equal to +1.0 or -1.0
     int     nSpR1FactorElem;
     int    *spR1MatIdx;
     double *spR1MatElem;
+    double *spR1MatFactor;
     
 } sdp_coeff_spr1;
 
 
 typedef struct {
     
+    /* A dense rank 1 matrix is stored in a similar way to the sparse version
+       There is no sparse representation of the factor
+     */
+
     int     nSDPCol;
     double  r1FactorSign; ///< Include scale, may not equal to +1.0 or -1.0
     double *r1MatFactor;

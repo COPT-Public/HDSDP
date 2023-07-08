@@ -6,6 +6,15 @@
 
 #include "interface/hdsdp.h"
 
+/* In HDSDP, there are two cases where positve definite matrices need to
+   be factorized: when inverting the dual matrix and when solving the Schur complement system.
+   According to the sparsity of the matrix, we choose differnt data structures to do the job
+ 
+   Dual matrix: sparse/dense Cholesky
+   Schur matrix: sparse/dense Cholesky + Pre-conditioned conjugate gradient/residual
+ 
+ */
+
 typedef enum {
     /* Direct solver supports both Schur complement and matrix variable */
     HDSDP_LINSYS_DENSE_DIRECT,
@@ -17,7 +26,6 @@ typedef enum {
     
 } linsys_type;
 
-/* Define linear system solver using function pointer */
 typedef struct {
     
     int nCol;
@@ -187,8 +195,5 @@ void dpotrf ( const char *uplo, const int *n, double *a, const int *lda, int *in
 void dpotri( const char *uplo, const int *n, double *a, const int *lda, int *info );
 void dpotrs( const char *uplo, const int *n, const int *nrhs, const double *a,
              const int *lda, double *b, const int *ldb, int *info );
-
-
-
 
 #endif /* def_hdsdp_linsolver_h */
