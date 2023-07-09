@@ -1,8 +1,13 @@
 #ifndef hdsdp_conic_h
 #define hdsdp_conic_h
 
+#ifdef HEADERPATH
 #include "interface/def_hdsdp_conic.h"
 #include "interface/hdsdp_user_data.h"
+#else
+#include "def_hdsdp_conic.h"
+#include "hdsdp_user_data.h"
+#endif
 
 #ifdef __cplusplus
 extern "C" {

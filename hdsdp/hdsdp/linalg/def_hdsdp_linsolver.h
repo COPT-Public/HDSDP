@@ -4,7 +4,11 @@
 #ifndef def_hdsdp_linsolver_h
 #define def_hdsdp_linsolver_h
 
+#ifdef HEADERPATH
 #include "interface/hdsdp.h"
+#else
+#include "hdsdp.h"
+#endif
 
 /* In HDSDP, there are two cases where positve definite matrices need to
    be factorized: when inverting the dual matrix and when solving the Schur complement system.

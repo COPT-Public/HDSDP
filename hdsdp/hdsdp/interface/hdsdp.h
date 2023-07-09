@@ -20,7 +20,11 @@
 
 #ifndef MEMWATCH
 #define MEMWATCH
+#ifdef HEADERPATH
 #include "external/memwatch.h"
+#else
+#include "memwatch.h"
+#endif
 #endif
 
 typedef enum {

@@ -1,6 +1,12 @@
+#ifdef HEADERPATH
 #include "linalg/def_hdsdp_lanczos.h"
 #include "linalg/hdsdp_lanczos.h"
 #include "interface/hdsdp_utils.h"
+#else
+#include "def_hdsdp_lanczos.h"
+#include "hdsdp_lanczos.h"
+#include "hdsdp_utils.h"
+#endif
 
 #include <math.h>
 

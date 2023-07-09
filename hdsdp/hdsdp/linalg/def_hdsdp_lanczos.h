@@ -1,7 +1,11 @@
 #ifndef def_hdsdp_lanczos_h
 #define def_hdsdp_lanczos_h
 
+#ifdef HEADERPATH
 #include "interface/hdsdp.h"
+#else
+#include "hdsdp.h"
+#endif
 
 /* Define the Lanczos data structure for HDSDP */
 typedef struct {

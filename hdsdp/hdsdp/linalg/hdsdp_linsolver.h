@@ -1,7 +1,11 @@
 #ifndef hdsdp_linsolver_h
 #define hdsdp_linsolver_h
 
+#ifdef HEADERPATH
 #include "linalg/def_hdsdp_linsolver.h"
+#else
+#include "def_hdsdp_linsolver.h"
+#endif
 
 typedef hdsdp_linsys_fp hdsdp_linsys;
 

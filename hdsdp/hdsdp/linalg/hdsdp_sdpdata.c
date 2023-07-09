@@ -3,15 +3,25 @@
  *  @date 11/24/2022
  */
 
+#ifdef HEADERPATH
 #include "interface/hdsdp_utils.h"
-
+#include "interface/def_hdsdp_sdpdata.h"
 #include "linalg/hdsdp_sdpdata.h"
 #include "linalg/vec_opts.h"
 #include "linalg/sparse_opts.h"
 #include "linalg/dense_opts.h"
 #include "linalg/r1_opts.h"
-
 #include "external/hdsdp_cs.h"
+#else
+#include "hdsdp_utils.h"
+#include "def_hdsdp_sdpdata.h"
+#include "hdsdp_sdpdata.h"
+#include "vec_opts.h"
+#include "sparse_opts.h"
+#include "dense_opts.h"
+#include "r1_opts.h"
+#include "hdsdp_cs.h"
+#endif
 
 #include <math.h>
 
@@ -549,6 +559,62 @@ static void dataMatDumpRankOneDenseImpl( void *A, double *v ) {
     return;
 }
 
+static void dataMatGetZeroSparsityImpl( void *A, int *spout ) {
+    
+    
+    return;
+}
+
+static void dataMatGetSparseSparsityImpl( void *A, int *spout ) {
+    
+    sdp_coeff_sparse *spA = (sdp_coeff_sparse *) A;
+    
+    for ( int k = 0; k < spA->nTriMatElem; ++k ) {
+        spout[PACK_IDX(spA->nSDPCol, spA->triMatCol[k], spA->triMatRow[k])] = 1;
+    }
+
+    return;
+}
+
+static void dataMatGetDenseSparsityImpl( void *A, int *spout ) {
+    
+    sdp_coeff_dense *dsA = (sdp_coeff_dense *) A;
+    
+    for ( int i = 0; i < PACK_NNZ(dsA->nSDPCol); ++i ) {
+        spout[i] = 1;
+    }
+    
+    /* This method should not be invoked */
+    assert( 0 );
+    return;
+}
+
+static void dataMatGetRankOneSparseSparsityImpl( void *A, int *spout ) {
+    
+    sdp_coeff_spr1 *spR1A = (sdp_coeff_spr1 *) A;
+    
+    for ( int i = 0, j; i < spR1A->nSpR1FactorElem; ++i ) {
+        for ( j = 0; j < i + 1; ++j ) {
+            spout[PACK_IDX(spR1A->nSDPCol, spR1A->spR1MatIdx[i], spR1A->spR1MatIdx[j])] = 1;
+        }
+    }
+    
+    return;
+}
+
+static void dataMatGetRankOneDenseSparsityImpl( void *A, int *spout ) {
+    
+    sdp_coeff_dsr1 *dsR1A = (sdp_coeff_dsr1 *) A;
+    
+    for ( int i = 0; i < PACK_NNZ(dsR1A->nSDPCol); ++i ) {
+        spout[i] = 1;
+    }
+    
+    /* This method should not be invoked */
+    assert( 0 );
+    return;
+}
+
 static void dataMatClearZeroImpl( void *A ) {
     
     if ( !A ) {
@@ -776,6 +842,7 @@ static void sdpDataMatIChooseType( sdp_coeff *sdpCoeff, sdp_coeff_type dataType 
             sdpCoeff->eig = dataMatBuildUpEigZeroImpl;
             sdpCoeff->getNnz = dataMatGetNnzZeroImpl;
             sdpCoeff->dump = dataMatDumpZeroImpl;
+            sdpCoeff->getmatnz = dataMatGetZeroSparsityImpl;
             sdpCoeff->destroy = dataMatDestroyZeroImpl;
             sdpCoeff->view = dataMatViewZeroImpl;
             break;
@@ -787,6 +854,7 @@ static void sdpDataMatIChooseType( sdp_coeff *sdpCoeff, sdp_coeff_type dataType 
             sdpCoeff->eig = dataMatBuildUpEigSparseImpl;
             sdpCoeff->getNnz = dataMatGetNnzSparseImpl;
             sdpCoeff->dump = dataMatDumpSparseImpl;
+            sdpCoeff->getmatnz = dataMatGetSparseSparsityImpl;
             sdpCoeff->destroy = dataMatDestroySparseImpl;
             sdpCoeff->view = dataMatViewSparseImpl;
             break;
@@ -798,6 +866,7 @@ static void sdpDataMatIChooseType( sdp_coeff *sdpCoeff, sdp_coeff_type dataType 
             sdpCoeff->eig = dataMatBuildUpEigDenseImpl;
             sdpCoeff->getNnz = dataMatGetNnzDenseImpl;
             sdpCoeff->dump = dataMatDumpDenseImpl;
+            sdpCoeff->getmatnz = dataMatGetDenseSparsityImpl;
             sdpCoeff->destroy = dataMatDestroyDenseImpl;
             sdpCoeff->view = dataMatViewDenseImpl;
             break;
@@ -809,6 +878,7 @@ static void sdpDataMatIChooseType( sdp_coeff *sdpCoeff, sdp_coeff_type dataType 
             sdpCoeff->eig = dataMatBuildUpRankOneSparseImpl;
             sdpCoeff->getNnz = dataMatGetNnzRankOneSparseImpl;
             sdpCoeff->dump = dataMatDumpRankOneSparseImpl;
+            sdpCoeff->getmatnz = dataMatGetRankOneSparseSparsityImpl;
             sdpCoeff->destroy = dataMatDestroyRankOneSparseImpl;
             sdpCoeff->view = dataMatViewRankOneSparseImpl;
             break;
@@ -820,6 +890,7 @@ static void sdpDataMatIChooseType( sdp_coeff *sdpCoeff, sdp_coeff_type dataType 
             sdpCoeff->eig = dataMatBuildUpRankOneDenseImpl;
             sdpCoeff->getNnz = dataMatGetNnzRankOneDenseImpl;
             sdpCoeff->dump = dataMatDumpRankOneDenseImpl;
+            sdpCoeff->getmatnz = dataMatGetRankOneDenseSparsityImpl;
             sdpCoeff->destroy = dataMatDestroyRankOneDenseImpl;
             sdpCoeff->view = dataMatViewRankOneDenseImpl;
             break;

@@ -1,9 +1,74 @@
+#ifdef HEADERPATH
 #include "interface/hdsdp_conic_sdp.h"
 #include "interface/def_hdsdp_user_data.h"
 #include "interface/hdsdp_utils.h"
-
 #include "linalg/hdsdp_sdpdata.h"
 #include "linalg/sparse_opts.h"
+#else
+#include "hdsdp_conic_sdp.h"
+#include "def_hdsdp_user_data.h"
+#include "hdsdp_utils.h"
+#include "hdsdp_sdpdata.h"
+#include "sparse_opts.h"
+#endif
+
+
+static hdsdp_retcode sdpDenseConeAllocDualMat( hdsdp_cone_sdp_dense *cone ) {
+    /* This routine allocates the dual information for a dense SDP cone
+       According to the aggregated sparsity pattern of the matrices in the cone,
+       the SDP dual matrix will be either represented using sparse csc or dense packed format.
+     
+       If sparse data structure is employed, then dualMatBeg, dualMatIdx will be filled by the sparsity pattern
+       of the dual matrix; dualPosToElemMap will be an n * (n + 1) / 2 integer array that maps an element
+       in the lower triangular part to the position of dualMatElem. dualMatElem and dualCheckeerElem are
+       two concurrent representations of the dual matrix and will be factorized.
+       dualStep only serves as a buffer to store the SDP step matrix dS and will not be factorized.
+     
+       If dense data structure is employed. dualMatBeg, dualMatIdx and dualPosToElemMap will not be allocated
+       and dualMatElem, dualCheckerElem and dualStep will adopt dense packed format.
+     
+       To build the conic structure, we first check if there is any dense coefficient matrix in the cone.
+       Whenever there is a dense coefficient, the dual matrix will use dense data structure.
+     
+       Otherwise, we will allocate dualPosToElemMap and iterate through the coefficient matrices for their
+       sparsity pattern, column-wise. Once the number of nonzeros exceeds a pre-defined threshold, the dual
+       matrix will use a dense structure.
+
+     */
+    hdsdp_retcode retcode = HDSDP_RETCODE_OK;
+    
+    /* Initialize dual matrix as sparse */
+    cone->isDualSparse = 1;
+    
+    /* If there is a dense matrix, the dual matrix will be dense */
+    if ( cone->sdpConeStats[SDP_COEFF_DENSE] > 0 || cone->sdpConeStats[SDP_COEFF_DSR1] > 0 ) {
+        cone->isDualSparse = 0;
+    }
+    
+    /* Allocate the dual sparsity pattern */
+    if ( cone->isDualSparse ) {
+        HDSDP_INIT(cone->dualPosToElemMap, int, PACK_NNZ(cone->nCol));
+        HDSDP_MEMCHECK(cone->dualPosToElemMap);
+    }
+    
+    /* Accumulate the sparsity pattern */
+    
+    
+    
+    
+exit_cleanup:
+    return retcode;
+}
+
+static hdsdp_retcode sdpSparseConeAllocDualMat( hdsdp_cone_sdp_sparse *cone ) {
+    
+    hdsdp_retcode retcode = HDSDP_RETCODE_OK;
+    
+    
+    
+exit_cleanup:
+    return retcode;
+}
 
 /** @brief Create a dense sdp cone
  *

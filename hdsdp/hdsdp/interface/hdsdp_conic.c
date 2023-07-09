@@ -2,11 +2,19 @@
  *  @brief Implement HDSDP general conic interface
  */
 
+#ifdef HEADERPATH
 #include "interface/hdsdp_utils.h"
 #include "interface/def_hdsdp_user_data.h"
 #include "interface/hdsdp_user_data.h"
 #include "interface/def_hdsdp_conic.h"
 #include "interface/hdsdp_conic_sdp.h"
+#else
+#include "hdsdp_utils.h"
+#include "def_hdsdp_user_data.h"
+#include "hdsdp_user_data.h"
+#include "def_hdsdp_conic.h"
+#include "hdsdp_conic_sdp.h"
+#endif
 
 extern hdsdp_retcode HConeCreate( hdsdp_cone **pHCone ) {
     

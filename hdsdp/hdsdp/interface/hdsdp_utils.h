@@ -6,7 +6,11 @@
 #ifndef hdsdp_utils_h
 #define hdsdp_utils_h
 
+#ifdef HEADERPATH
 #include "interface/hdsdp.h"
+#else
+#include "hdsdp.h"
+#endif
 
 #include <stdio.h>
 #include <stdlib.h>

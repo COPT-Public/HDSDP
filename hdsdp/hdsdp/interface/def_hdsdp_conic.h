@@ -5,9 +5,15 @@
 #ifndef def_hdsdp_conic_h
 #define def_hdsdp_conic_h
 
+#ifdef HEADERPATH
 #include "interface/hdsdp.h"
 #include "linalg/def_hdsdp_sdpdata.h"
 #include "linalg/def_hdsdp_linsolver.h"
+#else
+#include "hdsdp.h"
+#include "def_hdsdp_sdpdata.h"
+#include "def_hdsdp_linsolver.h"
+#endif
 #include <stdint.h>
 
 /* Define conic type */

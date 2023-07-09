@@ -4,11 +4,17 @@
  *
  */
 
+#ifdef HEADERPATH
 #include "interface/hdsdp_utils.h"
 #include "interface/hdsdp_file_io.h"
 #include "interface/hdsdp_user_data.h"
-
 #include "external/hdsdp_cs.h"
+#else
+#include "hdsdp_utils.h"
+#include "hdsdp_file_io.h"
+#include "hdsdp_user_data.h"
+#include "hdsdp_cs.h"
+#endif
 
 #include <stdio.h>
 #include <math.h>

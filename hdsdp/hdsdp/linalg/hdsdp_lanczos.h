@@ -1,6 +1,12 @@
 #ifndef hdsdp_lanczos_h
 #define hdsdp_lanczos_h
 
+#ifdef HEADERPATH
+#include "linalg/def_hdsdp_lanczos.h"
+#else
+#include "def_hdsdp_lanczos.h"
+#endif
+
 #include "linalg/def_hdsdp_lanczos.h"
 
 #ifdef __cplusplus

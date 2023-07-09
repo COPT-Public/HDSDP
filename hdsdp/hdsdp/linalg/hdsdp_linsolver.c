@@ -1,9 +1,16 @@
+#ifdef HEADERPATH
 #include "interface/hdsdp_utils.h"
-
 #include "linalg/def_hdsdp_linsolver.h"
 #include "linalg/hdsdp_linsolver.h"
 #include "linalg/dense_opts.h"
 #include "linalg/vec_opts.h"
+#else
+#include "hdsdp_utils.h"
+#include "def_hdsdp_linsolver.h"
+#include "hdsdp_linsolver.h"
+#include "dense_opts.h"
+#include "vec_opts.h"
+#endif
 
 /* Sparse direct solver interface */
 static hdsdp_retcode pardisoLinSolverCreate( void **pchol, int nCol ) {

@@ -1,8 +1,13 @@
 #ifndef hdsdp_user_data_h
 #define hdsdp_user_data_h
 
+#ifdef HEADERPATH
 #include "interface/hdsdp.h"
 #include "interface/def_hdsdp_conic.h"
+#else
+#include "hdsdp.h"
+#include "def_hdsdp_conic.h"
+#endif
 
 typedef struct hdsdp_user_data user_data;
 

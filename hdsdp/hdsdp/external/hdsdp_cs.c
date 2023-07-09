@@ -1,6 +1,10 @@
+#ifdef HEADERPATH
 #include "interface/hdsdp_utils.h"
-
 #include "external/hdsdp_cs.h"
+#else
+#include "hdsdp_utils.h"
+#include "hdsdp_cs.h"
+#endif
 
 #include <stdio.h>
 #include <stdlib.h>

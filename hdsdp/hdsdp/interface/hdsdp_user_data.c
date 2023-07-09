@@ -2,12 +2,19 @@
  *
  */
 
+#ifdef HEADERPATH
 #include "interface/def_hdsdp_user_data.h"
 #include "interface/hdsdp_user_data.h"
 #include "interface/hdsdp_utils.h"
 #include "interface/hdsdp_conic.h"
-
 #include "linalg/sparse_opts.h"
+#else
+#include "def_hdsdp_user_data.h"
+#include "hdsdp_user_data.h"
+#include "hdsdp_utils.h"
+#include "hdsdp_conic.h"
+#include "sparse_opts.h"
+#endif
 
 
 /** @brief Check if LP data implies bound constraint on y

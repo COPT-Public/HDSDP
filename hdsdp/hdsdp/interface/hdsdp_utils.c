@@ -2,7 +2,11 @@
  *  @brief Implement the utilities for HDSDP
  *  @date 11/24/2022
  */
+#ifdef HEADERPATH
 #include "interface/hdsdp_utils.h"
+#else
+#include "hdsdp_utils.h"
+#endif
 
 #include <math.h>
 #include <sys/time.h>

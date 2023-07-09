@@ -3,8 +3,15 @@
  *
  */
 
+#ifdef HEADERPATH
 #include "linalg/sparse_opts.h"
 #include "linalg/vec_opts.h"
+#include "interface/hdsdp_utils.h"
+#else
+#include "sparse_opts.h"
+#include "vec_opts.h"
+#include "hdsdp_utils.h"
+#endif
 
 #include <assert.h>
 #include <stdio.h>

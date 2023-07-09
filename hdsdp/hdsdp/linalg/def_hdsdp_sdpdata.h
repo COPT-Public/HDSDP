@@ -1,7 +1,11 @@
 #ifndef def_hdsdp_sdpdata_h
 #define def_hdsdp_sdpdata_h
 
+#ifdef HEADERPATH
 #include "interface/hdsdp.h"
+#else
+#include "hdsdp.h"
+#endif
 
 /* Implementations of the SDP coefficient matrix
  In HDSDP, we implement five data structures for LP coefficient matrix
@@ -44,6 +48,7 @@ typedef struct {
     hdsdp_retcode (*eig)  ( void *, int *, double *, double **, double ** );
     int (*getNnz)         ( void * );
     void (*dump)          ( void *, double * );
+    void (*getmatnz)      ( void *, int * );
     void (*destroy)       ( void ** );
     void (*view)          ( void * );
     

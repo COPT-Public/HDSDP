@@ -1,7 +1,12 @@
+#ifdef HEADERPATH
 #include "interface/hdsdp_utils.h"
-
 #include "linalg/r1_opts.h"
 #include "linalg/vec_opts.h"
+#else
+#include "hdsdp_utils.h"
+#include "r1_opts.h"
+#include "vec_opts.h"
+#endif
 
 #include <math.h>
 
