@@ -17,6 +17,8 @@ extern hdsdp_retcode sdpDenseConeProcDataImpl( hdsdp_cone_sdp_dense *cone, int n
                                                int *coneMatBeg, int *coneMatIdx, double *coneMatElem );
 extern hdsdp_retcode sdpDenseConePresolveImpl( hdsdp_cone_sdp_dense *cone );
 extern void sdpDenseConeSetStartImpl( hdsdp_cone_sdp_dense *cone, double rResi );
+extern double sdpDenseConeGetObjNorm( hdsdp_cone_sdp_dense *cone, int whichNorm );
+extern double sdpDenseConeGetCoeffNorm( hdsdp_cone_sdp_dense *cone, int whichNorm );
 extern void sdpDenseConeUpdateImpl( hdsdp_cone_sdp_dense *cone, double barHsdTau, double *rowDual );
 extern double sdpDenseConeRatioTestImpl( hdsdp_cone_sdp_dense *cone, double barHsdTauStep, double *rowDualStep );
 extern int64_t sdpDenseConeGetSymNnzImpl( hdsdp_cone_sdp_dense *cone );
@@ -32,6 +34,8 @@ extern hdsdp_retcode sdpSparseConeProcDataImpl( hdsdp_cone_sdp_sparse *cone, int
 ;extern hdsdp_retcode sdpSparseConePresolveImpl( hdsdp_cone_sdp_sparse *cone );
 
 extern void sdpSparseConeSetStartImpl( hdsdp_cone_sdp_sparse *cone, double rResi );
+extern double sdpSparseConeGetObjNorm( hdsdp_cone_sdp_sparse *cone, int whichNorm );
+extern double sdpDenseConeGetCoeffNorm( hdsdp_cone_sdp_dense *cone, int whichNorm );
 extern void sdpSparseConeUpdateImpl( hdsdp_cone_sdp_sparse *cone, double barHsdTau, double *rowDual );
 extern double sdpSparseConeRatioTestImpl( hdsdp_cone_sdp_sparse *cone, double barHsdTauStep, double *rowDualStep );
 extern int64_t sdpSparseConeGetSymNnzImpl( hdsdp_cone_sdp_sparse *cone );

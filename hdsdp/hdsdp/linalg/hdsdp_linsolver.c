@@ -49,7 +49,6 @@ exit_cleanup:
     return retcode;
 }
 
-/* TODO: Enable reproducibility using pardiso CNR mode */
 static void pardisoLinSolverSetThreads( void *chol, void *pThreads ) {
     
     pardiso_linsys *pds = (pardiso_linsys *) chol;
@@ -74,7 +73,7 @@ static hdsdp_retcode pardisoLinSolverSymbolic( void *chol, int *colMatBeg, int *
     HDSDP_MEMCHECK(pds->dWork);
     
     int maxfct = 1, mnum = 1, mtype = PARDISO_SYM_POSDEFINITE, phase = PARDISO_PHASE_SYM;
-    int idummy = 0, msg = 0, pdsret = PARDISO_RET_OK;
+    int idummy = 0, msg = 1, pdsret = PARDISO_RET_OK;
     
     /* Use amd first */
     int amdFactorNnz = 0;
@@ -372,6 +371,8 @@ static hdsdp_retcode lapackLinSolverCreate( void **pchol, int nCol ) {
     
     HDSDP_INIT(lap->dFullMatElem, double, nCol * nCol);
     HDSDP_MEMCHECK(lap->dFullMatElem);
+    
+    *pchol = lap;
     
 exit_cleanup:
     return retcode;
@@ -1081,7 +1082,7 @@ extern void HFpLinsysDestroy( hdsdp_linsys_fp **HLin ) {
     }
     
     HFpLinsysClear(*HLin);
-    HDSDP_FREE(HLin);
+    HDSDP_FREE(*HLin);
     
     return;
 }

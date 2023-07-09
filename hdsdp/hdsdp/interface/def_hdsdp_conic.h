@@ -78,6 +78,8 @@ typedef struct {
     int     (*conePFeasCheck)  ( void *, double, double * );
     void    (*conePRecover)    ( void *, double * );
     
+    double  (*coneGetCoeffNorm) ( void *, int );
+    double  (*coneGetObjNorm)  ( void *, int );
     void    (*coneScal)        ( void *, double );
     
     /* Debugging */
@@ -92,6 +94,8 @@ typedef struct {
     int   nCol;
     
     int  isDualSparse;
+    
+    double dualResidual;
     
     /* Dual symbolic structure */
     int  *dualMatBeg;
@@ -123,6 +127,10 @@ typedef struct {
     
     int   nRow;
     int   nCol;
+    
+    int isDualSparse;
+    
+    double dualResidual;
     
     /* Dual symbolic structure */
     int  *dualMatBeg;

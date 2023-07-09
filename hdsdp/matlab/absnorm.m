@@ -1,5 +1,5 @@
 function [onenrm] = absnorm(A)
 
-onenrm = sum(sum(abs(A)));
+onenrm = full(sum(sum(abs(A))));
 
 end % End function

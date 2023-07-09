@@ -39,6 +39,7 @@ int test_file_io( char *fname ) {
         HDSDP_CALL(HConeCreate(&SDPCone));
         HDSDP_CALL(HConeSetData(SDPCone, SDPData));
         HDSDP_CALL(HConeProcData(SDPCone));
+        HConeView(SDPCone);
         HDSDP_CALL(HConePresolveData(SDPCone));
         HConeView(SDPCone);
         HUserDataClear(SDPData);

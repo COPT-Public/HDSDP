@@ -46,7 +46,7 @@ typedef struct {
     void (*scal)          ( void *, double );
     double (*norm)        ( void *, int );
     hdsdp_retcode (*eig)  ( void *, int *, double *, double **, double ** );
-    int (*getNnz)         ( void * );
+    int (*getnnz)         ( void * );
     void (*dump)          ( void *, double * );
     void (*getmatnz)      ( void *, int * );
     void (*destroy)       ( void ** );

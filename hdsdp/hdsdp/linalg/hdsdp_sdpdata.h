@@ -28,6 +28,7 @@ extern double sdpDataMatNorm( sdp_coeff *sdpCoeff, int type );
 extern hdsdp_retcode sdpDataMatBuildUpEigs( sdp_coeff *sdpCoeff, double *dAuxFullMatrix );
 extern int sdpDataMatGetNnz( sdp_coeff *sdpCoeff );
 extern void sdpDataMatDump( sdp_coeff *sdpCoeff, double *dFullMatrix );
+extern inline void sdpDataMatGetMatNz( sdp_coeff *sdpCoeff, int *iMatSpsPattern );
 extern sdp_coeff_type sdpDataMatGetType( sdp_coeff *sdpCoeff );
 extern void sdpDataMatClear( sdp_coeff *sdpCoeff );
 extern void sdpDataMatDestroy( sdp_coeff **psdpCoeff );

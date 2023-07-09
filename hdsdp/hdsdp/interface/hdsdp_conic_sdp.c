@@ -4,16 +4,28 @@
 #include "interface/hdsdp_utils.h"
 #include "linalg/hdsdp_sdpdata.h"
 #include "linalg/sparse_opts.h"
+#include "linalg/hdsdp_linsolver.h"
+#include "external/hdsdp_cs.h"
 #else
 #include "hdsdp_conic_sdp.h"
 #include "def_hdsdp_user_data.h"
 #include "hdsdp_utils.h"
 #include "hdsdp_sdpdata.h"
 #include "sparse_opts.h"
+#include "hdsdp_linsolver.h"
+#include "hdsdp_cs.h"
 #endif
 
+#include <math.h>
 
-static hdsdp_retcode sdpDenseConeAllocDualMat( hdsdp_cone_sdp_dense *cone ) {
+#ifndef SMALL_DUAL_THRESHOLD
+#define SMALL_DUAL_THRESHOLD (0)
+#endif
+
+#ifndef SPARSE_DUAL_THRESHOLD
+#define SPARSE_DUAL_THRESHOLD (0.4)
+#endif
+static hdsdp_retcode sdpDenseConeIAllocDualMat( hdsdp_cone_sdp_dense *cone ) {
     /* This routine allocates the dual information for a dense SDP cone
        According to the aggregated sparsity pattern of the matrices in the cone,
        the SDP dual matrix will be either represented using sparse csc or dense packed format.
@@ -39,9 +51,12 @@ static hdsdp_retcode sdpDenseConeAllocDualMat( hdsdp_cone_sdp_dense *cone ) {
     
     /* Initialize dual matrix as sparse */
     cone->isDualSparse = 1;
+    int nDualNonzeros = 0;
     
     /* If there is a dense matrix, the dual matrix will be dense */
-    if ( cone->sdpConeStats[SDP_COEFF_DENSE] > 0 || cone->sdpConeStats[SDP_COEFF_DSR1] > 0 ) {
+    if ( cone->sdpConeStats[SDP_COEFF_DENSE] > 0 ||
+         cone->sdpConeStats[SDP_COEFF_DSR1] > 0  ||
+         cone->nCol < SMALL_DUAL_THRESHOLD ) {
         cone->isDualSparse = 0;
     }
     
@@ -49,25 +64,210 @@ static hdsdp_retcode sdpDenseConeAllocDualMat( hdsdp_cone_sdp_dense *cone ) {
     if ( cone->isDualSparse ) {
         HDSDP_INIT(cone->dualPosToElemMap, int, PACK_NNZ(cone->nCol));
         HDSDP_MEMCHECK(cone->dualPosToElemMap);
+        
+        /* Accumulate the sparsity pattern */
+        for ( int iRow = 0; iRow < cone->nRow; ++iRow ) {
+            sdpDataMatGetMatNz(cone->sdpRow[iRow], cone->dualPosToElemMap);
+        }
+        sdpDataMatGetMatNz(cone->sdpObj, cone->dualPosToElemMap);
+        
+        /* Count statistic of nonzeros and determine matrix type */
+        for ( int iElem = 0; iElem < PACK_NNZ(cone->nCol); ++iElem ) {
+            nDualNonzeros += cone->dualPosToElemMap[iElem];
+        }
+        
+        if ( nDualNonzeros >= SPARSE_DUAL_THRESHOLD * cone->nCol * cone->nCol ) {
+            /* We decide to use dense representation */
+            cone->isDualSparse = 0;
+        }
     }
     
-    /* Accumulate the sparsity pattern */
-    
-    
-    
+    if ( !cone->isDualSparse ) {
+        /* We use dense representation of the dual matrix. No*/
+        HDSDP_FREE(cone->dualPosToElemMap);
+        HDSDP_INIT(cone->dualMatElem, double, cone->nCol * cone->nCol);
+        HDSDP_MEMCHECK(cone->dualMatElem);
+        HDSDP_INIT(cone->dualCheckerElem, double, cone->nCol * cone->nCol);
+        HDSDP_MEMCHECK(cone->dualCheckerElem);
+        HDSDP_INIT(cone->dualStep, double, cone->nCol * cone->nCol);
+        HDSDP_MEMCHECK(cone->dualStep);
+        HDSDP_CALL(HFpLinsysCreate(&cone->dualFactor, cone->nCol, HDSDP_LINSYS_DENSE_DIRECT));
+        /* Done */
+    } else {
+        /* We are using the sparse dual representation */
+        assert( nDualNonzeros > 0 );
+        HDSDP_INIT(cone->dualMatBeg, int, cone->nCol + 1);
+        HDSDP_MEMCHECK(cone->dualMatBeg);
+        HDSDP_INIT(cone->dualMatIdx, int, nDualNonzeros);
+        HDSDP_MEMCHECK(cone->dualMatIdx);
+        HDSDP_INIT(cone->dualMatElem, double, nDualNonzeros);
+        HDSDP_MEMCHECK(cone->dualMatElem);
+        HDSDP_INIT(cone->dualCheckerElem, double, nDualNonzeros);
+        HDSDP_MEMCHECK(cone->dualCheckerElem);
+        HDSDP_INIT(cone->dualStep, double, nDualNonzeros);
+        HDSDP_MEMCHECK(cone->dualStep);
+        
+        /* Now start enumerating over the mapping and construct cone data structure */
+        int iNz = 0;
+        int *colPtr = cone->dualPosToElemMap;
+        for ( int iCol = 0; iCol < cone->nCol; ++iCol ) {
+            for ( int iRow = 0; iRow < cone->nCol - iCol; ++iRow ) {
+                if ( colPtr[iRow] ) {
+                    colPtr[iRow] = iNz;
+                    cone->dualMatIdx[iNz] = iRow + iCol;
+                    iNz += 1;
+                }
+            }
+            cone->dualMatBeg[iCol + 1] = iNz;
+            colPtr += (cone->nCol - iCol);
+        }
+        
+        /* Symbolic factorization is left in the presolve routine */
+        HDSDP_CALL(HFpLinsysCreate(&cone->dualFactor, cone->nCol, HDSDP_LINSYS_SPARSE_DIRECT));
+        HFpLinsysSetParam(cone->dualFactor, -1.0, -1.0, 4, -1, -1);
+        /* Done */
+    }
     
 exit_cleanup:
     return retcode;
 }
 
-static hdsdp_retcode sdpSparseConeAllocDualMat( hdsdp_cone_sdp_sparse *cone ) {
+static hdsdp_retcode sdpSparseConeIAllocDualMat( hdsdp_cone_sdp_sparse *cone ) {
     
     hdsdp_retcode retcode = HDSDP_RETCODE_OK;
     
+    /* Build up the dual matrix for SDP sparse cone. The logic is exactly the same as for
+       the dense cone
+     */
+    cone->isDualSparse = 1;
+    int nDualNonzeros = 0;
     
+    /* If there is a dense matrix, the dual matrix will be dense */
+    if ( cone->sdpConeStats[SDP_COEFF_DENSE] > 0 ||
+         cone->sdpConeStats[SDP_COEFF_DSR1] > 0  ||
+         cone->nCol < SMALL_DUAL_THRESHOLD ) {
+        cone->isDualSparse = 0;
+    }
+    
+    /* Allocate the dual sparsity pattern */
+    if ( cone->isDualSparse ) {
+        HDSDP_INIT(cone->dualPosToElemMap, int, PACK_NNZ(cone->nCol));
+        HDSDP_MEMCHECK(cone->dualPosToElemMap);
+        
+        /* Accumulate the sparsity pattern */
+        for ( int iElem = 0; iElem < cone->nRow; ++iElem ) {
+            sdpDataMatGetMatNz(cone->sdpRow[iElem], cone->dualPosToElemMap);
+        }
+        sdpDataMatGetMatNz(cone->sdpObj, cone->dualPosToElemMap);
+        
+        /* Count statistic of nonzeros and determine matrix type */
+        for ( int iElem = 0; iElem < PACK_NNZ(cone->nCol); ++iElem ) {
+            nDualNonzeros += cone->dualPosToElemMap[iElem];
+        }
+        
+        if ( nDualNonzeros >= SPARSE_DUAL_THRESHOLD * cone->nCol * cone->nCol ) {
+            /* We decide to use dense representation */
+            cone->isDualSparse = 0;
+        }
+    }
+    
+    /* Exactly the same as the dense cone */
+    if ( !cone->isDualSparse ) {
+        /* We use dense representation of the dual matrix. No*/
+        HDSDP_FREE(cone->dualPosToElemMap);
+        HDSDP_INIT(cone->dualMatElem, double, cone->nCol * cone->nCol);
+        HDSDP_MEMCHECK(cone->dualMatElem);
+        HDSDP_INIT(cone->dualCheckerElem, double, cone->nCol * cone->nCol);
+        HDSDP_MEMCHECK(cone->dualCheckerElem);
+        HDSDP_INIT(cone->dualStep, double, cone->nCol * cone->nCol);
+        HDSDP_MEMCHECK(cone->dualStep);
+        HDSDP_CALL(HFpLinsysCreate(&cone->dualFactor, cone->nCol, HDSDP_LINSYS_DENSE_DIRECT));
+        /* Done */
+    } else {
+        /* We are using the sparse dual representation */
+        assert( nDualNonzeros > 0 );
+        HDSDP_INIT(cone->dualMatBeg, int, cone->nCol + 1);
+        HDSDP_MEMCHECK(cone->dualMatBeg);
+        HDSDP_INIT(cone->dualMatIdx, int, nDualNonzeros);
+        HDSDP_MEMCHECK(cone->dualMatIdx);
+        HDSDP_INIT(cone->dualMatElem, double, nDualNonzeros);
+        HDSDP_MEMCHECK(cone->dualMatElem);
+        HDSDP_INIT(cone->dualCheckerElem, double, nDualNonzeros);
+        HDSDP_MEMCHECK(cone->dualCheckerElem);
+        HDSDP_INIT(cone->dualStep, double, nDualNonzeros);
+        HDSDP_MEMCHECK(cone->dualStep);
+        
+        /* Now start enumerating over the mapping and construct cone data structure */
+        int iNz = 0;
+        int *colPtr = cone->dualPosToElemMap;
+        for ( int iCol = 0; iCol < cone->nCol; ++iCol ) {
+            for ( int iRow = 0; iRow < cone->nCol - iCol; ++iRow ) {
+                if ( colPtr[iRow] ) {
+                    colPtr[iRow] = iNz;
+                    cone->dualMatIdx[iNz] = iRow + iCol;
+                    iNz += 1;
+                }
+            }
+            cone->dualMatBeg[iCol + 1] = iNz;
+            colPtr += (cone->nCol - iCol);
+        }
+        
+        HDSDP_CALL(HFpLinsysCreate(&cone->dualFactor, cone->nCol, HDSDP_LINSYS_SPARSE_DIRECT));
+        HFpLinsysSetParam(cone->dualFactor, -1.0, -1.0, 4, -1, -1);
+        
+        /* Done */
+    }
     
 exit_cleanup:
     return retcode;
+}
+
+static void sdpDenseConeIFreeDualMat( hdsdp_cone_sdp_dense *cone ) {
+    
+    if ( !cone ) {
+        return;
+    }
+    
+    if ( !cone->isDualSparse ) {
+        HDSDP_FREE(cone->dualMatElem);
+        HDSDP_FREE(cone->dualCheckerElem);
+        HDSDP_FREE(cone->dualStep);
+    } else {
+        HDSDP_FREE(cone->dualMatBeg);
+        HDSDP_FREE(cone->dualMatIdx);
+        HDSDP_FREE(cone->dualMatElem);
+        HDSDP_FREE(cone->dualCheckerElem);
+        HDSDP_FREE(cone->dualStep);
+        HDSDP_FREE(cone->dualPosToElemMap);
+    }
+    
+    HFpLinsysDestroy(&cone->dualFactor);
+    
+    return;
+}
+
+static void sdpSparseConeIFreeDualMat( hdsdp_cone_sdp_sparse *cone ) {
+    
+    if ( !cone ) {
+        return;
+    }
+    
+    if ( !cone->isDualSparse ) {
+        HDSDP_FREE(cone->dualMatElem);
+        HDSDP_FREE(cone->dualCheckerElem);
+        HDSDP_FREE(cone->dualStep);
+    } else {
+        HDSDP_FREE(cone->dualMatBeg);
+        HDSDP_FREE(cone->dualMatIdx);
+        HDSDP_FREE(cone->dualMatElem);
+        HDSDP_FREE(cone->dualCheckerElem);
+        HDSDP_FREE(cone->dualStep);
+        HDSDP_FREE(cone->dualPosToElemMap);
+    }
+    
+    HFpLinsysDestroy(&cone->dualFactor);
+    
+    return;
 }
 
 /** @brief Create a dense sdp cone
@@ -128,6 +328,7 @@ extern hdsdp_retcode sdpDenseConeProcDataImpl( hdsdp_cone_sdp_dense *cone, int n
     /* Primal objective */
     HDSDP_CALL(sdpDataMatCreate(&cone->sdpObj));
     HDSDP_CALL(sdpDataMatSetData(cone->sdpObj, nCol, coneMatBeg[1], coneMatIdx, coneMatElem));
+    cone->sdpConeStats[sdpDataMatGetType(cone->sdpObj)] += 1;
     
     /* Constraint data */
     for ( int iRow = 0; iRow < nRow; ++iRow ) {
@@ -138,7 +339,8 @@ extern hdsdp_retcode sdpDenseConeProcDataImpl( hdsdp_cone_sdp_dense *cone, int n
         cone->sdpConeStats[coeffType] += 1;
     }
     
-    /* TODO: Allocate dual variables */
+    /* Allocate the dual matrix */
+    HDSDP_CALL(sdpDenseConeIAllocDualMat(cone));
         
 exit_cleanup:
     
@@ -159,6 +361,7 @@ extern hdsdp_retcode sdpSparseConeProcDataImpl( hdsdp_cone_sdp_sparse *cone, int
     /* Primal objective */
     HDSDP_CALL(sdpDataMatCreate(&cone->sdpObj));
     HDSDP_CALL(sdpDataMatSetData(cone->sdpObj, nCol, coneMatBeg[1], coneMatIdx, coneMatElem));
+    cone->sdpConeStats[sdpDataMatGetType(cone->sdpObj)] += 1;
     
     /* Sparse constraint data */
     int nRowElem = 0;
@@ -195,7 +398,8 @@ extern hdsdp_retcode sdpSparseConeProcDataImpl( hdsdp_cone_sdp_sparse *cone, int
     assert( nRowElem == nRowElemTmp );
 #endif
     
-    /* TODO: Allocate dual variables */
+    /* Allocate the dual matrix */
+    HDSDP_CALL(sdpSparseConeIAllocDualMat(cone));
     
 exit_cleanup:
     
@@ -219,6 +423,9 @@ extern hdsdp_retcode sdpDenseConePresolveImpl( hdsdp_cone_sdp_dense *cone ) {
         cone->sdpConeStats[sdpDataMatGetType(cone->sdpRow[iRow])] += 1;
     }
     
+    /* Symbolically factorize the dual matrix */
+    HDSDP_CALL(HFpLinsysSymbolic(cone->dualFactor, cone->dualMatBeg, cone->dualMatIdx));
+    
 exit_cleanup:
     
     HDSDP_FREE(preConeAuxi);
@@ -235,11 +442,14 @@ extern hdsdp_retcode sdpSparseConePresolveImpl( hdsdp_cone_sdp_sparse *cone ) {
     HDSDP_MEMCHECK(preConeAuxi);
     
     HDSDP_CALL(sdpDataMatBuildUpEigs(cone->sdpObj, preConeAuxi));
-    for ( int iRow = 0; iRow < cone->nRowElem; ++iRow ) {
-        cone->sdpConeStats[sdpDataMatGetType(cone->sdpRow[iRow])] -= 1;
-        HDSDP_CALL(sdpDataMatBuildUpEigs(cone->sdpRow[iRow], preConeAuxi));
-        cone->sdpConeStats[sdpDataMatGetType(cone->sdpRow[iRow])] += 1;
+    for ( int iElem = 0; iElem < cone->nRowElem; ++iElem ) {
+        cone->sdpConeStats[sdpDataMatGetType(cone->sdpRow[iElem])] -= 1;
+        HDSDP_CALL(sdpDataMatBuildUpEigs(cone->sdpRow[iElem], preConeAuxi));
+        cone->sdpConeStats[sdpDataMatGetType(cone->sdpRow[iElem])] += 1;
     }
+    
+    /* Symbolically factorize the dual matrix */
+    HDSDP_CALL(HFpLinsysSymbolic(cone->dualFactor, cone->dualMatBeg, cone->dualMatIdx));
     
 exit_cleanup:
     
@@ -249,12 +459,60 @@ exit_cleanup:
 
 extern void sdpDenseConeSetStartImpl( hdsdp_cone_sdp_dense *cone, double rResi ) {
     
+    cone->dualResidual = rResi;
     return;
 }
 
 extern void sdpSparseConeSetStartImpl( hdsdp_cone_sdp_sparse *cone, double rResi ) {
     
+    cone->dualResidual = rResi;
     return;
+}
+
+extern double sdpDenseConeGetObjNorm( hdsdp_cone_sdp_dense *cone, int whichNorm ) {
+    
+    return sdpDataMatNorm(cone->sdpObj, whichNorm);
+}
+
+extern double sdpSparseConeGetObjNorm( hdsdp_cone_sdp_sparse *cone, int whichNorm ) {
+    
+    return sdpDataMatNorm(cone->sdpObj, whichNorm);
+}
+
+extern double sdpDenseConeGetCoeffNorm( hdsdp_cone_sdp_dense *cone, int whichNorm ) {
+    
+    double norm = 0.0;
+    if ( whichNorm == ABS_NORM ) {
+        for ( int iRow = 0; iRow < cone->nRow; ++iRow ) {
+            norm += sdpDataMatNorm(cone->sdpRow[iRow], ABS_NORM);
+        }
+    } else {
+        for ( int iRow = 0; iRow < cone->nRow; ++iRow ) {
+            double tmpNorm = sdpDataMatNorm(cone->sdpRow[iRow], FRO_NORM);
+            norm += tmpNorm * tmpNorm;
+        }
+        norm = sqrt(norm);
+    }
+    
+    return norm;
+}
+
+extern double sdpSparseConeGetCoeffNorm( hdsdp_cone_sdp_sparse *cone, int whichNorm ) {
+    
+    double norm = 0.0;
+    if ( whichNorm == ABS_NORM ) {
+        for ( int iElem = 0; iElem < cone->nRowElem; ++iElem ) {
+            norm += sdpDataMatNorm(cone->sdpRow[iElem], ABS_NORM);
+        }
+    } else {
+        for ( int iElem = 0; iElem < cone->nRowElem; ++iElem ) {
+            double tmpNorm = sdpDataMatNorm(cone->sdpRow[iElem], FRO_NORM);
+            norm += tmpNorm * tmpNorm;
+        }
+        norm = sqrt(norm);
+    }
+    
+    return norm;
 }
 
 extern void sdpDenseConeUpdateImpl( hdsdp_cone_sdp_dense *cone, double barHsdTau, double *rowDual ) {
@@ -316,8 +574,7 @@ extern void sdpDenseConeClearImpl( hdsdp_cone_sdp_dense *cone ) {
     }
     
     HDSDP_FREE(cone->sdpRow);
-    
-    /* TODO: Free memory of the dual iterations */
+    sdpDenseConeIFreeDualMat(cone);
     
     HDSDP_ZERO(cone, hdsdp_cone_sdp_dense, 1);
     
@@ -338,8 +595,7 @@ extern void sdpSparseConeClearImpl( hdsdp_cone_sdp_sparse *cone ) {
     }
     
     HDSDP_FREE(cone->sdpRow);
-    
-    /* TODO: Free memory of the dual iterations */
+    sdpSparseConeIFreeDualMat(cone);
     
     HDSDP_ZERO(cone, hdsdp_cone_sdp_sparse, 1);
     
@@ -385,6 +641,22 @@ extern void sdpDenseConeViewImpl( hdsdp_cone_sdp_dense *cone ) {
            cone->sdpConeStats[SDP_COEFF_SPARSE], cone->sdpConeStats[SDP_COEFF_DENSE],
            cone->sdpConeStats[SDP_COEFF_SPR1], cone->sdpConeStats[SDP_COEFF_DSR1]);
     
+    printf("- Dual sparsity: \n ");
+    
+    if ( cone->isDualSparse ) {
+        dcs A;
+        A.nz = -1;
+        A.m = cone->nCol;
+        A.n = cone->nCol;
+        A.p = cone->dualMatBeg;
+        A.i = cone->dualMatIdx;
+        A.x = cone->dualMatElem;
+        
+        dcs_print(&A, 1);
+    } else {
+        printf("Using dense dual matrix. \n");
+    }
+    
     return;
 }
 
@@ -403,6 +675,22 @@ extern void sdpSparseConeViewImpl( hdsdp_cone_sdp_sparse *cone ) {
     printf("Conic statistics: Zero %d Sp %d Ds %d SpR1 %d DsR1 %d \n\n", cone->sdpConeStats[SDP_COEFF_ZERO],
            cone->sdpConeStats[SDP_COEFF_SPARSE], cone->sdpConeStats[SDP_COEFF_DENSE],
            cone->sdpConeStats[SDP_COEFF_SPR1], cone->sdpConeStats[SDP_COEFF_DSR1]);
+    
+    printf("- Dual sparsity: \n ");
+    
+    if ( cone->isDualSparse ) {
+        dcs A;
+        A.nz = -1;
+        A.m = cone->nCol;
+        A.n = cone->nCol;
+        A.p = cone->dualMatBeg;
+        A.i = cone->dualMatIdx;
+        A.x = cone->dualMatElem;
+        
+        dcs_print(&A, 1);
+    } else {
+        printf("Using dense dual matrix. \n");
+    }
     
     return;
 }
