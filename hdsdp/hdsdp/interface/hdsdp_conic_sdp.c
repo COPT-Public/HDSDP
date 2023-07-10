@@ -4,6 +4,8 @@
 #include "interface/hdsdp_utils.h"
 #include "linalg/hdsdp_sdpdata.h"
 #include "linalg/sparse_opts.h"
+#include "linalg/dense_opts.h"
+#include "linalg/vec_opts.h"
 #include "linalg/hdsdp_linsolver.h"
 #include "external/hdsdp_cs.h"
 #else
@@ -12,6 +14,8 @@
 #include "hdsdp_utils.h"
 #include "hdsdp_sdpdata.h"
 #include "sparse_opts.h"
+#include "dense_opts.h"
+#include "vec_opts.h"
 #include "hdsdp_linsolver.h"
 #include "hdsdp_cs.h"
 #endif
@@ -66,6 +70,13 @@ static hdsdp_retcode sdpDenseConeIAllocDualMat( hdsdp_cone_sdp_dense *cone ) {
         HDSDP_MEMCHECK(cone->dualPosToElemMap);
         
         /* Accumulate the sparsity pattern */
+        /* First the diagonal must be filled */
+        int *iPos = cone->dualPosToElemMap;
+        for ( int iCol = 0; iCol < cone->nCol; ++iCol ) {
+            iPos[0] = 1;
+            iPos += (cone->nCol - iCol);
+        }
+        
         for ( int iRow = 0; iRow < cone->nRow; ++iRow ) {
             sdpDataMatGetMatNz(cone->sdpRow[iRow], cone->dualPosToElemMap);
         }
@@ -155,6 +166,12 @@ static hdsdp_retcode sdpSparseConeIAllocDualMat( hdsdp_cone_sdp_sparse *cone ) {
         HDSDP_MEMCHECK(cone->dualPosToElemMap);
         
         /* Accumulate the sparsity pattern */
+        /* First accumulate the diagonal matrix */
+        int *iPos = cone->dualPosToElemMap;
+        for ( int iCol = 0; iCol < cone->nCol; ++iCol ) {
+            iPos[0] = 1;
+            iPos += (cone->nCol - iCol);
+        }
         for ( int iElem = 0; iElem < cone->nRow; ++iElem ) {
             sdpDataMatGetMatNz(cone->sdpRow[iElem], cone->dualPosToElemMap);
         }
@@ -270,6 +287,86 @@ static void sdpSparseConeIFreeDualMat( hdsdp_cone_sdp_sparse *cone ) {
     return;
 }
 
+static void sdpDenseConeILanczosMultiply( void *cone, double *dLhsVec, double *dRhsVec ) {
+    /*
+     Implement the Matrix vector multiplication for the Lanczos solver.
+     Recall that when computing the dual stepsize in HDSDP, we need to evaluate alpha such that
+     
+       S + alpha * dS >= 0 and S = L * L', which is equivalent to finding alpha such that
+     
+       I + alpha * L^-1 * dS * L^-T >= 0 and each matrix-vector multiplication involves
+     
+     1. a backward solve L^T * x = w
+     2. a general multiplication y = - dS * x
+     3. a forward solve L * z = y
+     
+     Depending on the conic dual sparsity pattern, the solve and multiplication procedures will be different.
+     */
+    
+    hdsdp_cone_sdp_dense *dsCone = (hdsdp_cone_sdp_dense *) cone;
+    
+    /* First step: backward solve */
+    HFpLinsysBSolve(dsCone->dualFactor, 1, dLhsVec, dRhsVec);
+    
+    /* Second step: multiplication. Multiply dRhsVec by -dS */
+    if ( dsCone->isDualSparse ) {
+        HDSDP_ZERO(dsCone->dVecBuffer, double, dsCone->nCol);
+        /* Compute -dS * x. Note that only the lower triangular part is stored in dS. */
+        for ( int iCol = 0; iCol < dsCone->nCol; ++iCol ) {
+            /* The first element of each column must be on the diagonal due to the identity dual residual */
+            dsCone->dVecBuffer[dsCone->dualMatIdx[dsCone->dualMatBeg[iCol]]] -= \
+            dsCone->dualStep[iCol] * dRhsVec[dsCone->dualMatIdx[dsCone->dualMatBeg[iCol]]];
+            /* For each of element not in the diagonal, we have to map it to its symmetric position */
+            for ( int iRow = dsCone->dualMatBeg[iCol] + 1; iRow < dsCone->dualMatBeg[iCol + 1]; ++iRow ) {
+                dsCone->dVecBuffer[dsCone->dualMatIdx[iRow]] -= \
+                dsCone->dualStep[iCol] * dRhsVec[dsCone->dualMatIdx[iRow]];
+                dsCone->dVecBuffer[dsCone->dualMatIdx[iCol]] -= \
+                dsCone->dualStep[iRow] * dRhsVec[dsCone->dualMatIdx[iCol]];
+            }
+        }
+    } else {
+        fds_symv(dsCone->nCol, -1.0, dsCone->dualStep, dRhsVec, 0.0, dsCone->dVecBuffer);
+    }
+    
+    /* Last step: forward solve */
+    HFpLinsysFSolve(dsCone->dualFactor, 1, dsCone->dVecBuffer, dRhsVec);
+    
+    return;
+}
+
+static void sdpSparseConeILanczosMultiply( void *cone, double *dLhsVec, double *dRhsVec ) {
+    
+    hdsdp_cone_sdp_sparse *spCone = (hdsdp_cone_sdp_sparse *) cone;
+    
+    /* First step: backward solve */
+    HFpLinsysBSolve(spCone->dualFactor, 1, dLhsVec, dRhsVec);
+    
+    /* Second step: multiplication. Multiply dRhsVec by -dS */
+    if ( spCone->isDualSparse ) {
+        HDSDP_ZERO(spCone->dVecBuffer, double, spCone->nCol);
+        /* Compute -dS * x. Note that only the lower triangular part is stored in dS. */
+        for ( int iCol = 0; iCol < spCone->nCol; ++iCol ) {
+            /* The first element of each column must be on the diagonal due to the identity dual residual */
+            spCone->dVecBuffer[spCone->dualMatIdx[spCone->dualMatBeg[iCol]]] -= \
+            spCone->dualStep[iCol] * dRhsVec[spCone->dualMatIdx[spCone->dualMatBeg[iCol]]];
+            /* For each of element not in the diagonal, we have to map it to its symmetric position */
+            for ( int iRow = spCone->dualMatBeg[iCol] + 1; iRow < spCone->dualMatBeg[iCol + 1]; ++iRow ) {
+                spCone->dVecBuffer[spCone->dualMatIdx[iRow]] -= \
+                spCone->dualStep[iCol] * dRhsVec[spCone->dualMatIdx[iRow]];
+                spCone->dVecBuffer[spCone->dualMatIdx[iCol]] -= \
+                spCone->dualStep[iRow] * dRhsVec[spCone->dualMatIdx[iCol]];
+            }
+        }
+    } else {
+        fds_symv(spCone->nCol, -1.0, spCone->dualStep, dRhsVec, 0.0, spCone->dVecBuffer);
+    }
+    
+    /* Last step: forward solve */
+    HFpLinsysFSolve(spCone->dualFactor, 1, spCone->dVecBuffer, dRhsVec);
+    
+    return;
+}
+
 /** @brief Create a dense sdp cone
  *
  */
@@ -341,6 +438,19 @@ extern hdsdp_retcode sdpDenseConeProcDataImpl( hdsdp_cone_sdp_dense *cone, int n
     
     /* Allocate the dual matrix */
     HDSDP_CALL(sdpDenseConeIAllocDualMat(cone));
+    
+    /* Allocate the dual diagonal (of factorization to compute barrier/potential) */
+    HDSDP_INIT(cone->dualDiag, double, cone->nCol);
+    HDSDP_MEMCHECK(cone->dualDiag);
+    
+    /* Allocate the Lanczos solver and set the method */
+    HDSDP_CALL(HLanczosCreate(&cone->Lanczos));
+    HDSDP_CALL(HLanczosInit(cone->Lanczos, cone->nCol, 30));
+    HLanczosSetData(cone->Lanczos, cone, sdpDenseConeILanczosMultiply);
+    
+    /* Allocate the dual vector buffer */
+    HDSDP_INIT(cone->dVecBuffer, double, cone->nCol);
+    HDSDP_MEMCHECK(cone->dVecBuffer);
         
 exit_cleanup:
     
@@ -400,6 +510,19 @@ extern hdsdp_retcode sdpSparseConeProcDataImpl( hdsdp_cone_sdp_sparse *cone, int
     
     /* Allocate the dual matrix */
     HDSDP_CALL(sdpSparseConeIAllocDualMat(cone));
+    
+    /* Allocate the dual diagonal (of factorization to compute barrier/potential) */
+    HDSDP_INIT(cone->dualDiag, double, cone->nCol);
+    HDSDP_MEMCHECK(cone->dualDiag);
+    
+    /* Allocate the Lanczos solver and set the method */
+    HDSDP_CALL(HLanczosCreate(&cone->Lanczos));
+    HDSDP_CALL(HLanczosInit(cone->Lanczos, cone->nCol, 30));
+    HLanczosSetData(cone->Lanczos, cone, sdpSparseConeILanczosMultiply);
+    
+    /* Allocate the dual vector buffer */
+    HDSDP_INIT(cone->dVecBuffer, double, cone->nCol);
+    HDSDP_MEMCHECK(cone->dVecBuffer);
     
 exit_cleanup:
     
@@ -516,11 +639,64 @@ extern double sdpSparseConeGetCoeffNorm( hdsdp_cone_sdp_sparse *cone, int whichN
 }
 
 extern void sdpDenseConeUpdateImpl( hdsdp_cone_sdp_dense *cone, double barHsdTau, double *rowDual ) {
+    /* Implement the numerical aggregation of conic coefficients
+       When this routine is called, the dual matrix will be overwritten by
+        S = -Rd - A' * y + c * tau
+     */
+    
+    /* Aggregate -A' * y */
+    for ( int iRow = 0; iRow < cone->nRow; ++iRow ) {
+        sdpDataMatAddToBuffer(cone->sdpRow[iRow], -rowDual[iRow], cone->dualPosToElemMap, cone->dualMatElem);
+    }
+    
+    /* Add C * tau */
+    sdpDataMatAddToBuffer(cone->sdpObj, barHsdTau, cone->dualPosToElemMap, cone->dualMatElem);
+    
+    if ( cone->dualResidual ) {
+        /* Add diagonal of dual infeasibility */
+        if ( cone->isDualSparse ) {
+            
+            int *iPos = cone->dualPosToElemMap;
+            for ( int iCol = 0; iCol < cone->nCol; ++iCol ) {
+                cone->dualMatElem[iPos[0]] -= cone->dualResidual;
+                iPos += (cone->nCol - iCol);
+            }
+            
+        } else {
+            for ( int iCol = 0; iCol < cone->nCol; ++iCol ) {
+                cone->dualMatElem[iCol * iCol * cone->nCol] -= cone->dualResidual;
+            }
+        }
+    }
     
     return;
 }
 
 extern void sdpSparseConeUpdateImpl( hdsdp_cone_sdp_sparse *cone, double barHsdTau, double *rowDual ) {
+    
+    for ( int iElem = 0; iElem < cone->nRowElem; ++iElem ) {
+        sdpDataMatAddToBuffer(cone->sdpRow[iElem], -rowDual[cone->rowIdx[iElem]],
+                              cone->dualPosToElemMap, cone->dualMatElem);
+    }
+    
+    sdpDataMatAddToBuffer(cone->sdpObj, barHsdTau, cone->dualPosToElemMap, cone->dualMatElem);
+    
+    if ( cone->dualResidual ) {
+        /* Add diagonal of dual infeasibility */
+        if ( cone->isDualSparse ) {
+            
+            int *iPos = cone->dualPosToElemMap;
+            for ( int iCol = 0; iCol < cone->nCol; ++iCol ) {
+                cone->dualMatElem[iPos[0]] -= cone->dualResidual;
+                iPos += (cone->nCol - iCol);
+            }
+            
+        } else {
+            for ( int iCol = 0; iCol < cone->nCol; ++iCol ) {
+                cone->dualMatElem[iCol * iCol * cone->nCol] -= cone->dualResidual;
+            }
+        }
+    }
     
     return;
 }
@@ -575,6 +751,10 @@ extern void sdpDenseConeClearImpl( hdsdp_cone_sdp_dense *cone ) {
     
     HDSDP_FREE(cone->sdpRow);
     sdpDenseConeIFreeDualMat(cone);
+
+    HDSDP_FREE(cone->dualDiag);
+    HLanczosDestroy(&cone->Lanczos);
+    HDSDP_FREE(cone->dVecBuffer);
     
     HDSDP_ZERO(cone, hdsdp_cone_sdp_dense, 1);
     
@@ -596,6 +776,10 @@ extern void sdpSparseConeClearImpl( hdsdp_cone_sdp_sparse *cone ) {
     
     HDSDP_FREE(cone->sdpRow);
     sdpSparseConeIFreeDualMat(cone);
+    
+    HDSDP_FREE(cone->dualDiag);
+    HLanczosDestroy(&cone->Lanczos);
+    HDSDP_FREE(cone->dVecBuffer);
     
     HDSDP_ZERO(cone, hdsdp_cone_sdp_sparse, 1);
     
@@ -637,7 +821,7 @@ extern void sdpDenseConeViewImpl( hdsdp_cone_sdp_dense *cone ) {
         sdpDataMatView(cone->sdpRow[iRow]);
     }
     
-    printf("- Conic statistics: Zero %d Sp %d Ds %d SpR1 %d DsR1 %d \n\n", cone->sdpConeStats[SDP_COEFF_ZERO],
+    printf("- Conic statistics: Zero %d Sp %d Ds %d SpR1 %d DsR1 %d \n", cone->sdpConeStats[SDP_COEFF_ZERO],
            cone->sdpConeStats[SDP_COEFF_SPARSE], cone->sdpConeStats[SDP_COEFF_DENSE],
            cone->sdpConeStats[SDP_COEFF_SPR1], cone->sdpConeStats[SDP_COEFF_DSR1]);
     
@@ -652,9 +836,10 @@ extern void sdpDenseConeViewImpl( hdsdp_cone_sdp_dense *cone ) {
         A.i = cone->dualMatIdx;
         A.x = cone->dualMatElem;
         
-        dcs_print(&A, 1);
+        dcs_print(&A, 0);
     } else {
-        printf("Using dense dual matrix. \n");
+        printf("- Using dense dual matrix. \n");
+        fds_print(cone->nCol, cone->dualMatElem);
     }
     
     return;
@@ -672,7 +857,7 @@ extern void sdpSparseConeViewImpl( hdsdp_cone_sdp_sparse *cone ) {
         sdpDataMatView(cone->sdpRow[iRow]);
     }
     
-    printf("Conic statistics: Zero %d Sp %d Ds %d SpR1 %d DsR1 %d \n\n", cone->sdpConeStats[SDP_COEFF_ZERO],
+    printf("- Conic statistics: Zero %d Sp %d Ds %d SpR1 %d DsR1 %d \n", cone->sdpConeStats[SDP_COEFF_ZERO],
            cone->sdpConeStats[SDP_COEFF_SPARSE], cone->sdpConeStats[SDP_COEFF_DENSE],
            cone->sdpConeStats[SDP_COEFF_SPR1], cone->sdpConeStats[SDP_COEFF_DSR1]);
     
@@ -687,9 +872,10 @@ extern void sdpSparseConeViewImpl( hdsdp_cone_sdp_sparse *cone ) {
         A.i = cone->dualMatIdx;
         A.x = cone->dualMatElem;
         
-        dcs_print(&A, 1);
+        dcs_print(&A, 0);
     } else {
-        printf("Using dense dual matrix. \n");
+        printf("- Using dense dual matrix. \n");
+        fds_print(cone->nCol, cone->dualMatElem);
     }
     
     return;

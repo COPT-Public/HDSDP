@@ -73,7 +73,7 @@ static hdsdp_retcode pardisoLinSolverSymbolic( void *chol, int *colMatBeg, int *
     HDSDP_MEMCHECK(pds->dWork);
     
     int maxfct = 1, mnum = 1, mtype = PARDISO_SYM_POSDEFINITE, phase = PARDISO_PHASE_SYM;
-    int idummy = 0, msg = 1, pdsret = PARDISO_RET_OK;
+    int idummy = 0, msg = 0, pdsret = PARDISO_RET_OK;
     
     /* Use amd first */
     int amdFactorNnz = 0;

@@ -49,6 +49,7 @@ typedef struct {
     int (*getnnz)         ( void * );
     void (*dump)          ( void *, double * );
     void (*getmatnz)      ( void *, int * );
+    void (*add2buffer)    ( void *, double, int *, double *);
     void (*destroy)       ( void ** );
     void (*view)          ( void * );
     

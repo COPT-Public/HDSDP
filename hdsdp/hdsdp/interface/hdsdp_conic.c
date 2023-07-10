@@ -81,7 +81,7 @@ extern hdsdp_retcode HConeSetData( hdsdp_cone *HCone, user_data *usrData ) {
             HCone->coneRatioTest = sdpDenseConeRatioTestImpl;
             HCone->coneGetSymNnz = sdpDenseConeGetSymNnzImpl;
             HCone->coneAddSymNz = sdpDenseConeAddSymNnzImpl;
-            HCone->coneGetObjNorm = NULL;
+            HCone->coneGetObjNorm = sdpDenseConeGetObjNorm;
             HCone->coneBuildSchur = NULL;
             HCone->coneGetBarrier = NULL;
             HCone->conePFeasCheck = NULL;
@@ -99,7 +99,7 @@ extern hdsdp_retcode HConeSetData( hdsdp_cone *HCone, user_data *usrData ) {
             HCone->coneRatioTest = sdpSparseConeRatioTestImpl;
             HCone->coneGetSymNnz = sdpSparseConeGetSymNnzImpl;
             HCone->coneAddSymNz = sdpSparseConeAddSymNnzImpl;
-            HCone->coneBuildSchur = NULL;
+            HCone->coneBuildSchur = sdpSparseConeGetObjNorm;
             HCone->coneGetBarrier = NULL;
             HCone->conePFeasCheck = NULL;
             HCone->conePRecover = NULL;

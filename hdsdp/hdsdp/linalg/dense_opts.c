@@ -14,15 +14,23 @@ extern void dsymv( const char *uplo, const int *n, const double *alpha,
                    const double *a, const int *lda, const double *x,
                    const int *incx, const double *beta, double *y, const int *incy );
 
-
 /* Full dense operations */
 extern void fds_symv( int n, double alpha, double *A, double *x, double beta, double *y ) {
     
-    char uplo = 'L';
-    int one = 1;
+    dsymv(&HCharConstantUploLow, &n, &alpha, A, &n, x, &HIntConstantOne, &beta, y, &HIntConstantOne);
     
-    dsymv(&uplo, &n, &alpha, A, &n, x, &one, &beta, y, &one);
+    return;
+}
+
+extern void fds_print( int n, double *A ) {
     
+    for ( int i = 0; i < n; ++i ) {
+        for ( int j = 0; j < n; ++j ) {
+            printf("%6.2e ", A[i + n * j]);
+        }
+        printf("\n");
+    }
+
     return;
 }
 

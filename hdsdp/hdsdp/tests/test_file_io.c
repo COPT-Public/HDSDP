@@ -1,10 +1,18 @@
 #include <stdio.h>
 
+#ifdef HEADERPATH
 #include "interface/hdsdp.h"
 #include "interface/hdsdp_utils.h"
 #include "interface/hdsdp_user_data.h"
 #include "interface/hdsdp_file_io.h"
 #include "interface/hdsdp_conic.h"
+#else
+#include "hdsdp.h"
+#include "hdsdp_utils.h"
+#include "hdsdp_user_data.h"
+#include "hdsdp_file_io.h"
+#include "hdsdp_conic.h"
+#endif
 
 int test_file_io( char *fname ) {
     
@@ -24,6 +32,8 @@ int test_file_io( char *fname ) {
     double *LpMatElem = NULL;
     int nCols = 0;
     int nElem = 0;
+    double *rowDual = NULL;
+    
     user_data *SDPData = NULL;
     hdsdp_cone *SDPCone = NULL;
     
@@ -31,6 +41,8 @@ int test_file_io( char *fname ) {
                          &coneMatIdx, &coneMatElem, &nCols, &nLpCols, &LpMatBeg,
                          &LpMatIdx, &LpMatElem, &nElem));
     HDSDP_CALL(HUserDataCreate(&SDPData));
+    HDSDP_INIT(rowDual, double, nConstrs);
+    HDSDP_MEMCHECK(rowDual);
     
     for ( int iBlk = 0; iBlk < nBlks; ++iBlk ) {
         HUserDataSetConeData(SDPData, HDSDP_CONETYPE_DENSE_SDP, nConstrs, BlkDims[iBlk],
@@ -39,9 +51,16 @@ int test_file_io( char *fname ) {
         HDSDP_CALL(HConeCreate(&SDPCone));
         HDSDP_CALL(HConeSetData(SDPCone, SDPData));
         HDSDP_CALL(HConeProcData(SDPCone));
-        HConeView(SDPCone);
+//        HConeView(SDPCone);
         HDSDP_CALL(HConePresolveData(SDPCone));
+//        HConeView(SDPCone);
+        
+        for ( int i = 0; i < nConstrs; ++i ) {
+            rowDual[i] = i + 1;
+        }
+        HConeUpdate(SDPCone, 1.5, rowDual);
         HConeView(SDPCone);
+        
         HUserDataClear(SDPData);
         HConeDestroy(&SDPCone);
     }
@@ -53,6 +72,7 @@ exit_cleanup:
     
     HDSDP_FREE(BlkDims);
     HDSDP_FREE(rowRHS);
+    HDSDP_FREE(rowDual);
     
     for ( int iBlk = 0; iBlk < nBlks; ++iBlk ) {
         HDSDP_FREE(coneMatBeg[iBlk]);

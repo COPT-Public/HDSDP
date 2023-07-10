@@ -7,8 +7,6 @@
 #include "def_hdsdp_lanczos.h"
 #endif
 
-#include "linalg/def_hdsdp_lanczos.h"
-
 #ifdef __cplusplus
 extern "C" {
 #endif

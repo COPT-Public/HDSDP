@@ -17,9 +17,6 @@ extern void dscal( int *n, double *sa, double *sx, int *incx );
 extern void drscl( int *n, double *sa, double *sx, int *incx );
 extern void dsyr( char *uplo, int *n, double *alpha, double *x, int *incx, double *a, int *lda );
 extern int idamax( int *n, double *x, int *incx );
-extern void dgemv( char *trans, int *m, int *n, double *alpha,
-                   double *a, int *lda, double *x, int *incx,
-                   double *beta, double *y, int *incy );
 
 extern double nrm2( int *n, double *x, int *incx ) {
 #ifdef MYBLAS

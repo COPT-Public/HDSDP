@@ -8,11 +8,13 @@
 #ifdef HEADERPATH
 #include "interface/hdsdp.h"
 #include "linalg/def_hdsdp_sdpdata.h"
-#include "linalg/def_hdsdp_linsolver.h"
+#include "linalg/hdsdp_linsolver.h"
+#include "linalg/hdsdp_lanczos.h"
 #else
 #include "hdsdp.h"
 #include "def_hdsdp_sdpdata.h"
-#include "def_hdsdp_linsolver.h"
+#include "hdsdp_linsolver.h"
+#include "hdsdp_lanczos.h"
 #endif
 #include <stdint.h>
 
@@ -110,7 +112,12 @@ typedef struct {
     double *dualStep;
     /* Dual factorization */
     hdsdp_linsys_fp *dualFactor;
-    /* Dual Lanczos*/
+    /* Dual diagonal */
+    double *dualDiag;
+    /* Dual Lanczos */
+    hdsdp_lanczos *Lanczos;
+    /* Dual vector buffer */
+    double *dVecBuffer;
     
     sdp_coeff **sdpRow;
     sdp_coeff  *sdpObj;
@@ -145,6 +152,12 @@ typedef struct {
     double *dualStep;
     /* Dual factorization */
     hdsdp_linsys_fp *dualFactor;
+    /* Dual diagonal */
+    double *dualDiag;
+    /* Dual Lanczos */
+    hdsdp_lanczos *Lanczos;
+    /* Dual vector buffer */
+    double *dVecBuffer;
     
     int nRowElem;
     int *rowIdx;

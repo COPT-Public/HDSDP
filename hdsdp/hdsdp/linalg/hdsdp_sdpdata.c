@@ -614,6 +614,102 @@ static void dataMatGetRankOneDenseSparsityImpl( void *A, int *spout ) {
     return;
 }
 
+static void dataMatAddZeroToBuffer( void *A, double a, int *spmap, double *buffer ) {
+    /* Let buffer <- buffer + a * A */
+    
+    return;
+}
+
+static void dataMatAddSparseToBuffer( void *A, double a, int *spmat, double *buffer ) {
+    /* If spmat exists, then the buffer uses sparse data structure,
+       Otherwise (if spmat is NULL), buffer is a dense array
+     */
+    
+    sdp_coeff_sparse *spA = (sdp_coeff_sparse *) A;
+    
+    if ( !spmat ) {
+        /* Simply add it */
+        for ( int i = 0; i < spA->nTriMatElem; ++i ) {
+            FULL_ENTRY(buffer, spA->nSDPCol, spA->triMatRow[i], spA->triMatCol[i]) += \
+            a * spA->triMatElem[i];
+        }
+    } else {
+        /* Add according to the mapping */
+        for ( int i = 0; i < spA->nTriMatElem; ++i ) {
+            buffer[spmat[PACK_IDX(spA->nSDPCol, spA->triMatRow[i], spA->triMatCol[i])]] += \
+            a * spA->triMatElem[i];
+        }
+    }
+    
+    return;
+}
+
+static void dataMatAddDenseToBuffer( void *A, double a, int *spmat, double *buffer ) {
+    /* Whenever a dense matrix exists, the dual matrix must be dense */
+    sdp_coeff_dense *dsA = (sdp_coeff_dense *) A;
+    
+    if ( !spmat ) {
+        /* We are adding a dense packed matrix to a dense full matrix */
+        double *dPackElem = dsA->dsMatElem;
+        double *dFullElem = buffer;
+        for ( int i = 0; i < dsA->nSDPCol; ++i ) {
+            for ( int j = 0; j < dsA->nSDPCol - i; ++j ) {
+                dFullElem[j] += a * dPackElem[j];
+            }
+            dFullElem += dsA->nSDPCol + 1;
+            dPackElem += (dsA->nSDPCol - i);
+        }
+        
+    } else {
+        /* This case should never happen */
+        assert( 0 );
+    }
+    
+    return;
+}
+
+static void dataMatAddRankOneSparseToBuffer( void *A, double a, int *spmat, double *buffer ) {
+    
+    sdp_coeff_spr1 *spR1A = (sdp_coeff_spr1 *) A;
+    
+    double aAsign = a * spR1A->spR1FactorSign;
+    
+    if ( !spmat ) {
+        for ( int i = 0; i < spR1A->nSpR1FactorElem; ++i ) {
+            for ( int j = 0; j < i + 1; ++j ) {
+                FULL_ENTRY(buffer, spR1A->nSDPCol, spR1A->spR1MatIdx[i], spR1A->spR1MatIdx[j]) += \
+                aAsign * spR1A->spR1MatElem[i] * spR1A->spR1MatElem[j];
+            }
+        }
+    } else {
+        for ( int i = 0; i < spR1A->nSpR1FactorElem; ++i ) {
+            for ( int j = 0; j < i + 1; ++j ) {
+                buffer[spmat[PACK_IDX(spR1A->nSDPCol, spR1A->spR1MatIdx[i], spR1A->spR1MatIdx[j])]] += \
+                aAsign * spR1A->spR1MatElem[i] * spR1A->spR1MatElem[j];
+            }
+        }
+    }
+    
+    return;
+}
+
+static void dataMatAddRankOneDenseToBuffer( void *A, double a, int *spmat, double *buffer ) {
+    
+    sdp_coeff_dsr1 *dsR1A = (sdp_coeff_dsr1 *) A;
+    
+    double aAsign = a * dsR1A->r1FactorSign;
+    
+    if ( !spmat ) {
+        syr(&HCharConstantUploLow, &dsR1A->nSDPCol, &aAsign,
+            dsR1A->r1MatFactor, &HIntConstantOne, buffer, &dsR1A->nSDPCol);
+    } else {
+        /* This case should never happen */
+        assert( 0 );
+    }
+    
+    return;
+}
+
 static void dataMatClearZeroImpl( void *A ) {
     
     if ( !A ) {
@@ -842,6 +938,7 @@ static void sdpDataMatIChooseType( sdp_coeff *sdpCoeff, sdp_coeff_type dataType 
             sdpCoeff->getnnz = dataMatGetNnzZeroImpl;
             sdpCoeff->dump = dataMatDumpZeroImpl;
             sdpCoeff->getmatnz = dataMatGetZeroSparsityImpl;
+            sdpCoeff->add2buffer = dataMatAddZeroToBuffer;
             sdpCoeff->destroy = dataMatDestroyZeroImpl;
             sdpCoeff->view = dataMatViewZeroImpl;
             break;
@@ -854,6 +951,7 @@ static void sdpDataMatIChooseType( sdp_coeff *sdpCoeff, sdp_coeff_type dataType 
             sdpCoeff->getnnz = dataMatGetNnzSparseImpl;
             sdpCoeff->dump = dataMatDumpSparseImpl;
             sdpCoeff->getmatnz = dataMatGetSparseSparsityImpl;
+            sdpCoeff->add2buffer = dataMatAddSparseToBuffer;
             sdpCoeff->destroy = dataMatDestroySparseImpl;
             sdpCoeff->view = dataMatViewSparseImpl;
             break;
@@ -866,6 +964,7 @@ static void sdpDataMatIChooseType( sdp_coeff *sdpCoeff, sdp_coeff_type dataType 
             sdpCoeff->getnnz = dataMatGetNnzDenseImpl;
             sdpCoeff->dump = dataMatDumpDenseImpl;
             sdpCoeff->getmatnz = dataMatGetDenseSparsityImpl;
+            sdpCoeff->add2buffer = dataMatAddDenseToBuffer;
             sdpCoeff->destroy = dataMatDestroyDenseImpl;
             sdpCoeff->view = dataMatViewDenseImpl;
             break;
@@ -878,6 +977,7 @@ static void sdpDataMatIChooseType( sdp_coeff *sdpCoeff, sdp_coeff_type dataType 
             sdpCoeff->getnnz = dataMatGetNnzRankOneSparseImpl;
             sdpCoeff->dump = dataMatDumpRankOneSparseImpl;
             sdpCoeff->getmatnz = dataMatGetRankOneSparseSparsityImpl;
+            sdpCoeff->add2buffer = dataMatAddRankOneSparseToBuffer;
             sdpCoeff->destroy = dataMatDestroyRankOneSparseImpl;
             sdpCoeff->view = dataMatViewRankOneSparseImpl;
             break;
@@ -890,6 +990,7 @@ static void sdpDataMatIChooseType( sdp_coeff *sdpCoeff, sdp_coeff_type dataType 
             sdpCoeff->getnnz = dataMatGetNnzRankOneDenseImpl;
             sdpCoeff->dump = dataMatDumpRankOneDenseImpl;
             sdpCoeff->getmatnz = dataMatGetRankOneDenseSparsityImpl;
+            sdpCoeff->add2buffer = dataMatAddRankOneDenseToBuffer;
             sdpCoeff->destroy = dataMatDestroyRankOneDenseImpl;
             sdpCoeff->view = dataMatViewRankOneDenseImpl;
             break;
@@ -901,6 +1002,7 @@ static void sdpDataMatIChooseType( sdp_coeff *sdpCoeff, sdp_coeff_type dataType 
     return;
 }
 
+/* External methods for the SDP data */
 extern hdsdp_retcode sdpDataMatCreate( sdp_coeff **psdpCoeff ) {
     
     hdsdp_retcode retcode = HDSDP_RETCODE_OK;
@@ -1080,9 +1182,18 @@ extern inline void sdpDataMatDump( sdp_coeff *sdpCoeff, double *dFullMatrix ) {
     return sdpCoeff->dump(sdpCoeff->dataMat, dFullMatrix);
 }
 
-extern inline void sdpDataMatGetMatNz( sdp_coeff *sdpCoeff, int *iMatSpsPattern ) {
+extern void sdpDataMatGetMatNz( sdp_coeff *sdpCoeff, int *iMatSpsPattern ) {
     
     sdpCoeff->getmatnz(sdpCoeff->dataMat, iMatSpsPattern);
+    
+    return;
+}
+
+extern void sdpDataMatAddToBuffer( sdp_coeff *sdpCoeff, double dElem, int *iMatSpsPattern, double *dBuffer ) {
+    
+    if ( dElem ) {
+        sdpCoeff->add2buffer(sdpCoeff->dataMat, dElem, iMatSpsPattern, dBuffer);
+    }
     
     return;
 }

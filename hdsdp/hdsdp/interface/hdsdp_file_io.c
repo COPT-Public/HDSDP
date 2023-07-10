@@ -238,6 +238,11 @@ hdsdp_retcode HReadSDPA( char *fname, int *pnConstrs, int *pnBlks, int **pblkDim
                     iRow = iCol;
                     iCol = iTmp;
                 }
+
+                if ( iCon == 0 ) {
+                    dElem = -dElem;
+                }
+                
                 isMemOK = dcs_entry(pSDPConeData[iBlk], PACK_IDX(blkDims[iBlk], iCol, iRow), iCon, dElem);
             }
             
