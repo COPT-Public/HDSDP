@@ -37,9 +37,14 @@ int test_file_io( char *fname ) {
     user_data *SDPData = NULL;
     hdsdp_cone *SDPCone = NULL;
     
+    double timeStart = HUtilGetTimeStamp();
+    
     HDSDP_CALL(HReadSDPA(fname, &nConstrs, &nBlks, &BlkDims, &rowRHS, &coneMatBeg,
                          &coneMatIdx, &coneMatElem, &nCols, &nLpCols, &LpMatBeg,
                          &LpMatIdx, &LpMatElem, &nElem));
+    
+    printf("Reading SDPA file in %f seconds. \n", HUtilGetTimeStamp() - timeStart);
+    
     HDSDP_CALL(HUserDataCreate(&SDPData));
     HDSDP_INIT(rowDual, double, nConstrs);
     HDSDP_MEMCHECK(rowDual);

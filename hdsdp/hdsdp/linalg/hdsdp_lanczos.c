@@ -1,10 +1,14 @@
 #ifdef HEADERPATH
 #include "linalg/def_hdsdp_lanczos.h"
 #include "linalg/hdsdp_lanczos.h"
+#include "linalg/vec_opts.h"
+#include "linalg/dense_opts.h"
 #include "interface/hdsdp_utils.h"
 #else
 #include "def_hdsdp_lanczos.h"
 #include "hdsdp_lanczos.h"
+#include "vec_opts.h"
+#include "dense_opts.h"
 #include "hdsdp_utils.h"
 #endif
 
@@ -23,6 +27,17 @@ static void dArrSymmetrize( int n, double *dArray ) {
             dArray[j * n + i] = dArray[i * n + j] = (Aij + Aji) * 0.5;
         }
     }
+    return;
+}
+
+static void HLanczosIPrepare( int n, double *vVec ) {
+    
+    srand(n);
+    for ( int i = 0; i < n; ++i ) {
+        srand(rand());
+        vVec[i] = sqrt(sqrt((rand() % 1627))) * (rand() % 2 - 0.5);
+    }
+    
     return;
 }
 
@@ -79,6 +94,9 @@ extern hdsdp_retcode HLanczosInit( hdsdp_lanczos *HLanczos, int nCol, int nSpace
     HDSDP_INIT(HLanczos->dArray, double, HLanczos->nMaxSpaceDim);
     HDSDP_MEMCHECK(HLanczos->dArray);
     
+    HDSDP_INIT(HLanczos->dLanczosWarmStart, double, HLanczos->nCol);
+    HDSDP_MEMCHECK(HLanczos->dLanczosWarmStart);
+    
     HDSDP_INIT(HLanczos->UMat, double, HLanczos->nMaxSpaceDim * HLanczos->nMaxSpaceDim);
     HDSDP_MEMCHECK(HLanczos->UMat);
     
@@ -104,12 +122,138 @@ extern void HLanczosSetData( hdsdp_lanczos *HLanczos, void *MMat, void (*Mvec) (
     return;
 }
 
-extern hdsdp_retcode HLanczosSolve( hdsdp_lanczos *HLanczos, double *dMinEVal ) {
+#ifdef LANCZOS_DEBUG
+#define LANCZOS_DEBUG(format, info) printf(format, info)
+#else
+#define LANCZOS_DEBUG(format, info)
+#endif
+#define H(i, j) HLanczos->HMat[nHRow * (j) + (i)]
+#define V(i, j) HLanczos->VMat[nVRow * (j) + (i)]
+extern hdsdp_retcode HLanczosSolve( hdsdp_lanczos *HLanczos, double *LanczosStart, double *dMaxStep ) {
     
     hdsdp_retcode retcode = HDSDP_RETCODE_OK;
     
-    /* TODO: Move Lanczos implementation from LP here */
+    /* Prepare the initial point */
+    if ( LanczosStart ) {
+        LANCZOS_DEBUG("Loaded user Lanczos warm-start", "");
+        HDSDP_MEMCPY(HLanczos->vVec, LanczosStart, double, HLanczos->nCol);
+    } else {
+        if ( HLanczos->nComputed == 0 ) {
+            LANCZOS_DEBUG("Starting Lanczos from scratch", "");
+            HLanczosIPrepare(HLanczos->nCol, HLanczos->vVec);
+        } else {
+            LANCZOS_DEBUG("Loaded Lanczos warm start from previous iteration.", "");
+            HDSDP_MEMCPY(HLanczos->vVec, HLanczos->dLanczosWarmStart, double, HLanczos->nCol);
+        }
+    }
     
+    /* Normalize the starting vector use it as the initial basis */
+    normalize(&HLanczos->nCol, HLanczos->vVec);
+    HDSDP_MEMCPY(HLanczos->VMat, HLanczos->vVec, double, HLanczos->nCol);
+    
+    /* Configure and start Lanczos iteration */
+    int k = 0;
+    int LCheckFrequency = (int) HLanczos->nMaxSpaceDim / 5;
+    LCheckFrequency = HDSDP_MIN(LCheckFrequency, 5);
+    double finalEigs = 0.0;
+    
+    int nVRow = HLanczos->nCol;
+    int nHRow = HLanczos->nMaxSpaceDim + 1;
+    
+    int ldWork = HLanczos->nMaxSpaceDim * SYEV_WORK;
+    int liWork = HLanczos->nMaxSpaceDim * SYEV_IWORK;
+    
+    for ( k = 0; k < HLanczos->nMaxSpaceDim; ++k ) {
+        
+        HLanczos->Mvec(HLanczos->MMat, HLanczos->vVec, HLanczos->wVec);
+        double normPrev = nrm2(&HLanczos->nCol, HLanczos->wVec, &HIntConstantOne);
+        
+        if ( k > 0 ) {
+            double negHElem = - H(k, k - 1);
+            axpy(&HLanczos->nCol, &negHElem, &V(0, k - 1), &HIntConstantOne, HLanczos->wVec, &HIntConstantOne);
+        }
+        
+        double vAlp = -dot(&HLanczos->nCol, HLanczos->wVec, &HIntConstantOne, &V(0, k), &HIntConstantOne);
+        axpy(&nVRow, &vAlp, &V(0, k), &HIntConstantOne, HLanczos->wVec, &HIntConstantOne);
+        double normPres = nrm2(&nVRow, HLanczos->wVec, &HIntConstantOne);
+        
+        H(k, k) = - vAlp;
+        LANCZOS_DEBUG("Lanczos Alp value: %f \n", -vAlp);
+        
+        /* Refinement */
+        if ( normPres < 0.99 * normPrev ) {
+            for ( int i = 0; i < k; ++i ) {
+                double alpha = - dot(&nVRow, &V(0, i), &HIntConstantOne, HLanczos->wVec, &HIntConstantOne);
+                axpy(&nVRow, &alpha, &V(0, i), &HIntConstantOne, HLanczos->wVec, &HIntConstantOne);
+                H(i, k) -= alpha;
+            }
+        }
+        
+        HDSDP_MEMCPY(HLanczos->wVec, HLanczos->vVec, double, HLanczos->nCol);
+        normPres = normalize(&HLanczos->nCol, HLanczos->vVec);
+        HDSDP_MEMCPY(&V(0, k + 1), HLanczos->vVec, double, HLanczos->nCol);
+        H(k + 1, k) = H(k, k + 1) = normPres;
+        
+        /* Frequently check subspace */
+        if ( ( k + 1 ) % LCheckFrequency == 0 || k > HLanczos->nMaxSpaceDim - 1 ) {
+            
+            LANCZOS_DEBUG("Entering Lanczos internal check at iteration %d.\n", k);
+            
+            int kPlus1 = k + 1;
+            for ( int i = 0; i < kPlus1; ++i ) {
+                HDSDP_MEMCPY(HLanczos->UMat + kPlus1 * i, &H(0, i), double, kPlus1);
+            }
+            
+            dArrSymmetrize(kPlus1, HLanczos->UMat);
+            HDSDP_CALL(fds_syev(kPlus1, HLanczos->UMat, HLanczos->dArray, HLanczos->YMat,
+                                HLanczos->eigDblMat, HLanczos->eigIntMat, ldWork, liWork));
+            
+            double resiVal = fabs( H(kPlus1, k) * HLanczos->YMat[kPlus1 + k] );
+            LANCZOS_DEBUG("Lanczos outer resi value: %f \n", resiVal);
+            
+            if ( resiVal < 1e-04 || k >= HLanczos->nMaxSpaceDim - 1 ) {
+                LANCZOS_DEBUG("Lanczos inner iteration %d \n", k);
+                
+                double eigMin1 = HLanczos->dArray[1];
+                double eigMin2 = HLanczos->dArray[0];
+                
+                fds_gemv(nVRow, kPlus1, HLanczos->VMat,
+                         HLanczos->YMat + kPlus1, HLanczos->z1Vec);
+                HLanczos->Mvec(HLanczos->MMat, HLanczos->z1Vec, HLanczos->z2Vec);
+                
+                /* Record warm-start */
+                HDSDP_MEMCPY(HLanczos->dLanczosWarmStart, HLanczos->z2Vec, double, HLanczos->nCol);
+                
+                double negEig = -eigMin1;
+                axpy(&nVRow, &negEig, HLanczos->z1Vec,
+                     &HIntConstantOne, HLanczos->z2Vec, &HIntConstantOne);
+                
+                double resiVal1 = nrm2(&nVRow, HLanczos->z2Vec, &HIntConstantOne);
+                fds_gemv(nVRow, kPlus1, HLanczos->VMat,
+                         HLanczos->YMat, HLanczos->z2Vec);
+                HLanczos->Mvec(HLanczos->MMat, HLanczos->z2Vec, HLanczos->z1Vec);
+                axpy(&nVRow, &negEig, HLanczos->z2Vec,
+                     &HIntConstantOne, HLanczos->z1Vec, &HIntConstantOne);
+                
+                /* Compute bound on the stepsize */
+                double resiVal2 = nrm2(&nVRow, HLanczos->z1Vec, &HIntConstantOne);
+                double resiDiff = eigMin1 - eigMin2 - resiVal2;
+                double valGamma = ( resiDiff > 0 ) ? resiDiff : 1e-16;
+                double resiVal1sqr = resiVal1 * resiVal1 / valGamma;
+                double deltaVal = HDSDP_MIN(resiVal1, resiVal1sqr);
+                
+                if ( valGamma < 1e-03 || valGamma + eigMin1 <= 0.5 ) {
+                    if ( valGamma + eigMin1 <= 0.0 ) {
+                        *dMaxStep = HDSDP_INFINITY;
+                    } else {
+                        *dMaxStep = 1.0 / ( valGamma + eigMin1 );
+                    }
+                }
+            }
+        }
+    }
+    
+    HLanczos->nComputed += 1;
     
 exit_cleanup:
     return retcode;
@@ -133,6 +277,7 @@ extern void HLanczosClear( hdsdp_lanczos *HLanczos ) {
     HDSDP_FREE(HLanczos->UMat);
     
     HDSDP_FREE(HLanczos->dArray);
+    HDSDP_FREE(HLanczos->dLanczosWarmStart);
     HDSDP_FREE(HLanczos->eigDblMat);
     HDSDP_FREE(HLanczos->eigIntMat);
     

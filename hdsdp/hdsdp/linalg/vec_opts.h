@@ -34,6 +34,7 @@ extern int idamax( int *n, double *x, int *incx );
 extern double sumlogdet( int *n, double *x );
 extern void vvscl( int *n, double *s, double *x );
 extern void vvrscl( int *n, double *s, double *x );
+extern double normalize( int *n, double *a );
 
 #ifdef __cplusplus
 }

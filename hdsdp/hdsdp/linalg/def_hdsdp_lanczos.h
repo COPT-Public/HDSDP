@@ -31,12 +31,16 @@ typedef struct {
     double *YMat;
     double *UMat;
     
+    double *dLanczosWarmStart;
     double *dArray;
     double *eigDblMat;
     int    *eigIntMat;
     
     /* Matrix vector multiplication */
     void (*Mvec) (void *, double *, double *);
+    
+    /* Statistics */
+    int nComputed;
     
 } hdsdp_lanczos;
 

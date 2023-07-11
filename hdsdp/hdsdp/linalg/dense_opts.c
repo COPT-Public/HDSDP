@@ -14,6 +14,18 @@ extern void dsymv( const char *uplo, const int *n, const double *alpha,
                    const double *a, const int *lda, const double *x,
                    const int *incx, const double *beta, double *y, const int *incy );
 
+extern void dgemv( char *trans, int *m, int *n, double *alpha,
+                   double *a, int *lda, double *x, int *incx,
+                   double *beta, double *y, int *incy );
+
+extern void dsyevr( const char *jobz, const char *range, const char *uplo,
+                    const int  *n, double *a, const int *lda,
+                    const double *vl, const double *vu, const int *il,
+                    const int *iu, const double *abstol, int *m,
+                    double *w, double *z, const int *ldz, int *isuppz,
+                    double *work, const int *lwork, int *iwork, const int *liwork,
+                    int *info );
+
 /* Full dense operations */
 extern void fds_symv( int n, double alpha, double *A, double *x, double beta, double *y ) {
     
@@ -22,11 +34,42 @@ extern void fds_symv( int n, double alpha, double *A, double *x, double beta, do
     return;
 }
 
+extern int fds_syev( int n, double *U, double *d, double *Y,
+                      double *work, int *iwork, int lwork, int liwork ) {
+    
+    int retcode = HDSDP_RETCODE_OK;
+    
+    char jobz = 'V', range = 'I', uplo = HCharConstantUploUp;
+    int isuppz[4] = {0};
+    int il = n - 1, iu = n;
+    int m = 2;
+    int info = 0;
+    
+    dsyevr(&jobz, &range, &uplo, &n, U, &n,
+           &HDblConstantZero, &HDblConstantZero,
+           &il, &iu, &HDblConstantZero, &m, d, Y,
+           &n, isuppz, work, &lwork, iwork, &liwork, &info);
+    
+    if ( info != 0 ) {
+        retcode = HDSDP_RETCODE_FAILED;
+    }
+    
+    return retcode;
+}
+
+extern void fds_gemv( int m, int n, double *M, double *v, double *y ) {
+    
+    dgemv(&HCharConstantNoTrans, &m, &n, &HDblConstantOne, M, &m,
+          v, &HIntConstantOne, &HDblConstantZero, y, &HIntConstantOne);
+    
+    return;
+}
+
 extern void fds_print( int n, double *A ) {
     
     for ( int i = 0; i < n; ++i ) {
         for ( int j = 0; j < n; ++j ) {
-            printf("%6.2e ", A[i + n * j]);
+            printf("%6.3e ", A[i + n * j]);
         }
         printf("\n");
     }

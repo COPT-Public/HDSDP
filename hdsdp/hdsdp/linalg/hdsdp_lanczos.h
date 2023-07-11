@@ -14,7 +14,7 @@ extern "C" {
 extern hdsdp_retcode HLanczosCreate( hdsdp_lanczos **pHLanczos );
 extern hdsdp_retcode HLanczosInit( hdsdp_lanczos *HLanczos, int nCol, int nSpaceDim );
 extern void HLanczosSetData( hdsdp_lanczos *HLanczos, void *MMat, void (*Mvec) (void *, double *, double *) );
-extern hdsdp_retcode HLanczosSolve( hdsdp_lanczos *HLanczos, double *dMinEVal );
+extern hdsdp_retcode HLanczosSolve( hdsdp_lanczos *HLanczos, double *LanczosStart, double *dMaxStep );
 extern void HLanczosClear( hdsdp_lanczos *HLanczos );
 extern void HLanczosDestroy( hdsdp_lanczos **pHLanczos );
 

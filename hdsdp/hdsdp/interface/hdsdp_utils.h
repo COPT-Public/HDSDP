@@ -51,6 +51,11 @@ extern "C" {
 
 extern double HUtilGetTimeStamp( void );
 extern void HUtilMatSymmetrize( int n, double *v );
+extern int HUtilCheckIfAscending( int n, int *idx );
+extern void HUtilSortIntByInt( int *data, int *ref, int low, int up );
+extern void HUtilSortIntbyDbl( int *data, double *ref, int low, int up );
+extern void HUtilSortDblByInt( double *data, int *ref, int low, int up );
+extern void HUtilSortDblByInt( double *data, int *ref, int low, int up );
 extern void HUtilPrintDblContent( int n, double *d );
 extern void HUtilPrintIntContent( int n, int *d );
 extern void HUtilPrintDblSum( int n, double *d );

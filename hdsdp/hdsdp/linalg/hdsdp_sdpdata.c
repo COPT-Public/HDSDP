@@ -80,6 +80,10 @@ static hdsdp_retcode dataMatCreateSparseImpl( void **pA, int nSDPCol, int dataMa
     HDSDP_MEMCHECK(sparse->triMatCol);
     HDSDP_MEMCHECK(sparse->triMatElem);
     
+    if ( !HUtilCheckIfAscending(dataMatNnz, dataMatIdx) ) {
+        HUtilSortDblByInt(dataMatElem, dataMatIdx, 0, dataMatNnz - 1);
+    }
+    
     tsp_decompress(sparse->nSDPCol, sparse->nTriMatElem, dataMatIdx, dataMatElem,
                    sparse->triMatRow, sparse->triMatCol, sparse->triMatElem);
     

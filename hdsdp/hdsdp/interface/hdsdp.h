@@ -50,6 +50,8 @@ typedef enum {
 
 typedef struct hdsdp_solver_internal hdsdp;
 
+#define HDSDP_INFINITY          1e+30
+
 // Integer Parameters
 #define INT_PARAM_MAXITER       0
 

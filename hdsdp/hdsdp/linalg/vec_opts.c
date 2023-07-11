@@ -17,7 +17,6 @@ extern void dscal( int *n, double *sa, double *sx, int *incx );
 extern void drscl( int *n, double *sa, double *sx, int *incx );
 extern void dsyr( char *uplo, int *n, double *alpha, double *x, int *incx, double *a, int *lda );
 extern int idamax( int *n, double *x, int *incx );
-
 extern double nrm2( int *n, double *x, int *incx ) {
 #ifdef MYBLAS
     assert( *incx == 1 );
@@ -177,4 +176,15 @@ extern double nrm1( int *n, double *x, int *incx ) {
     }
     
     return nrm;
+}
+
+extern double normalize( int *n, double *a ) {
+    
+    double norm = nrm2(n, a, &HIntConstantOne);
+    
+    if ( norm > 1e-15 ) {
+        drscl(n, &norm, a, &HIntConstantOne);
+    }
+    
+    return norm;
 }

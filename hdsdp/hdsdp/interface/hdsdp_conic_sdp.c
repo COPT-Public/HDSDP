@@ -172,7 +172,7 @@ static hdsdp_retcode sdpSparseConeIAllocDualMat( hdsdp_cone_sdp_sparse *cone ) {
             iPos[0] = 1;
             iPos += (cone->nCol - iCol);
         }
-        for ( int iElem = 0; iElem < cone->nRow; ++iElem ) {
+        for ( int iElem = 0; iElem < cone->nRowElem; ++iElem ) {
             sdpDataMatGetMatNz(cone->sdpRow[iElem], cone->dualPosToElemMap);
         }
         sdpDataMatGetMatNz(cone->sdpObj, cone->dualPosToElemMap);

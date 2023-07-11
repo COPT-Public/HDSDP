@@ -19,12 +19,78 @@ static double my_clock( void ) {
     return (1e-06 * t.tv_usec + t.tv_sec);
 }
 
-static int partition( int *ind, double *val, int l, int h ) {
+static int dpartitioni( int *ind, double *val, int l, int h ) {
     
-    double tmp2 = 0, tmp3, p = val[l];
-    int tmp = l;
+    double tmp2 = 0.0, p = val[l];
+    int tmp = l, tmp3 = 0;
     
     while ( l < h ) {
+        
+        while ( l < h && val[h] >= p ) { --h; }
+        while ( l < h && val[l] <= p ) { ++l; }
+        
+        if ( l < h ) {
+            tmp2 = val[l]; val[l] = val[h]; val[h] = tmp2;
+            tmp3 = ind[l]; ind[l] = ind[h]; ind[h] = tmp3;
+        }
+    }
+    
+    tmp2 = val[l]; val[l] = val[tmp]; val[tmp] = tmp2;
+    tmp3 = ind[l]; ind[l] = ind[tmp]; ind[tmp] = tmp3;
+    
+    return l;
+}
+
+static int ipartitiond( double *ind, int *val, int l, int h ) {
+    
+    int tmp2 = 0, p = val[l], tmp = l;
+    double tmp3;
+    
+    while ( l < h ) {
+        
+        while ( l < h && val[h] >= p ) { --h; }
+        while ( l < h && val[l] <= p ) { ++l; }
+        
+        if ( l < h ) {
+            tmp2 = val[l]; val[l] = val[h]; val[h] = tmp2;
+            tmp3 = ind[l]; ind[l] = ind[h]; ind[h] = tmp3;
+        }
+    }
+    
+    tmp2 = val[l]; val[l] = val[tmp]; val[tmp] = tmp2;
+    tmp3 = ind[l]; ind[l] = ind[tmp]; ind[tmp] = tmp3;
+    
+    return l;
+}
+
+static int ipartitioni( int *ind, int *val, int l, int h ) {
+    
+    int tmp = l, tmp2 = 0, tmp3, p = val[l];
+    
+    while ( l < h ) {
+        
+        while ( l < h && val[h] >= p ) { --h; }
+        while ( l < h && val[l] <= p ) { ++l; }
+        
+        if ( l < h ) {
+            tmp2 = val[l]; val[l] = val[h]; val[h] = tmp2;
+            tmp3 = ind[l]; ind[l] = ind[h]; ind[h] = tmp3;
+        }
+    }
+    
+    tmp2 = val[l]; val[l] = val[tmp]; val[tmp] = tmp2;
+    tmp3 = ind[l]; ind[l] = ind[tmp]; ind[tmp] = tmp3;
+    
+    return l;
+}
+
+static int dpartitiond( double *ind, double *val, int l, int h ) {
+    
+    int tmp = l;
+    double tmp2 = 0.0, tmp3, p = val[l];
+    
+    while ( l < h ) {
+        
         while ( l < h && val[h] >= p ) { --h; }
         while ( l < h && val[l] <= p ) { ++l; }
         
@@ -90,12 +156,58 @@ extern void HUtilPrintDblSum( int n, double *d ) {
     return;
 }
 
-extern void HUtilSortbyDbl( int *ind, double *val, int low, int high ) {
+/* Sorting */
+extern int HUtilCheckIfAscending( int n, int *idx ) {
+    /* Check is an integer array is ascending. */
     
-    if ( low < high ) {
-        int p = partition(ind, val, low, high);
-        HUtilSortbyDbl(ind, val, low, p - 1);
-        HUtilSortbyDbl(ind, val, p + 1, high);
+    for ( int i = 0; i < n - 1; ++i ) {
+        if ( idx[i] > idx[i + 1] ) {
+            return 0;
+        }
+    }
+
+    return 1;
+}
+
+extern void HUtilSortIntbyDbl( int *data, double *ref, int low, int up ) {
+    
+    if ( low < up ) {
+        int p = dpartitioni(data, ref, low, up);
+        HUtilSortIntbyDbl(data, ref, low, p - 1);
+        HUtilSortIntbyDbl(data, ref, p + 1, up);
+    }
+    
+    return;
+}
+
+extern void HUtilSortIntByInt( int *data, int *ref, int low, int up ) {
+    
+    if ( low < up ) {
+        int p = ipartitioni(data, ref, low, up);
+        HUtilSortIntByInt(data, ref, low, p - 1);
+        HUtilSortIntByInt(data, ref, p + 1, up);
+    }
+    
+    return;
+}
+
+extern void HUtilSortDblByInt( double *data, int *ref, int low, int up ) {
+    
+    if ( low < up ) {
+        int p = ipartitiond(data, ref, low, up);
+        HUtilSortDblByInt(data, ref, low, p - 1);
+        HUtilSortDblByInt(data, ref, p + 1, up);
+    }
+    
+    return;
+}
+
+extern void HUtilSortDblByDbl( double *data, double *ref, int low, int up ) {
+    
+    if ( low < up ) {
+        int p = dpartitiond(data, ref, low, up);
+        HUtilSortDblByDbl(data, ref, low, p - 1);
+        HUtilSortDblByDbl(data, ref, p + 1, up);
     }
     
     return;
