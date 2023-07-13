@@ -12,6 +12,8 @@
 #include "vec_opts.h"
 #endif
 
+#include <math.h>
+
 /* Sparse direct solver interface */
 static hdsdp_retcode pardisoLinSolverCreate( void **pchol, int nCol ) {
     
@@ -292,6 +294,7 @@ static hdsdp_retcode pardisoLinSolverSolveN( void *chol, int nRhs, double *rhsVe
 
 static hdsdp_retcode pardisoLinSolverGetDiag( void *chol, double *diagVec ) {
     
+    /* Get diagonal of Cholesky factor */
     hdsdp_retcode retcode = HDSDP_RETCODE_OK;
     pardiso_linsys *pds = (pardiso_linsys *) chol;
     
@@ -301,6 +304,11 @@ static hdsdp_retcode pardisoLinSolverGetDiag( void *chol, double *diagVec ) {
     if ( pdsret != PARDISO_RET_OK ) {
         retcode = HDSDP_RETCODE_FAILED;
         goto exit_cleanup;
+    }
+    
+    /* For pardiso we need to take squareroot */
+    for ( int i = 0; i < pds->nCol; ++i ) {
+        diagVec[i] = sqrt(diagVec[i]);
     }
     
 exit_cleanup:
@@ -366,8 +374,8 @@ static hdsdp_retcode lapackLinSolverCreate( void **pchol, int nCol ) {
     HDSDP_INIT(lap, lapack_flinsys, 1);
     HDSDP_MEMCHECK(lap);
     
-    lap->nCol = nCol;
     HDSDP_ZERO(lap, lapack_flinsys, 1);
+    lap->nCol = nCol;
     
     HDSDP_INIT(lap->dFullMatElem, double, nCol * nCol);
     HDSDP_MEMCHECK(lap->dFullMatElem);

@@ -27,7 +27,7 @@ extern double HConeRatioTest( hdsdp_cone *HCone, double barHsdTauStep, double *r
 extern int64_t HConeGetSymNnz( hdsdp_cone *HCone );
 extern void HConeAddSymNz( hdsdp_cone *HCone, int iCol, int *schurMatCol );
 extern void HConeBuildSchurComplement( hdsdp_cone *HCone, void *schurMat );
-extern void HConeGetLogBarrier( hdsdp_cone *HCone, double barHsdTau, double *rowDual );
+extern hdsdp_retcode HConeGetLogBarrier( hdsdp_cone *HCone, double barHsdTau, double *rowDual, double *logdet );
 extern int HConePFeasSolFound( hdsdp_cone *HCone, double barHsdTauStep, double *rowDualStep );
 extern void HConePVarRecover( hdsdp_cone *HCone, double *pVarArr );
 extern void HConeScalByConstant( hdsdp_cone *HCone, double dScal );

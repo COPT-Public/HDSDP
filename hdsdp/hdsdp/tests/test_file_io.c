@@ -33,6 +33,7 @@ int test_file_io( char *fname ) {
     int nCols = 0;
     int nElem = 0;
     double *rowDual = NULL;
+    double logdet = 0.0;
     
     user_data *SDPData = NULL;
     hdsdp_cone *SDPCone = NULL;
@@ -63,8 +64,13 @@ int test_file_io( char *fname ) {
         for ( int i = 0; i < nConstrs; ++i ) {
             rowDual[i] = i + 1;
         }
+        
+        HConeSetStart(SDPCone, -1e+06);
         HConeUpdate(SDPCone, 1.5, rowDual);
         HConeView(SDPCone);
+        
+        HDSDP_CALL(HConeGetLogBarrier(SDPCone, 1.5, rowDual, &logdet));
+        printf("- Conic log det (S) = %e. \n", logdet);
         
         HUserDataClear(SDPData);
         HConeDestroy(&SDPCone);

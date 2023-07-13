@@ -287,6 +287,156 @@ static void sdpSparseConeIFreeDualMat( hdsdp_cone_sdp_sparse *cone ) {
     return;
 }
 
+#define BUFFER_DUALVAR   (0)
+#define BUFFER_DUALCHECK (1)
+#define BUFFER_DUALSTEP  (2)
+static void sdpDenseConeIZeroBuffer( hdsdp_cone_sdp_dense *cone, int whichBuffer ) {
+    
+    double *target = NULL;
+    if ( whichBuffer == BUFFER_DUALVAR ) {
+        target = cone->dualMatElem;
+    } else if ( whichBuffer == BUFFER_DUALCHECK ) {
+        target = cone->dualCheckerElem;
+    } else {
+        target = cone->dualStep;
+    }
+    
+    if ( cone->isDualSparse ) {
+        HDSDP_ZERO(target, double, cone->dualMatBeg[cone->nCol]);
+    } else {
+        HDSDP_ZERO(target, double, cone->nCol * cone->nCol);
+    }
+    
+    return;
+}
+
+static void sdpSparseConeIZeroBuffer( hdsdp_cone_sdp_sparse *cone, int whichBuffer ) {
+    
+    double *target = NULL;
+    if ( whichBuffer == BUFFER_DUALVAR ) {
+        target = cone->dualMatElem;
+    } else if ( whichBuffer == BUFFER_DUALCHECK ) {
+        target = cone->dualCheckerElem;
+    } else {
+        target = cone->dualStep;
+    }
+    
+    if ( cone->isDualSparse ) {
+        HDSDP_ZERO(target, double, cone->dualMatBeg[cone->nCol]);
+    } else {
+        HDSDP_ZERO(target, double, cone->nCol * cone->nCol);
+    }
+    
+    return;
+}
+
+static inline void sdpDenseConeIUpdateBuffer( hdsdp_cone_sdp_dense *cone, double dCCoef, double dACoefScal,
+                                       double *dACoef, double dEyeCoef, int whichBuffer ) {
+    /* Assemble the buffer by taking a free linear combination between coefficients
+     
+       B <- dResiCoef * I + dACoefScal * A' * y + C * dCCoef
+     */
+    
+    double *target = NULL;
+    
+    switch (whichBuffer) {
+        case BUFFER_DUALVAR:
+            target = cone->dualMatElem;
+            break;
+        case BUFFER_DUALCHECK:
+            target = cone->dualCheckerElem;
+            break;
+        case BUFFER_DUALSTEP:
+            target = cone->dualStep;
+            break;
+        default:
+            break;
+    }
+    
+    /* Zero out buffer space*/
+    if ( cone->isDualSparse ) {
+        HDSDP_ZERO(target, double, cone->dualMatBeg[cone->nCol]);
+    } else {
+        HDSDP_ZERO(target, double, cone->nCol * cone->nCol);
+    }
+    
+    /* Aggregate -A' * y */
+    for ( int iRow = 0; iRow < cone->nRow; ++iRow ) {
+        sdpDataMatAddToBuffer(cone->sdpRow[iRow], dACoefScal * dACoef[iRow], cone->dualPosToElemMap, target);
+    }
+    /* Add c * tau */
+    sdpDataMatAddToBuffer(cone->sdpObj, dCCoef, cone->dualPosToElemMap, target);
+    
+    /* Add residual */
+    if ( dEyeCoef != 0.0 ) {
+        if ( cone->isDualSparse ) {
+            int *iPos = cone->dualPosToElemMap;
+            for ( int iCol = 0; iCol < cone->nCol; ++iCol ) {
+                target[iPos[0]] += dEyeCoef;
+                iPos += (cone->nCol - iCol);
+            }
+        } else {
+            for ( int iCol = 0; iCol < cone->nCol; ++iCol ) {
+                cone->dualMatElem[iCol + iCol * cone->nCol] += dEyeCoef;
+            }
+        }
+    }
+    
+    return;
+}
+
+static inline void sdpSparseConeIUpdateBuffer( hdsdp_cone_sdp_sparse *cone, double dCCoef, double dACoefScal,
+                                        double *dACoef, double dEyeCoef, int whichBuffer ) {
+    
+    double *target = NULL;
+    
+    switch (whichBuffer) {
+        case BUFFER_DUALVAR:
+            target = cone->dualMatElem;
+            break;
+        case BUFFER_DUALCHECK:
+            target = cone->dualCheckerElem;
+            break;
+        case BUFFER_DUALSTEP:
+            target = cone->dualStep;
+            break;
+        default:
+            break;
+    }
+    
+    /* Zero out buffer space*/
+    if ( cone->isDualSparse ) {
+        HDSDP_ZERO(target, double, cone->dualMatBeg[cone->nCol]);
+    } else {
+        HDSDP_ZERO(target, double, cone->nCol * cone->nCol);
+    }
+    
+    /* Aggregate -A' * y */
+    for ( int iElem = 0; iElem < cone->nRowElem; ++iElem ) {
+        sdpDataMatAddToBuffer(cone->sdpRow[iElem], dACoefScal * dACoef[cone->rowIdx[iElem]],
+                              cone->dualPosToElemMap, target);
+    }
+    /* Add c * tau */
+    sdpDataMatAddToBuffer(cone->sdpObj, dCCoef, cone->dualPosToElemMap, target);
+    
+    /* Add residual */
+    if ( dEyeCoef != 0.0 ) {
+        if ( cone->isDualSparse ) {
+            int *iPos = cone->dualPosToElemMap;
+            for ( int iCol = 0; iCol < cone->nCol; ++iCol ) {
+                target[iPos[0]] += dEyeCoef;
+                iPos += (cone->nCol - iCol);
+            }
+        } else {
+            for ( int iCol = 0; iCol < cone->nCol; ++iCol ) {
+                cone->dualMatElem[iCol + iCol * cone->nCol] += dEyeCoef;
+            }
+        }
+    }
+    
+    return;
+}
+
 static void sdpDenseConeILanczosMultiply( void *cone, double *dLhsVec, double *dRhsVec ) {
     /*
      Implement the Matrix vector multiplication for the Lanczos solver.
@@ -641,74 +791,65 @@ extern double sdpSparseConeGetCoeffNorm( hdsdp_cone_sdp_sparse *cone, int whichN
 extern void sdpDenseConeUpdateImpl( hdsdp_cone_sdp_dense *cone, double barHsdTau, double *rowDual ) {
     /* Implement the numerical aggregation of conic coefficients
        When this routine is called, the dual matrix will be overwritten by
-        S = -Rd - A' * y + c * tau
+        
+            S = -Rd - A' * y + c * tau
+       
+     With respect to the buffer utility, we take
+     
+     dCCoef = tau
+     dACoef = y
+     dAScal = -1.0
+     dEyeCoef = - Rd
+
      */
-    
-    /* Aggregate -A' * y */
-    for ( int iRow = 0; iRow < cone->nRow; ++iRow ) {
-        sdpDataMatAddToBuffer(cone->sdpRow[iRow], -rowDual[iRow], cone->dualPosToElemMap, cone->dualMatElem);
-    }
-    
-    /* Add C * tau */
-    sdpDataMatAddToBuffer(cone->sdpObj, barHsdTau, cone->dualPosToElemMap, cone->dualMatElem);
-    
-    if ( cone->dualResidual ) {
-        /* Add diagonal of dual infeasibility */
-        if ( cone->isDualSparse ) {
-            
-            int *iPos = cone->dualPosToElemMap;
-            for ( int iCol = 0; iCol < cone->nCol; ++iCol ) {
-                cone->dualMatElem[iPos[0]] -= cone->dualResidual;
-                iPos += (cone->nCol - iCol);
-            }
-            
-        } else {
-            for ( int iCol = 0; iCol < cone->nCol; ++iCol ) {
-                cone->dualMatElem[iCol * iCol * cone->nCol] -= cone->dualResidual;
-            }
-        }
-    }
+    sdpDenseConeIUpdateBuffer(cone, barHsdTau, -1.0, rowDual, -cone->dualResidual, BUFFER_DUALVAR);
     
     return;
 }
 
 extern void sdpSparseConeUpdateImpl( hdsdp_cone_sdp_sparse *cone, double barHsdTau, double *rowDual ) {
     
-    for ( int iElem = 0; iElem < cone->nRowElem; ++iElem ) {
-        sdpDataMatAddToBuffer(cone->sdpRow[iElem], -rowDual[cone->rowIdx[iElem]],
-                              cone->dualPosToElemMap, cone->dualMatElem);
-    }
-    
-    sdpDataMatAddToBuffer(cone->sdpObj, barHsdTau, cone->dualPosToElemMap, cone->dualMatElem);
-    
-    if ( cone->dualResidual ) {
-        /* Add diagonal of dual infeasibility */
-        if ( cone->isDualSparse ) {
-            
-            int *iPos = cone->dualPosToElemMap;
-            for ( int iCol = 0; iCol < cone->nCol; ++iCol ) {
-                cone->dualMatElem[iPos[0]] -= cone->dualResidual;
-                iPos += (cone->nCol - iCol);
-            }
-            
-        } else {
-            for ( int iCol = 0; iCol < cone->nCol; ++iCol ) {
-                cone->dualMatElem[iCol * iCol * cone->nCol] -= cone->dualResidual;
-            }
-        }
-    }
+    sdpSparseConeIUpdateBuffer(cone, barHsdTau, -1.0, rowDual, -cone->dualResidual, BUFFER_DUALVAR);
     
     return;
 }
 
-extern double sdpDenseConeRatioTestImpl( hdsdp_cone_sdp_dense *cone, double barHsdTauStep, double *rowDualStep ) {
+extern hdsdp_retcode sdpDenseConeRatioTestImpl( hdsdp_cone_sdp_dense *cone, double barHsdTauStep, double *rowDualStep, double dAdaRatio, double *maxStep ) {
+    /* Given conic quantity dy, get maximum distance from the cone
+       Given dTau and dy, we first evaluate
+     
+            dS = dGamma * R_d - A' * dy + c * dTau
+       
+     In terms of the buffer utility, we take
+     
+     dCCoef = dTau
+     dACoef = dy
+     dAScal = -1.0
+     dEyeCoef = Rd * dGamma
+     
+     Then Lanczos solver will take over to compute the largest step we can take so that
+     
+        S + alpha * dS >= 0
+     */
     
-    return 0.0;
+    hdsdp_retcode retcode = HDSDP_RETCODE_OK;
+    sdpDenseConeIUpdateBuffer(cone, barHsdTauStep, -1.0, rowDualStep, dAdaRatio * cone->dualResidual, BUFFER_DUALSTEP);
+    /* Finished with setting up dS. Now do Lanczos computation */
+    HDSDP_CALL(HLanczosSolve(cone->Lanczos, NULL, maxStep));
+    
+exit_cleanup:
+    return retcode;
 }
 
-extern double sdpSparseConeRatioTestImpl( hdsdp_cone_sdp_sparse *cone, double barHsdTauStep, double *rowDualStep ) {
+extern hdsdp_retcode sdpSparseConeRatioTestImpl( hdsdp_cone_sdp_sparse *cone, double barHsdTauStep, double *rowDualStep, double dAdaRatio, double *maxStep ) {
     
-    return 0.0;
+    hdsdp_retcode retcode = HDSDP_RETCODE_OK;
+    sdpSparseConeIUpdateBuffer(cone, barHsdTauStep, -1.0, rowDualStep, dAdaRatio * cone->dualResidual, BUFFER_DUALSTEP);
+    /* Finished with setting up dS. Now do Lanczos computation */
+    HDSDP_CALL(HLanczosSolve(cone->Lanczos, NULL, maxStep));
+    
+exit_cleanup:
+    return retcode;
 }
 
 extern int64_t sdpDenseConeGetSymNnzImpl( hdsdp_cone_sdp_dense *cone ) {
@@ -734,6 +875,64 @@ extern void sdpSparseConeAddSymNnzImpl( hdsdp_cone_sdp_sparse *cone, int *schurM
     
     
     return;
+}
+
+extern hdsdp_retcode sdpDenseConeGetBarrier( hdsdp_cone_sdp_dense *cone, double barHsdTau, double *rowDual, double *logdet ) {
+    
+    /* Compute the barrier function at current dual slack
+       If not supplied the barrier of the most recently updated dual solution is used
+     */
+    hdsdp_retcode retcode = HDSDP_RETCODE_OK;
+    double dLogDeterminant = 0.0;
+    
+    if ( rowDual ) {
+        sdpDenseConeUpdateImpl(cone, barHsdTau, rowDual);
+        HDSDP_CALL(HFpLinsysNumeric(cone->dualFactor, cone->dualMatBeg, cone->dualMatIdx, cone->dualMatElem));
+    }
+    
+    HDSDP_CALL(HFpLinsysGetDiag(cone->dualFactor, cone->dualDiag));
+    
+    /* The log determinant is directly obtained from diagonal of the Cholesky factor
+       since log det(S) = log det(L * L') = log (det(L)^2) = 2 log det(L)
+     */
+    
+    for ( int i = 0; i < cone->nCol; ++i ) {
+        dLogDeterminant += log(cone->dualDiag[i]);
+    }
+    
+    *logdet = 2.0 * dLogDeterminant;
+    
+exit_cleanup:
+    return retcode;
+}
+
+extern hdsdp_retcode sdpSparseConeGetBarrier( hdsdp_cone_sdp_sparse *cone, double barHsdTau, double *rowDual, double *logdet ) {
+    
+    /* Compute the barrier function at current dual slack
+       If not supplied the barrier of the most recently updated dual solution is used
+     */
+    hdsdp_retcode retcode = HDSDP_RETCODE_OK;
+    double dLogDeterminant = 0.0;
+    
+    if ( rowDual ) {
+        sdpSparseConeUpdateImpl(cone, barHsdTau, rowDual);
+        HDSDP_CALL(HFpLinsysNumeric(cone->dualFactor, cone->dualMatBeg, cone->dualMatIdx, cone->dualMatElem));
+    }
+    
+    HDSDP_CALL(HFpLinsysGetDiag(cone->dualFactor, cone->dualDiag));
+    
+    /* The log determinant is directly obtained from diagonal of the Cholesky factor
+       since log det(S) = log det(L * L') = log (det(L)^2) = 2 log det(L)
+     */
+    
+    for ( int i = 0; i < cone->nCol; ++i ) {
+        dLogDeterminant += log(cone->dualDiag[i]);
+    }
+    
+    *logdet = 2.0 * dLogDeterminant;
+    
+exit_cleanup:
+    return retcode;
 }
 
 extern void sdpDenseConeClearImpl( hdsdp_cone_sdp_dense *cone ) {

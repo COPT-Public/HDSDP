@@ -76,7 +76,7 @@ typedef struct {
     void    (*coneBuildSchur)  ( void *, int, void * );
     
     /* Barrier, projection and recovery */
-    double  (*coneGetBarrier)  ( void *, double, double * );
+    hdsdp_retcode (*coneGetBarrier)  ( void *, double, double *, double * );
     int     (*conePFeasCheck)  ( void *, double, double * );
     void    (*conePRecover)    ( void *, double * );
     

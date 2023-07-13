@@ -83,7 +83,7 @@ extern hdsdp_retcode HConeSetData( hdsdp_cone *HCone, user_data *usrData ) {
             HCone->coneAddSymNz = sdpDenseConeAddSymNnzImpl;
             HCone->coneGetObjNorm = sdpDenseConeGetObjNorm;
             HCone->coneBuildSchur = NULL;
-            HCone->coneGetBarrier = NULL;
+            HCone->coneGetBarrier = sdpDenseConeGetBarrier;
             HCone->conePFeasCheck = NULL;
             HCone->conePRecover = NULL;
             HCone->coneScal = NULL;
@@ -100,7 +100,7 @@ extern hdsdp_retcode HConeSetData( hdsdp_cone *HCone, user_data *usrData ) {
             HCone->coneGetSymNnz = sdpSparseConeGetSymNnzImpl;
             HCone->coneAddSymNz = sdpSparseConeAddSymNnzImpl;
             HCone->coneBuildSchur = sdpSparseConeGetObjNorm;
-            HCone->coneGetBarrier = NULL;
+            HCone->coneGetBarrier = sdpSparseConeGetBarrier;
             HCone->conePFeasCheck = NULL;
             HCone->conePRecover = NULL;
             HCone->coneScal = NULL;
@@ -211,10 +211,13 @@ extern void HConeBuildSchurComplement( hdsdp_cone *HCone, int iCol, void *schurM
 }
 
 /* Barrier, projection and recovery */
-extern void HConeGetLogBarrier( hdsdp_cone *HCone, double barHsdTau, double *rowDual ) {
+extern hdsdp_retcode HConeGetLogBarrier( hdsdp_cone *HCone, double barHsdTau, double *rowDual, double *logdet ) {
     
-    HCone->coneGetBarrier(HCone->coneData, barHsdTau, rowDual);
-    return;
+    hdsdp_retcode retcode = HDSDP_RETCODE_OK;
+    HDSDP_CALL(HCone->coneGetBarrier(HCone->coneData, barHsdTau, rowDual, logdet));
+    
+exit_cleanup:
+    return retcode;
 }
 
 extern int HConePFeasSolFound( hdsdp_cone *HCone, double barHsdTauStep, double *rowDualStep ) {
