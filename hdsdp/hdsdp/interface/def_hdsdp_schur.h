@@ -21,6 +21,12 @@
  
  */
 
+#define KKT_M1 (0)
+#define KKT_M2 (1)
+#define KKT_M3 (2)
+#define KKT_M4 (3)
+#define KKT_M5 (4)
+
 typedef struct {
     
     int nRow;

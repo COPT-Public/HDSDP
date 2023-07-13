@@ -2,6 +2,7 @@
 #include "interface/hdsdp_conic_sdp.h"
 #include "interface/def_hdsdp_user_data.h"
 #include "interface/hdsdp_utils.h"
+#include "interface/def_hdsdp_schur.h"
 #include "linalg/hdsdp_sdpdata.h"
 #include "linalg/sparse_opts.h"
 #include "linalg/dense_opts.h"
@@ -12,6 +13,7 @@
 #include "hdsdp_conic_sdp.h"
 #include "def_hdsdp_user_data.h"
 #include "hdsdp_utils.h"
+#include "def_hdsdp_schur.h"
 #include "hdsdp_sdpdata.h"
 #include "sparse_opts.h"
 #include "dense_opts.h"
@@ -517,6 +519,133 @@ static void sdpSparseConeILanczosMultiply( void *cone, double *dLhsVec, double *
     return;
 }
 
+#define SPARSE_EFFICIENCY (1.5)
+static int sdpDenseConeIChooseKKTStrategy( int *rowRanks, int *rowSparsity, int *rowPerm, int nRow, int nCol, int iPerm ) {
+    
+    int bestKKTStrategy = KKT_M1;
+    double bestKKTScore = HDSDP_INFINITY;
+    
+    double KKTScore1 = HDSDP_INFINITY;
+    double KKTScore2 = 0.0;
+    double KKTScore3 = 0.0;
+    double KKTScore4 = 0.0;
+    double KKTScore5 = 0.0;
+    
+    /* Get the rank information of the current matrix */
+    int rowIdx = rowPerm[iPerm];
+    int rowRank = rowRanks[rowIdx];
+    double nCubed = (double) nCol * nCol * nCol;
+    
+    /* Compute the cumulative sparsity after iPerm */
+    double nNzAfter = 0.0;
+    
+    for ( int iRow = iPerm; iRow < nRow; ++iRow ) {
+        nNzAfter += rowSparsity[iRow];
+    }
+    
+    /* Compute the score function */
+    KKTScore2 = rowRank * ((double) rowSparsity[iPerm] * nCol + 3 * SPARSE_EFFICIENCY * nNzAfter);
+    KKTScore3 = (double) nCol * SPARSE_EFFICIENCY * rowSparsity[rowIdx] + nCubed + SPARSE_EFFICIENCY * nNzAfter;
+    KKTScore4 = (double) nCol * SPARSE_EFFICIENCY * rowSparsity[rowIdx] + SPARSE_EFFICIENCY * (nCol + 1) * nNzAfter;
+    KKTScore5 = SPARSE_EFFICIENCY * (2.0 * SPARSE_EFFICIENCY * rowSparsity[rowIdx] + 1) * nNzAfter;
+        
+    /* Choose the best KKT strategy */
+    if ( KKTScore2 <= bestKKTScore ) {
+        bestKKTStrategy = KKT_M2;
+        bestKKTScore = KKTScore2;
+    }
+    
+    if ( KKTScore3 < bestKKTScore ) {
+        bestKKTStrategy = KKT_M3;
+        bestKKTScore = KKTScore3;
+    }
+    
+    if ( KKTScore4 < bestKKTScore ) {
+        bestKKTStrategy = KKT_M4;
+        bestKKTScore = KKTScore4;
+    }
+    
+    if ( KKTScore5 < bestKKTScore ) {
+        bestKKTStrategy = KKT_M5;
+        bestKKTScore = KKTScore5;
+    }
+    
+#if 0
+    printf("Row %d M1: %e M2: %e M3: %e M4: %e M5: %e \n",
+           rowPerm[iPerm], KKTScore1, KKTScore2, KKTScore3, KKTScore4, KKTScore5);
+#endif
+    
+    return bestKKTStrategy;
+}
+
+static hdsdp_retcode sdpDenseConeIGetKKTOrdering( hdsdp_cone_sdp_dense *cone ) {
+    
+    /* Compute the KKT ordering of the SDP cone
+     
+     In HDSDP, when setting up the Schur complement matrix, we adopt 4 strategies that are called
+     M1 to M4 in the solver.
+      
+     --------------------
+     Rank based
+     --------------------
+     M1: Not in use
+     --
+     M2: Make use of both low-rank and sparsity of the coefficient matrices
+     --
+     
+     --------------------
+     
+     --------------------
+     Sparsity based
+     --------------------
+     M2:
+     M3:
+     M4:
+     
+     
+     
+     Note: different from written in the paper, the original M1 strategy is abandoned since it's not competitive
+           for problems where eigen-decomposition is expensive. Moreover, the three recently introduced sparsity-based
+           strategies are more competitive
+     */
+    hdsdp_retcode retcode = HDSDP_RETCODE_OK;
+    
+    /* Prepare rank information */
+    int *rowRanks = NULL;
+    int *rowSparsity = NULL;
+    
+    HDSDP_INIT(rowRanks, int, cone->nRow);
+    HDSDP_MEMCHECK(rowRanks);
+    
+    /* Prepare sparsity information */
+    HDSDP_INIT(rowSparsity, int, cone->nRow);
+    HDSDP_MEMCHECK(rowSparsity);
+    
+    /* Enumerate all the rows to collect all the needed information */
+    for ( int iRow = 0; iRow < cone->nRow; ++iRow ) {
+        cone->sdpConePerm[iRow] = iRow;
+        rowRanks[iRow] = sdpDataMatGetRank(cone->sdpRow[iRow]);
+        rowSparsity[iRow] = sdpDataMatGetNnz(cone->sdpRow[iRow]);
+    }
+    
+    /* Generate permutation based on the sparsity pattern */
+    HUtilSortIntByInt(cone->sdpConePerm, rowSparsity, 0, cone->nRow - 1);
+    
+    /* Choose KKT strategies */
+    for ( int iPerm = 0; iPerm < cone->nRow; ++iPerm ) {
+        cone->KKTStrategies[iPerm] = \
+        sdpDenseConeIChooseKKTStrategy(rowRanks, rowSparsity,
+                                       cone->sdpConePerm, cone->nRow, cone->nCol, iPerm);
+    }
+    
+exit_cleanup:
+        
+    HDSDP_FREE(rowRanks);
+    HDSDP_FREE(rowSparsity);
+        
+    return retcode;
+}
+
 /** @brief Create a dense sdp cone
  *
  */
@@ -601,6 +730,10 @@ extern hdsdp_retcode sdpDenseConeProcDataImpl( hdsdp_cone_sdp_dense *cone, int n
     /* Allocate the dual vector buffer */
     HDSDP_INIT(cone->dVecBuffer, double, cone->nCol);
     HDSDP_MEMCHECK(cone->dVecBuffer);
+    
+    /* Allocate the KKT permutation and strategies */
+    HDSDP_INIT(cone->sdpConePerm, int, cone->nCol);
+    HDSDP_INIT(cone->KKTStrategies, int, cone->nCol);
         
 exit_cleanup:
     
@@ -698,6 +831,9 @@ extern hdsdp_retcode sdpDenseConePresolveImpl( hdsdp_cone_sdp_dense *cone ) {
     
     /* Symbolically factorize the dual matrix */
     HDSDP_CALL(HFpLinsysSymbolic(cone->dualFactor, cone->dualMatBeg, cone->dualMatIdx));
+    
+    /* KKT re-ordering */
+    HDSDP_CALL(sdpDenseConeIGetKKTOrdering(cone));
     
 exit_cleanup:
     
@@ -955,6 +1091,9 @@ extern void sdpDenseConeClearImpl( hdsdp_cone_sdp_dense *cone ) {
     HLanczosDestroy(&cone->Lanczos);
     HDSDP_FREE(cone->dVecBuffer);
     
+    HDSDP_FREE(cone->sdpConePerm);
+    HDSDP_FREE(cone->KKTStrategies);
+    
     HDSDP_ZERO(cone, hdsdp_cone_sdp_dense, 1);
     
     return;
@@ -1040,6 +1179,17 @@ extern void sdpDenseConeViewImpl( hdsdp_cone_sdp_dense *cone ) {
         printf("- Using dense dual matrix. \n");
         fds_print(cone->nCol, cone->dualMatElem);
     }
+    
+    printf("- KKT ordering: \n");
+    
+    int KKTStrategies[5] = {0};
+    for ( int iRow = 0; iRow < cone->nRow; ++iRow ) {
+        KKTStrategies[cone->KKTStrategies[iRow]] += 1;
+    }
+    
+    printf("- KKT Statistics: M1: %d M2: %d M3: %d M4: %d M5: %d \n",
+           KKTStrategies[KKT_M1], KKTStrategies[KKT_M2], KKTStrategies[KKT_M3],
+           KKTStrategies[KKT_M4], KKTStrategies[KKT_M5]);
     
     return;
 }

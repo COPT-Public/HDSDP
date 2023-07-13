@@ -122,6 +122,8 @@ typedef struct {
     sdp_coeff **sdpRow;
     sdp_coeff  *sdpObj;
     
+    /* KKT Statistics for the dense cone */
+    int *KKTStrategies;
     int *sdpConePerm;
     
     /* SDP block statistics */
