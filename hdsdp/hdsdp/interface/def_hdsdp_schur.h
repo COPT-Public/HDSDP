@@ -4,10 +4,12 @@
 #ifdef HEADERPATH
 #include "interface/hdsdp.h"
 #include "interface/hdsdp_utils.h"
+#include "interface/hdsdp_conic.h"
 #include "linalg/hdsdp_linsolver.h"
 #else
 #include "hdsdp.h"
 #include "hdsdp_utils.h"
+#include "hdsdp_conic.h"
 #include "hdsdp_linsolver.h"
 #endif
 
@@ -31,9 +33,29 @@ typedef struct {
     
     int nRow;
     int nCones;
+    int maxConeDim;
     
+    hdsdp_cone **cones;
     
+    int isKKTSparse;
+    hdsdp_linsys_fp *kktM;
     
+    /* Buffer for the largest-size dual matrix */
+    double *dualBuffer;
+    
+    /* KKT data */
+    int *kktMatBeg;
+    int *kktMatIdx;
+    double *kktMatElem;
+    
+    /* KKT LHS and RHS components */
+    double *dASinvVec;
+    double *dASinvCSinvVec;
+    double *dASinvRdSinvVec;
+    
+    double dCSinvCSinv;
+    double dCSinvRdSinv;
+    double dCSinv;
     
 } hdsdp_kkt;
 

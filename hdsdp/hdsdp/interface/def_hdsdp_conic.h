@@ -72,8 +72,10 @@ typedef struct {
     
     /* Schur complement and algorithm iterates */
     int64_t (*coneGetSymNnz)   ( void * );
-    void    (*coneAddSymNz)    ( void *, int * );
-    void    (*coneBuildSchur)  ( void *, int, void * );
+    int     (*coneGetDim)      ( void * );
+    void    (*coneAddSymNz)    ( void *, int, int * );
+    void    (*coneGetKKTMap)   ( void *, int, int * );
+    hdsdp_retcode (*coneBuildSchur)  ( void *, void *, int );
     
     /* Barrier, projection and recovery */
     hdsdp_retcode (*coneGetBarrier)  ( void *, double, double *, double * );
@@ -122,7 +124,8 @@ typedef struct {
     sdp_coeff **sdpRow;
     sdp_coeff  *sdpObj;
     
-    /* KKT Statistics for the dense cone */
+    /* KKT statistics for the dense cone */
+    int64_t coneKKTNnz;
     int *KKTStrategies;
     int *sdpConePerm;
     
@@ -165,6 +168,11 @@ typedef struct {
     int *rowIdx;
     sdp_coeff **sdpRow;
     sdp_coeff  *sdpObj;
+    
+    /* KKT statistics*/
+    int64_t coneKKTNnz;
+    int  iKKTCounted;
+    int *kktMapping;
     
     int sdpConeStats[5];
     

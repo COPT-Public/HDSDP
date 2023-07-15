@@ -48,7 +48,9 @@ extern hdsdp_retcode HConeSetData( hdsdp_cone *HCone, user_data *usrData ) {
             HCone->coneUpdate = NULL;
             HCone->coneRatioTest = NULL;
             HCone->coneGetSymNnz = NULL;
+            HCone->coneGetDim = NULL;
             HCone->coneAddSymNz = NULL;
+            HCone->coneGetKKTMap = NULL;
             HCone->coneBuildSchur = NULL;
             HCone->coneGetBarrier = NULL;
             HCone->conePFeasCheck = NULL;
@@ -64,7 +66,9 @@ extern hdsdp_retcode HConeSetData( hdsdp_cone *HCone, user_data *usrData ) {
             HCone->coneUpdate = NULL;
             HCone->coneRatioTest = NULL;
             HCone->coneGetSymNnz = NULL;
+            HCone->coneGetDim = NULL;
             HCone->coneAddSymNz = NULL;
+            HCone->coneGetKKTMap = NULL;
             HCone->coneBuildSchur = NULL;
             HCone->coneGetBarrier = NULL;
             HCone->conePFeasCheck = NULL;
@@ -81,7 +85,9 @@ extern hdsdp_retcode HConeSetData( hdsdp_cone *HCone, user_data *usrData ) {
             HCone->coneRatioTest = sdpDenseConeRatioTestImpl;
             HCone->coneGetSymNnz = sdpDenseConeGetSymNnzImpl;
             HCone->coneAddSymNz = sdpDenseConeAddSymNnzImpl;
+            HCone->coneGetKKTMap = sdpDenseConeGetSymMapping;
             HCone->coneGetObjNorm = sdpDenseConeGetObjNorm;
+            HCone->coneGetDim = sdpDenseConeGetDim;
             HCone->coneBuildSchur = NULL;
             HCone->coneGetBarrier = sdpDenseConeGetBarrier;
             HCone->conePFeasCheck = NULL;
@@ -97,8 +103,10 @@ extern hdsdp_retcode HConeSetData( hdsdp_cone *HCone, user_data *usrData ) {
             HCone->coneSetStart = sdpSparseConeSetStartImpl;
             HCone->coneUpdate = sdpSparseConeUpdateImpl;
             HCone->coneRatioTest = sdpSparseConeRatioTestImpl;
+            HCone->coneGetDim = sdpSparseConeGetDim;
             HCone->coneGetSymNnz = sdpSparseConeGetSymNnzImpl;
             HCone->coneAddSymNz = sdpSparseConeAddSymNnzImpl;
+            HCone->coneGetKKTMap = sdpSparseConeGetSymMapping;
             HCone->coneBuildSchur = sdpSparseConeGetObjNorm;
             HCone->coneGetBarrier = sdpSparseConeGetBarrier;
             HCone->conePFeasCheck = NULL;
@@ -198,16 +206,26 @@ extern int64_t HConeGetSymNnz( hdsdp_cone *HCone ) {
     return HCone->coneGetSymNnz(HCone->coneData);
 }
 
-extern void HConeAddSymNz( hdsdp_cone *HCone, int *schurMatCol ) {
+extern void HConeAddSymNz( hdsdp_cone *HCone, int iCol, int *schurMatCol ) {
     
-    HCone->coneAddSymNz(HCone->coneData, schurMatCol);
+    HCone->coneAddSymNz(HCone->coneData, iCol, schurMatCol);
     return;
 }
 
-extern void HConeBuildSchurComplement( hdsdp_cone *HCone, int iCol, void *schurMat ) {
+extern void HConeGetSymMapping( hdsdp_cone *HCone, int iCol, int *schurMatCol ) {
     
-    HCone->coneBuildSchur(HCone->coneData, iCol, schurMat);
+    HCone->coneGetKKTMap(HCone->coneData, iCol, schurMatCol);
     return;
+}
+
+extern int HConeGetDim( hdsdp_cone *HCone ) {
+    
+    return HCone->coneGetDim(HCone->coneData);
+}
+
+extern hdsdp_retcode HConeBuildSchurComplement( hdsdp_cone *HCone, void *schurMat, int newKKT ) {
+    
+    return HCone->coneBuildSchur(HCone->coneData, schurMat, newKKT);
 }
 
 /* Barrier, projection and recovery */
