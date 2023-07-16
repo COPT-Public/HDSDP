@@ -13,6 +13,10 @@
 extern "C" {
 #endif
 
+#define KKT_TYPE_INFEASIBLE  (0)
+#define KKT_TYPE_CORRECTOR   (1)
+#define KKT_TYPE_HOMOGENEOUS (2)
+
 extern hdsdp_retcode HConeCreate( hdsdp_cone **pHCone );
 extern hdsdp_retcode HConeSetData( hdsdp_cone *HCone, user_data *coneData );
 extern hdsdp_retcode HConeProcData( hdsdp_cone *HCone );
@@ -28,7 +32,7 @@ extern int64_t HConeGetSymNnz( hdsdp_cone *HCone );
 extern void HConeAddSymNz( hdsdp_cone *HCone, int iCol, int *schurMatCol );
 extern void HConeGetSymMapping( hdsdp_cone *HCone, int iCol, int *schurMatCol );
 extern int HConeGetDim( hdsdp_cone *HCone );
-extern hdsdp_retcode HConeBuildSchurComplement( hdsdp_cone *HCone, void *schurMat, int newKKT );
+extern hdsdp_retcode HConeBuildSchurComplement( hdsdp_cone *HCone, void *schurMat, int typeKKT );
 extern hdsdp_retcode HConeGetLogBarrier( hdsdp_cone *HCone, double barHsdTau, double *rowDual, double *logdet );
 extern int HConePFeasSolFound( hdsdp_cone *HCone, double barHsdTauStep, double *rowDualStep );
 extern void HConePVarRecover( hdsdp_cone *HCone, double *pVarArr );

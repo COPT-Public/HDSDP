@@ -41,12 +41,14 @@ typedef struct {
     hdsdp_linsys_fp *kktM;
     
     /* Buffer for the largest-size dual matrix */
-    double *dualBuffer;
+    double *invBuffer;
+    double *kktBuffer;
     
     /* KKT data */
     int *kktMatBeg;
     int *kktMatIdx;
     double *kktMatElem;
+    double **kktDiag;
     
     /* KKT LHS and RHS components */
     double *dASinvVec;

@@ -131,35 +131,6 @@ static hdsdp_retcode dataMatCreateRankOneDenseImpl( void **pA, int nSDPCol, int 
     return HDSDP_RETCODE_FAILED;
 }
 
-static double dataMatDotFullZeroImpl( void *A, double *dFullMatrix ) {
-    
-    return 0.0;
-}
-
-static double dataMatDotFullSparseImpl( void *A, double *dFullMatrix ) {
-    
-    /* TODO: */
-    return 0.0;
-}
-
-static double dataMatDotFullDenseImpl( void *A, double *dFullMatrix ) {
-    
-    /* TODO: */
-    return 0.0;
-}
-
-static double dataMatDotFullRankOneSparseImpl( void *A, double *dFullMatrix ) {
-    
-    /* TODO: */
-    return 0.0;
-}
-
-static double dataMatDotFullRankOneDenseImpl( void *A, double *dFullMatrix ) {
-    
-    /* TODO: */
-    return 0.0;
-}
-
 static void dataMatScalZeroImpl( void *A, double alpha ) {
     
     return;
@@ -618,13 +589,13 @@ static void dataMatGetRankOneDenseSparsityImpl( void *A, int *spout ) {
     return;
 }
 
-static void dataMatAddZeroToBuffer( void *A, double a, int *spmap, double *buffer ) {
+static void dataMatAddZeroToBufferImpl( void *A, double a, int *spmap, double *buffer ) {
     /* Let buffer <- buffer + a * A */
     
     return;
 }
 
-static void dataMatAddSparseToBuffer( void *A, double a, int *spmat, double *buffer ) {
+static void dataMatAddSparseToBufferImpl( void *A, double a, int *spmat, double *buffer ) {
     /* If spmat exists, then the buffer uses sparse data structure,
        Otherwise (if spmat is NULL), buffer is a dense array
      */
@@ -648,7 +619,7 @@ static void dataMatAddSparseToBuffer( void *A, double a, int *spmat, double *buf
     return;
 }
 
-static void dataMatAddDenseToBuffer( void *A, double a, int *spmat, double *buffer ) {
+static void dataMatAddDenseToBufferImpl( void *A, double a, int *spmat, double *buffer ) {
     /* Whenever a dense matrix exists, the dual matrix must be dense */
     sdp_coeff_dense *dsA = (sdp_coeff_dense *) A;
     
@@ -672,7 +643,7 @@ static void dataMatAddDenseToBuffer( void *A, double a, int *spmat, double *buff
     return;
 }
 
-static void dataMatAddRankOneSparseToBuffer( void *A, double a, int *spmat, double *buffer ) {
+static void dataMatAddRankOneSparseToBufferImpl( void *A, double a, int *spmat, double *buffer ) {
     
     sdp_coeff_spr1 *spR1A = (sdp_coeff_spr1 *) A;
     
@@ -697,7 +668,7 @@ static void dataMatAddRankOneSparseToBuffer( void *A, double a, int *spmat, doub
     return;
 }
 
-static void dataMatAddRankOneDenseToBuffer( void *A, double a, int *spmat, double *buffer ) {
+static void dataMatAddRankOneDenseToBufferImpl( void *A, double a, int *spmat, double *buffer ) {
     
     sdp_coeff_dsr1 *dsR1A = (sdp_coeff_dsr1 *) A;
     
@@ -928,6 +899,137 @@ static void dataMatNormalizeRankOneDenseImpl( sdp_coeff_dsr1 *A ) {
     return;
 }
 
+/* KKT operation: compute v = S^-1 a if A = sign * a * a' */
+static void dataMatZeroKKT2SolveRankOneImpl( void *A, hdsdp_linsys *S, double *Sinv, double *sign, double *v ) {
+    
+    assert( 0 );
+    return;
+}
+
+static void dataMatSparseKKT2SolveRankOneImpl( void *A, hdsdp_linsys *S, double *Sinv, double *sign, double *v ) {
+    
+    assert( 0 );
+    return;
+}
+
+static void dataMatDenseKKT2SolveRankOneImpl( void *A, hdsdp_linsys *S, double *Sinv, double *sign, double *v ) {
+    
+    assert( 0 );
+    return;
+}
+
+static void dataMatRankOneSparseKKT2SolveRankOneImpl( void *A, hdsdp_linsys *S, double *Sinv, double *sign, double *v ) {
+    /* Implement v = S^-1 a.
+       In HDSDP we have both the factorization of S and S^-1 in explicit form
+       
+       If a itself is sparse, then S^-1 a can be done by taking a sparse linear combination of columns of S^-1
+       If a is dense, then we do direct solve S \ v
+     
+     */
+    sdp_coeff_spr1 *spr1 = (sdp_coeff_spr1 *) A;
+    
+    if ( spr1->nSpR1FactorElem >= 0.2 * spr1->nSDPCol ) {
+        /* If a is sparse but not that sparse */
+        HFpLinsysSolve(S, 1, spr1->spR1MatFactor, v);
+    } else {
+        /* If a contains few nonzeros, we take linear combination of Sinv */
+        HDSDP_ZERO(v, double, spr1->nSDPCol);
+        for ( int i = 0; i < spr1->nSpR1FactorElem; ++i ) {
+            double ai = spr1->spR1MatElem[i];
+            axpy(&spr1->nSDPCol, &ai, Sinv + spr1->spR1MatIdx[i] * spr1->nSDPCol,
+                 &HIntConstantOne, v, &HIntConstantOne);
+        }
+    }
+    
+    *sign = spr1->spR1FactorSign;
+    
+    return;
+}
+
+/* KKT operation: compute trace: trace(A * S^-1) = sign * a' * v */
+static double dataMatZeroKKT2TraceASinvImpl( void *A, double *v ) {
+    
+    assert( 0 );
+    return 0.0;
+}
+
+static double dataMatSparseKKT2TraceASinvImpl( void *A, double *v ) {
+    
+    assert( 0 );
+    return 0.0;
+}
+
+static double dataMatDenseKKT2TraceASinvImpl( void *A, double *v ) {
+    
+    assert( 0 );
+    return 0.0;
+}
+
+static double dataMatRankOneSparseKKT2TraceASinvImpl( void *A, double *v ) {
+    
+    sdp_coeff_spr1 *spr1 = (sdp_coeff_spr1 *) A;
+    double asinv = 0.0;
+    
+    for ( int i = 0; i < spr1->nSpR1FactorElem; ++i ) {
+        asinv += v[spr1->spR1MatIdx[i]] * spr1->spR1MatElem[i];
+    }
+    
+    return spr1->spR1FactorSign * asinv;
+}
+
+static double dataMatRankOneDenseKKT2TraceASinvImpl( void *A, double *v ) {
+    
+    sdp_coeff_dsr1 *dsr1 = (sdp_coeff_dsr1 *) A;
+    return dsr1->r1FactorSign * dot(&dsr1->nSDPCol, dsr1->r1MatFactor, &HIntConstantOne, v, &HIntConstantOne);
+}
+
+/* KKT operation: compute quadratic form v' * A * v */
+static double dataMatZeroKKT2ComputeQuadForm( void *A, double *v, double *aux ) {
+    
+    return 0.0;
+}
+
+static double dataMatSparseKKT2ComputeQuadForm( void *A, double *v, double *aux ) {
+    
+    sdp_coeff_sparse *sparse = (sdp_coeff_sparse *) A;
+    
+    return tsp_quadform(sparse->nSDPCol, sparse->nTriMatElem, sparse->triMatRow,
+                        sparse->triMatCol, sparse->triMatElem, v);
+}
+
+static double dataMatDenseKKT2ComputeQuadForm( void *A, double *v, double *aux ) {
+    
+    sdp_coeff_dense *dense = (sdp_coeff_dense *) A;
+    
+    return pds_quadform(dense->nSDPCol, dense->dsMatElem, v, aux);
+}
+
+static double dataMatRankOneSparseKKT2ComputeQuadForm( void *A, double *v, double *aux ) {
+    
+    sdp_coeff_spr1 *spr1 = (sdp_coeff_spr1 *) A;
+    
+    return spr1_quadform(spr1->nSDPCol, spr1->spR1FactorSign,
+                         spr1->nSpR1FactorElem, spr1->spR1MatIdx, spr1->spR1MatElem, v);
+}
+
+static double dataMatRankOneDenseKKT2ComputeQuadForm( void *A, double *v, double *aux ) {
+    
+    sdp_coeff_dsr1 *dsr1 = (sdp_coeff_dsr1 *) A;
+    
+    return dsr1_quadform(dsr1->nSDPCol, dsr1->r1FactorSign, dsr1->r1MatFactor, v);
+}
+
+static void dataMatRankOneDenseKKT2SolveRankOneImpl( void *A, hdsdp_linsys *S, double *Sinv, double *sign, double *v ) {
+    
+    sdp_coeff_dsr1 *dsr1 = (sdp_coeff_dsr1 *) A;
+    
+    (void) S;
+    fds_symv(dsr1->nSDPCol, 1.0, Sinv, dsr1->r1MatFactor, 0.0, v);
+    *sign = dsr1->r1FactorSign;
+    
+    return;
+}
+
 static void sdpDataMatIChooseType( sdp_coeff *sdpCoeff, sdp_coeff_type dataType ) {
     
     sdpCoeff->dataType = dataType;
@@ -935,68 +1037,78 @@ static void sdpDataMatIChooseType( sdp_coeff *sdpCoeff, sdp_coeff_type dataType 
     switch ( dataType ) {
         case SDP_COEFF_ZERO:
             sdpCoeff->create = dataMatCreateZeroImpl;
-            sdpCoeff->dot = dataMatDotFullZeroImpl;
             sdpCoeff->scal = dataMatScalZeroImpl;
             sdpCoeff->norm = dataMatNormZeroImpl;
             sdpCoeff->eig = dataMatBuildUpEigZeroImpl;
             sdpCoeff->getnnz = dataMatGetNnzZeroImpl;
             sdpCoeff->dump = dataMatDumpZeroImpl;
             sdpCoeff->getmatnz = dataMatGetZeroSparsityImpl;
-            sdpCoeff->add2buffer = dataMatAddZeroToBuffer;
+            sdpCoeff->add2buffer = dataMatAddZeroToBufferImpl;
             sdpCoeff->destroy = dataMatDestroyZeroImpl;
             sdpCoeff->view = dataMatViewZeroImpl;
+            sdpCoeff->kkt2r1solve = dataMatZeroKKT2SolveRankOneImpl;
+            sdpCoeff->kkt2quadform = dataMatZeroKKT2ComputeQuadForm;
+            sdpCoeff->kkt2r1asinv = dataMatZeroKKT2TraceASinvImpl;
             break;
         case SDP_COEFF_SPARSE:
             sdpCoeff->create = dataMatCreateSparseImpl;
-            sdpCoeff->dot = dataMatDotFullSparseImpl;
             sdpCoeff->scal = dataMatScalSparseImpl;
             sdpCoeff->norm = dataMatNormSparseImpl;
             sdpCoeff->eig = dataMatBuildUpEigSparseImpl;
             sdpCoeff->getnnz = dataMatGetNnzSparseImpl;
             sdpCoeff->dump = dataMatDumpSparseImpl;
             sdpCoeff->getmatnz = dataMatGetSparseSparsityImpl;
-            sdpCoeff->add2buffer = dataMatAddSparseToBuffer;
+            sdpCoeff->add2buffer = dataMatAddSparseToBufferImpl;
             sdpCoeff->destroy = dataMatDestroySparseImpl;
             sdpCoeff->view = dataMatViewSparseImpl;
+            sdpCoeff->kkt2r1solve = dataMatSparseKKT2SolveRankOneImpl;
+            sdpCoeff->kkt2quadform = dataMatSparseKKT2ComputeQuadForm;
+            sdpCoeff->kkt2r1asinv = dataMatSparseKKT2TraceASinvImpl;
             break;
         case SDP_COEFF_DENSE:
             sdpCoeff->create = dataMatCreateDenseImpl;
-            sdpCoeff->dot = dataMatDotFullDenseImpl;
             sdpCoeff->scal = dataMatScalDenseImpl;
             sdpCoeff->norm = dataMatNormDenseImpl;
             sdpCoeff->eig = dataMatBuildUpEigDenseImpl;
             sdpCoeff->getnnz = dataMatGetNnzDenseImpl;
             sdpCoeff->dump = dataMatDumpDenseImpl;
             sdpCoeff->getmatnz = dataMatGetDenseSparsityImpl;
-            sdpCoeff->add2buffer = dataMatAddDenseToBuffer;
+            sdpCoeff->add2buffer = dataMatAddDenseToBufferImpl;
             sdpCoeff->destroy = dataMatDestroyDenseImpl;
             sdpCoeff->view = dataMatViewDenseImpl;
+            sdpCoeff->kkt2r1solve = dataMatDenseKKT2SolveRankOneImpl;
+            sdpCoeff->kkt2quadform = dataMatDenseKKT2ComputeQuadForm;
+            sdpCoeff->kkt2r1asinv = dataMatDenseKKT2TraceASinvImpl;
             break;
         case SDP_COEFF_SPR1:
             sdpCoeff->create = dataMatCreateRankOneSparseImpl;
-            sdpCoeff->dot = dataMatDotFullRankOneSparseImpl;
             sdpCoeff->scal = dataMatScalRankOneSparseImpl;
             sdpCoeff->norm = dataMatNormRankOneSparseImpl;
             sdpCoeff->eig = dataMatBuildUpRankOneSparseImpl;
             sdpCoeff->getnnz = dataMatGetNnzRankOneSparseImpl;
             sdpCoeff->dump = dataMatDumpRankOneSparseImpl;
             sdpCoeff->getmatnz = dataMatGetRankOneSparseSparsityImpl;
-            sdpCoeff->add2buffer = dataMatAddRankOneSparseToBuffer;
+            sdpCoeff->add2buffer = dataMatAddRankOneSparseToBufferImpl;
             sdpCoeff->destroy = dataMatDestroyRankOneSparseImpl;
             sdpCoeff->view = dataMatViewRankOneSparseImpl;
+            sdpCoeff->kkt2r1solve = dataMatRankOneSparseKKT2SolveRankOneImpl;
+            sdpCoeff->kkt2quadform = dataMatRankOneSparseKKT2ComputeQuadForm;
+            sdpCoeff->kkt2r1asinv = dataMatRankOneSparseKKT2TraceASinvImpl;
             break;
         case SDP_COEFF_DSR1:
             sdpCoeff->create = dataMatCreateRankOneDenseImpl;
-            sdpCoeff->dot = dataMatDotFullRankOneDenseImpl;
             sdpCoeff->scal = dataMatScalRankOneDenseImpl;
             sdpCoeff->norm = dataMatNormRankOneDenseImpl;
             sdpCoeff->eig = dataMatBuildUpRankOneDenseImpl;
             sdpCoeff->getnnz = dataMatGetNnzRankOneDenseImpl;
             sdpCoeff->dump = dataMatDumpRankOneDenseImpl;
             sdpCoeff->getmatnz = dataMatGetRankOneDenseSparsityImpl;
-            sdpCoeff->add2buffer = dataMatAddRankOneDenseToBuffer;
+            sdpCoeff->add2buffer = dataMatAddRankOneDenseToBufferImpl;
             sdpCoeff->destroy = dataMatDestroyRankOneDenseImpl;
             sdpCoeff->view = dataMatViewRankOneDenseImpl;
+            sdpCoeff->kkt2r1solve = dataMatRankOneDenseKKT2SolveRankOneImpl;
+            sdpCoeff->kkt2quadform = dataMatRankOneDenseKKT2ComputeQuadForm;
+            sdpCoeff->kkt2r1asinv = dataMatRankOneDenseKKT2TraceASinvImpl;
             break;
         default:
             assert( 0 );
@@ -1070,11 +1182,6 @@ extern int sdpDataMatGetRank( sdp_coeff *sdpCoeff ) {
     }
     
     return sdpCoeff->nSDPCol;
-}
-
-extern double sdpDataMatDot( sdp_coeff *sdpCoeff, double *dFullMatrix ) {
-    
-    return sdpCoeff->dot(sdpCoeff->dataMat, dFullMatrix);
 }
 
 extern void sdpDataMatScal( sdp_coeff *sdpCoeff, double scal ) {
@@ -1242,4 +1349,21 @@ extern inline void sdpDataMatView( sdp_coeff *sdpCoeff ) {
     sdpCoeff->view(sdpCoeff->dataMat);
     
     return;
+}
+
+/* Data-dependent KKT operations */
+extern void sdpDataMatKKT2SolveRankOne( sdp_coeff *sdpCoeff, hdsdp_linsys *dualFactor, double *dInvMatrix, double *dInvFactor, double *sign ) {
+    
+    sdpCoeff->kkt2r1solve(sdpCoeff->dataMat, dualFactor, dInvMatrix, dInvFactor, sign);
+    return;
+}
+
+extern double sdpDataMatKKT2QuadForm( sdp_coeff *sdpCoeff, double *dQuadVector, double *dAuxiVec ) {
+    
+    return sdpCoeff->kkt2quadform(sdpCoeff->dataMat, dQuadVector, dAuxiVec);
+}
+
+extern double sdpDataMatKKT2TraceASinv( sdp_coeff *sdpCoeff, double *dSinvAVec ) {
+    
+    return sdpCoeff->kkt2r1asinv(sdpCoeff->dataMat, dSinvAVec);
 }

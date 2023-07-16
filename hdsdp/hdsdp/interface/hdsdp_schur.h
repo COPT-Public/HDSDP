@@ -10,6 +10,7 @@
 extern hdsdp_retcode HKKTCreate( hdsdp_kkt **pHKKT );
 extern hdsdp_retcode HKKTInit( hdsdp_kkt *HKKT, int nRow, int nCones, hdsdp_cone **cones );
 extern hdsdp_retcode HKKTBuildUp( hdsdp_kkt *HKKT, int newM );
+extern void HKKTRegularize( hdsdp_kkt *HKKT, double dKKTReg );
 extern void HKKTClear( hdsdp_kkt *HKKT );
 extern void HKKTDestroy( hdsdp_kkt **pHKKT );
 

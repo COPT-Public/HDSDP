@@ -26,6 +26,10 @@ extern void dsyevr( const char *jobz, const char *range, const char *uplo,
                     double *work, const int *lwork, int *iwork, const int *liwork,
                     int *info );
 
+extern void dspmv( const char *uplo, const int *n, const double *alpha,
+                   const double *ap, const double *x, const int *incx,
+                   const double *beta, double *y, const int *incy );
+
 /* Full dense operations */
 extern void fds_symv( int n, double alpha, double *A, double *x, double beta, double *y ) {
     
@@ -192,4 +196,12 @@ extern int pds_r1_extract( int n, double *A, double *sgn, double *a ) {
     
     *sgn = s;
     return 1;
+}
+
+extern double pds_quadform( int n, double *A, double *v, double *aux ) {
+    
+    dspmv(&HCharConstantUploLow, &n, &HDblConstantOne, A, v,
+          &HIntConstantOne, &HDblConstantZero, aux, &HIntConstantOne);
+    
+    return dot(&n, aux, &HIntConstantOne, v, &HIntConstantOne);
 }

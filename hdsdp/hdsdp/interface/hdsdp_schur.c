@@ -18,6 +18,11 @@ static hdsdp_retcode HKKTIAllocDenseKKT( hdsdp_kkt *HKKT ) {
     
     HDSDP_CALL(HFpLinsysCreate(&HKKT->kktM, HKKT->nRow, HDSDP_LINSYS_DENSE_ITERATIVE));
     
+    /* Mark the diagonal entries of the KKT solver */
+    for ( int iCol = 0; iCol < HKKT->nRow; ++iCol ) {
+        HKKT->kktDiag[iCol] = &HKKT->kktMatElem[iCol + iCol * HKKT->nRow];
+    }
+    
 exit_cleanup:
     return retcode;
 }
@@ -91,6 +96,19 @@ static hdsdp_retcode HKKTAllocSparseKKT( hdsdp_kkt *HKKT ) {
         /* The Schur complement is sparse. And we use sparse direct solver */
         HDSDP_REALLOC(HKKT->kktMatIdx, int, iNz);
         HDSDP_INIT(HKKT->kktMatElem, double, iNz);
+        
+        /* Mark the diagonal elements. We assert that the start of each column must be its
+           diagonal. Otherwise the column is empty and problem data is invalid.
+         */
+        for ( int iCol = 0; iCol < HKKT->nRow; ++iCol ) {
+            if ( HKKT->kktMatIdx[HKKT->kktMatBeg[iCol]] != iCol ) {
+                printf("KKT solver detects an empty column.\n");
+                retcode = HDSDP_RETCODE_FAILED;
+                goto exit_cleanup;
+            }
+            HKKT->kktDiag[iCol] = &HKKT->kktMatElem[HKKT->kktMatBeg[iCol]];
+        }
+        
         HDSDP_CALL(HFpLinsysCreate(&HKKT->kktM, HKKT->nRow, HDSDP_LINSYS_SPARSE_DIRECT));
         HDSDP_CALL(HFpLinsysSymbolic(HKKT->kktM, HKKT->kktMatBeg, HKKT->kktMatIdx))
     } else {
@@ -107,7 +125,7 @@ exit_cleanup:
 static void HKKTClean( hdsdp_kkt *HKKT ) {
     
     /* Clean up for the next KKT solve */
-    HDSDP_ZERO(HKKT->dualBuffer, double, HKKT->maxConeDim * HKKT->maxConeDim);
+    HDSDP_ZERO(HKKT->invBuffer, double, HKKT->maxConeDim * HKKT->maxConeDim);
     HDSDP_ZERO(HKKT->dASinvVec, double, HKKT->nRow);
     HDSDP_ZERO(HKKT->dASinvCSinvVec, double, HKKT->nRow);
     HDSDP_ZERO(HKKT->dASinvRdSinvVec, double, HKKT->nRow);
@@ -155,8 +173,12 @@ extern hdsdp_retcode HKKTInit( hdsdp_kkt *HKKT, int nRow, int nCones, hdsdp_cone
     HKKT->maxConeDim = maxConeDim;
     
     /* Prepare the buffer to export S^-1 */
-    HDSDP_INIT(HKKT->dualBuffer, double, maxConeDim * maxConeDim);
-    HDSDP_MEMCHECK(HKKT->dualBuffer);
+    HDSDP_INIT(HKKT->invBuffer, double, maxConeDim * maxConeDim);
+    HDSDP_MEMCHECK(HKKT->invBuffer);
+    
+    /* Prepare the buffer to store internal computation results */
+    HDSDP_INIT(HKKT->kktBuffer, double, maxConeDim * maxConeDim);
+    HDSDP_MEMCHECK(HKKT->kktBuffer);
     
     /* Allocate vector space */
     HDSDP_INIT(HKKT->dASinvVec, double, nRow);
@@ -167,6 +189,9 @@ extern hdsdp_retcode HKKTInit( hdsdp_kkt *HKKT, int nRow, int nCones, hdsdp_cone
     
     HDSDP_INIT(HKKT->dASinvRdSinvVec, double, nRow);
     HDSDP_MEMCHECK(HKKT->dASinvRdSinvVec);
+    
+    HDSDP_INIT(HKKT->kktDiag, double *, nRow);
+    HDSDP_MEMCHECK(HKKT->kktDiag);
     
     /* Choose the sparsity pattern of the Schur complement */
     /* Initial test by investigating the separate sparsity patterns */
@@ -218,6 +243,16 @@ exit_cleanup:
     return retcode;
 }
 
+extern void HKKTRegularize( hdsdp_kkt *HKKT, double dKKTReg ) {
+    
+    /* Regularize the diagonal of the Schur complement */
+    for ( int iCol = 0; iCol < HKKT->nRow; ++iCol ) {
+        *HKKT->kktDiag[iCol] += dKKTReg;
+    }
+    
+    return;
+}
+
 extern void HKKTClear( hdsdp_kkt *HKKT ) {
     
     if ( !HKKT ) {
@@ -227,11 +262,14 @@ extern void HKKTClear( hdsdp_kkt *HKKT ) {
     HDSDP_FREE(HKKT->dASinvVec);
     HDSDP_FREE(HKKT->dASinvCSinvVec);
     HDSDP_FREE(HKKT->dASinvRdSinvVec);
-    HDSDP_FREE(HKKT->dualBuffer);
+    HDSDP_FREE(HKKT->invBuffer);
+    HDSDP_FREE(HKKT->kktBuffer);
     
     HDSDP_FREE(HKKT->kktMatBeg);
     HDSDP_FREE(HKKT->kktMatIdx);
     HDSDP_FREE(HKKT->kktMatElem);
+    
+    HDSDP_FREE(HKKT->kktDiag);
     
     HFpLinsysDestroy(&HKKT->kktM);
     HDSDP_ZERO(HKKT, hdsdp_kkt, 1);

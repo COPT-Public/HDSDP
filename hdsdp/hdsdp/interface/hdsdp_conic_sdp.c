@@ -526,6 +526,7 @@ static int sdpDenseConeIChooseKKTStrategy( int *rowRanks, int *rowSparsity, int 
     double bestKKTScore = HDSDP_INFINITY;
     
     double KKTScore1 = HDSDP_INFINITY;
+    (void) KKTScore1;
     double KKTScore2 = 0.0;
     double KKTScore3 = 0.0;
     double KKTScore4 = 0.0;
@@ -646,7 +647,117 @@ exit_cleanup:
     return retcode;
 }
 
-static hdsdp_retcode sdpDenseConeIGetKKTColumnByKKT1( hdsdp_cone_sdp_dense *cone, hdsdp_kkt *kkt, int iKKTCol, int newKKT ) {
+static hdsdp_retcode sdpDenseConeIGetKKTColumnByKKT1( hdsdp_cone_sdp_dense *cone, hdsdp_kkt *kkt, int iKKTCol, int typeKKT ) {
+    
+    hdsdp_retcode retcode = HDSDP_RETCODE_OK;
+    /* Schur strategy M1 is disabled now */
+    assert( 0 );
+    
+exit_cleanup:
+    return retcode;
+}
+
+static hdsdp_retcode sdpDenseConeIGetKKTColumnByKKT2( hdsdp_cone_sdp_dense *cone, hdsdp_kkt *kkt, int iKKTCol, int typeKKT ) {
+    
+    hdsdp_retcode retcode = HDSDP_RETCODE_OK;
+        
+    /* Apply Schur complement strategy M2 to build the Schur by exploiting the low rank structure.
+    Recall that we need to setup a lower-triangular column of the permuted Schur complement matrix
+    and we evaluate
+     
+     M_{i, j} = trace(A_i * S^-1 A_j * S^-1) for all j >= i (in the permuted index)
+     
+     As a bi-product, we simultaneously set up
+     
+     dASinvVec          KKT_TYPE_INFEASIBLE, KKT_TYPE_CORRECTOR
+     dASinvRdSinvVec    KKT_TYPE_INFEASIBLE, KKT_TYPE_CORRECTOR
+     
+     dASinvCSinvVec     KKT_TYPE_HOMOGENEOUS
+     dCSinvRdSinv       KKT_TYPE_HOMOGENEOUS
+     dCSinvCSinv        KKT_TYPE_HOMOGENEOUS
+     dCSinv             KKT_TYPE_HOMOGENEOUS
+     
+     at different stages of the algorithm.
+     
+     To implement M2 strategy, we
+     
+     For each row (i-th)
+        Assert A_i = sign * a * a' is rank-one
+        Setup v = S^-1 a and S^-1 A_i S^-1 = sign * v * v'
+        (Always) Set up ASinvVec[i] = sign * v' * a
+        (Always) Set up dASinvRdSinvVec[i] = sign * ||v||^2 * Rd
+        (Optionally) Set up dASinvCSinvVec[j]
+        For each row (j-th) >= i-ith
+            (Optionally) Set up M_{i, j} = trace(A_j * sign * v * v') = sign * v' * A_j * v
+        End for
+     End for
+     
+     The implementation requires
+     1. a buffer vector v to store the result of solve and we use kkt->kktBuffer
+     2. an auxiliary vector to compute quadratic form and we use kkt->kktBuffer + nCol
+     */
+    
+    /* Assert that we are dealing with rank-one matrices */
+    int iPermKKTCol = cone->sdpConePerm[iKKTCol];
+    sdp_coeff *sdpTargetMatrix = cone->sdpRow[iPermKKTCol];
+    assert( sdpDataMatGetRank(sdpTargetMatrix) == 1 );
+    
+    /* Get buffers and auxiliary information ready */
+    double dSinAVecSign = 0.0;
+    double *dSinvAVecBuffer = kkt->kktBuffer;
+    double *dAuxiQuadFormVec = kkt->kktBuffer + cone->nCol;
+    
+    /* Do we compute the self-dual components */
+    int doHSDComputation = 0;
+    /* Do we do objective computation */
+    int doObjComputation = 0;
+    /* Do we set up the KKT matrix */
+    int doKKTComputation = 0;
+    
+    if ( typeKKT == KKT_TYPE_INFEASIBLE ) {
+        doKKTComputation = 1;
+    }
+    
+    if ( typeKKT == KKT_TYPE_HOMOGENEOUS ) {
+        doKKTComputation = 1;
+        doHSDComputation = 1;
+    }
+    
+    /* Now start setting up the column of the KKT matrix */
+    /* Set up the v vector */
+    sdpDataMatKKT2SolveRankOne(sdpTargetMatrix, cone->dualFactor, kkt->invBuffer,
+                               dSinvAVecBuffer, &dSinAVecSign);
+    
+    /* Set up ASinvVec[i] = sign * v' * a */
+    kkt->dASinvVec[iPermKKTCol] += sdpDataMatKKT2TraceASinv(sdpTargetMatrix, dSinvAVecBuffer);
+    /* Set up dASinvRdSinvVec[i] = sign * ||v||^2 * Rd */
+    if ( cone->dualResidual ) {
+        double dVnorm = nrm2(&cone->nCol, dSinvAVecBuffer, &HIntConstantOne);
+        kkt->dASinvRdSinvVec[iPermKKTCol] += dSinAVecSign * cone->dualResidual * dVnorm * dVnorm;
+    }
+    
+    if ( doHSDComputation ) {
+        /* Set up dASinvCSinvVec[j] */
+        kkt->dASinvCSinvVec[iPermKKTCol] += \
+        dSinAVecSign * sdpDataMatKKT2QuadForm(cone->sdpObj, dSinvAVecBuffer, dAuxiQuadFormVec);
+    }
+    
+    if ( doKKTComputation ) {
+        for ( int iRow = iKKTCol; iRow < kkt->nRow; ++iRow ) {
+            /* Set up the KKT system */
+            int iPermKKTRow = cone->sdpConePerm[iRow];
+            FULL_ENTRY(kkt->kktMatElem, kkt->nRow, iPermKKTRow, iPermKKTCol) += \
+            dSinAVecSign * sdpDataMatKKT2QuadForm(cone->sdpRow[iPermKKTRow], dSinvAVecBuffer, dAuxiQuadFormVec);
+        }
+    }
+    
+    /* TODO: Create separate construction routine for quantities that only depend on C */
+    
+exit_cleanup:
+    return retcode;
+}
+
+static hdsdp_retcode sdpDenseConeIGetKKTColumnByKKT3( hdsdp_cone_sdp_dense *cone, hdsdp_kkt *kkt, int iKKTCol, int typeKKT ) {
     
     hdsdp_retcode retcode = HDSDP_RETCODE_OK;
     
@@ -655,7 +766,7 @@ exit_cleanup:
     return retcode;
 }
 
-static hdsdp_retcode sdpDenseConeIGetKKTColumnByKKT2( hdsdp_cone_sdp_dense *cone, hdsdp_kkt *kkt, int iKKTCol, int newKKT ) {
+static hdsdp_retcode sdpDenseConeIGetKKTColumnByKKT4( hdsdp_cone_sdp_dense *cone, hdsdp_kkt *kkt, int iKKTCol, int typeKKT ) {
     
     hdsdp_retcode retcode = HDSDP_RETCODE_OK;
     
@@ -664,7 +775,7 @@ exit_cleanup:
     return retcode;
 }
 
-static hdsdp_retcode sdpDenseConeIGetKKTColumnByKKT3( hdsdp_cone_sdp_dense *cone, hdsdp_kkt *kkt, int iKKTCol, int newKKT ) {
+static hdsdp_retcode sdpDenseConeIGetKKTColumnByKKT5( hdsdp_cone_sdp_dense *cone, hdsdp_kkt *kkt, int iKKTCol, int typeKKT ) {
     
     hdsdp_retcode retcode = HDSDP_RETCODE_OK;
     
@@ -673,7 +784,7 @@ exit_cleanup:
     return retcode;
 }
 
-static hdsdp_retcode sdpDenseConeIGetKKTColumnByKKT4( hdsdp_cone_sdp_dense *cone, hdsdp_kkt *kkt, int iKKTCol, int newKKT ) {
+static hdsdp_retcode sdpSparseConeIGetKKTColumnByKKT2( hdsdp_cone_sdp_sparse *cone, hdsdp_kkt *kkt, int iKKTCol, int typeKKT ) {
     
     hdsdp_retcode retcode = HDSDP_RETCODE_OK;
     
@@ -682,7 +793,7 @@ exit_cleanup:
     return retcode;
 }
 
-static hdsdp_retcode sdpDenseConeIGetKKTColumnByKKT5( hdsdp_cone_sdp_dense *cone, hdsdp_kkt *kkt, int iKKTCol, int newKKT ) {
+static hdsdp_retcode sdpSparseConeIGetKKTColumnByKKT3( hdsdp_cone_sdp_sparse *cone, hdsdp_kkt *kkt, int iKKTCol, int typeKKT ) {
     
     hdsdp_retcode retcode = HDSDP_RETCODE_OK;
     
@@ -691,25 +802,7 @@ exit_cleanup:
     return retcode;
 }
 
-static hdsdp_retcode sdpSparseConeIGetKKTColumnByKKT2( hdsdp_cone_sdp_sparse *cone, hdsdp_kkt *kkt, int iKKTCol, int newKKT ) {
-    
-    hdsdp_retcode retcode = HDSDP_RETCODE_OK;
-    
-    
-exit_cleanup:
-    return retcode;
-}
-
-static hdsdp_retcode sdpSparseConeIGetKKTColumnByKKT3( hdsdp_cone_sdp_sparse *cone, hdsdp_kkt *kkt, int iKKTCol, int newKKT ) {
-    
-    hdsdp_retcode retcode = HDSDP_RETCODE_OK;
-    
-    
-exit_cleanup:
-    return retcode;
-}
-
-static hdsdp_retcode sdpSparseConeIGetKKTColumnByKKT5( hdsdp_cone_sdp_sparse *cone, hdsdp_kkt *kkt, int iKKTCol, int newKKT ) {
+static hdsdp_retcode sdpSparseConeIGetKKTColumnByKKT5( hdsdp_cone_sdp_sparse *cone, hdsdp_kkt *kkt, int iKKTCol, int typeKKT ) {
     
     hdsdp_retcode retcode = HDSDP_RETCODE_OK;
     
@@ -1076,7 +1169,7 @@ extern int sdpSparseConeGetDim( hdsdp_cone_sdp_sparse *cone ) {
     return cone->nCol;
 }
 
-extern hdsdp_retcode sdpDenseConeGetKKT( hdsdp_cone_sdp_dense *cone, void *kkt, int newKKT ) {
+extern hdsdp_retcode sdpDenseConeGetKKT( hdsdp_cone_sdp_dense *cone, void *kkt, int typeKKT ) {
     /*
      Set up the KKT system for a dense cone.
      Now that the cone is dense, the Schur complement is dense.
@@ -1097,21 +1190,26 @@ extern hdsdp_retcode sdpDenseConeGetKKT( hdsdp_cone_sdp_dense *cone, void *kkt, 
     
     for ( int iKKTCol = 0; iKKTCol < cone->nRow; ++iKKTCol ) {
         
+        if ( sdpDataMatGetType(cone->sdpRow[cone->sdpConePerm[iKKTCol]]) == SDP_COEFF_ZERO ) {
+            /* Continue if the target matrix is zero */
+            continue;
+        }
+        
         switch (cone->KKTStrategies[iKKTCol]) {
             case KKT_M1:
-                HDSDP_CALL(sdpDenseConeIGetKKTColumnByKKT1(cone, Hkkt, iKKTCol, newKKT));
+                HDSDP_CALL(sdpDenseConeIGetKKTColumnByKKT1(cone, Hkkt, iKKTCol, typeKKT));
                 break;
             case KKT_M2:
-                HDSDP_CALL(sdpDenseConeIGetKKTColumnByKKT2(cone, Hkkt, iKKTCol, newKKT));
+                HDSDP_CALL(sdpDenseConeIGetKKTColumnByKKT2(cone, Hkkt, iKKTCol, typeKKT));
                 break;
             case KKT_M3:
-                HDSDP_CALL(sdpDenseConeIGetKKTColumnByKKT3(cone, Hkkt, iKKTCol, newKKT));
+                HDSDP_CALL(sdpDenseConeIGetKKTColumnByKKT3(cone, Hkkt, iKKTCol, typeKKT));
                 break;
             case KKT_M4:
-                HDSDP_CALL(sdpDenseConeIGetKKTColumnByKKT4(cone, Hkkt, iKKTCol, newKKT));
+                HDSDP_CALL(sdpDenseConeIGetKKTColumnByKKT4(cone, Hkkt, iKKTCol, typeKKT));
                 break;
             case KKT_M5:
-                HDSDP_CALL(sdpDenseConeIGetKKTColumnByKKT5(cone, Hkkt, iKKTCol, newKKT));
+                HDSDP_CALL(sdpDenseConeIGetKKTColumnByKKT5(cone, Hkkt, iKKTCol, typeKKT));
                 break;
             default:
                 printf("Invalid KKT strategy. \n");
@@ -1124,7 +1222,7 @@ exit_cleanup:
     return retcode;
 }
 
-extern hdsdp_retcode sdpSparseConeGetKKT( hdsdp_cone_sdp_sparse *cone, void *kkt, int newKKT ) {
+extern hdsdp_retcode sdpSparseConeGetKKT( hdsdp_cone_sdp_sparse *cone, void *kkt, int typeKKT ) {
     
     /* When setting up the KKT system for a sparse cone,
        There is no pre-determined strategy and we choose from M2, M3 and M5 based on the sparsity pattern of the current matrix
@@ -1136,20 +1234,22 @@ extern hdsdp_retcode sdpSparseConeGetKKT( hdsdp_cone_sdp_sparse *cone, void *kkt
     for ( int iKKTNzCol = 0; iKKTNzCol < cone->nRowElem; ++iKKTNzCol ) {
         
         int KKTStrategy = KKT_M1;
+        (void) KKTStrategy;
+        
         sdp_coeff_type dataType = sdpDataMatGetType(cone->sdpRow[iKKTNzCol]);
         
         switch (dataType) {
             case SDP_COEFF_SPARSE:
                 /* Use M5 */
-                HDSDP_CALL(sdpSparseConeIGetKKTColumnByKKT5(cone, Hkkt, iKKTNzCol, newKKT));
+                HDSDP_CALL(sdpSparseConeIGetKKTColumnByKKT5(cone, Hkkt, iKKTNzCol, typeKKT));
             case SDP_COEFF_DENSE:
-                HDSDP_CALL(sdpSparseConeIGetKKTColumnByKKT3(cone, Hkkt, iKKTNzCol, newKKT));
+                HDSDP_CALL(sdpSparseConeIGetKKTColumnByKKT3(cone, Hkkt, iKKTNzCol, typeKKT));
                 break;
             case SDP_COEFF_DSR1:
-                HDSDP_CALL(sdpSparseConeIGetKKTColumnByKKT2(cone, Hkkt, iKKTNzCol, newKKT));
+                HDSDP_CALL(sdpSparseConeIGetKKTColumnByKKT2(cone, Hkkt, iKKTNzCol, typeKKT));
                 break;
             case SDP_COEFF_SPR1:
-                HDSDP_CALL(sdpSparseConeIGetKKTColumnByKKT5(cone, Hkkt, iKKTNzCol, newKKT));
+                HDSDP_CALL(sdpSparseConeIGetKKTColumnByKKT5(cone, Hkkt, iKKTNzCol, typeKKT));
                 break;
             default:
                 assert( 0 );

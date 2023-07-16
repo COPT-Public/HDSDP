@@ -3,8 +3,10 @@
 
 #ifdef HEADERPATH
 #include "interface/hdsdp.h"
+#include "linalg/hdsdp_linsolver.h"
 #else
 #include "hdsdp.h"
+#include "hdsdp_linsolver.h"
 #endif
 
 /* Implementations of the SDP coefficient matrix
@@ -42,7 +44,6 @@ typedef struct {
     double *eigVecs;
     
     hdsdp_retcode (*create) ( void **, int, int, int *, double * );
-    double (*dot)         ( void *, double * );
     void (*scal)          ( void *, double );
     double (*norm)        ( void *, int );
     hdsdp_retcode (*eig)  ( void *, int *, double *, double **, double ** );
@@ -52,6 +53,13 @@ typedef struct {
     void (*add2buffer)    ( void *, double, int *, double *);
     void (*destroy)       ( void ** );
     void (*view)          ( void * );
+    
+    /* Schur complement operations */
+    /* KKT strategy 2 */
+    void   (*kkt2r1solve)   ( void *, hdsdp_linsys *, double *, double *, double * );
+    double (*kkt2quadform)  ( void *, double *, double * );
+    double (*kkt2r1asinv)   ( void *, double * );
+    
     
 } sdp_coeff;
 

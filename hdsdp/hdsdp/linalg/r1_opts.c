@@ -40,6 +40,12 @@ extern void dsr1_dump( int n, double sign, double *factor, double *v ) {
     return;
 }
 
+extern double dsr1_quadform( int n, double sign, double *factor, double *v ) {
+    
+    double quadform = dot(&n, factor, &HIntConstantOne, v, &HIntConstantOne);
+    return sign * quadform * quadform;
+}
+
 extern double spr1_sum_abs( double sign, int nnz, double *factornz ) {
     
     double nrm = 0.0;
@@ -52,7 +58,15 @@ extern double spr1_sum_abs( double sign, int nnz, double *factornz ) {
 
 extern void spr1_dump( int n, double sign, int nnz, int *nzidx, double *factornz ) {
     
-    
-    
     return;
+}
+
+extern double spr1_quadform( int n, double sign, int nnz, int *nzidx, double *factornzs, double *v ) {
+    
+    double quadform = 0.0;
+    for ( int i = 0; i < nnz; ++i ) {
+        quadform += factornzs[i] * v[nzidx[i]];
+    }
+    
+    return sign * quadform * quadform;
 }

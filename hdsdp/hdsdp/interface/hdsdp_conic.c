@@ -224,9 +224,26 @@ extern int HConeGetDim( hdsdp_cone *HCone ) {
     return HCone->coneGetDim(HCone->coneData);
 }
 
-extern hdsdp_retcode HConeBuildSchurComplement( hdsdp_cone *HCone, void *schurMat, int newKKT ) {
+extern hdsdp_retcode HConeBuildSchurComplement( hdsdp_cone *HCone, void *schurMat, int typeKKT ) {
+    /* There are three types of KKT system we set up during the algorithm iterations,
+       which we respectively denote by
+     
+     1. KKT_TYPE_INFEASIBLE
+     KKT system in the infeasible-start self-dual model.
+     Objective C relevant terms are not set up.
+     
+     2. KKT_TYPE_INFEAS_CORRECTOR
+     KKT system in the infeasible start corrector
+     The Schur complement matrix M is not set up and only dASinvRdSinvVec, dASinv are setup
+     to generate corrector step
+     
+     3. KKT_TYPE_HOMOGENEOUS
+     KKT system in the homogeneous self-dual model
+     All the information involing Rd, A, and C will be set up
+     (Most time-consuming and will only be invoked when the problem is considered dual infeasible)
+     */
     
-    return HCone->coneBuildSchur(HCone->coneData, schurMat, newKKT);
+    return HCone->coneBuildSchur(HCone->coneData, schurMat, typeKKT);
 }
 
 /* Barrier, projection and recovery */

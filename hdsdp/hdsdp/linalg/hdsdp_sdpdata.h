@@ -19,7 +19,6 @@ extern "C" {
 extern hdsdp_retcode sdpDataMatCreate( sdp_coeff **psdpCoeff );
 extern hdsdp_retcode sdpDataMatSetData( sdp_coeff *sdpCoeff, int nSDPCol, int dataMatNnz, int *dataMatIdx, double *dataMatElem );
 extern int sdpDataMatGetRank( sdp_coeff *sdpCoeff );
-extern double sdpDataMatDot( sdp_coeff *sdpCoeff, double *dFullMatrix );
 extern void sdpDataMatScal( sdp_coeff *sdpCoeff, double scal );
 
 #define ABS_NORM (1)
@@ -34,6 +33,12 @@ extern sdp_coeff_type sdpDataMatGetType( sdp_coeff *sdpCoeff );
 extern void sdpDataMatClear( sdp_coeff *sdpCoeff );
 extern void sdpDataMatDestroy( sdp_coeff **psdpCoeff );
 extern void sdpDataMatView( sdp_coeff *sdpCoeff );
+
+/* KKT operations */
+extern void sdpDataMatKKT2SolveRankOne( sdp_coeff *sdpCoeff, hdsdp_linsys *dualFactor,
+                                        double *dInvMatrix, double *dInvFactor, double *sign );
+extern double sdpDataMatKKT2QuadForm( sdp_coeff *sdpCoeff, double *dQuadVector, double *dAuxiVec );
+extern double sdpDataMatKKT2TraceASinv( sdp_coeff *sdpCoeff, double *dSinvAVec );
 
 #ifdef __cplusplus
 }

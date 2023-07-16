@@ -260,3 +260,19 @@ extern void tsp_dump( int n, int nnz, int *Ai, int *Aj, double *Ax, double *v ) 
     
     return;
 }
+
+extern double tsp_quadform( int n, int nnz, int *Ai, int *Aj, double *Ax, double *v ) {
+    
+    double quadform = 0.0, tmp = 0.0;
+    
+    for ( int k = 0; k < nnz; ++k ) {
+        tmp = Ax[k] * v[Ai[k]] * v[Aj[k]];
+        if ( Ai[k] == Aj[k] ) {
+            quadform += 0.5 * tmp;
+        } else {
+            quadform += tmp;
+        }
+    }
+    
+    return quadform;
+}
