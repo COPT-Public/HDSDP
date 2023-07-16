@@ -590,6 +590,8 @@ static hdsdp_retcode conjGradLinSolverCreate( void **pchol, int nCol ) {
     cg->params.relTol = 1e-06;
     cg->params.maxIter = HDSDP_MAX(50, nCol / 20);
     cg->params.nRestartFreq = 20;
+    
+    *pchol = cg;
         
 exit_cleanup:
     return retcode;

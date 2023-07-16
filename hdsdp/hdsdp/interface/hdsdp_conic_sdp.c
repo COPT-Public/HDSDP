@@ -646,7 +646,7 @@ exit_cleanup:
     return retcode;
 }
 
-static hdsdp_retcode sdpDenseConeIGetKKTColumnByKKT1( hdsdp_cone_sdp_dense *cone, hdsdp_kkt *kkt, int iKKTCol ) {
+static hdsdp_retcode sdpDenseConeIGetKKTColumnByKKT1( hdsdp_cone_sdp_dense *cone, hdsdp_kkt *kkt, int iKKTCol, int newKKT ) {
     
     hdsdp_retcode retcode = HDSDP_RETCODE_OK;
     
@@ -655,7 +655,7 @@ exit_cleanup:
     return retcode;
 }
 
-static hdsdp_retcode sdpDenseConeIGetKKTColumnByKKT2( hdsdp_cone_sdp_dense *cone, hdsdp_kkt *kkt, int iKKTCol ) {
+static hdsdp_retcode sdpDenseConeIGetKKTColumnByKKT2( hdsdp_cone_sdp_dense *cone, hdsdp_kkt *kkt, int iKKTCol, int newKKT ) {
     
     hdsdp_retcode retcode = HDSDP_RETCODE_OK;
     
@@ -664,7 +664,7 @@ exit_cleanup:
     return retcode;
 }
 
-static hdsdp_retcode sdpDenseConeIGetKKTColumnByKKT3( hdsdp_cone_sdp_dense *cone, hdsdp_kkt *kkt, int iKKTCol ) {
+static hdsdp_retcode sdpDenseConeIGetKKTColumnByKKT3( hdsdp_cone_sdp_dense *cone, hdsdp_kkt *kkt, int iKKTCol, int newKKT ) {
     
     hdsdp_retcode retcode = HDSDP_RETCODE_OK;
     
@@ -673,7 +673,7 @@ exit_cleanup:
     return retcode;
 }
 
-static hdsdp_retcode sdpDenseConeIGetKKTColumnByKKT4( hdsdp_cone_sdp_dense *cone, hdsdp_kkt *kkt, int iKKTCol ) {
+static hdsdp_retcode sdpDenseConeIGetKKTColumnByKKT4( hdsdp_cone_sdp_dense *cone, hdsdp_kkt *kkt, int iKKTCol, int newKKT ) {
     
     hdsdp_retcode retcode = HDSDP_RETCODE_OK;
     
@@ -682,7 +682,7 @@ exit_cleanup:
     return retcode;
 }
 
-static hdsdp_retcode sdpDenseConeIGetKKTColumnByKKT5( hdsdp_cone_sdp_dense *cone, hdsdp_kkt *kkt, int iKKTCol ) {
+static hdsdp_retcode sdpDenseConeIGetKKTColumnByKKT5( hdsdp_cone_sdp_dense *cone, hdsdp_kkt *kkt, int iKKTCol, int newKKT ) {
     
     hdsdp_retcode retcode = HDSDP_RETCODE_OK;
     
@@ -691,61 +691,27 @@ exit_cleanup:
     return retcode;
 }
 
-static hdsdp_retcode sdpDenseConeIGetKKT( hdsdp_cone_sdp_dense *cone, hdsdp_kkt *kkt ) {
-    /*
-     Set up the KKT system for a dense cone.
-     Now that the cone is dense, the Schur complement is dense.
-     
-     We employ five (acturally four) pre-defined KKT strategies to set up rows (columns) of the KKT system
-     
-     with M_{i, j} = Tr(A_i, S^-1 A_j S^-1)
-     
-     and we simultaneously set up the RHS and LHS of the KKT system
-     
-     [ mu * A S^-1 A            -b - mu * A S^-1 C S^-1          ] [ dy ] = [ b * tau - mu * A S^-1 + mu * A S^-1 Rd S^-1              ]
-     [ b - mu * A S^-1 C S^-1   mu * C S^-1 C S^-1 + mu * tau^-2 ] [dtau] = [ -b' * y + mu * tau^-1 + mu * C S^-1 - mu * C S^-1 Rd S^-1]
-     
-     */
+static hdsdp_retcode sdpSparseConeIGetKKTColumnByKKT2( hdsdp_cone_sdp_sparse *cone, hdsdp_kkt *kkt, int iKKTCol, int newKKT ) {
     
     hdsdp_retcode retcode = HDSDP_RETCODE_OK;
     
-    for ( int iKKTCol = 0; iKKTCol < cone->nRow; ++iKKTCol ) {
-        
-        switch (cone->KKTStrategies[iKKTCol]) {
-            case KKT_M1:
-                HDSDP_CALL(sdpDenseConeIGetKKTColumnByKKT1(cone, kkt, iKKTCol));
-                break;
-            case KKT_M2:
-                HDSDP_CALL(sdpDenseConeIGetKKTColumnByKKT2(cone, kkt, iKKTCol));
-                break;
-            case KKT_M3:
-                HDSDP_CALL(sdpDenseConeIGetKKTColumnByKKT3(cone, kkt, iKKTCol));
-                break;
-            case KKT_M4:
-                HDSDP_CALL(sdpDenseConeIGetKKTColumnByKKT4(cone, kkt, iKKTCol));
-                break;
-            case KKT_M5:
-                HDSDP_CALL(sdpDenseConeIGetKKTColumnByKKT5(cone, kkt, iKKTCol));
-                break;
-            default:
-                printf("Invalid KKT strategy. \n");
-                retcode = HDSDP_RETCODE_FAILED;
-                break;
-        }
-    }
     
 exit_cleanup:
     return retcode;
 }
 
-static hdsdp_retcode sdpSparseConeIGetKKT( hdsdp_cone_sdp_sparse *cone, hdsdp_kkt *kkt ) {
-    
-    /* When setting up the KKT system for a sparse cone,
-       There is no pre-determined strategy and we choose from M2, M3 and M5 based on the sparsity pattern of the current matrix
-     */
+static hdsdp_retcode sdpSparseConeIGetKKTColumnByKKT3( hdsdp_cone_sdp_sparse *cone, hdsdp_kkt *kkt, int iKKTCol, int newKKT ) {
     
     hdsdp_retcode retcode = HDSDP_RETCODE_OK;
     
+    
+exit_cleanup:
+    return retcode;
+}
+
+static hdsdp_retcode sdpSparseConeIGetKKTColumnByKKT5( hdsdp_cone_sdp_sparse *cone, hdsdp_kkt *kkt, int iKKTCol, int newKKT ) {
+    
+    hdsdp_retcode retcode = HDSDP_RETCODE_OK;
     
     
 exit_cleanup:
@@ -802,9 +768,6 @@ extern hdsdp_retcode sdpDenseConeProcDataImpl( hdsdp_cone_sdp_dense *cone, int n
     HDSDP_INIT(cone->sdpRow, sdp_coeff *, nRow);
     HDSDP_MEMCHECK(cone->sdpRow);
     
-    HDSDP_INIT(cone->sdpConePerm, int, nRow);
-    HDSDP_MEMCHECK(cone->sdpConePerm);
-    
     HDSDP_ZERO(cone->sdpConeStats, int, 5);
     
     /* Primal objective */
@@ -838,8 +801,8 @@ extern hdsdp_retcode sdpDenseConeProcDataImpl( hdsdp_cone_sdp_dense *cone, int n
     HDSDP_MEMCHECK(cone->dVecBuffer);
     
     /* Allocate the KKT permutation and strategies */
-    HDSDP_INIT(cone->sdpConePerm, int, cone->nCol);
-    HDSDP_INIT(cone->KKTStrategies, int, cone->nCol);
+    HDSDP_INIT(cone->sdpConePerm, int, cone->nRow);
+    HDSDP_INIT(cone->KKTStrategies, int, cone->nRow);
     
     cone->coneKKTNnz = cone->nRow;
     cone->coneKKTNnz = cone->coneKKTNnz * cone->coneKKTNnz;
@@ -1113,6 +1076,91 @@ extern int sdpSparseConeGetDim( hdsdp_cone_sdp_sparse *cone ) {
     return cone->nCol;
 }
 
+extern hdsdp_retcode sdpDenseConeGetKKT( hdsdp_cone_sdp_dense *cone, void *kkt, int newKKT ) {
+    /*
+     Set up the KKT system for a dense cone.
+     Now that the cone is dense, the Schur complement is dense.
+     
+     We employ five (acturally four) pre-defined KKT strategies to set up rows (columns) of the KKT system
+     
+     with M_{i, j} = Tr(A_i, S^-1 A_j S^-1)
+     
+     and we simultaneously set up the RHS and LHS of the KKT system
+     
+     [ mu * A S^-1 A            -b - mu * A S^-1 C S^-1          ] [ dy ] = [ b * tau - mu * A S^-1 + mu * A S^-1 Rd S^-1              ]
+     [ b - mu * A S^-1 C S^-1   mu * C S^-1 C S^-1 + mu * tau^-2 ] [dtau] = [ -b' * y + mu * tau^-1 + mu * C S^-1 - mu * C S^-1 Rd S^-1]
+     
+     */
+    
+    hdsdp_retcode retcode = HDSDP_RETCODE_OK;
+    hdsdp_kkt *Hkkt = (hdsdp_kkt *) kkt;
+    
+    for ( int iKKTCol = 0; iKKTCol < cone->nRow; ++iKKTCol ) {
+        
+        switch (cone->KKTStrategies[iKKTCol]) {
+            case KKT_M1:
+                HDSDP_CALL(sdpDenseConeIGetKKTColumnByKKT1(cone, Hkkt, iKKTCol, newKKT));
+                break;
+            case KKT_M2:
+                HDSDP_CALL(sdpDenseConeIGetKKTColumnByKKT2(cone, Hkkt, iKKTCol, newKKT));
+                break;
+            case KKT_M3:
+                HDSDP_CALL(sdpDenseConeIGetKKTColumnByKKT3(cone, Hkkt, iKKTCol, newKKT));
+                break;
+            case KKT_M4:
+                HDSDP_CALL(sdpDenseConeIGetKKTColumnByKKT4(cone, Hkkt, iKKTCol, newKKT));
+                break;
+            case KKT_M5:
+                HDSDP_CALL(sdpDenseConeIGetKKTColumnByKKT5(cone, Hkkt, iKKTCol, newKKT));
+                break;
+            default:
+                printf("Invalid KKT strategy. \n");
+                retcode = HDSDP_RETCODE_FAILED;
+                break;
+        }
+    }
+    
+exit_cleanup:
+    return retcode;
+}
+
+extern hdsdp_retcode sdpSparseConeGetKKT( hdsdp_cone_sdp_sparse *cone, void *kkt, int newKKT ) {
+    
+    /* When setting up the KKT system for a sparse cone,
+       There is no pre-determined strategy and we choose from M2, M3 and M5 based on the sparsity pattern of the current matrix
+     */
+    
+    hdsdp_retcode retcode = HDSDP_RETCODE_OK;
+    hdsdp_kkt *Hkkt = (hdsdp_kkt *) kkt;
+    
+    for ( int iKKTNzCol = 0; iKKTNzCol < cone->nRowElem; ++iKKTNzCol ) {
+        
+        int KKTStrategy = KKT_M1;
+        sdp_coeff_type dataType = sdpDataMatGetType(cone->sdpRow[iKKTNzCol]);
+        
+        switch (dataType) {
+            case SDP_COEFF_SPARSE:
+                /* Use M5 */
+                HDSDP_CALL(sdpSparseConeIGetKKTColumnByKKT5(cone, Hkkt, iKKTNzCol, newKKT));
+            case SDP_COEFF_DENSE:
+                HDSDP_CALL(sdpSparseConeIGetKKTColumnByKKT3(cone, Hkkt, iKKTNzCol, newKKT));
+                break;
+            case SDP_COEFF_DSR1:
+                HDSDP_CALL(sdpSparseConeIGetKKTColumnByKKT2(cone, Hkkt, iKKTNzCol, newKKT));
+                break;
+            case SDP_COEFF_SPR1:
+                HDSDP_CALL(sdpSparseConeIGetKKTColumnByKKT5(cone, Hkkt, iKKTNzCol, newKKT));
+                break;
+            default:
+                assert( 0 );
+                break;
+        }
+    }
+    
+exit_cleanup:
+    return retcode;
+}
+
 extern int64_t sdpDenseConeGetSymNnzImpl( hdsdp_cone_sdp_dense *cone ) {
     
     return cone->coneKKTNnz;
@@ -1122,7 +1170,6 @@ extern int64_t sdpSparseConeGetSymNnzImpl( hdsdp_cone_sdp_sparse *cone ) {
     
     return cone->coneKKTNnz;
 }
-
 
 extern void sdpDenseConeAddSymNnzImpl( hdsdp_cone_sdp_dense *cone, int iCol, int *schurMatCol ) {
     
@@ -1201,12 +1248,12 @@ extern void sdpDenseConeGetSymMapping( hdsdp_cone_sdp_dense *cone, int iCol, int
 extern void sdpSparseConeGetSymMapping( hdsdp_cone_sdp_sparse *cone, int iCol, int *schurMatCol ) {
     
     /* Now we extract the sparsity pattern */
-    int kktShift = ((2 * cone->nRowElem - cone->iKKTCounted) * (cone->iKKTCounted + 1)) / 2;
+    int kktShift = ((2 * cone->nRowElem - cone->iKKTCounted + 1) * cone->iKKTCounted) / 2;
     int *kktStart = cone->kktMapping + kktShift;
     
     if ( cone->rowIdx[cone->iKKTCounted] == iCol ) {
         for ( int iElem = cone->iKKTCounted; iElem < cone->nRowElem; ++iElem ) {
-            kktStart[iElem] = schurMatCol[cone->rowIdx[iElem]];
+            kktStart[iElem - cone->iKKTCounted] = schurMatCol[cone->rowIdx[iElem]];
         }
         cone->iKKTCounted += 1;
     }
@@ -1278,7 +1325,6 @@ extern void sdpDenseConeClearImpl( hdsdp_cone_sdp_dense *cone ) {
         return;
     }
     
-    HDSDP_FREE(cone->sdpConePerm);
     sdpDataMatDestroy(&cone->sdpObj);
     
     for ( int iRow = 0; iRow < cone->nRow; ++iRow ) {

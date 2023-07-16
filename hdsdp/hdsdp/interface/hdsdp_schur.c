@@ -36,7 +36,7 @@ static hdsdp_retcode HKKTAllocSparseKKT( hdsdp_kkt *HKKT ) {
     
     int nAllocatedNnz = HKKT->nRow * 3;
     int iNz = 0;
-    int nDenseKKTNnz = 0.3 * HKKT->nRow * HKKT->nRow;
+    int64_t nDenseKKTNnz = HDSDP_SPARSE_SCHUR_THRESHOLD * HKKT->nRow * HKKT->nRow;
     
     int *colBuffer = NULL;
     
@@ -89,6 +89,7 @@ static hdsdp_retcode HKKTAllocSparseKKT( hdsdp_kkt *HKKT ) {
     
     if ( HKKT->isKKTSparse ) {
         /* The Schur complement is sparse. And we use sparse direct solver */
+        HDSDP_REALLOC(HKKT->kktMatIdx, int, iNz);
         HDSDP_INIT(HKKT->kktMatElem, double, iNz);
         HDSDP_CALL(HFpLinsysCreate(&HKKT->kktM, HKKT->nRow, HDSDP_LINSYS_SPARSE_DIRECT));
         HDSDP_CALL(HFpLinsysSymbolic(HKKT->kktM, HKKT->kktMatBeg, HKKT->kktMatIdx))
@@ -171,11 +172,13 @@ extern hdsdp_retcode HKKTInit( hdsdp_kkt *HKKT, int nRow, int nCones, hdsdp_cone
     /* Initial test by investigating the separate sparsity patterns */
     int64_t coneNnzs = 0;
     int64_t maxConicNnzs = 0;
-    int64_t nDenseKKTNnz = 0.3 * nRow * nRow;
+    int64_t nDenseKKTNnz = HDSDP_SPARSE_SCHUR_THRESHOLD * nRow * nRow;
     
     HKKT->isKKTSparse = 1;
     
-    for ( int iCone = 0; iCone < nRow; ++iCone ) {
+    printf("Starting KKT analysis.\n");
+    
+    for ( int iCone = 0; iCone < nCones; ++iCone ) {
         coneNnzs = HConeGetSymNnz(cones[iCone]);
         maxConicNnzs = HDSDP_MAX(coneNnzs, maxConicNnzs);
         if ( maxConicNnzs >= nDenseKKTNnz ) {
@@ -184,12 +187,17 @@ extern hdsdp_retcode HKKTInit( hdsdp_kkt *HKKT, int nRow, int nCones, hdsdp_cone
         }
     }
     
+    double TKKTAnalysis = HUtilGetTimeStamp();
+    
     if ( !HKKT->isKKTSparse ) {
         /* Use dense Schur complement */
         HDSDP_CALL(HKKTIAllocDenseKKT(HKKT));
+        printf("KKT analysis done in %3.1f s. Using dense Schur complement.\n", HUtilGetTimeStamp() - TKKTAnalysis);
     } else {
         /* Try using sparse Schur complement */
         HDSDP_CALL(HKKTAllocSparseKKT(HKKT));
+        printf("KKT analysis done in %3.1f s. Using sparse Schur complement (%d nnzs).\n",
+               HUtilGetTimeStamp() - TKKTAnalysis, HKKT->kktMatBeg[HKKT->nRow]);
     }
     
 exit_cleanup:
@@ -199,6 +207,8 @@ exit_cleanup:
 extern hdsdp_retcode HKKTBuildUp( hdsdp_kkt *HKKT, int newM ) {
     
     hdsdp_retcode retcode = HDSDP_RETCODE_OK;
+    
+    HKKTClean(HKKT);
     
     for ( int iCone = 0; iCone < HKKT->nCones; ++iCone ) {
         HDSDP_CALL(HConeBuildSchurComplement(HKKT->cones[iCone], HKKT, newM));
@@ -224,6 +234,7 @@ extern void HKKTClear( hdsdp_kkt *HKKT ) {
     HDSDP_FREE(HKKT->kktMatElem);
     
     HFpLinsysDestroy(&HKKT->kktM);
+    HDSDP_ZERO(HKKT, hdsdp_kkt, 1);
  
     return;
 }
