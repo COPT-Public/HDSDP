@@ -686,8 +686,8 @@ static hdsdp_retcode sdpDenseConeIGetKKTColumnByKKT2( hdsdp_cone_sdp_dense *cone
         Setup v = S^-1 a and S^-1 A_i S^-1 = sign * v * v'
         (Always) Set up ASinvVec[i] = sign * v' * a
         (Always) Set up dASinvRdSinvVec[i] = sign * ||v||^2 * Rd
-        (Optionally) Set up dASinvCSinvVec[j]
-        For each row (j-th) >= i-ith
+        (Optionally) Set up dASinvCSinvVec[i]
+        For each row (j-th) >= i-th
             (Optionally) Set up M_{i, j} = trace(A_j * sign * v * v') = sign * v' * A_j * v
         End for
      End for
@@ -707,10 +707,13 @@ static hdsdp_retcode sdpDenseConeIGetKKTColumnByKKT2( hdsdp_cone_sdp_dense *cone
     double *dSinvAVecBuffer = kkt->kktBuffer;
     double *dAuxiQuadFormVec = kkt->kktBuffer + cone->nCol;
     
+    if ( typeKKT == KKT_TYPE_CORRECTOR ) {
+        /* TODO: Special treatment for corrector step */
+        return retcode;
+    }
+    
     /* Do we compute the self-dual components */
     int doHSDComputation = 0;
-    /* Do we do objective computation */
-    int doObjComputation = 0;
     /* Do we set up the KKT matrix */
     int doKKTComputation = 0;
     
@@ -761,6 +764,79 @@ static hdsdp_retcode sdpDenseConeIGetKKTColumnByKKT3( hdsdp_cone_sdp_dense *cone
     
     hdsdp_retcode retcode = HDSDP_RETCODE_OK;
     
+    /* Apply Schur complement strategy M3 to build the Schur by exploiting the coefficient sparsity.
+        
+     To implement M3 strategy, we
+     
+     For each row (i-th)
+        Set up B = S^-1 A_i S^-1 explicitly
+        (Always) Set up ASinvVec[i] when forming B
+        (Always) Set up dASinvRdSinvVec[i] = trace(B) * Rd
+        (Optionally) Set up dASinvCSinvVec[i] = trace(B * C)
+        For each row (j-th) >= i-th
+            (Optionally) Set up M_{i, j} = trace(A_j * B)
+        End for
+     End for
+     
+     The implementation requires
+     1. a full buffer matrix B to store the dense intermediate result S^-1 A_i S^-1
+     2. a full buffer matrix SinvA to store the dense intermediate result S^-1 A_i
+     */
+    
+    int iPermKKTCol = cone->sdpConePerm[iKKTCol];
+    sdp_coeff *sdpTargetMatrix = cone->sdpRow[iPermKKTCol];
+    
+    /* Get buffers and auxiliary information ready */
+    double *dSinvASinvBuffer = kkt->kktBuffer;
+    double *dAuxiMat = kkt->kktBuffer2;
+    
+    if ( typeKKT == KKT_TYPE_CORRECTOR ) {
+        /* TODO: Special treatment for corrector step */
+        return retcode;
+    }
+    
+    /* Do we compute the self-dual components */
+    int doHSDComputation = 0;
+    /* Do we set up the KKT matrix */
+    int doKKTComputation = 0;
+    
+    if ( typeKKT == KKT_TYPE_INFEASIBLE ) {
+        doKKTComputation = 1;
+    }
+    
+    if ( typeKKT == KKT_TYPE_HOMOGENEOUS ) {
+        doKKTComputation = 1;
+        doHSDComputation = 1;
+    }
+    
+    /* Now start setting up the column of the KKT matrix */
+    /* Compute the buffer and simultaneously compute trace(A * S^-1) */
+    kkt->dASinvVec[iPermKKTCol] += \
+    sdpDataMatKKT3ComputeSinvASinv(sdpTargetMatrix, cone->dualFactor,
+                                   kkt->invBuffer, dAuxiMat, dSinvASinvBuffer);
+    
+    /* Compute dASinvRdSinvVec by the diagonal of B */
+    if ( cone->dualResidual ) {
+        double dTraceBuffer = 0.0;
+        for ( int iCol = 0; iCol < cone->nCol; ++iCol ) {
+            dTraceBuffer += dSinvASinvBuffer[iCol + iCol * cone->nCol];
+        }
+        kkt->dASinvRdSinvVec[iPermKKTCol] += dTraceBuffer * cone->dualResidual;
+    }
+    
+    if ( doHSDComputation ) {
+        /* Set up dASinvCSinvVec[j] */
+        kkt->dASinvCSinvVec[iPermKKTCol] += \
+        sdpDataMatKKT3TraceABuffer(cone->sdpObj, dSinvASinvBuffer, dAuxiMat);
+    }
+    
+    if ( doKKTComputation ) {
+        for ( int iRow = iKKTCol; iRow < kkt->nRow; ++iRow ) {
+            int iPermKKTRow = cone->sdpConePerm[iRow];
+            FULL_ENTRY(kkt->kktMatElem, kkt->nRow, iPermKKTRow, iPermKKTCol) += \
+            sdpDataMatKKT3TraceABuffer(cone->sdpRow[iPermKKTRow], dSinvASinvBuffer, dAuxiMat);
+        }
+    }
     
 exit_cleanup:
     return retcode;
@@ -769,6 +845,26 @@ exit_cleanup:
 static hdsdp_retcode sdpDenseConeIGetKKTColumnByKKT4( hdsdp_cone_sdp_dense *cone, hdsdp_kkt *kkt, int iKKTCol, int typeKKT ) {
     
     hdsdp_retcode retcode = HDSDP_RETCODE_OK;
+    /* Apply Schur complement strategy M4 to build the Schur by exploiting sparsity.
+     
+     To implement M4 strategy, we
+     
+     For each row (i-th)
+        Set up B = A_i * S^-1 explicitly
+        (Always) Set up dASinvVec[i] = trace(B)
+        (Always) Setup dASinvCSinvVec[i] = Rd * trace(S^-1 * B)
+        (Optionally) Set up dASinvCSinvVec[i] = trace(C * S^-1 * B)
+        For each row (j-th) >= i-th
+            (Optionally) Set up M_{i, j} = trace(A_j * S^-1 * B)
+        End for
+     End for
+     
+     The implementation requires
+     1. a full buffer matrix B to store the dense intermediate result A_i * S^-1
+     2. a buffer vector to help intermediate computation
+     */
+    
+    
     
     
 exit_cleanup:

@@ -8,7 +8,6 @@
 
 #include <math.h>
 
-
 /* Blas functions */
 extern double dnrm2( int *n, double *x, int *incx );
 extern void daxpy( int *n, double *a, double *x, int *incx, double *y, int *incy );

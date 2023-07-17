@@ -40,6 +40,10 @@ extern void sdpDataMatKKT2SolveRankOne( sdp_coeff *sdpCoeff, hdsdp_linsys *dualF
 extern double sdpDataMatKKT2QuadForm( sdp_coeff *sdpCoeff, double *dQuadVector, double *dAuxiVec );
 extern double sdpDataMatKKT2TraceASinv( sdp_coeff *sdpCoeff, double *dSinvAVec );
 
+extern double sdpDataMatKKT3ComputeSinvASinv( sdp_coeff *sdpCoeff, hdsdp_linsys *dualFactor, double *dInvMatrix,
+                                             double *dAuxiMat, double *dSinvASinvBuffer );
+extern double sdpDataMatKKT3TraceABuffer( sdp_coeff *sdpCoeff, double *B, double *aux );
+
 #ifdef __cplusplus
 }
 #endif

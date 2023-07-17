@@ -43,6 +43,7 @@ typedef struct {
     /* Buffer for the largest-size dual matrix */
     double *invBuffer;
     double *kktBuffer;
+    double *kktBuffer2;
     
     /* KKT data */
     int *kktMatBeg;

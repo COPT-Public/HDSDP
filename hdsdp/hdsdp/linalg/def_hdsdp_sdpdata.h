@@ -60,6 +60,13 @@ typedef struct {
     double (*kkt2quadform)  ( void *, double *, double * );
     double (*kkt2r1asinv)   ( void *, double * );
     
+    /* KKT strategy 3 */
+    double (*kkt3sinvAsinv) ( void *, hdsdp_linsys *, double *, double *, double * );
+    double (*kkt3AdotB)     ( void *, double *, double * );
+    
+    /* KKT strategy 4 */
+    double (*kkt4Asinv)     ( void *, hdsdp_linsys *, double *, double *, double * );
+    double (*kkt4AdotsinvB) ( void *, double *, double *, double * );
     
 } sdp_coeff;
 

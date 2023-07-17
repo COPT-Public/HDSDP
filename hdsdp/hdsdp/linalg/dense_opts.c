@@ -30,6 +30,18 @@ extern void dspmv( const char *uplo, const int *n, const double *alpha,
                    const double *ap, const double *x, const int *incx,
                    const double *beta, double *y, const int *incy );
 
+extern void dsymm( const char *side, const char *uplo, const int *m,
+                   const int *n, const double *alpha, const double *a,
+                   const int *lda, const double *b, const int *ldb,
+                   const double *beta, double *c, const int *ldc );
+
+void dsyr( const char *uplo, const int *n, const double *alpha,
+           const double *x, const int *incx, double *a, const int *lda );
+
+extern void dger( const int *m, const int *n, const double *alpha,
+                  const double *x, const int *incx, const double *y,
+                  const int *incy, double *a, const int *lda );
+
 /* Full dense operations */
 extern void fds_symv( int n, double alpha, double *A, double *x, double beta, double *y ) {
     
@@ -65,6 +77,22 @@ extern void fds_gemv( int m, int n, double *M, double *v, double *y ) {
     
     dgemv(&HCharConstantNoTrans, &m, &n, &HDblConstantOne, M, &m,
           v, &HIntConstantOne, &HDblConstantZero, y, &HIntConstantOne);
+    
+    return;
+}
+
+extern void fds_symm( char side, char uplo, int m, int n, double alpha, double *a, int lda,
+                      double *b, int ldb, double beta, double *c, int ldc ) {
+    
+    dsymm(&side, &uplo, &m, &n, &alpha, a, &lda, b, &ldb, &beta, c, &ldc);
+    
+    return;
+}
+
+extern void fds_ger( int m, int n, double alpha, double *x, int incx,
+                    double *y, int incy, double *a, int lda) {
+    
+    dger(&m, &n, &alpha, x, &incx, y, &incy, a, &lda);
     
     return;
 }
@@ -204,4 +232,19 @@ extern double pds_quadform( int n, double *A, double *v, double *aux ) {
           &HIntConstantOne, &HDblConstantZero, aux, &HIntConstantOne);
     
     return dot(&n, aux, &HIntConstantOne, v, &HIntConstantOne);
+}
+
+extern void pds_spmv( char uplo, int n, double alpha, double *ap, double *x, int incx,
+                      double beta, double *y, int incy ) {
+    
+    dspmv(&uplo, &n, &alpha, ap, x, &incx, &beta, y, &incy);
+    
+    return;
+}
+
+extern void pds_syr( char uplo, int n, double alpha, double *x, int incx, double *a, int lda ) {
+    
+    dsyr(&uplo, &n, &alpha, x, &incx, a, &lda);
+    
+    return;
 }

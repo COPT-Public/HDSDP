@@ -5,6 +5,8 @@
 #define NOTRANS ('N')
 #define UPLOLOW ('L')
 #define UPLOUP ('U')
+#define SIDELEFT ('L')
+#define SIDERIGHT ('R')
 
 /* Constants to be used when calling BLAS. Should never be modified */
 static char HCharConstantTrans = TRANS;

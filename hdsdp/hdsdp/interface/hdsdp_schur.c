@@ -122,20 +122,28 @@ exit_cleanup:
     return retcode;
 }
 
-static void HKKTClean( hdsdp_kkt *HKKT ) {
+static void HKKTClean( hdsdp_kkt *HKKT, int typeKKT ) {
     
     /* Clean up for the next KKT solve */
     HDSDP_ZERO(HKKT->invBuffer, double, HKKT->maxConeDim * HKKT->maxConeDim);
     HDSDP_ZERO(HKKT->dASinvVec, double, HKKT->nRow);
-    HDSDP_ZERO(HKKT->dASinvCSinvVec, double, HKKT->nRow);
     HDSDP_ZERO(HKKT->dASinvRdSinvVec, double, HKKT->nRow);
     
-    if ( HKKT->isKKTSparse ) {
-        HDSDP_ZERO(HKKT->kktMatElem, double, HKKT->kktMatBeg[HKKT->nRow]);
-    } else {
-        HDSDP_ZERO(HKKT->kktMatElem, double, HKKT->nRow * HKKT->nRow);
+    if ( typeKKT == KKT_TYPE_HOMOGENEOUS ) {
+        HDSDP_ZERO(HKKT->dASinvCSinvVec, double, HKKT->nRow);
+        HKKT->dCSinv = 0.0;
+        HKKT->dCSinvCSinv = 0.0;
+        HKKT->dCSinvRdSinv = 0.0;
     }
     
+    if ( typeKKT == KKT_TYPE_INFEASIBLE || typeKKT == KKT_TYPE_HOMOGENEOUS ) {
+        if ( HKKT->isKKTSparse ) {
+            HDSDP_ZERO(HKKT->kktMatElem, double, HKKT->kktMatBeg[HKKT->nRow]);
+        } else {
+            HDSDP_ZERO(HKKT->kktMatElem, double, HKKT->nRow * HKKT->nRow);
+        }
+    }
+
     return;
 }
 
@@ -179,6 +187,8 @@ extern hdsdp_retcode HKKTInit( hdsdp_kkt *HKKT, int nRow, int nCones, hdsdp_cone
     /* Prepare the buffer to store internal computation results */
     HDSDP_INIT(HKKT->kktBuffer, double, maxConeDim * maxConeDim);
     HDSDP_MEMCHECK(HKKT->kktBuffer);
+    HDSDP_INIT(HKKT->kktBuffer2, double, maxConeDim * maxConeDim);
+    HDSDP_MEMCHECK(HKKT->kktBuffer2);
     
     /* Allocate vector space */
     HDSDP_INIT(HKKT->dASinvVec, double, nRow);
@@ -229,14 +239,14 @@ exit_cleanup:
     return retcode;
 }
 
-extern hdsdp_retcode HKKTBuildUp( hdsdp_kkt *HKKT, int newM ) {
+extern hdsdp_retcode HKKTBuildUp( hdsdp_kkt *HKKT, int typeKKT ) {
     
     hdsdp_retcode retcode = HDSDP_RETCODE_OK;
     
-    HKKTClean(HKKT);
+    HKKTClean(HKKT, typeKKT);
     
     for ( int iCone = 0; iCone < HKKT->nCones; ++iCone ) {
-        HDSDP_CALL(HConeBuildSchurComplement(HKKT->cones[iCone], HKKT, newM));
+        HDSDP_CALL(HConeBuildSchurComplement(HKKT->cones[iCone], HKKT, typeKKT));
     }
     
 exit_cleanup:
@@ -264,6 +274,7 @@ extern void HKKTClear( hdsdp_kkt *HKKT ) {
     HDSDP_FREE(HKKT->dASinvRdSinvVec);
     HDSDP_FREE(HKKT->invBuffer);
     HDSDP_FREE(HKKT->kktBuffer);
+    HDSDP_FREE(HKKT->kktBuffer2);
     
     HDSDP_FREE(HKKT->kktMatBeg);
     HDSDP_FREE(HKKT->kktMatIdx);
