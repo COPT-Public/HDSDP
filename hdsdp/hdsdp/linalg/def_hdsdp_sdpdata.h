@@ -32,7 +32,7 @@ typedef enum {
     
 } sdp_coeff_type;
 
-typedef struct {
+struct sdp_coeff_s {
     
     int        nSDPCol;
     
@@ -65,10 +65,15 @@ typedef struct {
     double (*kkt3AdotB)     ( void *, double *, double * );
     
     /* KKT strategy 4 */
-    double (*kkt4Asinv)     ( void *, hdsdp_linsys *, double *, double *, double * );
-    double (*kkt4AdotsinvB) ( void *, double *, double *, double * );
+    double (*kkt4Asinv)     ( void *, hdsdp_linsys *, double *, double *, double, double * );
+    double (*kkt4AdotsinvB) ( void *, hdsdp_linsys *, double *, double *, double * );
     
-} sdp_coeff;
+    /* KKT strategy 5 */
+    double (*kkt5AsinvBsinv) ( void *, struct sdp_coeff_s *, double *, double * );
+    double (*kkt5SinvAdotSinv)  ( void *, hdsdp_linsys *, double *, double * );
+};
+
+typedef struct sdp_coeff_s sdp_coeff;
 
 typedef struct {
     

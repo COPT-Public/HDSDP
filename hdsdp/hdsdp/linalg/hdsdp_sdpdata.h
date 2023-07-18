@@ -42,7 +42,15 @@ extern double sdpDataMatKKT2TraceASinv( sdp_coeff *sdpCoeff, double *dSinvAVec )
 
 extern double sdpDataMatKKT3ComputeSinvASinv( sdp_coeff *sdpCoeff, hdsdp_linsys *dualFactor, double *dInvMatrix,
                                              double *dAuxiMat, double *dSinvASinvBuffer );
-extern double sdpDataMatKKT3TraceABuffer( sdp_coeff *sdpCoeff, double *B, double *aux );
+extern double sdpDataMatKKT3TraceABuffer( sdp_coeff *sdpCoeff, double *dSinvASinvBuffer, double *dAuxiMat );
+
+extern double sdpDataMatKKT4ComputeASinv( sdp_coeff *sdpCoeff, hdsdp_linsys *dualFactor, double *dInvMatrix,
+                                          double *dAuxiMat, double dResidual, double *dASinvBuffer );
+extern double sdpDataMatKKT4TraceASinvBuffer( sdp_coeff *sdpCoeff, hdsdp_linsys *dualFactor, double *dInvMatrix,
+                                             double *dASinvBuffer, double *dAuxiMat );
+
+extern double sdpDataMatKKT5TraceASinvBSinv( sdp_coeff *sdpCoeff, sdp_coeff *sdpCoeff2, double *Sinv, double *dAuxiMat );
+extern double sdpDataMatKKT5SinvADotSinv( sdp_coeff *sdpCoeff, hdsdp_linsys *dualFactor, double *dInvMatrix, double *dAuxiMat);
 
 #ifdef __cplusplus
 }
