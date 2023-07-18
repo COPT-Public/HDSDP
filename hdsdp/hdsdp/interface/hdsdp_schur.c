@@ -125,7 +125,6 @@ exit_cleanup:
 static void HKKTClean( hdsdp_kkt *HKKT, int typeKKT ) {
     
     /* Clean up for the next KKT solve */
-    HDSDP_ZERO(HKKT->invBuffer, double, HKKT->maxConeDim * HKKT->maxConeDim);
     HDSDP_ZERO(HKKT->dASinvVec, double, HKKT->nRow);
     HDSDP_ZERO(HKKT->dASinvRdSinvVec, double, HKKT->nRow);
     

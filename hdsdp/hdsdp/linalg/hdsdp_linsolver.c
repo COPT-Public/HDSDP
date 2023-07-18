@@ -323,7 +323,7 @@ static void pardisoLinSolverInvert( void *chol, double *dFullMatrix, double *dAu
     double *pElem = dAuxiMatrix;
     for ( int iRow = 0; iRow < pds->nCol; ++iRow ) {
         *pElem = 1.0;
-        pElem += iRow + pds->nCol;
+        pElem += pds->nCol + 1;
     }
     
     pardisoLinSolverSolveN(chol, pds->nCol, dAuxiMatrix, dFullMatrix);

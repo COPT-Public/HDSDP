@@ -914,7 +914,7 @@ static void dataMatDenseKKT2SolveRankOneImpl( void *A, hdsdp_linsys *S, double *
     return;
 }
 
-static void dataMatRankOneSparseKKT2SolveRankOneImpl( void *A, hdsdp_linsys *S, double *Sinv, double *sign, double *v ) {
+static void dataMatRankOneSparseKKT2SolveRankOneImpl( void *A, hdsdp_linsys *S, double *Sinv, double *v, double *sign ) {
     /* Implement v = S^-1 a.
        In HDSDP we have both the factorization of S and S^-1 in explicit form
        
@@ -2184,12 +2184,14 @@ extern hdsdp_retcode sdpDataMatBuildUpEigs( sdp_coeff *sdpCoeff, double *dAuxFul
         
         HDSDP_INIT(spr1->spR1MatIdx, int, nRankOneNz);
         HDSDP_INIT(spr1->spR1MatElem, double, nRankOneNz);
+        HDSDP_INIT(spr1->spR1MatFactor, double, sdpCoeff->nSDPCol);
         
         int iNz = 0;
         for ( int iRow = 0; iRow < sdpCoeff->nSDPCol; ++iRow ) {
             if ( fabs(sdpCoeff->eigVecs[iRow] ) > 1e-10 ) {
                 spr1->spR1MatIdx[iNz] = iRow;
                 spr1->spR1MatElem[iNz] = sdpCoeff->eigVecs[iRow];
+                spr1->spR1MatFactor[iRow] = sdpCoeff->eigVecs[iRow];
                 iNz += 1;
             }
         }

@@ -73,7 +73,7 @@ int test_file_io( char *fname ) {
             rowDual[i] = i + 1;
         }
         
-        HConeSetStart(SDPCone, -1e+06);
+        HConeSetStart(SDPCone, -1e+03);
         HConeUpdate(SDPCone, 1.5, rowDual);
 //        HConeView(SDPCone);
         
@@ -87,7 +87,7 @@ int test_file_io( char *fname ) {
     /* KKT setup */
     HDSDP_CALL(HKKTCreate(&kkt));
     HDSDP_CALL(HKKTInit(kkt, nConstrs, nBlks, SDPCones));
-    HDSDP_CALL(HKKTBuildUp(kkt, 1));
+    HDSDP_CALL(HKKTBuildUp(kkt, KKT_TYPE_HOMOGENEOUS));
     
 exit_cleanup:
     

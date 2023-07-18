@@ -1,9 +1,10 @@
 clear;
 
 printconestat = 1;
-printdualslack = 1;
+printdualslack = 0;
+setupkkt = 1;
 
-[At, b, c, K] = readsdpa(fullfile('/Users/gaowenzhi/Desktop/gwz/benchmark/sdplib', 'qap10.dat-s'));
+[At, b, c, K] = readsdpa(fullfile('/Users/gaowenzhi/Desktop/gwz/benchmark/sdplib', 'mcp100.dat-s'));
 
 try
     [nsqr, ~] = size(At);
@@ -73,6 +74,14 @@ for q = 1:s
         B = eye(n) * Rd - hdsdp_aty(Amat(:, q), y) + Cmat{q} * 1.5;
         spB = sparse(B);
         fprintf("logdet: %20.10e \n", hdsdp_logdet(spB));
+    end % End if
+    
+    if setupkkt
+        Rd = 1000.0;
+        y = 1:m;
+        B = eye(n) * Rd - hdsdp_aty(Amat(:, q), y) + Cmat{q} * 1.5;
+        [M, asinv, asinvrdsinv, asinvcsinv, csinv, csinvrdcsinv] =...
+        hdsdp_kktbuild(Amat, Cmat{1}, B, Rd);
     end % End if
     
 end % End for
