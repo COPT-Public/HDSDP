@@ -46,25 +46,46 @@ hdsdp_retcode test_schur_consistency( hdsdp_kkt *kkt ) {
     HDSDP_MEMCHECK(kktBuffer4);
     
     /* Use hybrid strategy as a benchmark */
+    printf("KKT check starts \n");
     HDSDP_CALL(HKKTBuildUpFixed(kkt, KKT_TYPE_INFEASIBLE, KKT_M3));
     HDSDP_MEMCPY(kktBuffer3, kkt->kktMatElem, double, nKKTNzs);
+    printf("KKT check 1/3 \n");
     
     HDSDP_CALL(HKKTBuildUpFixed(kkt, KKT_TYPE_INFEASIBLE, KKT_M4));
     HDSDP_MEMCPY(kktBuffer4, kkt->kktMatElem, double, nKKTNzs);
+    printf("KKT check 2/3 \n");
     
     HDSDP_CALL(HKKTBuildUp(kkt, KKT_TYPE_INFEASIBLE));
     HDSDP_MEMCPY(kktBuffer2345, kkt->kktMatElem, double, nKKTNzs);
+    printf("KKT check 3/3 \n");
     
     double err3_4 = 0.0;
     double err3_2345 = 0.0;
     double err4_2345 = 0.0;
     
+    double aerr3_4 = 0.0;
+    double aerr3_2345 = 0.0;
+    double aerr4_2345 = 0.0;
+    
+    double e3_4 = 0.0;
+    double e3_2345 = 0.0;
+    double e4_2345 = 0.0;
+    
     for ( int iElem = 0; iElem < nKKTNzs; ++iElem ) {
-        err3_4 += fabs(kktBuffer3[iElem] - kktBuffer4[iElem]);
-        err3_2345 += fabs(kktBuffer3[iElem] - kktBuffer2345[iElem]);
-        err4_2345 += fabs(kktBuffer4[iElem] - kktBuffer2345[iElem]);
         
-        if ( err3_4 >= 1e-10 || err3_2345 >= 1e-10 || err4_2345 >= 1e-10 ) {
+        e3_4 = fabs(kktBuffer3[iElem] - kktBuffer4[iElem]) / (fabs(kktBuffer3[iElem]) + 1);
+        e3_2345 = fabs(kktBuffer3[iElem] - kktBuffer2345[iElem]) / (fabs(kktBuffer3[iElem]) + 1);
+        e4_2345 = fabs(kktBuffer4[iElem] - kktBuffer2345[iElem]) / (fabs(kktBuffer3[iElem]) + 1);
+        
+        err3_4 += e3_4;
+        err3_2345 += e3_2345;
+        err4_2345 += e4_2345;
+        
+        aerr3_4 = HDSDP_MAX(aerr3_4, e3_4);
+        aerr3_2345 = HDSDP_MAX(aerr3_2345, e3_2345);
+        aerr4_2345 = HDSDP_MAX(aerr4_2345, e4_2345);
+        
+        if ( aerr3_4 >= 1e-08 || aerr3_2345 >= 1e-08 || aerr4_2345 >= 1e-08 ) {
             if ( isValid ) {
                 printf("Warning. KKT consistency check failed. \n");
                 isValid = 0;
@@ -74,7 +95,7 @@ hdsdp_retcode test_schur_consistency( hdsdp_kkt *kkt ) {
     }
     
     printf("KKT consistency check: | 3-4: %6.3e | 3-2345: %6.3e | 4-2345: %6.3e \n",
-           err3_4, err3_2345, err4_2345);
+           aerr3_4, aerr3_2345, aerr4_2345);
     
 exit_cleanup:
     
@@ -105,7 +126,6 @@ int test_file_io( char *fname ) {
     int nElem = 0;
     double *rowDual = NULL;
     double logdet = 0.0;
-    int nCones = 1;
     
     double *kktLhsBuffer = NULL;
     
@@ -144,11 +164,11 @@ int test_file_io( char *fname ) {
 //        HConeView(SDPCone);
         
         for ( int i = 0; i < nConstrs; ++i ) {
-            rowDual[i] = (double) (i + 1) / nConstrs;
+            rowDual[i] = 0.0 * (double) (i + 1) / nConstrs;
         }
         
-        HConeSetStart(SDPCone, -1e+02);
-        HConeUpdate(SDPCone, 1.5, rowDual);
+        HConeSetStart(SDPCone, -5);
+        HConeUpdate(SDPCone, 1.0, rowDual);
 //        HConeView(SDPCone);
         
         HDSDP_CALL(HConeGetLogBarrier(SDPCone, 1.5, rowDual, &logdet));

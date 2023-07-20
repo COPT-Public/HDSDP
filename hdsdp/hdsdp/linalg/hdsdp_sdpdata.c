@@ -1258,7 +1258,7 @@ static double dataMatRankOneSparseDotDenseKKT3Impl( void *A, double *B, double *
                     FULL_ENTRY(B, spr1->nSDPCol, iCol, iCol);
         for ( iRowElem = iColElem + 1; iRowElem < spr1->nSpR1FactorElem; ++iRowElem ) {
             dAdotB += spr1->spR1MatElem[iRowElem] * spr1->spR1MatElem[iColElem] * \
-            FULL_ENTRY(B, spr1->nSDPCol, iRowElem, iCol);
+            FULL_ENTRY(B, spr1->nSDPCol, spr1->spR1MatIdx[iRowElem], iCol);
         }
     }
     
