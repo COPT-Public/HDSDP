@@ -274,5 +274,5 @@ extern double tsp_quadform( int n, int nnz, int *Ai, int *Aj, double *Ax, double
         }
     }
     
-    return quadform;
+    return 2.0 * quadform;
 }

@@ -80,7 +80,7 @@ for q = 1:s
         Rd = 1000.0;
         y = 1:m;
         B = eye(n) * Rd - hdsdp_aty(Amat(:, q), y) + Cmat{q} * 1.5;
-        [M, asinv, asinvrdsinv, asinvcsinv, csinv, csinvrdcsinv] =...
+        [M, asinv, asinvrdsinv, asinvcsinv, csinv, csinvcsinv, csinvrdcsinv] =...
         hdsdp_kktbuild(Amat, Cmat{1}, B, Rd);
     end % End if
     

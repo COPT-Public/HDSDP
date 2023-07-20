@@ -728,8 +728,8 @@ static hdsdp_retcode sdpDenseConeIGetKKTColumnByKKT2( hdsdp_cone_sdp_dense *cone
     
     if ( doHSDComputation ) {
         /* Set up dASinvCSinvVec[i] */
-        kkt->dASinvCSinvVec[iPermKKTCol] += \
-        dSinAVecSign * sdpDataMatKKT2QuadForm(cone->sdpObj, dSinvAVecBuffer, dAuxiQuadFormVec);
+        double dASinvCSinvVal = dSinAVecSign * sdpDataMatKKT2QuadForm(cone->sdpObj, dSinvAVecBuffer, dAuxiQuadFormVec);
+        kkt->dASinvCSinvVec[iPermKKTCol] += dASinvCSinvVal;
     }
     
     for ( int iRow = iKKTCol; iRow < kkt->nRow; ++iRow ) {
@@ -913,18 +913,19 @@ static hdsdp_retcode sdpDenseConeIGetKKTColumnByKKT5( hdsdp_cone_sdp_dense *cone
     }
     
     /* Reuse KKT3 routine */
-    kkt->dASinvVec[iPermKKTCol] += \
-    sdpDataMatKKT3TraceABuffer(sdpTargetMatrix, kkt->invBuffer, dAuxiMat);
+    double dASinvVal = sdpDataMatKKT3TraceABuffer(sdpTargetMatrix, kkt->invBuffer, dAuxiMat);
+    kkt->dASinvVec[iPermKKTCol] += dASinvVal;
     
     if ( cone->dualResidual ) {
-        kkt->dASinvRdSinvVec[iPermKKTCol] += \
+        double dASinvRdSinvVal = \
         sdpDataMatKKT5SinvADotSinv(sdpTargetMatrix, cone->dualFactor, kkt->invBuffer, dAuxiMat) * cone->dualResidual;
+        kkt->dASinvRdSinvVec[iPermKKTCol] += dASinvRdSinvVal;
     }
     
     if ( doHSDComputation ) {
         /* Set up dASinvCSinvVec[i] */
-        kkt->dASinvCSinvVec[iPermKKTCol] += \
-        sdpDataMatKKT5TraceASinvBSinv(sdpTargetMatrix, cone->sdpObj, kkt->invBuffer, dAuxiMat);
+        double dASinvCSinvVal = sdpDataMatKKT5TraceASinvBSinv(sdpTargetMatrix, cone->sdpObj, kkt->invBuffer, dAuxiMat);;
+        kkt->dASinvCSinvVec[iPermKKTCol] += dASinvCSinvVal;
     }
     
     for ( int iRow = iKKTCol; iRow < kkt->nRow; ++iRow ) {
@@ -1589,7 +1590,7 @@ extern hdsdp_retcode sdpDenseConeGetKKT( hdsdp_cone_sdp_dense *cone, void *kkt, 
     }
     
     if ( typeKKT == KKT_TYPE_HOMOGENEOUS ) {
-        HDSDP_CALL(sdpDenseConeIGetHSDComponents(cone, kkt));
+        HDSDP_CALL(sdpDenseConeIGetHSDComponents(cone, Hkkt));
     }
     
 exit_cleanup:
@@ -1964,4 +1965,3 @@ extern void sdpSparseConeViewImpl( hdsdp_cone_sdp_sparse *cone ) {
     
     return;
 }
-
