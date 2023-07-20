@@ -588,6 +588,7 @@ static hdsdp_retcode conjGradLinSolverCreate( void **pchol, int nCol ) {
     /* Set parameters */
     cg->params.absTol = 1e-06;
     cg->params.relTol = 1e-06;
+    cg->params.useJacobi = 1;
     cg->params.maxIter = HDSDP_MAX(50, nCol / 20);
     cg->params.nRestartFreq = 20;
     
@@ -750,6 +751,7 @@ static hdsdp_retcode conjGradSolve( iterative_linsys *cg, double *rhsVec, double
     rhsNorm = nrm2(&cg->nCol, rhsVec, &incx);
     
     double cgTol = HDSDP_MIN(cg->params.absTol, rhsNorm * cg->params.relTol);
+    cgTol = HDSDP_MAX(cgTol, 0.1 * cg->params.absTol);
     
     /* Initial value is already a qualified solution */
     if ( resiNorm < cgTol ) {
@@ -764,7 +766,7 @@ static hdsdp_retcode conjGradSolve( iterative_linsys *cg, double *rhsVec, double
     /* Initial iteration preparation */
     conjGradApplyPreconditioner(cg, iterDirection);
     HDSDP_MEMCPY(preInvResi, iterDirection, double, cg->nCol);
-    fds_symv(cg->nCol, 1.0, cg->fullMatElem, iterVec, 0.0, MTimesDirection);
+    fds_symv(cg->nCol, 1.0, cg->fullMatElem, iterDirection, 0.0, MTimesDirection);
     
     for ( iter = 0; iter < nCGMaxIter; ++iter ) {
         
@@ -786,6 +788,7 @@ static hdsdp_retcode conjGradSolve( iterative_linsys *cg, double *rhsVec, double
             fds_symv(cg->nCol, 1.0, cg->fullMatElem, iterDirection, 0.0, MTimesDirection);
             HDSDP_MEMCPY(preInvResi, iterResi, double, cg->nCol);
             conjGradApplyPreconditioner(cg, preInvResi);
+            continue;
         }
         
         HDSDP_MEMCPY(iterResiNew, iterResi, double, cg->nCol);
@@ -807,18 +810,25 @@ static hdsdp_retcode conjGradSolve( iterative_linsys *cg, double *rhsVec, double
         }
         
 #ifdef HDSDP_CONJGRAD_DEBUG
-        printf("Conjugate iteration %d. Resi: %10.3e", iter, resiNorm);
+        printf("Conjugate iteration %d. Resi: %10.3e \n", iter, resiNorm);
 #endif
         
         if ( resiNorm < cgTol ) {
             cg->solStatus = ITERATIVE_STATUS_OK;
-            retcode = HDSDP_RETCODE_FAILED;
-            goto exit_cleanup;
+            break;
         }
     }
     
     if ( iter >= nCGMaxIter ) {
         cg->solStatus = ITERATIVE_STATUS_MAXITER;
+        if ( cg->useJacobi ) {
+            cg->useJacobi = 0;
+            cg->params.useJacobi = 0;
+            HDSDP_CALL(conjGradSolve(cg, rhsVec, solVec));
+        } else {
+            cg->solStatus = ITERATIVE_STATUS_FAILED;
+            retcode = HDSDP_RETCODE_FAILED;
+        }
     }
     
     HDSDP_MEMCPY(solVec, iterVec, double, cg->nCol);

@@ -252,6 +252,71 @@ exit_cleanup:
     return retcode;
 }
 
+extern hdsdp_retcode HKKTBuildUpFixed( hdsdp_kkt *HKKT, int typeKKT, int kktStrategy ) {
+    
+    hdsdp_retcode retcode = HDSDP_RETCODE_OK;
+    
+    HKKTClean(HKKT, typeKKT);
+    
+    for ( int iCone = 0; iCone < HKKT->nCones; ++iCone ) {
+        HDSDP_CALL(HConeBuildSchurComplementFixed(HKKT->cones[iCone], HKKT, typeKKT, kktStrategy));
+    }
+    
+exit_cleanup:
+    return retcode;
+}
+
+extern void HKKTExport( hdsdp_kkt *HKKT, double *dKKTASinvVec, double *dKKTASinvRdSinvVec, double *dKKTASinvCSinvVec,
+                       double *dCSinvCSinv, double *dCSinv, double *dCSinvRdCSinv ) {
+    
+    /* Export the vectors and information from KKT solver */
+    if ( dKKTASinvVec ) {
+        HDSDP_MEMCPY(dKKTASinvVec, HKKT->dASinvVec, double, HKKT->nRow);
+    }
+    
+    if ( dKKTASinvRdSinvVec ) {
+        HDSDP_MEMCPY(dKKTASinvRdSinvVec, HKKT->dASinvRdSinvVec, double, HKKT->nRow);
+    }
+    
+    if ( dKKTASinvCSinvVec ) {
+        HDSDP_MEMCPY(dKKTASinvCSinvVec, HKKT->dASinvCSinvVec, double, HKKT->nRow);
+    }
+    
+    if ( dCSinvCSinv ) {
+        *dCSinvCSinv = HKKT->dCSinvCSinv;
+    }
+    
+    if ( dCSinv ) {
+        *dCSinv = HKKT->dCSinv;
+    }
+    
+    if ( dCSinvRdCSinv ) {
+        *dCSinvRdCSinv = HKKT->dCSinvRdSinv;
+    }
+
+    return;
+}
+
+extern hdsdp_retcode HKKTFactorize( hdsdp_kkt *HKKT ) {
+    
+    hdsdp_retcode retcode = HDSDP_RETCODE_OK;
+    
+    HDSDP_CALL(HFpLinsysNumeric(HKKT->kktM, HKKT->kktMatBeg, HKKT->kktMatIdx, HKKT->kktMatElem));
+    
+exit_cleanup:
+    return retcode;
+}
+
+extern hdsdp_retcode HKKTSolve( hdsdp_kkt *HKKT, double *dRhsVec, double *dLhsVec ) {
+    
+    /* Apply KKT solver */
+    hdsdp_retcode retcode = HDSDP_RETCODE_OK;
+    HDSDP_CALL(HFpLinsysSolve(HKKT->kktM, 1, dRhsVec, dLhsVec));
+    
+exit_cleanup:
+    return retcode;
+}
+
 extern void HKKTRegularize( hdsdp_kkt *HKKT, double dKKTReg ) {
     
     /* Regularize the diagonal of the Schur complement */

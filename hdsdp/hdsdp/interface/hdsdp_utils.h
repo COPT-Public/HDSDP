@@ -46,6 +46,17 @@
 #define PACK_ENTRY(A, n, i, j) (A[(int)((2 * (n) - (j) - 1) * (j) / 2) + (i)])
 #define FULL_ENTRY(A, n, i, j) (A[(j) * (n) + (i)])
 
+#define HDSDP_PROFILER(func, ntest)                 \
+double HLocalTProfiler = HUtilGetTimeStamp();       \
+for ( int iTest = 0; iTest < (ntest); ++iTest ) {   \
+    (func);                                         \
+    printf("Run %d. Elapsed time: %f\n",              \
+    iTest + 1, HUtilGetTimeStamp() - HLocalTProfiler);  \
+}                                                   \
+printf("Profiling Line %d of %s by %d runs. "       \
+"Average running time: %fs\n", __LINE__, __FILE__,  \
+(ntest), (HUtilGetTimeStamp() - HLocalTProfiler) / ntest);
+
 #ifdef __cplusplus
 extern "C" {
 #endif

@@ -76,6 +76,7 @@ typedef struct {
     void    (*coneAddSymNz)    ( void *, int, int * );
     void    (*coneGetKKTMap)   ( void *, int, int * );
     hdsdp_retcode (*coneBuildSchur)  ( void *, void *, int );
+    hdsdp_retcode (*coneBuildSchurFixed) ( void *, void *, int, int );
     
     /* Barrier, projection and recovery */
     hdsdp_retcode (*coneGetBarrier)  ( void *, double, double *, double * );

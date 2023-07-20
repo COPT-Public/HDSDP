@@ -33,6 +33,7 @@ extern void HConeAddSymNz( hdsdp_cone *HCone, int iCol, int *schurMatCol );
 extern void HConeGetSymMapping( hdsdp_cone *HCone, int iCol, int *schurMatCol );
 extern int HConeGetDim( hdsdp_cone *HCone );
 extern hdsdp_retcode HConeBuildSchurComplement( hdsdp_cone *HCone, void *schurMat, int typeKKT );
+extern hdsdp_retcode HConeBuildSchurComplementFixed( hdsdp_cone *HCone, void *schurMat, int typeKKT, int kktStrategy );
 extern hdsdp_retcode HConeGetLogBarrier( hdsdp_cone *HCone, double barHsdTau, double *rowDual, double *logdet );
 extern int HConePFeasSolFound( hdsdp_cone *HCone, double barHsdTauStep, double *rowDualStep );
 extern void HConePVarRecover( hdsdp_cone *HCone, double *pVarArr );

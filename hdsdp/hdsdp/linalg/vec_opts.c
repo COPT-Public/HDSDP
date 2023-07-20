@@ -47,8 +47,11 @@ extern void axpy( int *n, double *a, double *x, int *incx, double *y, int *incy 
 
 extern void axpby( int *n, double *a, double *x, int *incx, double *b, double *y, int *incy ) {
     
+    double aval = *a;
+    double bval = *b;
+    
     for ( int i = 0; i < *n; ++i ) {
-        y[i] = (*a) * x[i] + (*b) * y[i];
+        y[i] = aval * x[i] + bval * y[i];
     }
     
     return;

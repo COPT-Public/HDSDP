@@ -915,7 +915,7 @@ static void dataMatDenseKKT2SolveRankOneImpl( void *A, hdsdp_linsys *S, double *
     return;
 }
 
-static void dataMatRankOneSparseKKT2SolveRankOneImpl( void *A, hdsdp_linsys *S, double *Sinv, double *v, double *sign ) {
+static void dataMatRankOneSparseKKT2SolveRankOneImpl( void *A, hdsdp_linsys *S, double *Sinv, double *sign, double *v ) {
     /* Implement v = S^-1 a.
        In HDSDP we have both the factorization of S and S^-1 in explicit form
        
@@ -1609,9 +1609,9 @@ static double dataMatRankOneDenseKKT4ADotSinvBImpl( void *A, hdsdp_linsys *S, do
  
    However, we ASSERT that dense matrices will NEVER invoke this method. Thus we only need to implement three operations
  
-                 Sparse  RankOneSparse
-   Sparse           *          *
-   RankOneSparse    -          *
+                 Sparse  RankOneSparse  Dense  RankOneDense
+   Sparse           *          *          *        *
+   RankOneSparse    -          *          *        *
    
    The pair-wise operations will be invoked by a switch statement
 */
@@ -1710,7 +1710,9 @@ static double KKT5Pair_Sparse_RankOneSparse( sdp_coeff_sparse *A, sdp_coeff_spr1
 }
 
 static double KKT5Pair_RankOneSparse_RankOneSparse( sdp_coeff_spr1 *A, sdp_coeff_spr1 *B, double *Sinv, double *aux ) {
-    /* Implement trace(A * S^-1 * B * S^-1 ) for sparse rank one A and sparse rank one B */
+    /* Implement trace(A * S^-1 * B * S^-1 ) for sparse rank one A and sparse rank one B
+       Recall that A * S^-1 * B * S^-1 = a' * S * b
+     */
     
     double dTraceSinvASinvB = 0.0;
     int iARowElem = 0;
@@ -1721,7 +1723,7 @@ static double KKT5Pair_RankOneSparse_RankOneSparse( sdp_coeff_spr1 *A, sdp_coeff
             dTraceSinvASinvB += \
             A->spR1MatElem[iARowElem] * \
             B->spR1MatElem[iBRowElem] * \
-            FULL_ENTRY(Sinv, A->nSDPCol, A->spR1MatIdx[iARowElem], A->spR1MatIdx[iBRowElem]);
+            FULL_ENTRY(Sinv, A->nSDPCol, A->spR1MatIdx[iARowElem], B->spR1MatIdx[iBRowElem]);
         }
     }
     
@@ -2285,7 +2287,7 @@ extern inline void sdpDataMatView( sdp_coeff *sdpCoeff ) {
 /* Data-dependent KKT operations */
 extern void sdpDataMatKKT2SolveRankOne( sdp_coeff *sdpCoeff, hdsdp_linsys *dualFactor, double *dInvMatrix, double *dInvFactor, double *sign ) {
     
-    sdpCoeff->kkt2r1solve(sdpCoeff->dataMat, dualFactor, dInvMatrix, dInvFactor, sign);
+    sdpCoeff->kkt2r1solve(sdpCoeff->dataMat, dualFactor, dInvMatrix, sign, dInvFactor);
     return;
 }
 

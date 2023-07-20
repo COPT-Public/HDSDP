@@ -89,6 +89,7 @@ extern hdsdp_retcode HConeSetData( hdsdp_cone *HCone, user_data *usrData ) {
             HCone->coneGetObjNorm = sdpDenseConeGetObjNorm;
             HCone->coneGetDim = sdpDenseConeGetDim;
             HCone->coneBuildSchur = sdpDenseConeGetKKT;
+            HCone->coneBuildSchurFixed = sdpDenseConeGetKKTByFixedStrategy;
             HCone->coneGetBarrier = sdpDenseConeGetBarrier;
             HCone->conePFeasCheck = NULL;
             HCone->conePRecover = NULL;
@@ -109,6 +110,7 @@ extern hdsdp_retcode HConeSetData( hdsdp_cone *HCone, user_data *usrData ) {
             HCone->coneGetKKTMap = sdpSparseConeGetSymMapping;
             HCone->coneGetObjNorm = sdpSparseConeGetObjNorm;
             HCone->coneBuildSchur = sdpSparseConeGetKKT;
+            HCone->coneBuildSchurFixed = sdpSparseConeGetKKTByFixedStrategy;
             HCone->coneGetBarrier = sdpSparseConeGetBarrier;
             HCone->conePFeasCheck = NULL;
             HCone->conePRecover = NULL;
@@ -244,6 +246,11 @@ extern hdsdp_retcode HConeBuildSchurComplement( hdsdp_cone *HCone, void *schurMa
      */
     
     return HCone->coneBuildSchur(HCone->coneData, schurMat, typeKKT);
+}
+
+extern hdsdp_retcode HConeBuildSchurComplementFixed( hdsdp_cone *HCone, void *schurMat, int typeKKT, int kktStrategy ) {
+    
+    return HCone->coneBuildSchurFixed(HCone->coneData, schurMat, typeKKT, kktStrategy);
 }
 
 /* Barrier, projection and recovery */

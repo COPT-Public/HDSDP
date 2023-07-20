@@ -1597,10 +1597,60 @@ exit_cleanup:
     return retcode;
 }
 
+extern hdsdp_retcode sdpDenseConeGetKKTByFixedStrategy( hdsdp_cone_sdp_dense *cone, void *kkt, int typeKKT, int kktStrategy ) {
+    /* Set up the Schur complement with a fixed strategy */
+    hdsdp_retcode retcode = HDSDP_RETCODE_OK;
+    hdsdp_kkt *Hkkt = (hdsdp_kkt *) kkt;
+    
+    /* Prepare inverse */
+    HFpLinsysInvert(cone->dualFactor, Hkkt->invBuffer, Hkkt->kktBuffer);
+    
+    if ( typeKKT == KKT_TYPE_CORRECTOR ) {
+        HDSDP_CALL(sdpDenseConeIGetKKTCorrectorComponents(cone, kkt));
+        goto exit_cleanup;
+    }
+    
+    for ( int iKKTCol = 0; iKKTCol < cone->nRow; ++iKKTCol ) {
+        
+        if ( sdpDataMatGetType(cone->sdpRow[cone->sdpConePerm[iKKTCol]]) == SDP_COEFF_ZERO ) {
+            continue;
+        }
+        
+        switch (kktStrategy) {
+            case KKT_M1:
+                HDSDP_CALL(sdpDenseConeIGetKKTColumnByKKT1(cone, Hkkt, iKKTCol, typeKKT));
+                break;
+            case KKT_M2:
+                HDSDP_CALL(sdpDenseConeIGetKKTColumnByKKT2(cone, Hkkt, iKKTCol, typeKKT));
+                break;
+            case KKT_M3:
+                HDSDP_CALL(sdpDenseConeIGetKKTColumnByKKT3(cone, Hkkt, iKKTCol, typeKKT));
+                break;
+            case KKT_M4:
+                HDSDP_CALL(sdpDenseConeIGetKKTColumnByKKT4(cone, Hkkt, iKKTCol, typeKKT));
+                break;
+            case KKT_M5:
+                HDSDP_CALL(sdpDenseConeIGetKKTColumnByKKT5(cone, Hkkt, iKKTCol, typeKKT));
+                break;
+            default:
+                printf("Invalid KKT strategy. \n");
+                retcode = HDSDP_RETCODE_FAILED;
+                break;
+        }
+    }
+    
+    if ( typeKKT == KKT_TYPE_HOMOGENEOUS ) {
+        HDSDP_CALL(sdpDenseConeIGetHSDComponents(cone, Hkkt));
+    }
+    
+exit_cleanup:
+    return retcode;
+}
+
 extern hdsdp_retcode sdpSparseConeGetKKT( hdsdp_cone_sdp_sparse *cone, void *kkt, int typeKKT ) {
     
     /* When setting up the KKT system for a sparse cone,
-       There is no pre-determined strategy and we choose from M2, M3 and M5 based on the sparsity pattern of the current matrix
+     There is no pre-determined strategy and we choose from M2, M3 and M5 based on the sparsity pattern of the current matrix
      */
     
     hdsdp_retcode retcode = HDSDP_RETCODE_OK;
@@ -1636,6 +1686,56 @@ extern hdsdp_retcode sdpSparseConeGetKKT( hdsdp_cone_sdp_sparse *cone, void *kkt
                 break;
             default:
                 assert( 0 );
+                break;
+        }
+    }
+    
+    if ( typeKKT == KKT_TYPE_HOMOGENEOUS ) {
+        HDSDP_CALL(sdpSparseConeIGetHSDComponents(cone, kkt));
+    }
+    
+exit_cleanup:
+    return retcode;
+}
+
+extern hdsdp_retcode sdpSparseConeGetKKTByFixedStrategy( hdsdp_cone_sdp_sparse *cone, void *kkt, int typeKKT, int kktStrategy ) {
+    
+    /* When setting up the KKT system for a sparse cone,
+     There is no pre-determined strategy and we choose from M2, M3 and M5 based on the sparsity pattern of the current matrix
+     */
+    
+    hdsdp_retcode retcode = HDSDP_RETCODE_OK;
+    hdsdp_kkt *Hkkt = (hdsdp_kkt *) kkt;
+    
+    /* Prepare inverse */
+    HFpLinsysInvert(cone->dualFactor, Hkkt->invBuffer, Hkkt->kktBuffer);
+    
+    if ( typeKKT == KKT_TYPE_CORRECTOR ) {
+        HDSDP_CALL(sdpSparseConeIGetKKTCorrectorComponents(cone, kkt));
+        goto exit_cleanup;
+    }
+    
+    for ( int iKKTNzCol = 0; iKKTNzCol < cone->nRowElem; ++iKKTNzCol ) {
+                
+        switch (kktStrategy) {
+            case KKT_M1:
+                assert( 0 );
+                break;
+            case KKT_M2:
+                HDSDP_CALL(sdpSparseConeIGetKKTColumnByKKT2(cone, Hkkt, iKKTNzCol, typeKKT));
+                break;
+            case KKT_M3:
+                HDSDP_CALL(sdpSparseConeIGetKKTColumnByKKT3(cone, Hkkt, iKKTNzCol, typeKKT));
+                break;
+            case KKT_M4:
+                assert( 0 );
+                break;
+            case KKT_M5:
+                HDSDP_CALL(sdpSparseConeIGetKKTColumnByKKT5(cone, Hkkt, iKKTNzCol, typeKKT));
+                break;
+            default:
+                printf("Invalid KKT strategy. \n");
+                retcode = HDSDP_RETCODE_FAILED;
                 break;
         }
     }
@@ -1965,3 +2065,4 @@ extern void sdpSparseConeViewImpl( hdsdp_cone_sdp_sparse *cone ) {
     
     return;
 }
+
