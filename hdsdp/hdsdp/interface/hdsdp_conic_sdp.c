@@ -628,7 +628,7 @@ static hdsdp_retcode sdpDenseConeIGetKKTOrdering( hdsdp_cone_sdp_dense *cone ) {
     }
     
     /* Generate permutation based on the sparsity pattern */
-    HUtilSortIntByInt(cone->sdpConePerm, rowSparsity, 0, cone->nRow - 1);
+    HUtilDescendSortIntByInt(cone->sdpConePerm, rowSparsity, 0, cone->nRow - 1);
     
     /* Choose KKT strategies */
     for ( int iPerm = 0; iPerm < cone->nRow; ++iPerm ) {
@@ -735,8 +735,14 @@ static hdsdp_retcode sdpDenseConeIGetKKTColumnByKKT2( hdsdp_cone_sdp_dense *cone
     for ( int iRow = iKKTCol; iRow < kkt->nRow; ++iRow ) {
         /* Set up the KKT system */
         int iPermKKTRow = cone->sdpConePerm[iRow];
-        FULL_ENTRY(kkt->kktMatElem, kkt->nRow, iPermKKTRow, iPermKKTCol) += \
-        dSinAVecSign * sdpDataMatKKT2QuadForm(cone->sdpRow[iPermKKTRow], dSinvAVecBuffer, dAuxiQuadFormVec);
+        
+        if ( iPermKKTRow >= iPermKKTCol ) {
+            FULL_ENTRY(kkt->kktMatElem, kkt->nRow, iPermKKTRow, iPermKKTCol) += \
+            dSinAVecSign * sdpDataMatKKT2QuadForm(cone->sdpRow[iPermKKTRow], dSinvAVecBuffer, dAuxiQuadFormVec);
+        } else {
+            FULL_ENTRY(kkt->kktMatElem, kkt->nRow, iPermKKTCol, iPermKKTRow) += \
+            dSinAVecSign * sdpDataMatKKT2QuadForm(cone->sdpRow[iPermKKTRow], dSinvAVecBuffer, dAuxiQuadFormVec);
+        }
     }
         
 exit_cleanup:
@@ -783,9 +789,9 @@ static hdsdp_retcode sdpDenseConeIGetKKTColumnByKKT3( hdsdp_cone_sdp_dense *cone
     
     /* Now start setting up the column of the KKT matrix */
     /* Compute the buffer and simultaneously compute trace(A * S^-1) */
-    kkt->dASinvVec[iPermKKTCol] += \
-    sdpDataMatKKT3ComputeSinvASinv(sdpTargetMatrix, cone->dualFactor,
-                                   kkt->invBuffer, dAuxiMat, dSinvASinvBuffer);
+    double dASinvVal = sdpDataMatKKT3ComputeSinvASinv(sdpTargetMatrix, cone->dualFactor,
+                                                      kkt->invBuffer, dAuxiMat, dSinvASinvBuffer);
+    kkt->dASinvVec[iPermKKTCol] += dASinvVal;
     
     /* Compute dASinvRdSinvVec by the diagonal of B */
     if ( cone->dualResidual ) {
@@ -804,8 +810,13 @@ static hdsdp_retcode sdpDenseConeIGetKKTColumnByKKT3( hdsdp_cone_sdp_dense *cone
     
     for ( int iRow = iKKTCol; iRow < kkt->nRow; ++iRow ) {
         int iPermKKTRow = cone->sdpConePerm[iRow];
-        FULL_ENTRY(kkt->kktMatElem, kkt->nRow, iPermKKTRow, iPermKKTCol) += \
-        sdpDataMatKKT3TraceABuffer(cone->sdpRow[iPermKKTRow], dSinvASinvBuffer, dAuxiMat);
+        if ( iPermKKTRow >= iPermKKTCol ) {
+            FULL_ENTRY(kkt->kktMatElem, kkt->nRow, iPermKKTRow, iPermKKTCol) += \
+            sdpDataMatKKT3TraceABuffer(cone->sdpRow[iPermKKTRow], dSinvASinvBuffer, dAuxiMat);
+        } else {
+            FULL_ENTRY(kkt->kktMatElem, kkt->nRow, iPermKKTCol, iPermKKTRow) += \
+            sdpDataMatKKT3TraceABuffer(cone->sdpRow[iPermKKTRow], dSinvASinvBuffer, dAuxiMat);
+        }
     }
     
 exit_cleanup:
@@ -870,8 +881,13 @@ static hdsdp_retcode sdpDenseConeIGetKKTColumnByKKT4( hdsdp_cone_sdp_dense *cone
     
     for ( int iRow = iKKTCol; iRow < kkt->nRow; ++iRow ) {
         int iPermKKTRow = cone->sdpConePerm[iRow];
-        FULL_ENTRY(kkt->kktMatElem, kkt->nRow, iPermKKTRow, iPermKKTCol) += \
-        sdpDataMatKKT4TraceASinvBuffer(cone->sdpRow[iPermKKTRow], cone->dualFactor, kkt->invBuffer, dASinvBuffer, dAuxiMat);
+        if ( iPermKKTRow >= iPermKKTCol ) {
+            FULL_ENTRY(kkt->kktMatElem, kkt->nRow, iPermKKTRow, iPermKKTCol) += \
+            sdpDataMatKKT4TraceASinvBuffer(cone->sdpRow[iPermKKTRow], cone->dualFactor, kkt->invBuffer, dASinvBuffer, dAuxiMat);
+        } else {
+            FULL_ENTRY(kkt->kktMatElem, kkt->nRow, iPermKKTCol, iPermKKTRow) += \
+            sdpDataMatKKT4TraceASinvBuffer(cone->sdpRow[iPermKKTRow], cone->dualFactor, kkt->invBuffer, dASinvBuffer, dAuxiMat);
+        }
     }
     
 exit_cleanup:
@@ -930,8 +946,13 @@ static hdsdp_retcode sdpDenseConeIGetKKTColumnByKKT5( hdsdp_cone_sdp_dense *cone
     
     for ( int iRow = iKKTCol; iRow < kkt->nRow; ++iRow ) {
         int iPermKKTRow = cone->sdpConePerm[iRow];
-        FULL_ENTRY(kkt->kktMatElem, kkt->nRow, iPermKKTRow, iPermKKTCol) += \
-        sdpDataMatKKT5TraceASinvBSinv(sdpTargetMatrix, cone->sdpRow[iPermKKTRow], kkt->invBuffer, dAuxiMat);
+        if ( iPermKKTRow >= iPermKKTCol ) {
+            FULL_ENTRY(kkt->kktMatElem, kkt->nRow, iPermKKTRow, iPermKKTCol) += \
+            sdpDataMatKKT5TraceASinvBSinv(sdpTargetMatrix, cone->sdpRow[iPermKKTRow], kkt->invBuffer, dAuxiMat);
+        } else {
+            FULL_ENTRY(kkt->kktMatElem, kkt->nRow, iPermKKTCol, iPermKKTRow) += \
+            sdpDataMatKKT5TraceASinvBSinv(sdpTargetMatrix, cone->sdpRow[iPermKKTRow], kkt->invBuffer, dAuxiMat);
+        }
     }
     
 exit_cleanup:

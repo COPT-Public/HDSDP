@@ -50,12 +50,18 @@
 double HLocalTProfiler = HUtilGetTimeStamp();       \
 for ( int iTest = 0; iTest < (ntest); ++iTest ) {   \
     (func);                                         \
-    printf("Run %d. Elapsed time: %f\n",              \
+    printf("Run %d. Elapsed time: %f\n",                \
     iTest + 1, HUtilGetTimeStamp() - HLocalTProfiler);  \
 }                                                   \
-printf("Profiling Line %d of %s by %d runs. "       \
+printf("Function Profiler: Line %d of %s by %d runs. "       \
 "Average running time: %fs\n", __LINE__, __FILE__,  \
 (ntest), (HUtilGetTimeStamp() - HLocalTProfiler) / ntest);
+
+#define HDSDP_CODE_PROFILER_START double tHDSDPStart = HUtilGetTimeStamp()
+#define HDSDP_CODE_PROFILER_END            \
+    printf("Code Profiler Line %d of %s. "           \
+    "Running time: %fs\n", __LINE__, __FILE__, \
+    (HUtilGetTimeStamp() - tHDSDPStart))
 
 #ifdef __cplusplus
 extern "C" {
@@ -64,10 +70,10 @@ extern "C" {
 extern double HUtilGetTimeStamp( void );
 extern void HUtilMatSymmetrize( int n, double *v );
 extern int HUtilCheckIfAscending( int n, int *idx );
-extern void HUtilSortIntByInt( int *data, int *ref, int low, int up );
+extern void HUtilDescendSortIntByInt( int *data, int *ref, int low, int up );
 extern void HUtilSortIntbyDbl( int *data, double *ref, int low, int up );
-extern void HUtilSortDblByInt( double *data, int *ref, int low, int up );
-extern void HUtilSortDblByInt( double *data, int *ref, int low, int up );
+extern void HUtilAscendSortDblByInt( double *data, int *ref, int low, int up );
+extern void HUtilAscendSortDblByInt( double *data, int *ref, int low, int up );
 extern void HUtilPrintDblContent( int n, double *d );
 extern void HUtilPrintIntContent( int n, int *d );
 extern void HUtilPrintDblSum( int n, double *d );

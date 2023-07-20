@@ -21,7 +21,9 @@
 hdsdp_retcode test_schur_consistency( hdsdp_kkt *kkt ) {
     
     hdsdp_retcode retcode = HDSDP_RETCODE_OK;
-        
+    
+    int isValid = 1;
+    
     double *kktBuffer2345 = NULL;
     double *kktBuffer3 = NULL;
     double *kktBuffer4 = NULL;
@@ -44,10 +46,10 @@ hdsdp_retcode test_schur_consistency( hdsdp_kkt *kkt ) {
     HDSDP_MEMCHECK(kktBuffer4);
     
     /* Use hybrid strategy as a benchmark */
-    HDSDP_CALL(HKKTBuildUpFixed(kkt, KKT_TYPE_HOMOGENEOUS, KKT_M3));
+    HDSDP_CALL(HKKTBuildUpFixed(kkt, KKT_TYPE_INFEASIBLE, KKT_M3));
     HDSDP_MEMCPY(kktBuffer3, kkt->kktMatElem, double, nKKTNzs);
     
-    HDSDP_CALL(HKKTBuildUpFixed(kkt, KKT_TYPE_HOMOGENEOUS, KKT_M4));
+    HDSDP_CALL(HKKTBuildUpFixed(kkt, KKT_TYPE_INFEASIBLE, KKT_M4));
     HDSDP_MEMCPY(kktBuffer4, kkt->kktMatElem, double, nKKTNzs);
     
     HDSDP_CALL(HKKTBuildUp(kkt, KKT_TYPE_INFEASIBLE));
@@ -61,6 +63,14 @@ hdsdp_retcode test_schur_consistency( hdsdp_kkt *kkt ) {
         err3_4 += fabs(kktBuffer3[iElem] - kktBuffer4[iElem]);
         err3_2345 += fabs(kktBuffer3[iElem] - kktBuffer2345[iElem]);
         err4_2345 += fabs(kktBuffer4[iElem] - kktBuffer2345[iElem]);
+        
+        if ( err3_4 >= 1e-10 || err3_2345 >= 1e-10 || err4_2345 >= 1e-10 ) {
+            if ( isValid ) {
+                printf("Warning. KKT consistency check failed. \n");
+                isValid = 0;
+            }
+        }
+        
     }
     
     printf("KKT consistency check: | 3-4: %6.3e | 3-2345: %6.3e | 4-2345: %6.3e \n",
@@ -137,7 +147,7 @@ int test_file_io( char *fname ) {
             rowDual[i] = (double) (i + 1) / nConstrs;
         }
         
-        HConeSetStart(SDPCone, -1e+05);
+        HConeSetStart(SDPCone, -1e+02);
         HConeUpdate(SDPCone, 1.5, rowDual);
 //        HConeView(SDPCone);
         
@@ -153,26 +163,27 @@ int test_file_io( char *fname ) {
     HDSDP_CALL(HKKTInit(kkt, nConstrs, nBlks, SDPCones));
     
     HDSDP_CALL(HKKTBuildUp(kkt, KKT_TYPE_INFEASIBLE));
+//    HDSDP_PROFILER(HKKTBuildUp(kkt, KKT_TYPE_INFEASIBLE), 100);
     
     /* KKT solve */
-    double dCSinv = 0.0;
-    double dCSinvRdCSinv = 0.0;
-    double dCSinvCSinv = 0.0;
-    
-    HKKTExport(kkt, kktLhsBuffer, NULL, NULL, &dCSinvCSinv, &dCSinv, &dCSinvRdCSinv);
-    HDSDP_CALL(HKKTFactorize(kkt));
-    HDSDP_CALL(HKKTSolve(kkt, kktLhsBuffer, NULL));
-    
-    HKKTExport(kkt, NULL, kktLhsBuffer, NULL, &dCSinvCSinv, &dCSinv, &dCSinvRdCSinv);
-    HDSDP_CALL(HKKTFactorize(kkt));
-    HDSDP_CALL(HKKTSolve(kkt, kktLhsBuffer, NULL));
-    
-    HKKTExport(kkt, NULL, NULL, kktLhsBuffer, &dCSinvCSinv, &dCSinv, &dCSinvRdCSinv);
-    HDSDP_CALL(HKKTFactorize(kkt));
-    HDSDP_CALL(HKKTSolve(kkt, kktLhsBuffer, NULL));
+//    double dCSinv = 0.0;
+//    double dCSinvRdCSinv = 0.0;
+//    double dCSinvCSinv = 0.0;
+//    
+//    HKKTExport(kkt, kktLhsBuffer, NULL, NULL, &dCSinvCSinv, &dCSinv, &dCSinvRdCSinv);
+//    HDSDP_CALL(HKKTFactorize(kkt));
+//    HDSDP_CALL(HKKTSolve(kkt, kktLhsBuffer, NULL));
+//    
+//    HKKTExport(kkt, NULL, kktLhsBuffer, NULL, &dCSinvCSinv, &dCSinv, &dCSinvRdCSinv);
+//    HDSDP_CALL(HKKTFactorize(kkt));
+//    HDSDP_CALL(HKKTSolve(kkt, kktLhsBuffer, NULL));
+//    
+//    HKKTExport(kkt, NULL, NULL, kktLhsBuffer, &dCSinvCSinv, &dCSinv, &dCSinvRdCSinv);
+//    HDSDP_CALL(HKKTFactorize(kkt));
+//    HDSDP_CALL(HKKTSolve(kkt, kktLhsBuffer, NULL));
     
     /* KKT consistency */
-    // HDSDP_CALL(test_schur_consistency(kkt));
+     HDSDP_CALL(test_schur_consistency(kkt));
     
 exit_cleanup:
     

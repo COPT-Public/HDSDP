@@ -80,7 +80,7 @@ static hdsdp_retcode dataMatCreateSparseImpl( void **pA, int nSDPCol, int dataMa
     HDSDP_MEMCHECK(sparse->triMatElem);
     
     if ( !HUtilCheckIfAscending(dataMatNnz, dataMatIdx) ) {
-        HUtilSortDblByInt(dataMatElem, dataMatIdx, 0, dataMatNnz - 1);
+        HUtilAscendSortDblByInt(dataMatElem, dataMatIdx, 0, dataMatNnz - 1);
     }
     
     tsp_decompress(sparse->nSDPCol, sparse->nTriMatElem, dataMatIdx, dataMatElem,
@@ -1239,7 +1239,7 @@ static double dataMatDenseDotDenseKKT3Impl( void *A, double *B, double *aux ) {
         dBCol += dense->nSDPCol + 1;
     }
     
-    return dAdotB;
+    return 2.0 * dAdotB;
 }
 
 static double dataMatRankOneSparseDotDenseKKT3Impl( void *A, double *B, double *aux ) {
@@ -1270,7 +1270,7 @@ static double dataMatRankOneDenseDotDenseKKT3Impl( void *A, double *B, double *a
     sdp_coeff_dsr1 *dsr1 = (sdp_coeff_dsr1 *) A;
     fds_symv(dsr1->nSDPCol, 1.0, B, dsr1->r1MatFactor, 0.0, aux);
     
-    return dsr1->r1FactorSign * dot(&dsr1->nSDPCol, &dsr1->r1FactorSign, &HIntConstantOne, aux, &HIntConstantOne);
+    return dsr1->r1FactorSign * dot(&dsr1->nSDPCol, dsr1->r1MatFactor, &HIntConstantOne, aux, &HIntConstantOne);
 }
 
 /*==========================================================================================*/
@@ -1443,7 +1443,7 @@ static double dataMatRankOneDenseKKT4ComputeASinvImpl( void *A, hdsdp_linsys *S,
     double dFactorSign = 0.0;
     double dTraceSinvASinv = 0.0;
     
-    dataMatRankOneSparseKKT2SolveRankOneImpl(A, S, Sinv, &dFactorSign, dSinvAVec);
+    dataMatRankOneDenseKKT2SolveRankOneImpl(A, S, Sinv, &dFactorSign, dSinvAVec);
     fds_ger(dsr1->nSDPCol, dsr1->nSDPCol, dFactorSign,
             dsr1->r1MatFactor, 1, dSinvAVec, 1, B, dsr1->nSDPCol);
     
@@ -1465,7 +1465,6 @@ static double dataMatRankOneDenseKKT4ComputeASinvImpl( void *A, hdsdp_linsys *S,
 /*==========================================================================================*/
 static double dataMatZeroKKT4ADotSinvBImpl( void *A, hdsdp_linsys *S, double *Sinv, double *ASinv, double *aux ) {
     
-    assert( 0 );
     return 0.0;
 }
 
@@ -1521,7 +1520,7 @@ static double dataMatDenseKKT4ADotSinvBImpl( void *A, hdsdp_linsys *S, double *S
         dAElem = ACol[0];
         SinvRow = Sinv + iCol * dense->nSDPCol;
         ASinvCol = ASinv + iCol * dense->nSDPCol;
-        dADotSinvB += dAElem * dot(&dense->nSDPCol, SinvRow, &HIntConstantOne, ASinvCol, &HIntConstantOne);
+        dADotSinvB += 0.5 * dAElem * dot(&dense->nSDPCol, SinvRow, &HIntConstantOne, ASinvCol, &HIntConstantOne);
         
         for ( iRow = iCol + 1; iRow < dense->nSDPCol; ++iRow ) {
             dAElem = ACol[iRow - iCol];
@@ -1529,17 +1528,13 @@ static double dataMatDenseKKT4ADotSinvBImpl( void *A, hdsdp_linsys *S, double *S
                 SinvRow = Sinv + iRow * dense->nSDPCol;
                 ASinvCol = ASinv + iCol * dense->nSDPCol;
                 dADotSinvB += dAElem * dot(&dense->nSDPCol, SinvRow, &HIntConstantOne, ASinvCol, &HIntConstantOne);
-                /* Map to the symmetric component */
-                SinvRow = Sinv + iCol * dense->nSDPCol;
-                ASinvCol = Sinv + iRow * dense->nSDPCol;
-                dADotSinvB += dAElem * dot(&dense->nSDPCol, SinvRow, &HIntConstantOne, ASinvCol, &HIntConstantOne);
             }
         }
         
         ACol += dense->nSDPCol - iCol;
     }
     
-    return dADotSinvB;
+    return 2.0 * dADotSinvB;
 }
 
 static double dataMatRankOneSparseKKT4ADotSinvBImpl( void *A, hdsdp_linsys *S, double *Sinv, double *ASinv, double *aux ) {
@@ -1614,6 +1609,10 @@ static double dataMatRankOneDenseKKT4ADotSinvBImpl( void *A, hdsdp_linsys *S, do
    RankOneSparse    -          *          *        *
    
    The pair-wise operations will be invoked by a switch statement
+   
+   Note that in general Sparse-Dense and RankOneSparse-Dense operations will only be invoked when C is (rank-one) dense
+   Depending on sparsity this operation may be extremely expensive. Thus we always first try to eliminate dual infeasibility
+   in Phase A using infeasible-start method.
 */
 static double KKT5Pair_Sparse_Sparse( sdp_coeff_sparse *A, sdp_coeff_sparse *B, double *Sinv, double *aux ) {
     /* Implement trace(A * S^-1 * B * S^-1 ) for sparse A and B */
@@ -1660,6 +1659,18 @@ static double KKT5Pair_Sparse_Sparse( sdp_coeff_sparse *A, sdp_coeff_sparse *B, 
     }
     
     return 2.0 * dTraceSinvASinvB;
+}
+
+static double KKT5Pair_Sparse_Dense( sdp_coeff_sparse *A, sdp_coeff_dense *B, double *Sinv, double *aux ) {
+    /* TODO: Implement this operation */
+    
+    return 0.0;
+}
+
+static double KKT5Pair_Sparse_RankOneDense( sdp_coeff_sparse *A, sdp_coeff_dsr1 *B, double *Sinv, double *aux ) {
+    /* TODO: Implement this operation */
+    
+    return 0.0;
 }
 
 static double KKT5Pair_Sparse_RankOneSparse( sdp_coeff_sparse *A, sdp_coeff_spr1 *B, double *Sinv, double *aux ) {
@@ -1728,6 +1739,18 @@ static double KKT5Pair_RankOneSparse_RankOneSparse( sdp_coeff_spr1 *A, sdp_coeff
     }
     
     return dTraceSinvASinvB * dTraceSinvASinvB * A->spR1FactorSign * B->spR1FactorSign;
+}
+
+static double KKT5Pair_RankOneSparse_Dense( sdp_coeff_spr1 *A, sdp_coeff_dense *B, double *Sinv, double *aux ) {
+    /* TODO: Implement this operation */
+    
+    return 0.0;
+}
+
+static double KKT5Pair_RankOneSparse_RankOneDense( sdp_coeff_spr1 *A, sdp_coeff_dense *B, double *Sinv, double *aux ) {
+    /* TODO: Implement this operation */
+    
+    return 0.0;
 }
 
 static double dataMatZeroKKT5TraceASinvBSinvImpl( void *A, sdp_coeff *B, double *Sinv, double *aux ) {
@@ -1890,7 +1913,7 @@ static double dataMatRankOneDenseKKT5SinvADotSinvImpl( void *A, hdsdp_linsys *S,
     sdp_coeff_dsr1 *dsr1 = (sdp_coeff_dsr1 *) A;
     
     double dFactorSign = 0.0;
-    double *dSinvAVec = NULL;
+    double *dSinvAVec = aux;
     
     dataMatRankOneDenseKKT2SolveRankOneImpl(A, S, Sinv, &dFactorSign, dSinvAVec);
     

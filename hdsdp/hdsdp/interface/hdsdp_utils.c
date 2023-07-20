@@ -69,8 +69,8 @@ static int ipartitioni( int *ind, int *val, int l, int h ) {
     
     while ( l < h ) {
         
-        while ( l < h && val[h] >= p ) { --h; }
-        while ( l < h && val[l] <= p ) { ++l; }
+        while ( l < h && val[h] <= p ) { --h; }
+        while ( l < h && val[l] >= p ) { ++l; }
         
         if ( l < h ) {
             tmp2 = val[l]; val[l] = val[h]; val[h] = tmp2;
@@ -180,23 +180,23 @@ extern void HUtilSortIntbyDbl( int *data, double *ref, int low, int up ) {
     return;
 }
 
-extern void HUtilSortIntByInt( int *data, int *ref, int low, int up ) {
+extern void HUtilDescendSortIntByInt( int *data, int *ref, int low, int up ) {
     
     if ( low < up ) {
         int p = ipartitioni(data, ref, low, up);
-        HUtilSortIntByInt(data, ref, low, p - 1);
-        HUtilSortIntByInt(data, ref, p + 1, up);
+        HUtilDescendSortIntByInt(data, ref, low, p - 1);
+        HUtilDescendSortIntByInt(data, ref, p + 1, up);
     }
     
     return;
 }
 
-extern void HUtilSortDblByInt( double *data, int *ref, int low, int up ) {
+extern void HUtilAscendSortDblByInt( double *data, int *ref, int low, int up ) {
     
     if ( low < up ) {
         int p = ipartitiond(data, ref, low, up);
-        HUtilSortDblByInt(data, ref, low, p - 1);
-        HUtilSortDblByInt(data, ref, p + 1, up);
+        HUtilAscendSortDblByInt(data, ref, low, p - 1);
+        HUtilAscendSortDblByInt(data, ref, p + 1, up);
     }
     
     return;
