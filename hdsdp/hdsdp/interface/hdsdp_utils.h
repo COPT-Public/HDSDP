@@ -18,6 +18,12 @@
 #include <assert.h>
 
 /* Define macros */
+#ifdef SILENT_SOLVER
+#define hdsdp_printf
+#else
+#define hdsdp_printf printf
+#endif
+
 #define HDSDP_FREE(var) do {if (var) {free((var)); (var) = NULL;}} while (0)
 #define HDSDP_INIT(var, type, size) (var) = (type *) calloc(size, sizeof(type))
 #define HDSDP_REALLOC(var, type, size) (var) = (type *) realloc(var, sizeof(type) * (size))
@@ -36,7 +42,6 @@
                          if (retcode != HDSDP_RETCODE_OK) {     \
                              goto exit_cleanup;                 \
                          }
-
 #define HDSDP_MAX(x, y) ((x) > (y) ? (x) : (y))
 #define HDSDP_MIN(x, y) ((x) < (y) ? (x) : (y))
 
@@ -79,6 +84,16 @@ extern void HUtilAscendSortDblByInt( double *data, int *ref, int low, int up );
 extern void HUtilPrintDblContent( int n, double *d );
 extern void HUtilPrintIntContent( int n, int *d );
 extern void HUtilPrintDblSum( int n, double *d );
+extern int HUtilCheckUserInterrupt( void );
+
+extern void HUtilStartCtrlCCheck( void );
+extern int HUtilCheckCtrlC( void );
+extern void HUtilResetCtrl( void );
+
+#define NUM_INT_PARAM  20
+#define NUM_DBL_PARAM  20
+extern void HUtilGetDefaultParams( int intParams[NUM_INT_PARAM], double dblParams[NUM_INT_PARAM] );
+extern void HUtilPrintParams( int intParams[NUM_INT_PARAM], double dblParams[NUM_INT_PARAM] );
 
 #ifdef __cplusplus
 }

@@ -10,6 +10,15 @@
 
 #include <math.h>
 #include <sys/time.h>
+#include <signal.h>
+
+static int isCtrlC = 0;
+static void monitorCtrlC( int sigNum ) {
+    isCtrlC = 1;
+    return;
+}
+
+static struct sigaction act;
 
 /* TODO: Add compatibility for Windows platform */
 static double my_clock( void ) {
@@ -209,6 +218,58 @@ extern void HUtilSortDblByDbl( double *data, double *ref, int low, int up ) {
         HUtilSortDblByDbl(data, ref, low, p - 1);
         HUtilSortDblByDbl(data, ref, p + 1, up);
     }
+    
+    return;
+}
+
+extern void HUtilStartCtrlCCheck( void ) {
+    
+    act.sa_handler = monitorCtrlC;
+    sigaction(SIGINT, &act, NULL);
+    
+    return;
+}
+
+extern int HUtilCheckCtrlC( void ) {
+    
+    return isCtrlC;
+}
+
+extern void HUtilResetCtrl( void ) {
+    
+    isCtrlC = 0;
+}
+
+#define set_int_param(param, val)  intParams[param] = val
+#define set_dbl_param(param, val)  dblParams[param] = val
+extern void HUtilGetDefaultParams( int intParams[NUM_INT_PARAM], double dblParams[NUM_INT_PARAM] ) {
+    
+    set_int_param(INT_PARAM_MAXITER, 100);
+    
+    set_dbl_param(DBL_PARAM_ABSOPTTOL, 1e-08);
+    set_dbl_param(DBL_PARAM_ABSFEASTOL, 1e-08);
+    set_dbl_param(DBL_PARAM_RELOPTTOL, 1e-08);
+    set_dbl_param(DBL_PARAM_RELFEASTOL, 1e-08);
+    
+    set_dbl_param(DBL_PARAM_TIMELIMIT, 3600.0);
+    set_dbl_param(DBL_PARAM_POTRHOVAL, 5.0);
+    
+    return;
+}
+
+#define print_int_param(param, name) printf("%10s is set to %d\n", name, intParams[param])
+#define print_dbl_param(param, name) printf("%10s is set to %5.1e\n", name, dblParams[param])
+extern void HUtilPrintParams( int intParams[NUM_INT_PARAM], double dblParams[NUM_INT_PARAM] ) {
+    
+    printf("Parameters:\n");
+    print_int_param(INT_PARAM_MAXITER, "MaxIter");
+    
+    print_dbl_param(DBL_PARAM_ABSOPTTOL, "AbsOptTol");
+    print_dbl_param(DBL_PARAM_RELOPTTOL, "RelOptTol");
+    print_dbl_param(DBL_PARAM_ABSFEASTOL, "AbsFeasTol");
+    print_dbl_param(DBL_PARAM_RELFEASTOL, "RelFeasTol");
+    print_dbl_param(DBL_PARAM_TIMELIMIT, "Timelimit");
+    print_dbl_param(DBL_PARAM_POTRHOVAL, "Potvalue");
     
     return;
 }

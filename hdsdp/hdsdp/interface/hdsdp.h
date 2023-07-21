@@ -61,7 +61,10 @@ typedef struct hdsdp_solver_internal hdsdp;
 // Double Parameters
 #define DBL_PARAM_RELFEASTOL    0
 #define DBL_PARAM_RELOPTTOL     1
-#define DBL_PARAM_TIMELIMIT     2
+#define DBL_PARAM_ABSFEASTOL    2
+#define DBL_PARAM_ABSOPTTOL     3
+#define DBL_PARAM_TIMELIMIT     4
+#define DBL_PARAM_POTRHOVAL     5
 
 // Version information
 #define VERSION_MAJOR           1
@@ -69,9 +72,26 @@ typedef struct hdsdp_solver_internal hdsdp;
 #define VERSION_TECHNICAL       0
 
 // Build date
-#define BUILD_DATE_YEAR         2022
-#define BUILD_DATE_MONTH        11
-#define BUILD_DATE_DAY          24
+#define BUILD_DATE_YEAR         2023
+#define BUILD_DATE_MONTH        07
+#define BUILD_DATE_DAY          21
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
+extern hdsdp_retcode HDSDPCreate( hdsdp **pHSolver );
+extern hdsdp_retcode HDSDPInit( hdsdp *HSolver, int nRows, int nCones );
+extern hdsdp_retcode HDSDPSetCone( hdsdp *HSolver, int iCone, void *userCone );
+extern hdsdp_retcode HDSDPOptimize( hdsdp *HSolver, int dOptOnly );
+extern hdsdp_retcode HDSDPGetRowDual( hdsdp *HSolver, double *pObjVal, double *dObjVal, double *dualVal );
+extern hdsdp_retcode HDSDPGetConeValues( hdsdp *HSolver, int iCone, double *conePrimal, double *coneDual );
+extern void HDSDPCheckSolution( hdsdp *HSolver, double diErrors[6] );
+extern void HDSDPClear( hdsdp *HSolver );
+extern void HDSDPDestroy( hdsdp **pHSolver );
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif /* hdsdp_h */
