@@ -155,7 +155,6 @@ extern hdsdp_retcode HLanczosSolve( hdsdp_lanczos *HLanczos, double *LanczosStar
     int k = 0;
     int LCheckFrequency = (int) HLanczos->nMaxSpaceDim / 5;
     LCheckFrequency = HDSDP_MIN(LCheckFrequency, 5);
-    double finalEigs = 0.0;
     
     int nVRow = HLanczos->nCol;
     int nHRow = HLanczos->nMaxSpaceDim + 1;
@@ -240,7 +239,7 @@ extern hdsdp_retcode HLanczosSolve( hdsdp_lanczos *HLanczos, double *LanczosStar
                 double resiDiff = eigMin1 - eigMin2 - resiVal2;
                 double valGamma = ( resiDiff > 0 ) ? resiDiff : 1e-16;
                 double resiVal1sqr = resiVal1 * resiVal1 / valGamma;
-                double deltaVal = HDSDP_MIN(resiVal1, resiVal1sqr);
+                valGamma = HDSDP_MIN(resiVal1, resiVal1sqr);
                 
                 if ( valGamma < 1e-03 || valGamma + eigMin1 <= 0.5 ) {
                     if ( valGamma + eigMin1 <= 0.0 ) {

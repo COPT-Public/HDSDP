@@ -1,10 +1,10 @@
 clear;
 
 printconestat = 1;
-printdualslack = 0;
+printdualslack = 1;
 setupkkt = 1;
 
-[At, b, c, K] = readsdpa(fullfile('/Users/gaowenzhi/Desktop/gwz/benchmark/sdplib', 'mcp100.dat-s'));
+[At, b, c, K] = readsdpa(fullfile('/Users/gaowenzhi/Desktop/gwz/benchmark/sdplib', 'buck3.dat-s'));
 
 try
     [nsqr, ~] = size(At);
@@ -37,6 +37,14 @@ for i = 1:m
 end % End for
 
 % Count block statistics
+Mall = zeros(m);
+asinvall = zeros(m, 1);
+asinvrdsinvall = zeros(m, 1);
+asinvcsinvall = zeros(m, 1);
+csinvall = 0.0;
+csinvcsinvall = 0.0;
+csinvrdcsinvall = 0.0;
+
 for q = 1:s
     
     n = K.s(q);
@@ -69,19 +77,27 @@ for q = 1:s
     end % End if
     
     if printdualslack
-        Rd = 1e+06;
-        y = 1:m;
+        Rd = 5;
+        y = 0.0 * (1:m) / m;
         B = eye(n) * Rd - hdsdp_aty(Amat(:, q), y) + Cmat{q} * 1.5;
         spB = sparse(B);
         fprintf("logdet: %20.10e \n", hdsdp_logdet(spB));
     end % End if
     
     if setupkkt
-        Rd = 1000.0;
-        y = 1:m;
+        Rd = 5;
+        y = 0.0 * (1:m) / m;
         B = eye(n) * Rd - hdsdp_aty(Amat(:, q), y) + Cmat{q} * 1.5;
+        chol(B);
         [M, asinv, asinvrdsinv, asinvcsinv, csinv, csinvcsinv, csinvrdcsinv] =...
-        hdsdp_kktbuild(Amat, Cmat{1}, B, Rd);
+        hdsdp_kktbuild(Amat(:, q), Cmat{q}, B, Rd);
+        Mall = Mall + M;
+        asinvall = asinvall + asinv;
+        asinvrdsinvall = asinvrdsinvall + asinvrdsinv;
+        asinvcsinvall = asinvcsinvall + asinvcsinv;
+        csinvall = csinvall + csinv;
+        csinvcsinvall = csinvcsinvall + csinvcsinv;
+        csinvrdcsinvall = csinvrdcsinvall + csinvrdcsinv;
     end % End if
     
 end % End for

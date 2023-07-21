@@ -68,7 +68,7 @@ typedef struct {
     /* Conic algorithm interface */
     void   (*coneSetStart)    ( void *, double );
     void   (*coneUpdate)      ( void *, double, double * );
-    double (*coneRatioTest)   ( void *, double, double * );
+    hdsdp_retcode (*coneRatioTest)   ( void *, double, double *, double, double * );
     
     /* Schur complement and algorithm iterates */
     int64_t (*coneGetSymNnz)   ( void * );

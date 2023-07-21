@@ -63,6 +63,8 @@ printf("Function Profiler: Line %d of %s by %d runs. "       \
     "Running time: %fs\n", __LINE__, __FILE__, \
     (HUtilGetTimeStamp() - tHDSDPStart))
 
+#define set_func_pointer(A, B) (A = (typeof(A)) B)
+
 #ifdef __cplusplus
 extern "C" {
 #endif

@@ -40,82 +40,88 @@ extern hdsdp_retcode HConeSetData( hdsdp_cone *HCone, user_data *usrData ) {
     
     switch ( HCone->cone ) {
         case HDSDP_CONETYPE_BOUND:
-            HCone->coneCreate = NULL;
-            HCone->coneProcData = NULL;
-            HCone->conePresolveData = NULL;
-            HCone->coneDestroyData = NULL;
-            HCone->coneSetStart = NULL;
-            HCone->coneUpdate = NULL;
-            HCone->coneRatioTest = NULL;
-            HCone->coneGetSymNnz = NULL;
-            HCone->coneGetDim = NULL;
-            HCone->coneAddSymNz = NULL;
-            HCone->coneGetKKTMap = NULL;
-            HCone->coneBuildSchur = NULL;
-            HCone->coneGetBarrier = NULL;
-            HCone->conePFeasCheck = NULL;
-            HCone->conePRecover = NULL;
-            HCone->coneScal = NULL;
+            set_func_pointer(HCone->coneCreate, NULL);
+            set_func_pointer(HCone->coneProcData, NULL);
+            set_func_pointer(HCone->conePresolveData, NULL);
+            set_func_pointer(HCone->coneDestroyData, NULL);
+            set_func_pointer(HCone->coneSetStart, NULL);
+            set_func_pointer(HCone->coneUpdate, NULL);
+            set_func_pointer(HCone->coneRatioTest, NULL);
+            set_func_pointer(HCone->coneGetSymNnz, NULL);
+            set_func_pointer(HCone->coneAddSymNz, NULL);
+            set_func_pointer(HCone->coneGetKKTMap, NULL);
+            set_func_pointer(HCone->coneGetObjNorm, NULL);
+            set_func_pointer(HCone->coneGetDim, NULL);
+            set_func_pointer(HCone->coneBuildSchur, NULL);
+            set_func_pointer(HCone->coneBuildSchurFixed, NULL);
+            set_func_pointer(HCone->coneGetBarrier, NULL);
+            set_func_pointer(HCone->conePFeasCheck, NULL);
+            set_func_pointer(HCone->conePRecover, NULL);
+            set_func_pointer(HCone->coneScal, NULL);
+            set_func_pointer(HCone->coneView, NULL);
             break;
         case HDSDP_CONETYPE_LP:
-            HCone->coneCreate = NULL;
-            HCone->coneProcData = NULL;
-            HCone->conePresolveData = NULL;
-            HCone->coneDestroyData = NULL;
-            HCone->coneSetStart = NULL;
-            HCone->coneUpdate = NULL;
-            HCone->coneRatioTest = NULL;
-            HCone->coneGetSymNnz = NULL;
-            HCone->coneGetDim = NULL;
-            HCone->coneAddSymNz = NULL;
-            HCone->coneGetKKTMap = NULL;
-            HCone->coneBuildSchur = NULL;
-            HCone->coneGetBarrier = NULL;
-            HCone->conePFeasCheck = NULL;
-            HCone->conePRecover = NULL;
-            HCone->coneScal = NULL;
+            set_func_pointer(HCone->coneCreate, NULL);
+            set_func_pointer(HCone->coneProcData, NULL);
+            set_func_pointer(HCone->conePresolveData, NULL);
+            set_func_pointer(HCone->coneDestroyData, NULL);
+            set_func_pointer(HCone->coneSetStart, NULL);
+            set_func_pointer(HCone->coneUpdate, NULL);
+            set_func_pointer(HCone->coneRatioTest, NULL);
+            set_func_pointer(HCone->coneGetSymNnz, NULL);
+            set_func_pointer(HCone->coneAddSymNz, NULL);
+            set_func_pointer(HCone->coneGetKKTMap, NULL);
+            set_func_pointer(HCone->coneGetObjNorm, NULL);
+            set_func_pointer(HCone->coneGetDim, NULL);
+            set_func_pointer(HCone->coneBuildSchur, NULL);
+            set_func_pointer(HCone->coneBuildSchurFixed, NULL);
+            set_func_pointer(HCone->coneGetBarrier, NULL);
+            set_func_pointer(HCone->conePFeasCheck, NULL);
+            set_func_pointer(HCone->conePRecover, NULL);
+            set_func_pointer(HCone->coneScal, NULL);
+            set_func_pointer(HCone->coneView, NULL);
             break;
         case HDSDP_CONETYPE_DENSE_SDP:
-            HCone->coneCreate = sdpDenseConeCreateImpl;
-            HCone->coneProcData = sdpDenseConeProcDataImpl;
-            HCone->conePresolveData = sdpDenseConePresolveImpl;
-            HCone->coneDestroyData = sdpDenseConeDestroyImpl;
-            HCone->coneSetStart = sdpDenseConeSetStartImpl;
-            HCone->coneUpdate = sdpDenseConeUpdateImpl;
-            HCone->coneRatioTest = sdpDenseConeRatioTestImpl;
-            HCone->coneGetSymNnz = sdpDenseConeGetSymNnzImpl;
-            HCone->coneAddSymNz = sdpDenseConeAddSymNnzImpl;
-            HCone->coneGetKKTMap = sdpDenseConeGetSymMapping;
-            HCone->coneGetObjNorm = sdpDenseConeGetObjNorm;
-            HCone->coneGetDim = sdpDenseConeGetDim;
-            HCone->coneBuildSchur = sdpDenseConeGetKKT;
-            HCone->coneBuildSchurFixed = sdpDenseConeGetKKTByFixedStrategy;
-            HCone->coneGetBarrier = sdpDenseConeGetBarrier;
-            HCone->conePFeasCheck = NULL;
-            HCone->conePRecover = NULL;
-            HCone->coneScal = NULL;
-            HCone->coneView = sdpDenseConeViewImpl;
+            set_func_pointer(HCone->coneCreate, sdpDenseConeCreateImpl);
+            set_func_pointer(HCone->coneProcData, sdpDenseConeProcDataImpl);
+            set_func_pointer(HCone->conePresolveData, sdpDenseConePresolveImpl);
+            set_func_pointer(HCone->coneDestroyData, sdpDenseConeDestroyImpl);
+            set_func_pointer(HCone->coneSetStart, sdpDenseConeSetStartImpl);
+            set_func_pointer(HCone->coneUpdate, sdpDenseConeUpdateImpl);
+            set_func_pointer(HCone->coneRatioTest, sdpDenseConeRatioTestImpl);
+            set_func_pointer(HCone->coneGetSymNnz, sdpDenseConeGetSymNnzImpl);
+            set_func_pointer(HCone->coneAddSymNz, sdpDenseConeAddSymNnzImpl);
+            set_func_pointer(HCone->coneGetKKTMap, sdpDenseConeGetSymMapping);
+            set_func_pointer(HCone->coneGetObjNorm, sdpDenseConeGetObjNorm);
+            set_func_pointer(HCone->coneGetDim, sdpDenseConeGetDim);
+            set_func_pointer(HCone->coneBuildSchur, sdpDenseConeGetKKT);
+            set_func_pointer(HCone->coneBuildSchurFixed, sdpDenseConeGetKKTByFixedStrategy);
+            set_func_pointer(HCone->coneGetBarrier, sdpDenseConeGetBarrier);
+            set_func_pointer(HCone->conePFeasCheck, NULL);
+            set_func_pointer(HCone->conePRecover, NULL);
+            set_func_pointer(HCone->coneScal, NULL);
+            set_func_pointer(HCone->coneView, sdpDenseConeViewImpl);
             break;
         case HDSDP_CONETYPE_SPARSE_SDP:
-            HCone->coneCreate = sdpSparseConeCreateImpl;
-            HCone->coneProcData = sdpSparseConeProcDataImpl;
-            HCone->conePresolveData = sdpSparseConePresolveImpl;
-            HCone->coneDestroyData = sdpSparseConeDestroyImpl;
-            HCone->coneSetStart = sdpSparseConeSetStartImpl;
-            HCone->coneUpdate = sdpSparseConeUpdateImpl;
-            HCone->coneRatioTest = sdpSparseConeRatioTestImpl;
-            HCone->coneGetDim = sdpSparseConeGetDim;
-            HCone->coneGetSymNnz = sdpSparseConeGetSymNnzImpl;
-            HCone->coneAddSymNz = sdpSparseConeAddSymNnzImpl;
-            HCone->coneGetKKTMap = sdpSparseConeGetSymMapping;
-            HCone->coneGetObjNorm = sdpSparseConeGetObjNorm;
-            HCone->coneBuildSchur = sdpSparseConeGetKKT;
-            HCone->coneBuildSchurFixed = sdpSparseConeGetKKTByFixedStrategy;
-            HCone->coneGetBarrier = sdpSparseConeGetBarrier;
-            HCone->conePFeasCheck = NULL;
-            HCone->conePRecover = NULL;
-            HCone->coneScal = NULL;
-            HCone->coneView = sdpSparseConeViewImpl;
+            set_func_pointer(HCone->coneCreate, sdpSparseConeCreateImpl);
+            set_func_pointer(HCone->coneProcData, sdpSparseConeProcDataImpl);
+            set_func_pointer(HCone->conePresolveData, sdpSparseConePresolveImpl);
+            set_func_pointer(HCone->coneDestroyData, sdpSparseConeDestroyImpl);
+            set_func_pointer(HCone->coneSetStart, sdpSparseConeSetStartImpl);
+            set_func_pointer(HCone->coneUpdate, sdpSparseConeUpdateImpl);
+            set_func_pointer(HCone->coneRatioTest, sdpSparseConeRatioTestImpl);
+            set_func_pointer(HCone->coneGetDim, sdpSparseConeGetDim);
+            set_func_pointer(HCone->coneGetSymNnz, sdpSparseConeGetSymNnzImpl);
+            set_func_pointer(HCone->coneAddSymNz, sdpSparseConeAddSymNnzImpl);
+            set_func_pointer(HCone->coneGetKKTMap, sdpSparseConeGetSymMapping);
+            set_func_pointer(HCone->coneGetObjNorm, sdpSparseConeGetObjNorm);
+            set_func_pointer(HCone->coneBuildSchur, sdpSparseConeGetKKT);
+            set_func_pointer(HCone->coneBuildSchurFixed, sdpSparseConeGetKKTByFixedStrategy);
+            set_func_pointer(HCone->coneGetBarrier, sdpSparseConeGetBarrier);
+            set_func_pointer(HCone->conePFeasCheck, NULL);
+            set_func_pointer(HCone->conePRecover, NULL);
+            set_func_pointer(HCone->coneScal, NULL);
+            set_func_pointer(HCone->coneView, sdpSparseConeViewImpl);
             break;
         case HDSDP_CONETYPE_SOCP:
             retcode = HDSDP_RETCODE_FAILED;
@@ -198,9 +204,9 @@ extern void HConeUpdate( hdsdp_cone *HCone, double barHsdTau, double *rowDual ) 
     return;
 }
 
-extern double HConeRatioTest( hdsdp_cone *HCone, double barHsdTauStep, double *rowDualStep ) {
+extern hdsdp_retcode HConeRatioTest( hdsdp_cone *HCone, double barHsdTauStep, double *rowDualStep, double dAdaRatio, double *maxStep ) {
     
-    return HCone->coneRatioTest(HCone->coneData, barHsdTauStep, rowDualStep);
+    return HCone->coneRatioTest(HCone->coneData, barHsdTauStep, rowDualStep, dAdaRatio, maxStep);
 }
 
 /* Schur complement and algorithm iterates */
