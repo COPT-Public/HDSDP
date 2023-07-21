@@ -78,14 +78,24 @@ for q = 1:s
     
     if printdualslack
         Rd = 5;
+        Rd = 1e+03;
         y = 0.0 * (1:m) / m;
         B = eye(n) * Rd - hdsdp_aty(Amat(:, q), y) + Cmat{q} * 1.5;
         spB = sparse(B);
         fprintf("logdet: %20.10e \n", hdsdp_logdet(spB));
+        
+        % Ratio test
+        dy = (1:m) / m;
+        dS = -0.9 * eye(n) * Rd - hdsdp_aty(Amat(:, q), dy) + Cmat{q} * 1.0;
+        
+        alphamax = hdsdp_ratiotest(spB, dS);
+        fprintf("ratio: %20.10e \n", alphamax);
+        
     end % End if
     
     if setupkkt
         Rd = 5;
+        Rd = 1e+03;
         y = 0.0 * (1:m) / m;
         B = eye(n) * Rd - hdsdp_aty(Amat(:, q), y) + Cmat{q} * 1.5;
         chol(B);

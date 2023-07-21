@@ -27,7 +27,7 @@ extern void HConeView( hdsdp_cone *HCone );
 
 extern void HConeSetStart( hdsdp_cone *HCone, double dConeStartVal );
 extern void HConeUpdate( hdsdp_cone *HCone, double barHsdTau, double *rowDual );
-extern double HConeRatioTest( hdsdp_cone *HCone, double barHsdTauStep, double *rowDualStep );
+extern hdsdp_retcode HConeRatioTest( hdsdp_cone *HCone, double barHsdTauStep, double *rowDualStep, double dAdaRatio, double *maxStep );
 extern int64_t HConeGetSymNnz( hdsdp_cone *HCone );
 extern void HConeAddSymNz( hdsdp_cone *HCone, int iCol, int *schurMatCol );
 extern void HConeGetSymMapping( hdsdp_cone *HCone, int iCol, int *schurMatCol );

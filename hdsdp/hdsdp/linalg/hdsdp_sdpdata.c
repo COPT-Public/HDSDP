@@ -1717,7 +1717,6 @@ static double KKT5Pair_Sparse_RankOneDense( sdp_coeff_sparse *A, sdp_coeff_dsr1 
         trace(A * S^-1 * B * S^-1 ) = sgn * trace(v' * A * v)
      */
     
-    double dTraceSinvASinvB = 0.0;
     double *dSinvAVec = aux;
     
     /* Compute v */

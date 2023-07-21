@@ -467,13 +467,12 @@ static void sdpDenseConeILanczosMultiply( void *cone, double *dLhsVec, double *d
         for ( int iCol = 0; iCol < dsCone->nCol; ++iCol ) {
             /* The first element of each column must be on the diagonal due to the identity dual residual */
             dsCone->dVecBuffer[dsCone->dualMatIdx[dsCone->dualMatBeg[iCol]]] -= \
-            dsCone->dualStep[iCol] * dRhsVec[dsCone->dualMatIdx[dsCone->dualMatBeg[iCol]]];
+                dsCone->dualStep[dsCone->dualMatBeg[iCol]] * dRhsVec[dsCone->dualMatIdx[dsCone->dualMatBeg[iCol]]];
             /* For each of element not in the diagonal, we have to map it to its symmetric position */
-            for ( int iRow = dsCone->dualMatBeg[iCol] + 1; iRow < dsCone->dualMatBeg[iCol + 1]; ++iRow ) {
-                dsCone->dVecBuffer[dsCone->dualMatIdx[iRow]] -= \
-                dsCone->dualStep[iCol] * dRhsVec[dsCone->dualMatIdx[iRow]];
-                dsCone->dVecBuffer[dsCone->dualMatIdx[iCol]] -= \
-                dsCone->dualStep[iRow] * dRhsVec[dsCone->dualMatIdx[iCol]];
+            for ( int iElem = dsCone->dualMatBeg[iCol] + 1; iElem < dsCone->dualMatBeg[iCol + 1]; ++iElem ) {
+                int iRow = dsCone->dualMatIdx[iElem];
+                dsCone->dVecBuffer[iRow] -= dsCone->dualStep[iElem] * dRhsVec[iRow];
+                dsCone->dVecBuffer[iCol] -= dsCone->dualStep[iElem] * dRhsVec[iCol];
             }
         }
     } else {

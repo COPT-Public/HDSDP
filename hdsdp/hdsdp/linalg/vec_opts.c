@@ -184,8 +184,11 @@ extern double normalize( int *n, double *a ) {
     
     double norm = nrm2(n, a, &HIntConstantOne);
     
-    if ( norm > 1e-15 ) {
+    if ( norm > 1e-16 ) {
         drscl(n, &norm, a, &HIntConstantOne);
+    } else {
+        norm = 0.0;
+        HDSDP_ZERO(a, double, *n);
     }
     
     return norm;
