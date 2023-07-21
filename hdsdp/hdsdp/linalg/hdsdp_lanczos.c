@@ -14,8 +14,8 @@
 
 #include <math.h>
 
-#define SYEV_WORK 30
-#define SYEV_IWORK 12
+#define SYEV_WORK  (30)
+#define SYEV_IWORK (12)
 
 static void dArrSymmetrize( int n, double *dArray ) {
     

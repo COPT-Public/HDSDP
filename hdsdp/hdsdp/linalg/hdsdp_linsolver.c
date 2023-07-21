@@ -630,16 +630,20 @@ static hdsdp_retcode conjGradLinSolverSymbolic( void *chol, int *dummy1, int *du
     return HDSDP_RETCODE_OK;
 }
 
+static hdsdp_retcode conjGradBuildPreconditioner( iterative_linsys *cg );
 static hdsdp_retcode conjGradLinSolverNumeric( void *chol, int *dummy1, int *dummy2, double *dFullMatrix ) {
     
+    hdsdp_retcode retcode = HDSDP_RETCODE_OK;
     (void) chol;
     (void) dummy1;
     (void) dummy2;
     
     iterative_linsys *cg = (iterative_linsys *) chol;
     cg->fullMatElem = dFullMatrix;
+    HDSDP_CALL(conjGradBuildPreconditioner(cg));
     
-    return HDSDP_RETCODE_OK;
+exit_cleanup:
+    return retcode;
 }
 
 static hdsdp_retcode conjGradLinSolverPsdCheck( void *chol, int *dummy1, int *dummy2, double *dummy3, int *dummy4 ) {
@@ -704,7 +708,7 @@ static void conjGradApplyPreconditioner( iterative_linsys *cg, double *rhsVec ) 
     if ( cg->useJacobi ) {
         vvrscl(&cg->nCol, cg->JacobiPrecond, rhsVec);
     } else {
-        lapackLinSolverSolveN((void *) cg, 1, rhsVec, NULL);
+        lapackLinSolverSolveN((void *) cg->lap, 1, rhsVec, NULL);
     }
     
     return;
@@ -760,7 +764,6 @@ static hdsdp_retcode conjGradSolve( iterative_linsys *cg, double *rhsVec, double
     }
     
     /* Build preconditioner */
-    HDSDP_CALL(conjGradBuildPreconditioner(cg));
     HDSDP_MEMCPY(iterDirection, iterResi, double, cg->nCol);
     
     /* Initial iteration preparation */
