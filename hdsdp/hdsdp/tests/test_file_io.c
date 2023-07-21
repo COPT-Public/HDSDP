@@ -76,6 +76,9 @@ hdsdp_retcode test_schur_consistency( hdsdp_kkt *kkt ) {
         e3_4 = fabs(kktBuffer3[iElem] - kktBuffer4[iElem]) / (fabs(kktBuffer3[iElem]) + 1);
         e3_2345 = fabs(kktBuffer3[iElem] - kktBuffer2345[iElem]) / (fabs(kktBuffer3[iElem]) + 1);
         e4_2345 = fabs(kktBuffer4[iElem] - kktBuffer2345[iElem]) / (fabs(kktBuffer3[iElem]) + 1);
+        e3_4 = fabs(kktBuffer3[iElem] - kktBuffer4[iElem]) / (fabs(kktBuffer3[iElem]) + 1e-04);
+        e3_2345 = fabs(kktBuffer3[iElem] - kktBuffer2345[iElem]) / (fabs(kktBuffer3[iElem]) + 1e-04);
+        e4_2345 = fabs(kktBuffer4[iElem] - kktBuffer2345[iElem]) / (fabs(kktBuffer3[iElem]) + 1e-04);
         
         err3_4 += e3_4;
         err3_2345 += e3_2345;
@@ -157,6 +160,9 @@ int test_file_io( char *fname ) {
                              coneMatBeg[iBlk], coneMatIdx[iBlk], coneMatElem[iBlk]);
         cone_type cone = HUserDataChooseCone(SDPData);
         HDSDP_CALL(HConeCreate(&SDPCone));
+        
+        SDPCones[iBlk] = SDPCone;
+        
         HDSDP_CALL(HConeSetData(SDPCone, SDPData));
         HDSDP_CALL(HConeProcData(SDPCone));
 //        HConeView(SDPCone);
@@ -167,14 +173,13 @@ int test_file_io( char *fname ) {
             rowDual[i] = 0.0 * (double) (i + 1) / nConstrs;
         }
         
-        HConeSetStart(SDPCone, -5);
+        HConeSetStart(SDPCone, -1e+06);
         HConeUpdate(SDPCone, 1.0, rowDual);
 //        HConeView(SDPCone);
         
         HDSDP_CALL(HConeGetLogBarrier(SDPCone, 1.5, rowDual, &logdet));
         printf("- Conic log det (S) = %e. \n", logdet);
         
-        SDPCones[iBlk] = SDPCone;
         HUserDataClear(SDPData);
     }
     
@@ -203,7 +208,7 @@ int test_file_io( char *fname ) {
 //    HDSDP_CALL(HKKTSolve(kkt, kktLhsBuffer, NULL));
     
     /* KKT consistency */
-     HDSDP_CALL(test_schur_consistency(kkt));
+    HDSDP_CALL(test_schur_consistency(kkt));
     
 exit_cleanup:
     

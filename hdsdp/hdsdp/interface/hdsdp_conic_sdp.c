@@ -546,9 +546,9 @@ static int sdpDenseConeIChooseKKTStrategy( int *rowRanks, int *rowSparsity, int 
     
     /* Compute the score function */
     KKTScore2 = rowRank * ((double) rowSparsity[iPerm] * nCol + 3 * SPARSE_EFFICIENCY * nNzAfter);
-    KKTScore3 = (double) nCol * SPARSE_EFFICIENCY * rowSparsity[rowIdx] + nCubed + SPARSE_EFFICIENCY * nNzAfter;
-    KKTScore4 = (double) nCol * SPARSE_EFFICIENCY * rowSparsity[rowIdx] + SPARSE_EFFICIENCY * (nCol + 1) * nNzAfter;
-    KKTScore5 = SPARSE_EFFICIENCY * (2.0 * SPARSE_EFFICIENCY * rowSparsity[rowIdx] + 1) * nNzAfter;
+    KKTScore3 = (double) nCol * SPARSE_EFFICIENCY * rowSparsity[iPerm] + nCubed + SPARSE_EFFICIENCY * nNzAfter;
+    KKTScore4 = (double) nCol * SPARSE_EFFICIENCY * rowSparsity[iPerm] + SPARSE_EFFICIENCY * (nCol + 1) * nNzAfter;
+    KKTScore5 = SPARSE_EFFICIENCY * (2.0 * SPARSE_EFFICIENCY * rowSparsity[iPerm] + 1) * nNzAfter;
         
     /* Choose the best KKT strategy */
     if ( KKTScore2 <= bestKKTScore ) {
@@ -589,7 +589,7 @@ static hdsdp_retcode sdpDenseConeIGetKKTOrdering( hdsdp_cone_sdp_dense *cone ) {
      --------------------
      Rank based
      --------------------
-     M1: Not in use
+     M1: Make use of low-rank property. Requires eigen decomposition 
      --
      M2: Make use of both low-rank and sparsity of the coefficient matrices
      --
@@ -940,7 +940,7 @@ static hdsdp_retcode sdpDenseConeIGetKKTColumnByKKT5( hdsdp_cone_sdp_dense *cone
     
     if ( doHSDComputation ) {
         /* Set up dASinvCSinvVec[i] */
-        double dASinvCSinvVal = sdpDataMatKKT5TraceASinvBSinv(sdpTargetMatrix, cone->sdpObj, kkt->invBuffer, dAuxiMat);;
+        double dASinvCSinvVal = sdpDataMatKKT5TraceASinvBSinv(sdpTargetMatrix, cone->sdpObj, kkt->invBuffer, dAuxiMat);
         kkt->dASinvCSinvVec[iPermKKTCol] += dASinvCSinvVal;
     }
     
@@ -1103,6 +1103,52 @@ static hdsdp_retcode sdpSparseConeIGetKKTColumnByKKT3( hdsdp_cone_sdp_sparse *co
         int iKKTPosition = PACK_ENTRY(cone->kktMapping, cone->nRowElem, iRowElem, iKKTNzCol);
         kkt->kktMatElem[iKKTPosition] += \
         sdpDataMatKKT3TraceABuffer(cone->sdpRow[iRowElem], dSinvASinvBuffer, dAuxiMat);
+    }
+    
+exit_cleanup:
+    return retcode;
+}
+
+static hdsdp_retcode sdpSparseConeIGetKKTColumnByKKT4( hdsdp_cone_sdp_sparse *cone, hdsdp_kkt *kkt, int iKKTNzCol, int typeKKT ) {
+    
+    hdsdp_retcode retcode = HDSDP_RETCODE_OK;
+    assert ( typeKKT != KKT_TYPE_CORRECTOR );
+    
+    /* In general this method should not be invoked. But we still implement it for cross-validation  */
+    
+    int iKKTCol = cone->rowIdx[iKKTNzCol];
+    sdp_coeff *sdpTargetMatrix = cone->sdpRow[iKKTNzCol];
+    
+    double *dASinvBuffer = kkt->kktBuffer;
+    double *dAuxiMat = kkt->kktBuffer2;
+    
+    /* Do we compute the self-dual components */
+    int doHSDComputation = 0;
+    
+    if ( typeKKT == KKT_TYPE_HOMOGENEOUS ) {
+        doHSDComputation = 1;
+    }
+    
+    kkt->dASinvRdSinvVec[iKKTCol] += \
+    sdpDataMatKKT4ComputeASinv(sdpTargetMatrix, cone->dualFactor, kkt->invBuffer, dAuxiMat, cone->dualResidual, dASinvBuffer);
+    
+    /* Compute trace(A * S^-1) */
+    double dTraceBuffer = 0.0;
+    for ( int iCol = 0; iCol < cone->nCol; ++iCol ) {
+        dTraceBuffer += dASinvBuffer[iCol + cone->nCol * iCol];
+    }
+    kkt->dASinvVec[iKKTCol] += dTraceBuffer;
+    
+    if ( doHSDComputation ) {
+        /* Set up dASinvCSinvVec[i] */
+        kkt->dASinvCSinvVec[iKKTCol] += \
+        sdpDataMatKKT4TraceASinvBuffer(cone->sdpObj, cone->dualFactor, kkt->invBuffer, dASinvBuffer, dAuxiMat);
+    }
+    
+    for ( int iRowElem = iKKTNzCol; iRowElem < cone->nRowElem ; ++iRowElem ) {
+        int iKKTPosition = PACK_ENTRY(cone->kktMapping, cone->nRowElem, iRowElem, iKKTNzCol);
+        kkt->kktMatElem[iKKTPosition] += \
+        sdpDataMatKKT4TraceASinvBuffer(cone->sdpRow[iRowElem], cone->dualFactor, kkt->invBuffer, dASinvBuffer, dAuxiMat);
     }
     
 exit_cleanup:
@@ -1587,6 +1633,12 @@ extern hdsdp_retcode sdpDenseConeGetKKT( hdsdp_cone_sdp_dense *cone, void *kkt, 
             continue;
         }
         
+#if 0
+        if ( cone->sdpConePerm[iKKTCol] == 0 ) {
+            printf("Here. \n");
+        }
+#endif
+        
         switch (cone->KKTStrategies[iKKTCol]) {
             case KKT_M1:
                 HDSDP_CALL(sdpDenseConeIGetKKTColumnByKKT1(cone, Hkkt, iKKTCol, typeKKT));
@@ -1690,12 +1742,19 @@ extern hdsdp_retcode sdpSparseConeGetKKT( hdsdp_cone_sdp_sparse *cone, void *kkt
         int KKTStrategy = KKT_M1;
         (void) KKTStrategy;
         
+#if 0
+        if ( cone->rowIdx[iKKTNzCol] == 0 ) {
+            printf("Here. \n");
+        }
+#endif
+        
         sdp_coeff_type dataType = sdpDataMatGetType(cone->sdpRow[iKKTNzCol]);
         
         switch (dataType) {
             case SDP_COEFF_SPARSE:
                 /* Use M5 */
                 HDSDP_CALL(sdpSparseConeIGetKKTColumnByKKT5(cone, Hkkt, iKKTNzCol, typeKKT));
+                break;
             case SDP_COEFF_DENSE:
                 HDSDP_CALL(sdpSparseConeIGetKKTColumnByKKT3(cone, Hkkt, iKKTNzCol, typeKKT));
                 break;
@@ -1749,7 +1808,7 @@ extern hdsdp_retcode sdpSparseConeGetKKTByFixedStrategy( hdsdp_cone_sdp_sparse *
                 HDSDP_CALL(sdpSparseConeIGetKKTColumnByKKT3(cone, Hkkt, iKKTNzCol, typeKKT));
                 break;
             case KKT_M4:
-                assert( 0 );
+                HDSDP_CALL(sdpSparseConeIGetKKTColumnByKKT4(cone, Hkkt, iKKTNzCol, typeKKT));
                 break;
             case KKT_M5:
                 HDSDP_CALL(sdpSparseConeIGetKKTColumnByKKT5(cone, Hkkt, iKKTNzCol, typeKKT));

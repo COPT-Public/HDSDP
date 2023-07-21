@@ -206,7 +206,7 @@ hdsdp_retcode HReadSDPA( char *fname, int *pnConstrs, int *pnBlks, int **pblkDim
         
         if ( sscanf(fileLine, "%d %d %d %d %lg", &iCon, &iBlk, &iRow, &iCol, &dElem) != 5 ) {
             
-            if ( feof(file) ) {
+            if ( feof(file) || strcmp(fileLine, "BEGIN.COMMENT  \n") == 0 ) {
                 break;
             } else {
                 HDSDP_ERROR_TRACE;

@@ -931,9 +931,9 @@ static void dataMatRankOneSparseKKT2SolveRankOneImpl( void *A, hdsdp_linsys *S, 
     } else {
         /* If a contains few nonzeros, we take linear combination of Sinv */
         HDSDP_ZERO(v, double, spr1->nSDPCol);
-        for ( int i = 0; i < spr1->nSpR1FactorElem; ++i ) {
-            double ai = spr1->spR1MatElem[i];
-            axpy(&spr1->nSDPCol, &ai, Sinv + spr1->spR1MatIdx[i] * spr1->nSDPCol,
+        for ( int iElem = 0; iElem < spr1->nSpR1FactorElem; ++iElem ) {
+            double ai = spr1->spR1MatElem[iElem];
+            axpy(&spr1->nSDPCol, &ai, Sinv + spr1->spR1MatIdx[iElem] * spr1->nSDPCol,
                  &HIntConstantOne, v, &HIntConstantOne);
         }
     }
@@ -1639,15 +1639,15 @@ static double KKT5Pair_Sparse_Sparse( sdp_coeff_sparse *A, sdp_coeff_sparse *B, 
         for ( iBElem = 0; iBElem < B->nTriMatElem; ++iBElem ) {
             if ( B->triMatRow[iBElem] == B->triMatCol[iBElem] ) {
                 dTraceBuffer += B->triMatElem[iBElem] * \
-                Sinv[iRowTimesNCol + B->triMatRow[iBElem]] * \
-                Sinv[iColTimesNCol + B->triMatCol[iBElem]];
+                                Sinv[iRowTimesNCol + B->triMatRow[iBElem]] * \
+                                Sinv[iColTimesNCol + B->triMatCol[iBElem]];
             } else {
                 dTraceBuffer += B->triMatElem[iBElem] * \
-                Sinv[iRowTimesNCol + B->triMatRow[iBElem]] * \
-                Sinv[iColTimesNCol + B->triMatCol[iBElem]];
+                                Sinv[iRowTimesNCol + B->triMatRow[iBElem]] * \
+                                Sinv[iColTimesNCol + B->triMatCol[iBElem]];
                 dTraceBuffer += B->triMatElem[iBElem] * \
-                Sinv[iRowTimesNCol + B->triMatCol[iBElem]] * \
-                Sinv[iColTimesNCol + B->triMatRow[iBElem]];
+                                Sinv[iRowTimesNCol + B->triMatCol[iBElem]] * \
+                                Sinv[iColTimesNCol + B->triMatRow[iBElem]];
             }
         }
         
@@ -1662,15 +1662,67 @@ static double KKT5Pair_Sparse_Sparse( sdp_coeff_sparse *A, sdp_coeff_sparse *B, 
 }
 
 static double KKT5Pair_Sparse_Dense( sdp_coeff_sparse *A, sdp_coeff_dense *B, double *Sinv, double *aux ) {
-    /* TODO: Implement this operation */
+    /* Implement trace(A * S^-1 * B * S^-1 ) for sparse A and dense B */
+    double dTraceSinvASinvB = 0.0;
+    int iAElem = 0;
+    int iARow = 0;
+    int iACol = 0;
+    double dAElem = 0.0;
     
-    return 0.0;
+    int iBRow = 0;
+    int iBCol = 0;
+    double *BCol = B->dsMatElem;
+    
+    int iRowTimesNCol = 0;
+    int iColTimesNCol = 0;
+    double dTraceBuffer = 0.0;
+    
+    for ( iAElem = 0; iAElem < A->nTriMatElem; ++iAElem ) {
+        
+        dAElem = A->triMatElem[iAElem];
+        iARow = A->triMatRow[iAElem];
+        iACol = A->triMatCol[iAElem];
+        iRowTimesNCol = iARow * A->nSDPCol;
+        iColTimesNCol = iACol * A->nSDPCol;
+        dTraceBuffer = 0.0;
+        
+        for ( iBCol = 0; iBCol < B->nSDPCol; ++iBCol ) {
+            /* First deal with diagonal */
+            dTraceBuffer += BCol[0] * Sinv[iRowTimesNCol + iBCol] * Sinv[iColTimesNCol + iBCol];
+            for ( iBRow = iBCol; iBRow < B->nSDPCol; ++iBRow ) {
+                dTraceBuffer += BCol[iBRow - iBCol] * \
+                                Sinv[iRowTimesNCol + iBRow] * \
+                                Sinv[iColTimesNCol + iBCol];
+                dTraceBuffer += BCol[iBRow - iBCol] * \
+                                Sinv[iRowTimesNCol + iBCol] * \
+                                Sinv[iColTimesNCol + iBRow];
+            }
+            
+            BCol += B->nSDPCol - iBCol;
+        }
+        
+        if ( iARow == iACol ) {
+            dTraceSinvASinvB += 0.5 * dAElem * dTraceBuffer;
+        } else {
+            dTraceSinvASinvB += dAElem * dTraceBuffer;
+        }
+    }
+    
+    return 2.0 * dTraceSinvASinvB;
 }
 
 static double KKT5Pair_Sparse_RankOneDense( sdp_coeff_sparse *A, sdp_coeff_dsr1 *B, double *Sinv, double *aux ) {
-    /* TODO: Implement this operation */
+    /* Implement trace(A * S^-1 * B * S^-1 ) for sparse A and rank-one dense B
+        Note that B = sign * a * a' and
+        trace(A * S^-1 * B * S^-1 ) = sgn * trace(v' * A * v)
+     */
     
-    return 0.0;
+    double dTraceSinvASinvB = 0.0;
+    double *dSinvAVec = aux;
+    
+    /* Compute v */
+    fds_symv(B->nSDPCol, 1.0, Sinv, B->r1MatFactor, 0.0, dSinvAVec);
+    return B->r1FactorSign * tsp_quadform(A->nSDPCol, A->nTriMatElem, A->triMatRow, A->triMatCol, A->triMatElem, dSinvAVec);
 }
 
 static double KKT5Pair_Sparse_RankOneSparse( sdp_coeff_sparse *A, sdp_coeff_spr1 *B, double *Sinv, double *aux ) {
@@ -1742,15 +1794,94 @@ static double KKT5Pair_RankOneSparse_RankOneSparse( sdp_coeff_spr1 *A, sdp_coeff
 }
 
 static double KKT5Pair_RankOneSparse_Dense( sdp_coeff_spr1 *A, sdp_coeff_dense *B, double *Sinv, double *aux ) {
-    /* TODO: Implement this operation */
+    /* Implement trace(A * S^-1 * B * S^-1 ) for sparse rank one A and dense B
+       This routine is inefficient and will not be invoked in general
+     */
     
-    return 0.0;
+    double dTraceSinvASinvB = 0.0;
+    int iARowElem = 0;
+    int iAColElem = 0;
+    double dAElem = 0.0;
+    
+    int iBRow = 0;
+    int iBCol = 0;
+    double *BCol = B->dsMatElem;
+    
+    int iRowTimesNCol = 0;
+    int iColTimesNCol = 0;
+    double dTraceBuffer = 0.0;
+    
+    for ( iARowElem = 0; iARowElem < A->nSpR1FactorElem; ++iARowElem ) {
+        for ( iAColElem = 0; iAColElem < iARowElem; ++iAColElem ) {
+            
+            dAElem = A->spR1MatElem[iARowElem] * A->spR1MatElem[iAColElem];
+            iRowTimesNCol = A->spR1MatIdx[iARowElem] * A->nSDPCol;
+            iColTimesNCol = A->spR1MatIdx[iAColElem] * A->nSDPCol;
+            dTraceBuffer = 0.0;
+            
+            for ( iBCol = 0; iBCol < B->nSDPCol; ++iBCol ) {
+                /* First deal with diagonal */
+                dTraceBuffer += BCol[0] * Sinv[iRowTimesNCol + iBCol] * Sinv[iColTimesNCol + iBCol];
+                for ( iBRow = iBCol; iBRow < B->nSDPCol; ++iBRow ) {
+                    dTraceBuffer += BCol[iBRow - iBCol] * \
+                                    Sinv[iRowTimesNCol + iBRow] * \
+                                    Sinv[iColTimesNCol + iBCol];
+                    dTraceBuffer += BCol[iBRow - iBCol] * \
+                                    Sinv[iRowTimesNCol + iBCol] * \
+                                    Sinv[iColTimesNCol + iBRow];
+                }
+                
+                BCol += B->nSDPCol - iBCol;
+            }
+            
+            dTraceSinvASinvB += dAElem * dTraceBuffer;
+        }
+        
+        /* Dealing with diagonal */
+        dAElem = A->spR1MatElem[iARowElem] * A->spR1MatElem[iARowElem];
+        iRowTimesNCol = A->spR1MatIdx[iARowElem] * A->nSDPCol;
+        iColTimesNCol = iRowTimesNCol;
+        dTraceBuffer = 0.0;
+        
+        for ( iBCol = 0; iBCol < B->nSDPCol; ++iBCol ) {
+            dTraceBuffer += BCol[0] * Sinv[iRowTimesNCol + iBCol] * Sinv[iColTimesNCol + iBCol];
+            for ( iBRow = iBCol; iBRow < B->nSDPCol; ++iBRow ) {
+                dTraceBuffer += BCol[iBRow - iBCol] * \
+                                Sinv[iRowTimesNCol + iBRow] * \
+                                Sinv[iColTimesNCol + iBCol];
+                dTraceBuffer += BCol[iBRow - iBCol] * \
+                                Sinv[iRowTimesNCol + iBCol] * \
+                                Sinv[iColTimesNCol + iBRow];
+            }
+            
+            BCol += B->nSDPCol - iBCol;
+        }
+        
+        dTraceSinvASinvB += 0.5 * dAElem * dTraceBuffer;
+    }
+    
+    return A->spR1FactorSign * dTraceSinvASinvB;
 }
 
-static double KKT5Pair_RankOneSparse_RankOneDense( sdp_coeff_spr1 *A, sdp_coeff_dense *B, double *Sinv, double *aux ) {
-    /* TODO: Implement this operation */
+static double KKT5Pair_RankOneSparse_RankOneDense( sdp_coeff_spr1 *A, sdp_coeff_dsr1 *B, double *Sinv, double *aux ) {
+    /* Implement trace(A * S^-1 * B * S^-1 ) for sparse rank one A and dense rank one B
+      trace(A * S^-1 * B * S^-1 )
+    = signa * signb * trace( a * a' * S^-1 * b * b' * S^-1 )
+    = signa * signb *  (a' * S^-1 * b)^2
+    */
     
-    return 0.0;
+    double *dSinvAVec = aux;
+    /* Fast computation of S^-1 a */
+    HDSDP_ZERO(dSinvAVec, double, A->nSDPCol);
+    for ( int iElem = 0; iElem < A->nSpR1FactorElem; ++iElem ) {
+        double ai = A->spR1MatElem[iElem];
+        axpy(&A->nSDPCol, &ai, Sinv + A->spR1MatIdx[iElem] * A->nSDPCol,
+             &HIntConstantOne, dSinvAVec, &HIntConstantOne);
+    }
+    
+    double dSinvAVecDotBVec = dot(&A->nSDPCol, dSinvAVec, &HIntConstantOne, B->r1MatFactor, &HIntConstantOne);
+    
+    return A->spR1FactorSign * B->r1FactorSign * dSinvAVecDotBVec * dSinvAVecDotBVec;
 }
 
 static double dataMatZeroKKT5TraceASinvBSinvImpl( void *A, sdp_coeff *B, double *Sinv, double *aux ) {
@@ -1769,9 +1900,14 @@ static double dataMatSparseKKT5TraceASinvBSinvImpl( void *A, sdp_coeff *B, doubl
         case SDP_COEFF_SPARSE:
             return KKT5Pair_Sparse_Sparse(sparse, B->dataMat, Sinv, aux);
             break;
+        case SDP_COEFF_DENSE:
+            return KKT5Pair_Sparse_Dense(sparse, B->dataMat, Sinv, aux);
+            break;
         case SDP_COEFF_SPR1:
             return KKT5Pair_Sparse_RankOneSparse(sparse, B->dataMat, Sinv, aux);
             break;
+        case SDP_COEFF_DSR1:
+            return KKT5Pair_Sparse_RankOneDense(sparse, B->dataMat, Sinv, aux);
         default:
             assert( 0 );
             break;
@@ -1797,8 +1933,14 @@ static double dataMatRankOneSparseKKT5TraceASinvBSinvImpl( void *A, sdp_coeff *B
         case SDP_COEFF_SPARSE:
             return KKT5Pair_Sparse_RankOneSparse(B->dataMat, spr1, Sinv, aux);
             break;
+        case SDP_COEFF_DENSE:
+            return KKT5Pair_RankOneSparse_Dense(spr1, B->dataMat, Sinv, aux);
+            break;
         case SDP_COEFF_SPR1:
             return KKT5Pair_RankOneSparse_RankOneSparse(spr1, B->dataMat, Sinv, aux);
+            break;
+        case SDP_COEFF_DSR1:
+            return KKT5Pair_RankOneSparse_RankOneDense(spr1, B->dataMat, Sinv, aux);
             break;
         default:
             assert( 0 );
@@ -1918,42 +2060,6 @@ static double dataMatRankOneDenseKKT5SinvADotSinvImpl( void *A, hdsdp_linsys *S,
     dataMatRankOneDenseKKT2SolveRankOneImpl(A, S, Sinv, &dFactorSign, dSinvAVec);
     
     return dFactorSign * dot(&dsr1->nSDPCol, dSinvAVec, &HIntConstantOne, dsr1->r1MatFactor, &HIntConstantOne);
-}
-
-/*==========================================================================================*/
-/* KKT operation: template */
-/*==========================================================================================*/
-static void dataMatZeroKKTImpl( void *A ) {
-    
-    return;
-}
-
-static void dataMatSparseKKTImpl( void *A ) {
-    
-    sdp_coeff_sparse *sparse = (sdp_coeff_sparse *) A;
-    
-    return;
-}
-
-static void dataMatDenseKKTImpl( void *A ) {
-    
-    sdp_coeff_dense *dense = (sdp_coeff_dense *) A;
-    
-    return;
-}
-
-static void dataMatRankOneSparseKKTImpl( void *A ) {
-    
-    sdp_coeff_spr1 *spr1 = (sdp_coeff_spr1 *) A;
-    
-    return;
-}
-
-static void dataMatRankOneDenseKKTImpl( void *A ) {
-    
-    sdp_coeff_dsr1 *dsr1 = (sdp_coeff_dsr1 *) A;
-    
-    return;
 }
 
 static void sdpDataMatIChooseType( sdp_coeff *sdpCoeff, sdp_coeff_type dataType ) {
