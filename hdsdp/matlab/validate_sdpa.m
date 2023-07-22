@@ -77,7 +77,6 @@ for q = 1:s
     end % End if
     
     if printdualslack
-        Rd = 5;
         Rd = 1e+03;
         y = 0.0 * (1:m) / m;
         B = eye(n) * Rd - hdsdp_aty(Amat(:, q), y) + Cmat{q} * 1.5;
@@ -94,7 +93,6 @@ for q = 1:s
     end % End if
     
     if setupkkt
-        Rd = 5;
         Rd = 1e+03;
         y = 0.0 * (1:m) / m;
         B = eye(n) * Rd - hdsdp_aty(Amat(:, q), y) + Cmat{q} * 1.5;
