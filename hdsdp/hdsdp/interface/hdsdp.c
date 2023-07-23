@@ -290,9 +290,9 @@ extern void HDSDPClear( hdsdp *HSolver ) {
     
     for ( int iCone = 0; iCone < HSolver->nCones; ++iCone ) {
         HConeDestroy(&HSolver->HCones[iCone]);
-        HDSDP_FREE(HSolver->HCones);
     }
     
+    HDSDP_FREE(HSolver->HCones);
     HKKTDestroy(&HSolver->HKKT);
     
     HDSDP_FREE(HSolver->dRowDual);
