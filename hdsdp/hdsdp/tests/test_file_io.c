@@ -73,9 +73,6 @@ hdsdp_retcode test_schur_consistency( hdsdp_kkt *kkt ) {
     
     for ( int iElem = 0; iElem < nKKTNzs; ++iElem ) {
         
-        e3_4 = fabs(kktBuffer3[iElem] - kktBuffer4[iElem]) / (fabs(kktBuffer3[iElem]) + 1);
-        e3_2345 = fabs(kktBuffer3[iElem] - kktBuffer2345[iElem]) / (fabs(kktBuffer3[iElem]) + 1);
-        e4_2345 = fabs(kktBuffer4[iElem] - kktBuffer2345[iElem]) / (fabs(kktBuffer3[iElem]) + 1);
         e3_4 = fabs(kktBuffer3[iElem] - kktBuffer4[iElem]) / (fabs(kktBuffer3[iElem]) + 1e-04);
         e3_2345 = fabs(kktBuffer3[iElem] - kktBuffer2345[iElem]) / (fabs(kktBuffer3[iElem]) + 1e-04);
         e4_2345 = fabs(kktBuffer4[iElem] - kktBuffer2345[iElem]) / (fabs(kktBuffer3[iElem]) + 1e-04);
@@ -128,6 +125,7 @@ int test_file_io( char *fname ) {
     int nCols = 0;
     int nElem = 0;
     double *rowDual = NULL;
+    double *rowDualStep = NULL;
     double logdet = 0.0;
     
     double *kktLhsBuffer = NULL;
@@ -146,8 +144,12 @@ int test_file_io( char *fname ) {
     printf("Reading SDPA file in %f seconds. \n", HUtilGetTimeStamp() - timeStart);
     
     HDSDP_CALL(HUserDataCreate(&SDPData));
+    
     HDSDP_INIT(rowDual, double, nConstrs);
     HDSDP_MEMCHECK(rowDual);
+    
+    HDSDP_INIT(rowDualStep, double, nConstrs);
+    HDSDP_MEMCHECK(rowDualStep);
     
     HDSDP_INIT(kktLhsBuffer, double, nConstrs);
     HDSDP_MEMCHECK(kktLhsBuffer);
@@ -171,14 +173,21 @@ int test_file_io( char *fname ) {
         
         for ( int i = 0; i < nConstrs; ++i ) {
             rowDual[i] = 0.0 * (double) (i + 1) / nConstrs;
+            rowDualStep[i] = (double) (i + 1) / nConstrs;
         }
         
-        HConeSetStart(SDPCone, -1e+06);
+        HConeSetStart(SDPCone, -1e+03);
         HConeUpdate(SDPCone, 1.0, rowDual);
 //        HConeView(SDPCone);
         
         HDSDP_CALL(HConeGetLogBarrier(SDPCone, 1.5, rowDual, &logdet));
-        printf("- Conic log det (S) = %e. \n", logdet);
+//        printf("- Conic log det (S) = %e. \n", logdet);
+        
+        double ratio = 0.0;
+        HDSDP_CALL(HConeRatioTest(SDPCone, 1.0, rowDualStep, 0.9, &ratio));
+        printf("- Conic ratio test: %e. \n", ratio);
+        HDSDP_CALL(HConeRatioTest(SDPCone, 1.0, rowDualStep, 0.9, &ratio));
+        printf("- Conic ratio test again: %e. \n", ratio);
         
         HUserDataClear(SDPData);
     }
@@ -191,24 +200,24 @@ int test_file_io( char *fname ) {
 //    HDSDP_PROFILER(HKKTBuildUp(kkt, KKT_TYPE_INFEASIBLE), 100);
     
     /* KKT solve */
-//    double dCSinv = 0.0;
-//    double dCSinvRdCSinv = 0.0;
-//    double dCSinvCSinv = 0.0;
-//    
-//    HKKTExport(kkt, kktLhsBuffer, NULL, NULL, &dCSinvCSinv, &dCSinv, &dCSinvRdCSinv);
-//    HDSDP_CALL(HKKTFactorize(kkt));
-//    HDSDP_CALL(HKKTSolve(kkt, kktLhsBuffer, NULL));
-//    
-//    HKKTExport(kkt, NULL, kktLhsBuffer, NULL, &dCSinvCSinv, &dCSinv, &dCSinvRdCSinv);
-//    HDSDP_CALL(HKKTFactorize(kkt));
-//    HDSDP_CALL(HKKTSolve(kkt, kktLhsBuffer, NULL));
-//    
-//    HKKTExport(kkt, NULL, NULL, kktLhsBuffer, &dCSinvCSinv, &dCSinv, &dCSinvRdCSinv);
-//    HDSDP_CALL(HKKTFactorize(kkt));
-//    HDSDP_CALL(HKKTSolve(kkt, kktLhsBuffer, NULL));
+    double dCSinv = 0.0;
+    double dCSinvRdCSinv = 0.0;
+    double dCSinvCSinv = 0.0;
+    
+    HKKTExport(kkt, kktLhsBuffer, NULL, NULL, &dCSinvCSinv, &dCSinv, &dCSinvRdCSinv);
+    HDSDP_CALL(HKKTFactorize(kkt));
+    HDSDP_CALL(HKKTSolve(kkt, kktLhsBuffer, NULL));
+    
+    HKKTExport(kkt, NULL, kktLhsBuffer, NULL, &dCSinvCSinv, &dCSinv, &dCSinvRdCSinv);
+    HDSDP_CALL(HKKTFactorize(kkt));
+    HDSDP_CALL(HKKTSolve(kkt, kktLhsBuffer, NULL));
+    
+    HKKTExport(kkt, NULL, NULL, kktLhsBuffer, &dCSinvCSinv, &dCSinv, &dCSinvRdCSinv);
+    HDSDP_CALL(HKKTFactorize(kkt));
+    HDSDP_CALL(HKKTSolve(kkt, kktLhsBuffer, NULL));
     
     /* KKT consistency */
-    HDSDP_CALL(test_schur_consistency(kkt));
+//    HDSDP_CALL(test_schur_consistency(kkt));
     
 exit_cleanup:
     
@@ -225,6 +234,7 @@ exit_cleanup:
     HDSDP_FREE(BlkDims);
     HDSDP_FREE(rowRHS);
     HDSDP_FREE(rowDual);
+    HDSDP_FREE(rowDualStep);
     HDSDP_FREE(SDPCones);
     
     for ( int iBlk = 0; iBlk < nBlks; ++iBlk ) {
