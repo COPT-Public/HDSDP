@@ -79,8 +79,10 @@ typedef struct {
     hdsdp_retcode (*coneBuildSchurFixed) ( void *, void *, int, int );
     
     /* Barrier, projection and recovery */
+    hdsdp_retcode (*coneInteriorCheck) ( void *, double, double *, int * );
     hdsdp_retcode (*coneGetBarrier)  ( void *, double, double *, double * );
     int     (*conePFeasCheck)  ( void *, double, double * );
+    void    (*coneReduceResi)  ( void *, double );
     void    (*conePRecover)    ( void *, double * );
     
     double  (*coneGetCoeffNorm) ( void *, int );

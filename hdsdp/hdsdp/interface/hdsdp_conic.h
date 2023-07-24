@@ -35,6 +35,8 @@ extern int HConeGetDim( hdsdp_cone *HCone );
 extern hdsdp_retcode HConeBuildSchurComplement( hdsdp_cone *HCone, void *schurMat, int typeKKT );
 extern hdsdp_retcode HConeBuildSchurComplementFixed( hdsdp_cone *HCone, void *schurMat, int typeKKT, int kktStrategy );
 extern hdsdp_retcode HConeGetLogBarrier( hdsdp_cone *HCone, double barHsdTau, double *rowDual, double *logdet );
+extern hdsdp_retcode HConeCheckIsInterior( hdsdp_cone *HCone, double barHsdTau, double *rowDual, int *isInterior );
+extern void HConeReduceResi( hdsdp_cone *HCone, double resiReduction );
 extern int HConePFeasSolFound( hdsdp_cone *HCone, double barHsdTauStep, double *rowDualStep );
 extern void HConePVarRecover( hdsdp_cone *HCone, double *pVarArr );
 extern void HConeScalByConstant( hdsdp_cone *HCone, double dScal );

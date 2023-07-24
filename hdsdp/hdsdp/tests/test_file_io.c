@@ -141,7 +141,7 @@ int test_file_io( char *fname ) {
                          &coneMatIdx, &coneMatElem, &nCols, &nLpCols, &LpMatBeg,
                          &LpMatIdx, &LpMatElem, &nElem));
     
-    printf("Reading SDPA file in %f seconds. \n", HUtilGetTimeStamp() - timeStart);
+    printf("Reading SDPA file in %f seconds \n", HUtilGetTimeStamp() - timeStart);
     
     HDSDP_CALL(HUserDataCreate(&SDPData));
     
@@ -276,6 +276,7 @@ int test_solver( char *fname ) {
     int nElem = 0;
     
     hdsdp *hsolve = NULL;
+    user_data **SDPDatas = NULL;
     user_data *SDPData = NULL;
     
     double timeStart = HUtilGetTimeStamp();
@@ -284,21 +285,31 @@ int test_solver( char *fname ) {
                          &coneMatIdx, &coneMatElem, &nCols, &nLpCols, &LpMatBeg,
                          &LpMatIdx, &LpMatElem, &nElem));
     
-    printf("Reading SDPA file in %f seconds. \n", HUtilGetTimeStamp() - timeStart);
+    printf("Reading SDPA file in %f seconds \n", HUtilGetTimeStamp() - timeStart);
     
-    HDSDP_CALL(HUserDataCreate(&SDPData));
+    HDSDP_INIT(SDPDatas, user_data *, nBlks);
+    HDSDP_MEMCHECK(SDPDatas);
+    
     HDSDP_CALL(HDSDPCreate(&hsolve));
     HDSDP_CALL(HDSDPInit(hsolve, nConstrs, nBlks));
     
     for ( int iBlk = 0; iBlk < nBlks; ++iBlk ) {
+        HDSDP_CALL(HUserDataCreate(&SDPData));
         HUserDataSetConeData(SDPData, HDSDP_CONETYPE_DENSE_SDP, nConstrs, BlkDims[iBlk],
                              coneMatBeg[iBlk], coneMatIdx[iBlk], coneMatElem[iBlk]);
         HDSDP_CALL(HDSDPSetCone(hsolve, iBlk, SDPData));
-        HUserDataClear(SDPData);
+        SDPDatas[iBlk] = SDPData;
+        SDPData = NULL;
     }
+    
+    HDSDP_CALL(HDSDPOptimize(hsolve, 0));
     
 exit_cleanup:
     
+    for ( int iBlk = 0; iBlk < nBlks; ++iBlk ) {
+        HUserDataDestroy(&SDPDatas[iBlk]);
+    }
+    HDSDP_FREE(SDPDatas);
     
     HUserDataDestroy(&SDPData);
     HDSDPDestroy(&hsolve);

@@ -210,8 +210,6 @@ extern hdsdp_retcode HKKTInit( hdsdp_kkt *HKKT, int nRow, int nCones, hdsdp_cone
     
     HKKT->isKKTSparse = 1;
     
-    printf("Starting KKT analysis.\n");
-    
     for ( int iCone = 0; iCone < nCones; ++iCone ) {
         coneNnzs = HConeGetSymNnz(cones[iCone]);
         maxConicNnzs = HDSDP_MAX(coneNnzs, maxConicNnzs);
@@ -221,17 +219,14 @@ extern hdsdp_retcode HKKTInit( hdsdp_kkt *HKKT, int nRow, int nCones, hdsdp_cone
         }
     }
     
-    double TKKTAnalysis = HUtilGetTimeStamp();
-    
     if ( !HKKT->isKKTSparse ) {
         /* Use dense Schur complement */
         HDSDP_CALL(HKKTIAllocDenseKKT(HKKT));
-        printf("KKT analysis done in %3.1f s. Using dense Schur complement.\n", HUtilGetTimeStamp() - TKKTAnalysis);
+        printf("    Using dense Schur complement\n");
     } else {
         /* Try using sparse Schur complement */
         HDSDP_CALL(HKKTAllocSparseKKT(HKKT));
-        printf("KKT analysis done in %3.1f s. Using sparse Schur complement (%d nnzs).\n",
-               HUtilGetTimeStamp() - TKKTAnalysis, HKKT->kktMatBeg[HKKT->nRow]);
+        printf("    Using sparse Schur complement (%d nnzs)\n", HKKT->kktMatBeg[HKKT->nRow]);
     }
     
 exit_cleanup:

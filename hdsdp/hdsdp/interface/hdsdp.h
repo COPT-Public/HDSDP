@@ -14,10 +14,10 @@
 #else
 #endif
 
-#define HDSDP_LANCZOS_DEBUG
-#define HDSDP_CONIC_DEBUG
-#define HDSDP_LINSYS_DEBUG
-#define HDSDP_CONJGRAD_DEBUG
+//#define HDSDP_LANCZOS_DEBUG
+//#define HDSDP_CONIC_DEBUG
+//#define HDSDP_LINSYS_DEBUG
+//#define HDSDP_CONJGRAD_DEBUG
 #define HDSDP_SPARSE_CONE_THRESHOLD  (0.3)
 #define HDSDP_SPARSE_SCHUR_THRESHOLD (0.3)
 
@@ -43,6 +43,7 @@ typedef enum {
     HDSDP_UNKNOWN,
     HDSDP_OPTIMAL,
     HDSDP_MAXITER,
+    HDSDP_SUSPECT_INFEAS_OR_UNBOUNDED,
     HDSDP_INFEAS_OR_UNBOUNDED,
     HDSDP_TIMELIMIT,
     HDSDP_USER_INTERRUPT,
@@ -65,6 +66,7 @@ typedef struct hdsdp_solver_internal hdsdp;
 #define DBL_PARAM_ABSOPTTOL     3
 #define DBL_PARAM_TIMELIMIT     4
 #define DBL_PARAM_POTRHOVAL     5
+#define DBL_PARAM_HSDGAMMA      6
 
 // Version information
 #define VERSION_MAJOR           1

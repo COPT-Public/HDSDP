@@ -3,89 +3,80 @@
  */
 
 #ifdef HEADERPATH
+#include "interface/def_hdsdp.h"
 #include "interface/hdsdp.h"
 #include "interface/hdsdp_conic.h"
 #include "interface/hdsdp_utils.h"
 #include "interface/hdsdp_user_data.h"
 #include "interface/hdsdp_schur.h"
+#include "interface/hdsdp_algo.h"
 #else
+#include "def_hdsdp.h"
 #include "hdsdp.h"
 #include "hdsdp_conic.h"
 #include "hdsdp_utils.h"
 #include "hdsdp_user_data.h"
 #include "hdsdp_schur.h"
+#include "hdsdp_algo.h"
 #endif
 
-struct hdsdp_solver_internal {
-    
-    char *coneModelName[100];
-    
-    /* Logging */
-    int HPhaseA;
-    
-    /* User data */
-    int nRows;
-    double *rowRHS;
-    
-    /* Cones */
-    int nCones;
-    hdsdp_cone **HCones;
-    
-    /* KKT solver */
-    hdsdp_kkt *HKKT;
-    
-    /* Step and vector */
-    double *dRowDual;
-    double *dRowDualStep;
-    double dBarHsdTau;
-    double dBarHsdTauStep;
-    double *dMinvRowRHS;
-    double *dMinvASinv;
-    double *dMinvRdSinv;
-    double *MinvASinvCSinv;
-    double *dHAuxiVec1;
-    double *dHAuxiVec2;
-    
-    /* Monitor */
-    int nIterCount;
-    double dBarrierMu;
-    double dProxNorm;
-    double dPotentialVal;
-    double dBarrierVal;
-    double dPStep;
-    double dDStep;
-    double dResidual;
-    
-    /* Convergence criterion */
-    double dPotentialRho;
-    double pObjVal;
-    double dObjVal;
-    double pInfeas;
-    double dInfeas;
-    double compl;
-    double pInfeasRel;
-    double dInfeasRel;
-    double complRel;
-    
-    double dTimeBegin;
-    
-    hdsdp_status HStatus;
-    
-    /* Parameters */
-    int HIntParams[20];
-    int HIntFeatures[10];
-    double HDblParams[20];
-};
-
-static void HDSDPIGetFeatures( hdsdp *HSolver ) {
+static void HDSDPIGetStatistics( hdsdp *HSolver ) {
     /* Get features for Heurstics */
+    
+    /* Get sum of conic dimensions. Used to convert the identity matrix to Frobenius norm */
+    int sumConeDims = 0;
+    for ( int iCone = 0; iCone < HSolver->nCones; ++iCone ) {
+        sumConeDims += HConeGetDim(HSolver->HCones[iCone]);
+    }
+    
+    set_int_feature(HSolver, HDSDP_INTFEATURE_N_SUMCONEDIMS, sumConeDims);
+    set_int_feature(HSolver, HDSDP_INTFEATURE_N_ROWS, HSolver->nRows);
+    set_int_feature(HSolver, HDSDP_INTFEATURE_N_CONES, HSolver->nCones);
     
     return;
 }
 
 static void HDSDPIPrintStatistics( hdsdp *HSolver ) {
     
-    hdsdp_printf("Instance statistics: \n");
+    hdsdp_printf("\nStatistics: \n");
+    
+    print_int_feature(HSolver, HDSDP_INTFEATURE_N_ROWS, "Number of rows");
+    print_int_feature(HSolver, HDSDP_INTFEATURE_N_CONES, "Number of cones");
+    print_int_feature(HSolver, HDSDP_INTFEATURE_N_SUMCONEDIMS, "Sum of cone dimensions");
+    
+    return;
+}
+
+extern void HDSDPIGetDefaultParams( hdsdp *HSolver ) {
+    
+    set_int_param(HSolver, INT_PARAM_MAXITER, 100);
+    
+    set_dbl_param(HSolver, DBL_PARAM_ABSOPTTOL, 1e-08);
+    set_dbl_param(HSolver, DBL_PARAM_ABSFEASTOL, 1e-08);
+    set_dbl_param(HSolver, DBL_PARAM_RELOPTTOL, 1e-08);
+    set_dbl_param(HSolver, DBL_PARAM_RELFEASTOL, 1e-08);
+    
+    set_dbl_param(HSolver, DBL_PARAM_TIMELIMIT, 3600.0);
+    set_dbl_param(HSolver, DBL_PARAM_POTRHOVAL, 5.0);
+    set_dbl_param(HSolver, DBL_PARAM_HSDGAMMA, 0.7);
+    
+    return;
+}
+
+extern void HDSDPIPrintParams( hdsdp *HSolver ) {
+    
+    printf("\nParameters\n");
+    print_int_param(HSolver, INT_PARAM_MAXITER, "Maximum iteration");
+    
+    print_dbl_param(HSolver, DBL_PARAM_ABSOPTTOL, "Abs optimality");
+    print_dbl_param(HSolver, DBL_PARAM_RELOPTTOL, "Rel optimality");
+    print_dbl_param(HSolver, DBL_PARAM_ABSFEASTOL, "Abs feasibility");
+    print_dbl_param(HSolver, DBL_PARAM_RELFEASTOL, "Rel feasibility");
+    print_dbl_param(HSolver, DBL_PARAM_TIMELIMIT, "Time limit");
+    print_dbl_param(HSolver, DBL_PARAM_POTRHOVAL, "Potential param");
+    print_dbl_param(HSolver, DBL_PARAM_HSDGAMMA, "Mu reduction rate");
+    
+    printf("\n");
     
     return;
 }
@@ -144,11 +135,11 @@ extern hdsdp_retcode HDSDPInit( hdsdp *HSolver, int nRows, int nCones ) {
     HDSDP_INIT(HSolver->dMinvASinv, double, nRows);
     HDSDP_MEMCHECK(HSolver->dMinvASinv);
     
-    HDSDP_INIT(HSolver->dMinvRdSinv, double, nRows);
-    HDSDP_MEMCHECK(HSolver->dMinvRdSinv);
+    HDSDP_INIT(HSolver->dMinvASinvRdSinv, double, nRows);
+    HDSDP_MEMCHECK(HSolver->dMinvASinvRdSinv);
     
-    HDSDP_INIT(HSolver->MinvASinvCSinv, double, nRows);
-    HDSDP_MEMCHECK(HSolver->MinvASinvCSinv);
+    HDSDP_INIT(HSolver->dMinvASinvCSinv, double, nRows);
+    HDSDP_MEMCHECK(HSolver->dMinvASinvCSinv);
     
     HDSDP_INIT(HSolver->dHAuxiVec1, double, nRows);
     HDSDP_MEMCHECK(HSolver->dHAuxiVec1);
@@ -157,8 +148,8 @@ extern hdsdp_retcode HDSDPInit( hdsdp *HSolver, int nRows, int nCones ) {
     HDSDP_MEMCHECK(HSolver->dHAuxiVec2);
     
     HSolver->dBarrierMu = 1e+10;
-    HSolver->compl = HDSDP_INFINITY;
-    HSolver->complRel = HDSDP_INFINITY;
+    HSolver->comp = HDSDP_INFINITY;
+    HSolver->compRel = HDSDP_INFINITY;
     
     HSolver->HStatus = HDSDP_UNKNOWN;
     
@@ -190,30 +181,34 @@ extern hdsdp_retcode HDSDPOptimize( hdsdp *HSolver, int dOptOnly ) {
     hdsdp_retcode retcode = HDSDP_RETCODE_OK;
     
     /* Start optimization */
-    hdsdp_printf("HDSDP: software for semi-definite programming. \n");
+    hdsdp_printf("\nHDSDP: software for semi-definite programming \n");
+    printf("Wenzhi Gao, Dongdong Ge, Yinyu Ye, 2023\n");
+    printf("---------------------------------------------\n");
     HSolver->dTimeBegin = HUtilGetTimeStamp();
     
-    HUtilGetDefaultParams(HSolver->HIntParams, HSolver->HDblParams);
+    HDSDPIGetDefaultParams(HSolver);
     
     /* Process conic data */
-    hdsdp_printf("Call conic data pre-solver. \n");
+    hdsdp_printf("Calling pre-solver \n");
+    printf("  Processing the cones \n");
     for ( int iCone = 0; iCone < HSolver->nCones; ++iCone ) {
         HDSDP_CALL(HConeProcData(HSolver->HCones[iCone]));
         HDSDP_CALL(HConePresolveData(HSolver->HCones[iCone]));
     }
-    hdsdp_printf("Conic pre-solver ends. Elapsed time: %f seconds \n", HUtilGetTimeStamp() - HSolver->dTimeBegin);
     
+    printf("  Starting KKT analysis \n");
     /* Prepare KKT solver */
-    hdsdp_printf("Call KKT pre-solver. \n");
     HDSDP_CALL(HKKTInit(HSolver->HKKT, HSolver->nRows, HSolver->nCones, HSolver->HCones));
-    hdsdp_printf("KKT pre-solver ends. Elapsed time: %f seconds \n", HUtilGetTimeStamp() - HSolver->dTimeBegin);
     
-    /* Get features */
-    hdsdp_printf("Call feature pre-solver. \n");
-    HDSDPIGetFeatures(HSolver);
-    hdsdp_printf("Feature pre-solver ends. Elapsed time: %f seconds \n", HUtilGetTimeStamp() - HSolver->dTimeBegin);
+    /* Get statistics */
+    printf("  Collecting statistcs \n");
+    HDSDPIGetStatistics(HSolver);
     
-    HUtilPrintParams(HSolver->HIntParams, HSolver->HDblParams);
+    /* End pre-solver */
+    hdsdp_printf("Pre-solver ends. Elapsed time: %3.1f seconds \n", HUtilGetTimeStamp() - HSolver->dTimeBegin);
+    
+    HDSDPIPrintStatistics(HSolver);
+    HDSDPIPrintParams(HSolver);
     
 exit_cleanup:
     return retcode;
@@ -242,7 +237,6 @@ exit_cleanup:
 extern hdsdp_retcode HDSDPGetConeValues( hdsdp *HSolver, int iCone, double *conePrimal, double *coneDual ) {
     
     hdsdp_retcode retcode = HDSDP_RETCODE_OK;
-    
     
     
 exit_cleanup:
@@ -299,8 +293,8 @@ extern void HDSDPClear( hdsdp *HSolver ) {
     HDSDP_FREE(HSolver->dRowDualStep);
     HDSDP_FREE(HSolver->dMinvRowRHS);
     HDSDP_FREE(HSolver->dMinvASinv);
-    HDSDP_FREE(HSolver->dMinvRdSinv);
-    HDSDP_FREE(HSolver->MinvASinvCSinv);
+    HDSDP_FREE(HSolver->dMinvASinvRdSinv);
+    HDSDP_FREE(HSolver->dMinvASinvCSinv);
     HDSDP_FREE(HSolver->dHAuxiVec1);
     HDSDP_FREE(HSolver->dHAuxiVec2);
     

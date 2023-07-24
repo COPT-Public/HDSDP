@@ -69,6 +69,18 @@ printf("Function Profiler: Line %d of %s by %d runs. "       \
     (HUtilGetTimeStamp() - tHDSDPStart))
 
 #define set_func_pointer(A, B) (A = (typeof(A)) B)
+#define set_int_param(hdsdp, param, val)  hdsdp->HIntParams[param] = val
+#define set_dbl_param(hdsdp, param, val)  hdsdp->HDblParams[param] = val
+#define get_int_param(hdsdp, param) hdsdp->HIntParams[param]
+#define get_dbl_param(hdsdp, param) hdsdp->HDblParams[param]
+#define set_int_feature(hdsdp, feature, val) hdsdp->HIntFeatures[feature] = val
+#define set_dbl_feature(hdsdp, feature, val) hdsdp->HDblFeatures[feature] = val
+#define get_int_feature(hdsdp, feature) hdsdp->HIntFeatures[feature]
+#define get_dbl_feature(hdsdp, feature) hdsdp->HDblFeatures[feature]
+#define print_int_param(hdsdp, param, name) printf("  %-20s: %d\n", name, hdsdp->HIntParams[param])
+#define print_dbl_param(hdsdp, param, name) printf("  %-20s: %5.1e\n", name, hdsdp->HDblParams[param])
+#define print_int_feature(hdsdp, feature, name) printf("  %10s: %d\n", name, hdsdp->HIntFeatures[feature])
+#define print_dbl_feature(hdsdp, feature, name) printf("  %10s: %e\n", name, hdsdp->HDblFeatures[feature])
 
 #ifdef __cplusplus
 extern "C" {
@@ -90,10 +102,6 @@ extern void HUtilStartCtrlCCheck( void );
 extern int HUtilCheckCtrlC( void );
 extern void HUtilResetCtrl( void );
 
-#define NUM_INT_PARAM  20
-#define NUM_DBL_PARAM  20
-extern void HUtilGetDefaultParams( int intParams[NUM_INT_PARAM], double dblParams[NUM_INT_PARAM] );
-extern void HUtilPrintParams( int intParams[NUM_INT_PARAM], double dblParams[NUM_INT_PARAM] );
 
 #ifdef __cplusplus
 }

@@ -895,7 +895,7 @@ static void dataMatNormalizeRankOneDenseImpl( sdp_coeff_dsr1 *A ) {
     return;
 }
 /*==========================================================================================*/
-/* KKT operation: compute v = S^-1 a if A = sign * a * a' */
+/* KKT operation: compute v = S^-1 a if A = sign * a * a'                                   */
 /*==========================================================================================*/
 static void dataMatZeroKKT2SolveRankOneImpl( void *A, hdsdp_linsys *S, double *Sinv, double *sign, double *v ) {
     
@@ -958,7 +958,7 @@ static void dataMatRankOneDenseKKT2SolveRankOneImpl( void *A, hdsdp_linsys *S, d
     return;
 }
 /*==========================================================================================*/
-/* KKT operation: compute trace: trace(A * S^-1) = sign * a' * v */
+/* KKT operation: compute trace: trace(A * S^-1) = sign * a' * v                            */
 /*==========================================================================================*/
 static double dataMatZeroKKT2TraceASinvImpl( void *A, double *v ) {
     
@@ -1032,7 +1032,7 @@ static double dataMatRankOneDenseKKT2ComputeQuadForm( void *A, double *v, double
     return dsr1_quadform(dsr1->nSDPCol, dsr1->r1FactorSign, dsr1->r1MatFactor, v);
 }
 /*==========================================================================================*/
-/* KKT operation: Compute S^-1 A * S^-1 and simultaneously compute trace(A * S^-1) */
+/* KKT operation: Compute S^-1 A * S^-1 and simultaneously compute trace(A * S^-1)          */
 /*==========================================================================================*/
 static double dataMatZeroKKT3ComputeSinvASinvImpl( void *A, hdsdp_linsys *S, double *Sinv, double *aux, double *B ) {
     
@@ -1185,7 +1185,7 @@ static double dataMatRankOneDenseKKT3ComputeSinvASinvImpl( void *A, hdsdp_linsys
 }
 
 /*==========================================================================================*/
-/* KKT operation: Compute matrix buffer dot product */
+/* KKT operation: Compute matrix buffer dot product                                         */
 /*==========================================================================================*/
 static double dataMatZeroDotDenseKKT3Impl( void *A, double *B, double *aux ) {
     
@@ -1274,7 +1274,7 @@ static double dataMatRankOneDenseDotDenseKKT3Impl( void *A, double *B, double *a
 }
 
 /*==========================================================================================*/
-/* KKT operation: Compute A * S^-1 and simultaneously give trace(A * S^-1)  */
+/* KKT operation: Compute A * S^-1 and simultaneously give trace(A * S^-1)                  */
 /*==========================================================================================*/
 static double dataMatZeroKKT4ComputeASinvImpl( void *A, hdsdp_linsys *S, double *Sinv, double *aux, double Rd, double *B ) {
     
@@ -1956,7 +1956,7 @@ static double dataMatRankOneDenseKKT5TraceASinvBSinvImpl( void *A, sdp_coeff *B,
 }
 
 /*==========================================================================================*/
-/* KKT operation: Compute quantity trace(S^-1 * A * S^-1)  */
+/* KKT operation: Compute quantity trace(S^-1 * A * S^-1)                                   */
 /*==========================================================================================*/
 static double dataMatZeroKKT5SinvADotSinvImpl( void *A, hdsdp_linsys *S, double *Sinv, double *aux ) {
     

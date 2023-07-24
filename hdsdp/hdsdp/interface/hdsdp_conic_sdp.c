@@ -1927,6 +1927,38 @@ extern void sdpSparseConeGetSymMapping( hdsdp_cone_sdp_sparse *cone, int iCol, i
     return;
 }
 
+extern int sdpDenseConeInteriorCheck( hdsdp_cone_sdp_dense *cone, double barHsdTau, double *rowDual, int *isInterior ) {
+    
+    hdsdp_retcode retcode = HDSDP_RETCODE_OK;
+    sdpDenseConeUpdateImpl(cone, barHsdTau, rowDual);
+    HDSDP_CALL(HFpLinsysPsdCheck(cone->dualFactor, cone->dualMatBeg, cone->dualMatIdx, cone->dualMatElem, isInterior));
+    
+exit_cleanup:
+    return retcode;
+}
+
+extern int sdpSparseConeInteriorCheck( hdsdp_cone_sdp_sparse *cone, double barHsdTau, double *rowDual, int *isInterior ) {
+    
+    hdsdp_retcode retcode = HDSDP_RETCODE_OK;
+    sdpSparseConeUpdateImpl(cone, barHsdTau, rowDual);
+    HDSDP_CALL(HFpLinsysPsdCheck(cone->dualFactor, cone->dualMatBeg, cone->dualMatIdx, cone->dualMatElem, isInterior));
+    
+exit_cleanup:
+    return retcode;
+}
+
+extern void sdpDenseConeReduceResidual( hdsdp_cone_sdp_dense *cone, double resiReduction ) {
+    
+    cone->dualResidual *= resiReduction;
+    return;
+}
+
+extern void sdpSparseConeReduceResidual( hdsdp_cone_sdp_sparse *cone, double resiReduction ) {
+    
+    cone->dualResidual *= resiReduction;
+    return;
+}
+
 extern hdsdp_retcode sdpDenseConeGetBarrier( hdsdp_cone_sdp_dense *cone, double barHsdTau, double *rowDual, double *logdet ) {
     
     /* Compute the barrier function at current dual slack

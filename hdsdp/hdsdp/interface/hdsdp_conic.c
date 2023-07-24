@@ -55,6 +55,7 @@ extern hdsdp_retcode HConeSetData( hdsdp_cone *HCone, user_data *usrData ) {
             set_func_pointer(HCone->coneBuildSchur, NULL);
             set_func_pointer(HCone->coneBuildSchurFixed, NULL);
             set_func_pointer(HCone->coneGetBarrier, NULL);
+            set_func_pointer(HCone->coneInteriorCheck, NULL);
             set_func_pointer(HCone->conePFeasCheck, NULL);
             set_func_pointer(HCone->conePRecover, NULL);
             set_func_pointer(HCone->coneScal, NULL);
@@ -76,6 +77,7 @@ extern hdsdp_retcode HConeSetData( hdsdp_cone *HCone, user_data *usrData ) {
             set_func_pointer(HCone->coneBuildSchur, NULL);
             set_func_pointer(HCone->coneBuildSchurFixed, NULL);
             set_func_pointer(HCone->coneGetBarrier, NULL);
+            set_func_pointer(HCone->coneInteriorCheck, NULL);
             set_func_pointer(HCone->conePFeasCheck, NULL);
             set_func_pointer(HCone->conePRecover, NULL);
             set_func_pointer(HCone->coneScal, NULL);
@@ -97,6 +99,7 @@ extern hdsdp_retcode HConeSetData( hdsdp_cone *HCone, user_data *usrData ) {
             set_func_pointer(HCone->coneBuildSchur, sdpDenseConeGetKKT);
             set_func_pointer(HCone->coneBuildSchurFixed, sdpDenseConeGetKKTByFixedStrategy);
             set_func_pointer(HCone->coneGetBarrier, sdpDenseConeGetBarrier);
+            set_func_pointer(HCone->coneInteriorCheck, sdpDenseConeInteriorCheck);
             set_func_pointer(HCone->conePFeasCheck, NULL);
             set_func_pointer(HCone->conePRecover, NULL);
             set_func_pointer(HCone->coneScal, NULL);
@@ -118,6 +121,7 @@ extern hdsdp_retcode HConeSetData( hdsdp_cone *HCone, user_data *usrData ) {
             set_func_pointer(HCone->coneBuildSchur, sdpSparseConeGetKKT);
             set_func_pointer(HCone->coneBuildSchurFixed, sdpSparseConeGetKKTByFixedStrategy);
             set_func_pointer(HCone->coneGetBarrier, sdpSparseConeGetBarrier);
+            set_func_pointer(HCone->coneInteriorCheck, sdpSparseConeInteriorCheck);
             set_func_pointer(HCone->conePFeasCheck, NULL);
             set_func_pointer(HCone->conePRecover, NULL);
             set_func_pointer(HCone->coneScal, NULL);
@@ -267,6 +271,21 @@ extern hdsdp_retcode HConeGetLogBarrier( hdsdp_cone *HCone, double barHsdTau, do
     
 exit_cleanup:
     return retcode;
+}
+
+extern hdsdp_retcode HConeCheckIsInterior( hdsdp_cone *HCone, double barHsdTau, double *rowDual, int *isInterior ) {
+    
+    hdsdp_retcode retcode = HDSDP_RETCODE_OK;
+    HDSDP_CALL(HCone->coneInteriorCheck(HCone->coneData, barHsdTau, rowDual, isInterior));
+    
+exit_cleanup:
+    return retcode;
+}
+
+extern void HConeReduceResi( hdsdp_cone *HCone, double resiReduction ) {
+    
+    HCone->coneReduceResi(HCone, resiReduction);
+    return;
 }
 
 extern int HConePFeasSolFound( hdsdp_cone *HCone, double barHsdTauStep, double *rowDualStep ) {
