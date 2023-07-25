@@ -379,7 +379,7 @@ static inline void sdpDenseConeIUpdateBuffer( hdsdp_cone_sdp_dense *cone, double
             }
         } else {
             for ( int iCol = 0; iCol < cone->nCol; ++iCol ) {
-                cone->dualMatElem[iCol + iCol * cone->nCol] += dEyeCoef;
+                target[iCol + iCol * cone->nCol] += dEyeCoef;
             }
         }
     }
@@ -431,7 +431,7 @@ static inline void sdpSparseConeIUpdateBuffer( hdsdp_cone_sdp_sparse *cone, doub
             }
         } else {
             for ( int iCol = 0; iCol < cone->nCol; ++iCol ) {
-                cone->dualMatElem[iCol + iCol * cone->nCol] += dEyeCoef;
+                target[iCol + iCol * cone->nCol] += dEyeCoef;
             }
         }
     }
@@ -471,8 +471,8 @@ static void sdpDenseConeILanczosMultiply( void *cone, double *dLhsVec, double *d
             /* For each of element not in the diagonal, we have to map it to its symmetric position */
             for ( int iElem = dsCone->dualMatBeg[iCol] + 1; iElem < dsCone->dualMatBeg[iCol + 1]; ++iElem ) {
                 int iRow = dsCone->dualMatIdx[iElem];
-                dsCone->dVecBuffer[iRow] -= dsCone->dualStep[iElem] * dRhsVec[iRow];
-                dsCone->dVecBuffer[iCol] -= dsCone->dualStep[iElem] * dRhsVec[iCol];
+                dsCone->dVecBuffer[iRow] -= dsCone->dualStep[iElem] * dRhsVec[iCol];
+                dsCone->dVecBuffer[iCol] -= dsCone->dualStep[iElem] * dRhsVec[iRow];
             }
         }
     } else {
@@ -862,7 +862,7 @@ static hdsdp_retcode sdpDenseConeIGetKKTColumnByKKT4( hdsdp_cone_sdp_dense *cone
     /* Compute the buffer and simultaneously compute trace(S^-1 * A * S^-1)
        Now that trace(S^-1 * A * S^-1) is computed during the internal operations, we need to skip it when
        there is no dual residual. */
-    kkt->dASinvRdSinvVec[iPermKKTCol] += \
+    kkt->dASinvRdSinvVec[iPermKKTCol] += cone->dualResidual * \
     sdpDataMatKKT4ComputeASinv(sdpTargetMatrix, cone->dualFactor, kkt->invBuffer, dAuxiMat, cone->dualResidual, dASinvBuffer);
     
     /* Compute trace(A * S^-1) */
@@ -972,18 +972,36 @@ static hdsdp_retcode sdpDenseConeIGetHSDComponents( hdsdp_cone_sdp_dense *cone, 
     */
     
     sdp_coeff *sdpTargetMatrix = cone->sdpObj;
+    sdp_coeff_type dType = sdpDataMatGetType(sdpTargetMatrix);
     
-    if ( sdpTargetMatrix->dataType == SDP_COEFF_ZERO ) {
+    if ( dType == SDP_COEFF_ZERO ) {
         goto exit_cleanup;
+    } else if ( dType == SDP_COEFF_SPR1 || dType == SDP_COEFF_SPR1 ) {
+        /* Apply KKT M5 routines if C is sparse */
+        kkt->dCSinvCSinv += sdpDataMatKKT5TraceASinvBSinv(sdpTargetMatrix, sdpTargetMatrix, kkt->invBuffer, kkt->kktBuffer);
+        kkt->dCSinv += sdpDataMatKKT3TraceABuffer(sdpTargetMatrix, kkt->invBuffer, kkt->kktBuffer);
+        
+        if ( cone->dualResidual ) {
+            kkt->dCSinvRdSinv += cone->dualResidual * \
+            sdpDataMatKKT5SinvADotSinv(sdpTargetMatrix, cone->dualFactor, kkt->invBuffer, kkt->kktBuffer);
+        }
+        
+    } else {
+        /* Apply KKT M3 routine is C is dense */
+        double *dSinvASinvBuffer = kkt->kktBuffer;
+        double *dAuxiMat = kkt->kktBuffer2;
+        kkt->dCSinv += sdpDataMatKKT3ComputeSinvASinv(sdpTargetMatrix, cone->dualFactor, kkt->invBuffer, dAuxiMat, dSinvASinvBuffer);
+        kkt->dCSinvCSinv += sdpDataMatKKT3TraceABuffer(sdpTargetMatrix, dSinvASinvBuffer, dAuxiMat);
+        
+        if ( cone->dualResidual ) {
+            double dTraceBuffer = 0.0;
+            for ( int iCol = 0; iCol < cone->nCol; ++iCol ) {
+                dTraceBuffer += dSinvASinvBuffer[iCol + iCol * cone->nCol];
+            }
+            kkt->dCSinvRdSinv += dTraceBuffer * cone->dualResidual;
+        }
     }
     
-    kkt->dCSinv += \
-    sdpDataMatKKT3TraceABuffer(sdpTargetMatrix, kkt->invBuffer, kkt->kktBuffer);
-    kkt->dCSinvRdSinv += \
-    sdpDataMatKKT5SinvADotSinv(sdpTargetMatrix, cone->dualFactor, kkt->invBuffer, kkt->kktBuffer);
-    kkt->dCSinvCSinv += \
-    sdpDataMatKKT5TraceASinvBSinv(sdpTargetMatrix, sdpTargetMatrix, kkt->invBuffer, kkt->kktBuffer);
- 
 exit_cleanup:
     return retcode;
 }
@@ -1128,7 +1146,7 @@ static hdsdp_retcode sdpSparseConeIGetKKTColumnByKKT4( hdsdp_cone_sdp_sparse *co
         doHSDComputation = 1;
     }
     
-    kkt->dASinvRdSinvVec[iKKTCol] += \
+    kkt->dASinvRdSinvVec[iKKTCol] += cone->dualResidual * \
     sdpDataMatKKT4ComputeASinv(sdpTargetMatrix, cone->dualFactor, kkt->invBuffer, dAuxiMat, cone->dualResidual, dASinvBuffer);
     
     /* Compute trace(A * S^-1) */
@@ -1201,19 +1219,36 @@ static hdsdp_retcode sdpSparseConeIGetHSDComponents( hdsdp_cone_sdp_sparse *cone
     
     hdsdp_retcode retcode = HDSDP_RETCODE_OK;
     /* Special routine for the HSD components */
-    
     sdp_coeff *sdpTargetMatrix = cone->sdpObj;
+    sdp_coeff_type dType = sdpDataMatGetType(sdpTargetMatrix);
     
-    if ( sdpTargetMatrix->dataType == SDP_COEFF_ZERO ) {
+    if ( dType == SDP_COEFF_ZERO ) {
         goto exit_cleanup;
+    } else if ( dType == SDP_COEFF_SPR1 || dType == SDP_COEFF_SPR1 ) {
+        /* Apply KKT M5 routines if C is sparse */
+        kkt->dCSinvCSinv += sdpDataMatKKT5TraceASinvBSinv(sdpTargetMatrix, sdpTargetMatrix, kkt->invBuffer, kkt->kktBuffer);
+        kkt->dCSinv += sdpDataMatKKT3TraceABuffer(sdpTargetMatrix, kkt->invBuffer, kkt->kktBuffer);
+        
+        if ( cone->dualResidual ) {
+            kkt->dCSinvRdSinv += cone->dualResidual * \
+            sdpDataMatKKT5SinvADotSinv(sdpTargetMatrix, cone->dualFactor, kkt->invBuffer, kkt->kktBuffer);
+        }
+        
+    } else {
+        /* Apply KKT M3 routine is C is dense */
+        double *dSinvASinvBuffer = kkt->kktBuffer;
+        double *dAuxiMat = kkt->kktBuffer2;
+        kkt->dCSinv += sdpDataMatKKT3ComputeSinvASinv(sdpTargetMatrix, cone->dualFactor, kkt->invBuffer, dAuxiMat, dSinvASinvBuffer);
+        kkt->dCSinvCSinv += sdpDataMatKKT3TraceABuffer(sdpTargetMatrix, dSinvASinvBuffer, dAuxiMat);
+        
+        if ( cone->dualResidual ) {
+            double dTraceBuffer = 0.0;
+            for ( int iCol = 0; iCol < cone->nCol; ++iCol ) {
+                dTraceBuffer += dSinvASinvBuffer[iCol + iCol * cone->nCol];
+            }
+            kkt->dCSinvRdSinv += dTraceBuffer * cone->dualResidual;
+        }
     }
-    
-    kkt->dCSinv += \
-    sdpDataMatKKT3TraceABuffer(sdpTargetMatrix, kkt->invBuffer, kkt->kktBuffer);
-    kkt->dCSinvRdSinv += \
-    sdpDataMatKKT5SinvADotSinv(sdpTargetMatrix, cone->dualFactor, kkt->invBuffer, kkt->kktBuffer);
-    kkt->dCSinvCSinv += \
-    sdpDataMatKKT5TraceASinvBSinv(sdpTargetMatrix, sdpTargetMatrix, kkt->invBuffer, kkt->kktBuffer);
  
 exit_cleanup:
     return retcode;
@@ -1522,6 +1557,18 @@ extern double sdpSparseConeGetCoeffNorm( hdsdp_cone_sdp_sparse *cone, int whichN
     }
     
     return norm;
+}
+
+extern void sdpDenseConeScal( hdsdp_cone_sdp_dense *cone, double dScal ) {
+    
+    sdpDataMatScal(cone->sdpObj, dScal);
+    return;
+}
+
+extern void sdpSparseConeScal( hdsdp_cone_sdp_sparse *cone, double dScal ) {
+    
+    sdpDataMatScal(cone->sdpObj, dScal);
+    return;
 }
 
 extern void sdpDenseConeUpdateImpl( hdsdp_cone_sdp_dense *cone, double barHsdTau, double *rowDual ) {

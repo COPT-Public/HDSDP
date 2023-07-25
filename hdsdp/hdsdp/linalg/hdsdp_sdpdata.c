@@ -4,6 +4,7 @@
  */
 
 #ifdef HEADERPATH
+#include "interface/hdsdp_conic.h"
 #include "interface/hdsdp_utils.h"
 #include "interface/def_hdsdp_sdpdata.h"
 #include "linalg/hdsdp_sdpdata.h"
@@ -13,6 +14,7 @@
 #include "linalg/r1_opts.h"
 #include "external/hdsdp_cs.h"
 #else
+#include "hdsdp_conic.h"
 #include "hdsdp_utils.h"
 #include "def_hdsdp_sdpdata.h"
 #include "hdsdp_sdpdata.h"
@@ -1187,12 +1189,12 @@ static double dataMatRankOneDenseKKT3ComputeSinvASinvImpl( void *A, hdsdp_linsys
 /*==========================================================================================*/
 /* KKT operation: Compute matrix buffer dot product                                         */
 /*==========================================================================================*/
-static double dataMatZeroDotDenseKKT3Impl( void *A, double *B, double *aux ) {
+static double dataMatZeroKKT3DotDenseImpl( void *A, double *B, double *aux ) {
     
     return 0.0;
 }
 
-static double dataMatSparseDotDenseKKT3Impl( void *A, double *B, double *aux ) {
+static double dataMatSparseKKT3DotDenseImpl( void *A, double *B, double *aux ) {
     
     sdp_coeff_sparse *sparse = (sdp_coeff_sparse *) A;
     
@@ -1216,7 +1218,7 @@ static double dataMatSparseDotDenseKKT3Impl( void *A, double *B, double *aux ) {
     return 2.0 * dAdotB;
 }
 
-static double dataMatDenseDotDenseKKT3Impl( void *A, double *B, double *aux ) {
+static double dataMatDenseKKT3DotDenseImpl( void *A, double *B, double *aux ) {
     
     sdp_coeff_dense *dense = (sdp_coeff_dense *) A;
     /* Compute the dot product between a full buffer and a packed dense matrix */
@@ -1242,7 +1244,7 @@ static double dataMatDenseDotDenseKKT3Impl( void *A, double *B, double *aux ) {
     return 2.0 * dAdotB;
 }
 
-static double dataMatRankOneSparseDotDenseKKT3Impl( void *A, double *B, double *aux ) {
+static double dataMatRankOneSparseKKT3DotDenseImpl( void *A, double *B, double *aux ) {
     
     sdp_coeff_spr1 *spr1 = (sdp_coeff_spr1 *) A;
     
@@ -1265,7 +1267,7 @@ static double dataMatRankOneSparseDotDenseKKT3Impl( void *A, double *B, double *
     return 2.0 * spr1->spR1FactorSign * dAdotB;
 }
 
-static double dataMatRankOneDenseDotDenseKKT3Impl( void *A, double *B, double *aux ) {
+static double dataMatRankOneDenseKKT3DotDenseImpl( void *A, double *B, double *aux ) {
     
     sdp_coeff_dsr1 *dsr1 = (sdp_coeff_dsr1 *) A;
     fds_symv(dsr1->nSDPCol, 1.0, B, dsr1->r1MatFactor, 0.0, aux);
@@ -1602,7 +1604,7 @@ static double dataMatRankOneDenseKKT4ADotSinvBImpl( void *A, hdsdp_linsys *S, do
    theoretically we need to implement 10 pair-wise methods that represent the interaction between
    different types of coefficient matrices.
  
-   However, we ASSERT that dense matrices will NEVER invoke this method. Thus we only need to implement three operations
+   However, we ASSERT that dense matrices will NEVER invoke this method
  
                  Sparse  RankOneSparse  Dense  RankOneDense
    Sparse           *          *          *        *
@@ -1686,6 +1688,8 @@ static double KKT5Pair_Sparse_Dense( sdp_coeff_sparse *A, sdp_coeff_dense *B, do
         iColTimesNCol = iACol * A->nSDPCol;
         dTraceBuffer = 0.0;
         
+        BCol = B->dsMatElem;
+        
         for ( iBCol = 0; iBCol < B->nSDPCol; ++iBCol ) {
             /* First deal with diagonal */
             dTraceBuffer += BCol[0] * Sinv[iRowTimesNCol + iBCol] * Sinv[iColTimesNCol + iBCol];
@@ -1709,19 +1713,6 @@ static double KKT5Pair_Sparse_Dense( sdp_coeff_sparse *A, sdp_coeff_dense *B, do
     }
     
     return 2.0 * dTraceSinvASinvB;
-}
-
-static double KKT5Pair_Sparse_RankOneDense( sdp_coeff_sparse *A, sdp_coeff_dsr1 *B, double *Sinv, double *aux ) {
-    /* Implement trace(A * S^-1 * B * S^-1 ) for sparse A and rank-one dense B
-        Note that B = sign * a * a' and
-        trace(A * S^-1 * B * S^-1 ) = sgn * trace(v' * A * v)
-     */
-    
-    double *dSinvAVec = aux;
-    
-    /* Compute v */
-    fds_symv(B->nSDPCol, 1.0, Sinv, B->r1MatFactor, 0.0, dSinvAVec);
-    return B->r1FactorSign * tsp_quadform(A->nSDPCol, A->nTriMatElem, A->triMatRow, A->triMatCol, A->triMatElem, dSinvAVec);
 }
 
 static double KKT5Pair_Sparse_RankOneSparse( sdp_coeff_sparse *A, sdp_coeff_spr1 *B, double *Sinv, double *aux ) {
@@ -1771,25 +1762,17 @@ static double KKT5Pair_Sparse_RankOneSparse( sdp_coeff_sparse *A, sdp_coeff_spr1
     return 2.0 * B->spR1FactorSign * dTraceSinvASinvB;
 }
 
-static double KKT5Pair_RankOneSparse_RankOneSparse( sdp_coeff_spr1 *A, sdp_coeff_spr1 *B, double *Sinv, double *aux ) {
-    /* Implement trace(A * S^-1 * B * S^-1 ) for sparse rank one A and sparse rank one B
-       Recall that A * S^-1 * B * S^-1 = a' * S * b
+static double KKT5Pair_Sparse_RankOneDense( sdp_coeff_sparse *A, sdp_coeff_dsr1 *B, double *Sinv, double *aux ) {
+    /* Implement trace(A * S^-1 * B * S^-1 ) for sparse A and rank-one dense B
+        Note that B = sign * a * a' and
+        trace(A * S^-1 * B * S^-1 ) = sgn * trace(v' * A * v)
      */
     
-    double dTraceSinvASinvB = 0.0;
-    int iARowElem = 0;
-    int iBRowElem = 0;
+    double *dSinvAVec = aux;
     
-    for ( iARowElem = 0; iARowElem < A->nSpR1FactorElem; ++iARowElem ) {
-        for ( iBRowElem = 0; iBRowElem < B->nSpR1FactorElem; ++iBRowElem ) {
-            dTraceSinvASinvB += \
-            A->spR1MatElem[iARowElem] * \
-            B->spR1MatElem[iBRowElem] * \
-            FULL_ENTRY(Sinv, A->nSDPCol, A->spR1MatIdx[iARowElem], B->spR1MatIdx[iBRowElem]);
-        }
-    }
-    
-    return dTraceSinvASinvB * dTraceSinvASinvB * A->spR1FactorSign * B->spR1FactorSign;
+    /* Compute v */
+    fds_symv(B->nSDPCol, 1.0, Sinv, B->r1MatFactor, 0.0, dSinvAVec);
+    return B->r1FactorSign * tsp_quadform(A->nSDPCol, A->nTriMatElem, A->triMatRow, A->triMatCol, A->triMatElem, dSinvAVec);
 }
 
 static double KKT5Pair_RankOneSparse_Dense( sdp_coeff_spr1 *A, sdp_coeff_dense *B, double *Sinv, double *aux ) {
@@ -1860,6 +1843,27 @@ static double KKT5Pair_RankOneSparse_Dense( sdp_coeff_spr1 *A, sdp_coeff_dense *
     }
     
     return A->spR1FactorSign * dTraceSinvASinvB;
+}
+
+static double KKT5Pair_RankOneSparse_RankOneSparse( sdp_coeff_spr1 *A, sdp_coeff_spr1 *B, double *Sinv, double *aux ) {
+    /* Implement trace(A * S^-1 * B * S^-1 ) for sparse rank one A and sparse rank one B
+       Recall that A * S^-1 * B * S^-1 = a' * S * b
+     */
+    
+    double dTraceSinvASinvB = 0.0;
+    int iARowElem = 0;
+    int iBRowElem = 0;
+    
+    for ( iARowElem = 0; iARowElem < A->nSpR1FactorElem; ++iARowElem ) {
+        for ( iBRowElem = 0; iBRowElem < B->nSpR1FactorElem; ++iBRowElem ) {
+            dTraceSinvASinvB += \
+            A->spR1MatElem[iARowElem] * \
+            B->spR1MatElem[iBRowElem] * \
+            FULL_ENTRY(Sinv, A->nSDPCol, A->spR1MatIdx[iARowElem], B->spR1MatIdx[iBRowElem]);
+        }
+    }
+    
+    return dTraceSinvASinvB * dTraceSinvASinvB * A->spR1FactorSign * B->spR1FactorSign;
 }
 
 static double KKT5Pair_RankOneSparse_RankOneDense( sdp_coeff_spr1 *A, sdp_coeff_dsr1 *B, double *Sinv, double *aux ) {
@@ -2081,7 +2085,7 @@ static void sdpDataMatIChooseType( sdp_coeff *sdpCoeff, sdp_coeff_type dataType 
             sdpCoeff->kkt2quadform = dataMatZeroKKT2ComputeQuadForm;
             sdpCoeff->kkt2r1asinv = dataMatZeroKKT2TraceASinvImpl;
             sdpCoeff->kkt3sinvAsinv = dataMatZeroKKT3ComputeSinvASinvImpl;
-            sdpCoeff->kkt3AdotB = dataMatZeroDotDenseKKT3Impl;
+            sdpCoeff->kkt3AdotB = dataMatZeroKKT3DotDenseImpl;
             sdpCoeff->kkt4Asinv = dataMatZeroKKT4ComputeASinvImpl;
             sdpCoeff->kkt4AdotsinvB = dataMatZeroKKT4ADotSinvBImpl;
             sdpCoeff->kkt5AsinvBsinv = dataMatZeroKKT5TraceASinvBSinvImpl;
@@ -2102,7 +2106,7 @@ static void sdpDataMatIChooseType( sdp_coeff *sdpCoeff, sdp_coeff_type dataType 
             sdpCoeff->kkt2quadform = dataMatSparseKKT2ComputeQuadForm;
             sdpCoeff->kkt2r1asinv = dataMatSparseKKT2TraceASinvImpl;
             sdpCoeff->kkt3sinvAsinv = dataMatSparseKKT3ComputeSinvASinvImpl;
-            sdpCoeff->kkt3AdotB = dataMatSparseDotDenseKKT3Impl;
+            sdpCoeff->kkt3AdotB = dataMatSparseKKT3DotDenseImpl;
             sdpCoeff->kkt4Asinv = dataMatSparseKKT4ComputeASinvImpl;
             sdpCoeff->kkt4AdotsinvB = dataMatSparseKKT4ADotSinvBImpl;
             sdpCoeff->kkt5AsinvBsinv = dataMatSparseKKT5TraceASinvBSinvImpl;
@@ -2123,7 +2127,7 @@ static void sdpDataMatIChooseType( sdp_coeff *sdpCoeff, sdp_coeff_type dataType 
             sdpCoeff->kkt2quadform = dataMatDenseKKT2ComputeQuadForm;
             sdpCoeff->kkt2r1asinv = dataMatDenseKKT2TraceASinvImpl;
             sdpCoeff->kkt3sinvAsinv = dataMatDenseKKT3ComputeSinvASinvImpl;
-            sdpCoeff->kkt3AdotB = dataMatDenseDotDenseKKT3Impl;
+            sdpCoeff->kkt3AdotB = dataMatDenseKKT3DotDenseImpl;
             sdpCoeff->kkt4Asinv = dataMatDenseKKT4ComputeASinvImpl;
             sdpCoeff->kkt4AdotsinvB = dataMatDenseKKT4ADotSinvBImpl;
             sdpCoeff->kkt5AsinvBsinv = dataMatDenseKKT5TraceASinvBSinvImpl;
@@ -2144,7 +2148,7 @@ static void sdpDataMatIChooseType( sdp_coeff *sdpCoeff, sdp_coeff_type dataType 
             sdpCoeff->kkt2quadform = dataMatRankOneSparseKKT2ComputeQuadForm;
             sdpCoeff->kkt2r1asinv = dataMatRankOneSparseKKT2TraceASinvImpl;
             sdpCoeff->kkt3sinvAsinv = dataMatRankOneSparseKKT3ComputeSinvASinvImpl;
-            sdpCoeff->kkt3AdotB = dataMatRankOneSparseDotDenseKKT3Impl;
+            sdpCoeff->kkt3AdotB = dataMatRankOneSparseKKT3DotDenseImpl;
             sdpCoeff->kkt4Asinv = dataMatRankOneSparseKKT4ComputeASinvImpl;
             sdpCoeff->kkt4AdotsinvB = dataMatRankOneSparseKKT4ADotSinvBImpl;
             sdpCoeff->kkt5AsinvBsinv = dataMatRankOneSparseKKT5TraceASinvBSinvImpl;
@@ -2165,7 +2169,7 @@ static void sdpDataMatIChooseType( sdp_coeff *sdpCoeff, sdp_coeff_type dataType 
             sdpCoeff->kkt2quadform = dataMatRankOneDenseKKT2ComputeQuadForm;
             sdpCoeff->kkt2r1asinv = dataMatRankOneDenseKKT2TraceASinvImpl;
             sdpCoeff->kkt3sinvAsinv = dataMatRankOneDenseKKT3ComputeSinvASinvImpl;
-            sdpCoeff->kkt3AdotB = dataMatRankOneDenseDotDenseKKT3Impl;
+            sdpCoeff->kkt3AdotB = dataMatRankOneDenseKKT3DotDenseImpl;
             sdpCoeff->kkt4Asinv = dataMatRankOneDenseKKT4ComputeASinvImpl;
             sdpCoeff->kkt4AdotsinvB = dataMatRankOneDenseKKT4ADotSinvBImpl;
             sdpCoeff->kkt5AsinvBsinv = dataMatRankOneDenseKKT5TraceASinvBSinvImpl;

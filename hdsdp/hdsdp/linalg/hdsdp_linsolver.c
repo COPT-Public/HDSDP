@@ -691,9 +691,15 @@ static hdsdp_retcode conjGradBuildPreconditioner( iterative_linsys *cg ) {
         for ( int iCol = 0; iCol < cg->nCol; ++iCol ) {
             cg->JacobiPrecond[iCol] = cg->fullMatElem[iCol + iCol * cg->nCol];
         }
+#ifdef HDSDP_CONJGRAD_DEBUG
+        hdsdp_printf("Using Jacobi pre-conditioner. \n");
+#endif
     } else {
         /* Use Cholesky as the preconditioner */
-        HDSDP_CALL(lapackLinSolverNumeric((void *) cg->lap, NULL, NULL, cg->fullMatElem));
+#ifdef HDSDP_CONJGRAD_DEBUG
+        hdsdp_printf("Using Cholesky pre-conditioner. \n");
+#endif
+        retcode = lapackLinSolverNumeric((void *) cg->lap, NULL, NULL, cg->fullMatElem);
     }
     
 exit_cleanup:
@@ -763,7 +769,6 @@ static hdsdp_retcode conjGradSolve( iterative_linsys *cg, double *rhsVec, double
         goto exit_cleanup;
     }
     
-    /* Build preconditioner */
     HDSDP_MEMCPY(iterDirection, iterResi, double, cg->nCol);
     
     /* Initial iteration preparation */
@@ -778,7 +783,7 @@ static hdsdp_retcode conjGradSolve( iterative_linsys *cg, double *rhsVec, double
         alpha = resiDotPreInvResi / dDotMTimesd;
         axpy(&cg->nCol, &alpha, iterDirection, &incx, iterVec, &incx);
         
-        if ( iter % nRestartFreq == 5 ) {
+        if ( iter % nRestartFreq == 5 && cg->useJacobi ) {
             /* Restart CG solver */
 #ifdef HDSDP_CONJGRAD_DEBUG
             printf("Conjugate gradient restarts at iteration %d. \n", iter);
@@ -812,8 +817,13 @@ static hdsdp_retcode conjGradSolve( iterative_linsys *cg, double *rhsVec, double
             goto exit_cleanup;
         }
         
+        if ( iter > 20 && resiNorm > 0.01 * rhsNorm ) {
+            cg->solStatus = ITERATIVE_STATUS_MAXITER;
+            break;
+        }
+        
 #ifdef HDSDP_CONJGRAD_DEBUG
-        printf("Conjugate iteration %d. Resi: %10.3e \n", iter, resiNorm);
+         printf("Conjugate iteration %d. Resi: %10.3e \n", iter, resiNorm);
 #endif
         
         if ( resiNorm < cgTol ) {
@@ -825,10 +835,17 @@ static hdsdp_retcode conjGradSolve( iterative_linsys *cg, double *rhsVec, double
     if ( iter >= nCGMaxIter ) {
         cg->solStatus = ITERATIVE_STATUS_MAXITER;
         if ( cg->useJacobi ) {
+#ifdef HDSDP_CONJGRAD_DEBUG
+        printf("Conjugate gradient switched to Cholesky pre-conditioner.\n");
+#endif
             cg->useJacobi = 0;
             cg->params.useJacobi = 0;
+            HDSDP_CALL(conjGradBuildPreconditioner(cg));
             HDSDP_CALL(conjGradSolve(cg, rhsVec, solVec));
         } else {
+#ifdef HDSDP_CONJGRAD_DEBUG
+        printf("Conjugate gradient failed. \n");
+#endif
             cg->solStatus = ITERATIVE_STATUS_FAILED;
             retcode = HDSDP_RETCODE_FAILED;
         }
@@ -865,7 +882,6 @@ static hdsdp_retcode conjGradLinSolverSolveN( void *chol, int nRhs, double *rhsV
     }
     
 exit_cleanup:
-    
     return retcode;
 }
 
@@ -918,6 +934,203 @@ static void conjGradLinSolverDestroy( void **pchol ) {
     HDSDP_FREE(*pchol);
     
     return;
+}
+
+static hdsdp_retcode lapackIndefiniteLinSolverCreate( void **pchol, int nCol ) {
+    
+    hdsdp_retcode retcode = HDSDP_RETCODE_OK;
+    
+    HDSDP_NULLCHECK(pchol);
+    lapack_indef_flinsys *indlap = NULL;
+    HDSDP_INIT(indlap, lapack_indef_flinsys, 1);
+    HDSDP_MEMCHECK(indlap);
+    
+    HDSDP_ZERO(indlap, lapack_indef_flinsys, 1);
+    indlap->nCol = nCol;
+    
+    HDSDP_INIT(indlap->dFullMatElem, double, nCol * nCol);
+    
+    /* Allocate workspace */
+    indlap->iLwork = nCol * 8;
+    HDSDP_INIT(indlap->dWork, double, indlap->iLwork);
+    HDSDP_MEMCHECK(indlap->dWork);
+    HDSDP_INIT(indlap->iAuxiIPIV, int, nCol);
+    HDSDP_MEMCHECK(indlap->iAuxiIPIV);
+    
+    *pchol = indlap;
+    
+exit_cleanup:
+    return retcode;
+}
+
+static void lapackIndefiniteLinSolverSetParamsDummy( void *chol, void *param ) {
+    
+    (void) chol;
+    (void) param;
+    
+    return;
+}
+
+static hdsdp_retcode lapackIndefiniteLinSolverSymbolic( void *chol, int *dummy1, int *dummy2 ) {
+    
+    (void) chol;
+    (void) dummy1;
+    (void) dummy2;
+    
+    return HDSDP_RETCODE_OK;
+}
+
+static hdsdp_retcode lapackIndefiniteLinSolverNumeric( void *chol, int *dummy1, int *dummy2, double *dFullMatrix ) {
+    
+    hdsdp_retcode retcode = HDSDP_RETCODE_OK;
+    lapack_indef_flinsys *indlap = (lapack_indef_flinsys *) chol;
+    
+    HDSDP_MEMCPY(indlap->dFullMatElem, dFullMatrix, double, indlap->nCol * indlap->nCol);
+    
+    int info = LAPACK_RET_OK;
+    char uplolow = LAPACK_UPLOW_LOW;
+    
+    /* Do blocked LDL */
+    dsytrf(&uplolow, &indlap->nCol, indlap->dFullMatElem, &indlap->nCol,
+           indlap->iAuxiIPIV, indlap->dWork, &indlap->iLwork, &info);
+    
+    if ( info != LAPACK_RET_OK ) {
+        retcode = HDSDP_RETCODE_FAILED;
+        goto exit_cleanup;
+    }
+    
+exit_cleanup:
+    return retcode;
+}
+
+static hdsdp_retcode lapackIndefiniteLinSolverPsdCheck( void *chol, int *dummy1, int *dummy2, double *dFullMatrix, int *isPsd ) {
+    
+    (void) chol;
+    (void) dummy1;
+    (void) dummy2;
+    (void) dFullMatrix;
+    (void) isPsd;
+    
+    assert( 0 );
+    return HDSDP_RETCODE_FAILED;
+}
+
+static void lapackIndefiniteLinSolverForwardN( void *chol, int dummy1, double *dummy2, double *dummy3 ) {
+    
+    (void) chol;
+    (void) dummy1;
+    (void) dummy2;
+    (void) dummy3;
+    
+    return;
+}
+
+static void lapackIndefiniteLinSolverBackwardN( void *chol, int dummy1, double *dummy2, double *dummy3 ) {
+    
+    (void) chol;
+    (void) dummy1;
+    (void) dummy2;
+    (void) dummy3;
+    
+    return;
+}
+
+static hdsdp_retcode lapackIndefiniteLinSolverSolveN( void *chol, int nRhs, double *rhsVec, double *solVec ) {
+    
+    lapack_indef_flinsys *indlap = (lapack_indef_flinsys *) chol;
+    
+    int info = LAPACK_RET_OK;
+    char uplolow = LAPACK_UPLOW_LOW;
+    
+    if ( solVec ) {
+        HDSDP_MEMCPY(solVec, rhsVec, double, nRhs * indlap->nCol);
+        dsytrs(&uplolow, &indlap->nCol, &nRhs, indlap->dFullMatElem,
+               &indlap->nCol, indlap->iAuxiIPIV, solVec, &indlap->nCol, &info);
+    } else {
+        dsytrs(&uplolow, &indlap->nCol, &nRhs, indlap->dFullMatElem,
+               &indlap->nCol, indlap->iAuxiIPIV, rhsVec, &indlap->nCol, &info);
+    }
+    
+    assert( info == LAPACK_RET_OK );
+    
+    return HDSDP_RETCODE_OK;
+}
+
+static hdsdp_retcode lapackIndefiniteLinSolverGetDiag( void *chol, double *dummy ) {
+    
+    (void) chol;
+    (void) dummy;
+    
+    return HDSDP_RETCODE_FAILED;
+}
+
+static void lapackIndefiniteLinSolverInvert( void *chol, double *dummy1, double *dummy2 ) {
+    
+    (void) chol;
+    (void) dummy1;
+    (void) dummy2;
+    
+    return;
+}
+
+static void lapackIndefiniteLinSolverClear( void *chol ) {
+    
+    if ( !chol ) {
+        return;
+    }
+    
+    lapack_indef_flinsys *indlap = (lapack_indef_flinsys *) chol;
+    HDSDP_FREE(indlap->dFullMatElem);
+    HDSDP_FREE(indlap->dWork);
+    HDSDP_FREE(indlap->iAuxiIPIV);
+    
+    HDSDP_ZERO(indlap, lapack_indef_flinsys, 1);
+
+    return;
+}
+
+static void lapackIndefiniteLinSolverDestroy( void **pchol ) {
+    
+    if ( !pchol ) {
+        return;
+    }
+    
+    lapackIndefiniteLinSolverClear(*pchol);
+    HDSDP_FREE(*pchol);
+    
+    return;
+}
+
+static hdsdp_retcode HFpLinsysSwitchToIndefinite( hdsdp_linsys_fp *HLin ) {
+    
+    hdsdp_retcode retcode = HDSDP_RETCODE_OK;
+    
+    /* Switch to indefinite solver */
+    assert( HLin->LinType == HDSDP_LINSYS_DENSE_ITERATIVE );
+    
+    iterative_linsys *cg = (iterative_linsys *) HLin->chol;
+    double *dataMatElem = cg->fullMatElem;
+    
+    HLin->LinType = HDSDP_LINSYS_DENSE_INDEFINITE;
+    HLin->cholDestroy(&HLin->chol);
+    
+    HLin->cholCreate = lapackIndefiniteLinSolverCreate;
+    HLin->cholSetParam = lapackIndefiniteLinSolverSetParamsDummy;
+    HLin->cholSymbolic = lapackIndefiniteLinSolverSymbolic;
+    HLin->cholNumeric = lapackIndefiniteLinSolverNumeric;
+    HLin->cholPsdCheck = lapackIndefiniteLinSolverPsdCheck;
+    HLin->cholFSolve = lapackIndefiniteLinSolverForwardN;
+    HLin->cholBSolve = lapackIndefiniteLinSolverBackwardN;
+    HLin->cholSolve = lapackIndefiniteLinSolverSolveN;
+    HLin->cholGetDiag = lapackIndefiniteLinSolverGetDiag;
+    HLin->cholInvert = lapackIndefiniteLinSolverInvert;
+    HLin->cholDestroy = lapackIndefiniteLinSolverDestroy;
+    
+    HDSDP_CALL(HLin->cholCreate(&HLin->chol, HLin->nCol));
+    HDSDP_CALL(HLin->cholNumeric(HLin->chol, NULL, NULL, dataMatElem));
+    
+exit_cleanup:
+    return retcode;
 }
 
 extern hdsdp_retcode HFpLinsysCreate( hdsdp_linsys_fp **pHLin, int nCol, linsys_type Ltype ) {
@@ -987,7 +1200,6 @@ extern hdsdp_retcode HFpLinsysCreate( hdsdp_linsys_fp **pHLin, int nCol, linsys_
     HDSDP_CALL(HLinsys->cholCreate(&HLinsys->chol, nCol));
     
 exit_cleanup:
-    
     return retcode;
 }
 
@@ -1018,17 +1230,21 @@ extern hdsdp_retcode HFpLinsysSymbolic( hdsdp_linsys_fp *HLin, int *colMatBeg, i
     HDSDP_CALL(HLin->cholSymbolic(HLin->chol, colMatBeg, colMatIdx));
     
 exit_cleanup:
-    
     return retcode;
 }
 
 extern hdsdp_retcode HFpLinsysNumeric( hdsdp_linsys_fp *HLin, int *colMatBeg, int *colMatIdx, double *colMatElem ) {
     
     hdsdp_retcode retcode = HDSDP_RETCODE_OK;
-    HDSDP_CALL(HLin->cholNumeric(HLin->chol, colMatBeg, colMatIdx, colMatElem));
+    retcode = HLin->cholNumeric(HLin->chol, colMatBeg, colMatIdx, colMatElem);
+    
+    /* Cholesky fails. Switch to indefinite solver */
+    if ( retcode == HDSDP_RETCODE_FAILED && HLin->LinType == HDSDP_LINSYS_DENSE_ITERATIVE ) {
+        hdsdp_printf("KKT system is almost indefinite. Switch to LDL. \n");
+        HDSDP_CALL(HFpLinsysSwitchToIndefinite(HLin));
+    }
     
 exit_cleanup:
-    
     return retcode;
 }
 
@@ -1038,7 +1254,6 @@ extern hdsdp_retcode HFpLinsysPsdCheck( hdsdp_linsys_fp *HLin, int *colMatBeg, i
     HDSDP_CALL(HLin->cholPsdCheck(HLin->chol, colMatBeg, colMatIdx, colMatElem, isPsd));
     
 exit_cleanup:
-    
     return retcode;
 }
 
@@ -1046,7 +1261,6 @@ exit_cleanup:
 extern void HFpLinsysFSolve( hdsdp_linsys_fp *HLin, int nRhs, double *rhsVec, double *solVec ) {
     
     HLin->cholFSolve(HLin->chol, nRhs, rhsVec, solVec);
-    
     return;
 }
 
@@ -1057,11 +1271,16 @@ extern void HFpLinsysBSolve( hdsdp_linsys_fp *HLin, int nRhs, double *rhsVec, do
     return;
 }
 
-
 extern hdsdp_retcode HFpLinsysSolve( hdsdp_linsys_fp *HLin, int nRhs, double *rhsVec, double *solVec ) {
     
     hdsdp_retcode retcode = HDSDP_RETCODE_OK;
-    HDSDP_CALL(HLin->cholSolve(HLin->chol, nRhs, rhsVec, solVec));
+    retcode = HLin->cholSolve(HLin->chol, nRhs, rhsVec, solVec);
+    
+    if ( retcode != HDSDP_RETCODE_OK && HLin->LinType == HDSDP_LINSYS_DENSE_ITERATIVE ) {
+        hdsdp_printf("KKT system is unstable. Switch to LDL. \n");
+        HDSDP_CALL(HFpLinsysSwitchToIndefinite(HLin));
+        HDSDP_CALL(HFpLinsysSolve(HLin, nRhs, rhsVec, solVec));
+    }
     
 exit_cleanup:
     

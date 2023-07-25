@@ -21,8 +21,6 @@ extern hdsdp_retcode sdpDataMatSetData( sdp_coeff *sdpCoeff, int nSDPCol, int da
 extern int sdpDataMatGetRank( sdp_coeff *sdpCoeff );
 extern void sdpDataMatScal( sdp_coeff *sdpCoeff, double scal );
 
-#define ABS_NORM (1)
-#define FRO_NORM (2)
 extern double sdpDataMatNorm( sdp_coeff *sdpCoeff, int type );
 extern hdsdp_retcode sdpDataMatBuildUpEigs( sdp_coeff *sdpCoeff, double *dAuxFullMatrix );
 extern int sdpDataMatGetNnz( sdp_coeff *sdpCoeff );

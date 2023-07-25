@@ -27,6 +27,7 @@ typedef enum {
     
     /* Iterative solver is only used for Schur complement */
     HDSDP_LINSYS_DENSE_ITERATIVE,
+    HDSDP_LINSYS_DENSE_INDEFINITE
     
 } linsys_type;
 
@@ -52,15 +53,6 @@ typedef struct {
     
 } hdsdp_linsys_fp;
 
-/* Same implementation using switch statement */
-typedef struct {
-    
-    int nCol;
-    void *chol;
-    linsys_type LinType;
-    
-} hdsdp_linsys_sw;
-
 /* Sparse direct */
 typedef struct {
     
@@ -83,6 +75,16 @@ typedef struct {
     double *dFullMatElem;
     
 } lapack_flinsys;
+
+typedef struct {
+    
+    int nCol;
+    double *dFullMatElem;
+    int *iAuxiIPIV;
+    int iLwork;
+    double *dWork;
+    
+} lapack_indef_flinsys;
 
 typedef struct {
     
@@ -196,8 +198,12 @@ void dtrsm( const char *side, const char *uplo, const char *transa,
             const char *diag, const int *m, const int *n, const double *alpha,
             const double *a, const int *lda, double *b, const int *ldb );
 void dpotrf ( const char *uplo, const int *n, double *a, const int *lda, int *info );
+void dsytrf( const char *uplo, const int  *n, double *a, const int  *lda,
+              int *ipiv, double *work, const int *lwork, int *info );
 void dpotri( const char *uplo, const int *n, double *a, const int *lda, int *info );
 void dpotrs( const char *uplo, const int *n, const int *nrhs, const double *a,
              const int *lda, double *b, const int *ldb, int *info );
+void dsytrs( const char *uplo, const int *n, const int *nrhs, const double *a,
+               const int *lda, const int *ipiv, double *b, const int *ldb, int *info );
 
 #endif /* def_hdsdp_linsolver_h */

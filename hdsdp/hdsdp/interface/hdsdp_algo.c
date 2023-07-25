@@ -25,7 +25,7 @@
    To maximize the practical efficiency of HDSDP, we implement
    six major algorithms and one infeasibility (ray) detection module.
  
-   The four algorithms are respectively
+   The six algorithms are respectively
  
    1. Infeasible-start dual interior point method
    2. Dual embedding
@@ -53,13 +53,42 @@
 #define HDSDP_ALGO_DUAL_INFEAS     (0)
 #define HDSDP_ALGO_DUAL_HSD        (1)
 #define HDSDP_ALGO_DUAL_POTENTIAL  (2)
-static void HDSDP_SetStart( hdsdp *HSolver ) {
+static void HDSDP_SetStart( hdsdp *HSolver, int SDPMethod ) {
     
+    /* Set staring point for the dual iterations. */
+    HDSDP_ZERO(HSolver->dRowDual, double, HSolver->nRows);
+    HSolver->dBarHsdTau = 1.0;
+    
+    if ( SDPMethod == HDSDP_ALGO_DUAL_HSD ) {
+        HSolver->dBarrierMu = 1e+08;
+    } else {
+        HSolver->dBarrierMu = get_dbl_param(HSolver, DBL_PARAM_BARMUSTART);
+    }
+    
+    double objFroNorm = get_dbl_feature(HSolver, DBL_FEATURE_OBJFRONORM);
+    HSolver->dResidual = - objFroNorm * get_dbl_param(HSolver, DBL_PARAM_DUALSTART);
+    
+    hdsdp_printf("Initialize with dual residual %3.1e\n", - HSolver->dResidual);
+    
+    for ( int iCone = 0; iCone < HSolver->nCones; ++iCone ) {
+        HConeSetStart(HSolver->HCones[iCone], HSolver->dResidual);
+    }
     
     return;
 }
 
 static void HDSDP_ResetStart( hdsdp *HSolver ) {
+    
+    HDSDP_ZERO(HSolver->dRowDual, double, HSolver->nRows);
+    HSolver->dBarHsdTau = 1.0;
+    
+    double objFroNorm = get_dbl_feature(HSolver, DBL_FEATURE_OBJFRONORM);
+    HSolver->dResidual = - objFroNorm * 1e+05;
+    
+    hdsdp_printf("Reset with dual residual %3.1e\n", - HSolver->dResidual);
+    for ( int iCone = 0; iCone < HSolver->nCones; ++iCone ) {
+        HConeSetStart(HSolver->HCones[iCone], HSolver->dResidual);
+    }
     
     return;
 }
@@ -68,13 +97,19 @@ static void HDSDP_PrintHeader( hdsdp *HSolver, int SDPMethod ) {
     
     switch (SDPMethod) {
         case HDSDP_ALGO_DUAL_HSD:
-            printf("%5s  %8s  %8s  %6s  %6s  %6s %10s \n", "nIter", "pObj", "dObj", "dInf", "Tau", "Step", "Time [H]");
+            hdsdp_printf("HDSDP starts. Using self-dual method \n\n");
+            hdsdp_printf("    %5s  %12s  %12s  %8s  %8s  %5s  %5s \n",
+                         "nIter", "pObj", "dObj", "dInf", "Mu", "Step", "T [H]");
             break;
         case HDSDP_ALGO_DUAL_INFEAS:
-            printf("%5s  %8s  %8s  %6s  %6s  %10s \n", "nIter", "pObj", "dObj", "dInf", "Step", "Time [D]");
+            hdsdp_printf("HDSDP starts. Using infeasible dual method \n\n");
+            hdsdp_printf("    %5s  %12s  %12s  %8s  %8s  %5s  %5s \n",
+                         "nIter", "pObj", "dObj", "dInf", "Mu", "Step", "T [D]");
             break;
         case HDSDP_ALGO_DUAL_POTENTIAL:
-            printf("%5s  %8s  %8s  %6s  %6s  %10s \n", "nIter", "pObj", "dObj", "pInf", "Step", "Time [P]");
+            hdsdp_printf("HDSDP starts. Using feasible dual method \n\n");
+            hdsdp_printf("    %5s  %12s  %12s  %8s  %8s  %5s  %5s \n",
+                         "nIter", "pObj", "dObj", "pInf", "Mu", "Step", "T [P]");
             break;
         default:
             assert( 0 );
@@ -86,21 +121,33 @@ static void HDSDP_PrintHeader( hdsdp *HSolver, int SDPMethod ) {
 
 static void HDSDP_PrintLog( hdsdp *HSolver, int SDPMethod ) {
     
+    double dRhsScal = get_dbl_feature(HSolver, DBL_FEATURE_RHSSCALING);
+    double dObjScal = get_dbl_feature(HSolver, DBL_FEATURE_OBJSCALING);
     double elapsedTime = HUtilGetTimeStamp() - HSolver->dTimeBegin;
+    
+    /* Get infeasibilities */
+    double nSumCones = (double) get_dbl_feature(HSolver, INT_FEATURE_N_SUMCONEDIMS);
+    double pdObjScal = dRhsScal * dObjScal / HSolver->dBarHsdTau;
+    HSolver->dInfeas = dRhsScal * sqrt(nSumCones) * fabs(HSolver->dResidual) / HSolver->dBarHsdTau;
+    
+    HSolver->dObjVal = HSolver->dObjInternal * pdObjScal;
+    HSolver->pObjVal = HSolver->pObjInternal * pdObjScal;
     
     switch (SDPMethod) {
         case HDSDP_ALGO_DUAL_HSD:
-            printf("%5d  %8.3e  %8.3e  %6.2e  %6.2e  %6.2e  %10.1f\n", HSolver->nIterCount,
+            hdsdp_printf("    %5d  %+12.5e  %+12.5e  %8.2e  %8.2e  %5.2f  %4.1f  %8.2e\n", HSolver->nIterCount + 1,
                    HDSDP_INFINITY, HSolver->dObjVal, HSolver->dInfeas,
-                   HSolver->dBarHsdTau, HSolver->dDStep, elapsedTime);
+                   HSolver->dBarrierMu, HSolver->dDStep, elapsedTime, HSolver->dBarHsdTau);
             break;
         case HDSDP_ALGO_DUAL_INFEAS:
-            printf("%5d  %8.3e  %8.3e  %6.2e  %6.2e  %10.1f \n", HSolver->nIterCount,
-                   HSolver->pObjVal, HSolver->dObjVal, HSolver->dInfeas, HSolver->dDStep, elapsedTime);
+            hdsdp_printf("    %5d  %+12.5e  %+12.5e  %8.2e  %8.2e  %5.2f  %4.1f \n", HSolver->nIterCount + 1,
+                   HSolver->pObjVal * pdObjScal, HSolver->dObjVal * pdObjScal, HSolver->dInfeas, HSolver->dBarrierMu,
+                   HSolver->dDStep, elapsedTime);
             break;
         case HDSDP_ALGO_DUAL_POTENTIAL:
-            printf("%5d  %8.3e  %8.3e  %6.2e  %6.2e  %10.1f \n", HSolver->nIterCount,
-                   HSolver->pObjVal, HSolver->dObjVal, HSolver->pInfeas, HSolver->dDStep, elapsedTime);
+            hdsdp_printf("    %5d  %+12.5e  %+12.5e  %8.2e  %8.2e  %5.2f  %4.1f \n", HSolver->nIterCount + 1,
+                   HSolver->pObjVal * pdObjScal, HSolver->dObjVal * pdObjScal, HSolver->pInfeas, HSolver->dBarrierMu,
+                   HSolver->dDStep, elapsedTime);
             break;
         default:
             assert( 0 );
@@ -119,7 +166,7 @@ static void HDSDP_PrintLog( hdsdp *HSolver, int SDPMethod ) {
 #define d3   HSolver->dMinvASinvRdSinv
 #define d4   HSolver->dMinvASinvCSinv
 #define dd1  HSolver->dHAuxiVec1
-#define bTy  HSolver->dObjVal
+#define bTy  HSolver->dObjInternal
 #define mu   HSolver->dBarrierMu
 #define tau  HSolver->dBarHsdTau
 #define dtau HSolver->dBarHsdTauStep
@@ -150,7 +197,7 @@ static void HDSDP_BuildHsdStep( hdsdp *HSolver ) {
     HKKTExport(HSolver->HKKT, NULL, NULL, NULL,
                &dHsdTraceCSinvCSinv, &dHsdTraceCSinv, &dHsdTraceCSinvRdCSinv);
     
-    double dTauStepEnumerator = - bTy + mu / tau + mu * (dHsdTraceCSinv - dHsdTraceCSinvCSinv);
+    double dTauStepEnumerator = - bTy + mu / tau + mu * (dHsdTraceCSinv - dHsdTraceCSinvRdCSinv);
     double dTauStepDenominator = mu * dHsdTraceCSinvCSinv + mu / (tau * tau);
     double tauOverMu = tau / mu;
     
@@ -184,11 +231,12 @@ static hdsdp_retcode HDSDP_RatioTest( hdsdp *HSolver, int SDPMethod, double *dMa
     if ( SDPMethod == HDSDP_ALGO_DUAL_HSD && HSolver->dBarHsdTauStep ) {
         dStep = HSolver->dBarHsdTau / HSolver->dBarHsdTauStep;
         if ( dStep < 0.0 ) {
-            dMaxStep = HDSDP_MIN(dMaxStep, dStep);
+            dMaxStep = HDSDP_MIN(dMaxStep, -dStep);
         }
     }
     
     if ( dMaxStep < 1e-03 ) {
+        retcode = HDSDP_RETCODE_FAILED;
         goto exit_cleanup;
     }
     
@@ -197,22 +245,12 @@ static hdsdp_retcode HDSDP_RatioTest( hdsdp *HSolver, int SDPMethod, double *dMa
         /* We eleminate dual infeasibility with full Newton's step */
         HDSDP_CALL(HConeRatioTest(HSolver->HCones[iCone], HSolver->dBarHsdTauStep,
                                   HSolver->dRowDualStep, 1.0, &dStep));
+        
         dMaxStep = HDSDP_MIN(dMaxStep, dStep);
     }
     
 exit_cleanup:
     *dMaxDist = dMaxStep;
-    return retcode;
-}
-
-static hdsdp_retcode HDSDP_PhaseC_BarPrimalInfeasCheck( hdsdp *HSolver ) {
-    
-    hdsdp_retcode retcode = HDSDP_RETCODE_OK;
-    
-    
-    
-    
-exit_cleanup:
     return retcode;
 }
 
@@ -238,21 +276,52 @@ static hdsdp_retcode HDSDP_PhaseA_BarHsdSolve( hdsdp *HSolver, int dOnly ) {
        solution status to tell which is the case.
      */
     
-    int nIterLeft = get_int_param(HSolver, INT_PARAM_MAXITER) - HSolver->nIterCount;
+    int nMaxIter = get_int_param(HSolver, INT_PARAM_MAXITER);
     double dBarrierGamma = get_dbl_param(HSolver, DBL_PARAM_HSDGAMMA);
     double dAbsfeasTol = get_dbl_param(HSolver, DBL_PARAM_ABSFEASTOL);
     double dAbsoptTol = get_dbl_param(HSolver, DBL_PARAM_ABSOPTTOL);
     double dRelfeasTol = get_dbl_param(HSolver, DBL_PARAM_RELFEASTOL);
     double dReloptTol = get_dbl_param(HSolver, DBL_PARAM_RELOPTTOL);
+    double dTimeLimit = get_dbl_param(HSolver, DBL_PARAM_TIMELIMIT);
+    double dObjOneNorm = get_dbl_feature(HSolver, DBL_FEATURE_OBJONENORM);
+    double dObjScal = get_dbl_feature(HSolver, DBL_FEATURE_OBJSCALING);
+    double nSumCones = (double) get_dbl_feature(HSolver, INT_FEATURE_N_SUMCONEDIMS);
+    
+    /* Here we need to transform between two convergence criteria
+       Recall that for absolute measure we have
+       
+            sqrt(sumCones) * |Rd| < absFeasTol * dObjScal
+        =>  |Rd| < absFeasTol * dObjScal / sqrt(sumCones)
+            Mu < absOptTol
+     
+       and for relative measure we have
+                
+            sqrt(sumCones) * |Rd| < relFeasTol * (1 + |C|) * dObjScal
+        =>  |Rd| < relFeasTol * (1 + |C|) * dObjScal / sqrt(sumCones)
+            Mu < relOptTol * (1 + |dObj|)
+     */
+    
+    /* If we only solve the dual */
+    if ( !dOnly ) {
+        dAbsoptTol = 1e+20;
+        dReloptTol = 1e+20;
+    }
+    
+    double dFeasTol = HDSDP_MIN(dAbsfeasTol, dRelfeasTol * (1 + dObjOneNorm));
+    dFeasTol = dFeasTol * sqrt(nSumCones) * dObjScal;
+    
+    dAbsoptTol = dAbsoptTol * 1e-04;
+    dReloptTol = dAbsoptTol * 1e-04;
     
     /* If we are starting from scratch */
     if ( HSolver->HStatus == HDSDP_UNKNOWN ) {
-        HDSDP_SetStart(HSolver);
+        HDSDP_SetStart(HSolver, HDSDP_ALGO_DUAL_HSD);
     }
     
     HDSDP_PrintHeader(HSolver, HDSDP_ALGO_DUAL_HSD);
+    
     /* Enter the main iteration */
-    for ( int iBarHsdIter = 0; iBarHsdIter < nIterLeft; ++iBarHsdIter ) {
+    while ( 1 ) {
 
         /* Assert initial iteration is in the cone */
         int isInteriorPoint = 0;
@@ -265,14 +334,13 @@ static hdsdp_retcode HDSDP_PhaseA_BarHsdSolve( hdsdp *HSolver, int dOnly ) {
         }
         
         if ( !isInteriorPoint ) {
-            if ( iBarHsdIter == 0 ) {
-                printf("Initial point is not in the cone. Adding slack value.\n");
+            if ( HSolver->nIterCount == 0 ) {
+                hdsdp_printf("Initial point is not in the cone. Adding slack value.\n");
                 HSolver->dResidual *= 100.0;
-                iBarHsdIter -= 1;
                 HDSDP_ResetStart(HSolver);
                 continue;
             } else {
-                printf("Iteration %d is not in the cone. \n", iBarHsdIter);
+                hdsdp_printf("Iteration %d is not in the cone. \n", HSolver->nIterCount);
                 retcode = HDSDP_RETCODE_FAILED;
                 goto exit_cleanup;
                 break;
@@ -281,9 +349,11 @@ static hdsdp_retcode HDSDP_PhaseA_BarHsdSolve( hdsdp *HSolver, int dOnly ) {
         
         /* Afterwards, we set up the Schur complement system */
         HDSDP_CALL(HKKTBuildUp(HSolver->HKKT, KKT_TYPE_HOMOGENEOUS));
+        HKKTRegularize(HSolver->HKKT, 1e-05);
         
         /* Then we export information needed */
-        HKKTExport(HSolver->HKKT, HSolver->dMinvASinv, HSolver->dMinvASinvRdSinv, HSolver->dMinvASinvCSinv, NULL, NULL, NULL);
+        HKKTExport(HSolver->HKKT, HSolver->dMinvASinv, HSolver->dMinvASinvRdSinv, HSolver->dMinvASinvCSinv,
+                   NULL, NULL, NULL);
         
         /* Factorize the KKT system */
         HDSDP_CALL(HKKTFactorize(HSolver->HKKT));
@@ -300,37 +370,105 @@ static hdsdp_retcode HDSDP_PhaseA_BarHsdSolve( hdsdp *HSolver, int dOnly ) {
         /* Do ratio test */
         HDSDP_CALL(HDSDP_RatioTest(HSolver, HDSDP_ALGO_DUAL_HSD, &HSolver->dDStep));
         
-        /* Choose step */
-        HSolver->dDStep = HDSDP_MIN(0.9 * HSolver->dDStep, 1.0);
+        /* Choose step size */
+        if ( HSolver->dDStep > 1.0 ) {
+            HSolver->dDStep = HDSDP_MIN(0.7 * HSolver->dDStep, 1.0);
+        } else if ( HSolver->dDStep > 0.5 ) {
+            HSolver->dDStep = HDSDP_MIN(0.5 * HSolver->dDStep, 1.0);
+        } else if ( HSolver->dDStep > 0.2 ) {
+            HSolver->dDStep = HDSDP_MIN(0.3 * HSolver->dDStep, 1.0);
+        } else {
+            HSolver->dDStep = HDSDP_MIN(0.2 * HSolver->dDStep, 1.0);
+        }
+        
+        /* Print log */
+        HDSDP_PrintLog(HSolver, HDSDP_ALGO_DUAL_HSD);
         
         /* Take step */
-        HSolver->dBarHsdTau = HSolver->dDStep * HSolver->dBarHsdTauStep;
+        HSolver->dBarHsdTau += HSolver->dDStep * HSolver->dBarHsdTauStep;
         for ( int iRow = 0; iRow < HSolver->nRows; ++iRow ) {
             HSolver->dRowDual[iRow] += HSolver->dDStep * HSolver->dRowDualStep[iRow];
         }
-        
         HSolver->dResidual = HSolver->dResidual * (1.0 - HSolver->dDStep);
-        
         for ( int iCone = 0; iCone < HSolver->nCones; ++iCone ) {
             HConeReduceResi(HSolver->HCones[iCone], 1.0 - HSolver->dDStep);
         }
         
         /* Reduce barrier parameter */
-        double dBarrierMuTarget =  dBarrierGamma * HSolver->dBarrierMu;
+        double dBarrierMuTarget = 0.0;
+        if ( HSolver->dBarrierMu > 1e-12 ) {
+            if ( HSolver->dDStep > 0.6 && HSolver->dBarHsdTau > 1.0 ) {
+                dBarrierMuTarget = 0.1 * HSolver->dBarrierMu;
+                dBarrierMuTarget = HDSDP_MAX(dBarrierMuTarget, -0.1 * HSolver->dResidual / HSolver->dBarHsdTau);
+                HSolver->dBarrierMu = HDSDP_MIN(HSolver->dBarrierMu, dBarrierMuTarget);
+            } else {
+                dBarrierMuTarget = dBarrierGamma * HSolver->dBarrierMu;
+                dBarrierMuTarget = HDSDP_MAX(dBarrierMuTarget, -0.1 * HSolver->dResidual / HSolver->dBarHsdTau);
+                HSolver->dBarrierMu = HDSDP_MIN(HSolver->dBarrierMu, dBarrierMuTarget);
+            }
+        } else {
+            dBarrierMuTarget = 0.8 * HSolver->dBarrierMu;
+            HSolver->dBarrierMu = HDSDP_MIN(HSolver->dBarrierMu, dBarrierMuTarget);
+        }
         
-        if ( HSolver->dResidual > dAbsoptTol )
-        dBarrierGamma = HDSDP_MAX(dBarrierMuTarget, fabs(HSolver->dResidual / HSolver->dBarHsdTau));
-        HSolver->dBarrierMu = HDSDP_MIN(HSolver->dBarrierMu, dBarrierGamma);
+        /* Convergence check */
+        if ( fabs(HSolver->dResidual) < dFeasTol * HSolver->dBarHsdTau && HSolver->dBarrierMu < dAbsoptTol &&
+            HSolver->dBarrierMu < dReloptTol * (1 + 2.0 * fabs(HSolver->dObjVal)) ) {
+            
+            /* If we do not need a dual solution */
+            if ( dOnly ) {
+                HSolver->HStatus = HDSDP_DUAL_OPTIMAL;
+            } else {
+                HSolver->HStatus = HDSDP_DUAL_FEASIBLE;
+            }
+            
+            break;
+        }
         
-        /* Print log */
-        HDSDP_PrintLog(HSolver, HDSDP_ALGO_DUAL_HSD);
+        /* Infeasibility check */
+        if ( HSolver->dBarHsdTau <= 1e-10 ) {
+            HSolver->HStatus = HDSDP_SUSPECT_INFEAS_OR_UNBOUNDED;
+            break;
+        }
+        
+        if ( HUtilCheckCtrlC() ) {
+            HSolver->HStatus = HDSDP_USER_INTERRUPT;
+            break;
+        }
+        
+        if ( HUtilGetTimeStamp() - HSolver->dTimeBegin >= dTimeLimit ) {
+            HSolver->HStatus = HDSDP_TIMELIMIT;
+            break;
+        }
+        
+        HSolver->nIterCount += 1;
+        if ( HSolver->nIterCount >= nMaxIter ) {
+            HSolver->HStatus = HDSDP_MAXITER;
+            break;
+        }
     }
+    
+exit_cleanup:
+    
+    if ( retcode != HDSDP_RETCODE_OK ) {
+        HSolver->HStatus = HDSDP_NUMERICAL;
+    }
+    
+    return retcode;
+}
+
+static hdsdp_retcode HDSDP_PhaseB_BarDualPotentialSolve( hdsdp *HSolver ) {
+    
+    hdsdp_retcode retcode = HDSDP_RETCODE_OK;
+    
+    
+    
     
 exit_cleanup:
     return retcode;
 }
 
-static hdsdp_retcode HDSDP_PhaseB_BarDualPotentialSolve( hdsdp *HSolver ) {
+static hdsdp_retcode HDSDP_PhaseC_BarPrimalInfeasCheck( hdsdp *HSolver ) {
     
     hdsdp_retcode retcode = HDSDP_RETCODE_OK;
     
@@ -367,7 +505,7 @@ extern hdsdp_retcode HDSDPSolve( hdsdp *HSolver, int dOnly ) {
     
     hdsdp_retcode retcode = HDSDP_RETCODE_OK;
     
-    HDSDP_CALL(HDSDP_PhaseA_BarHsdSolve(HSolver, 0));
+    HDSDP_CALL(HDSDP_PhaseA_BarHsdSolve(HSolver, dOnly));
     
 exit_cleanup:
     return retcode;

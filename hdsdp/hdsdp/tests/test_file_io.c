@@ -302,6 +302,7 @@ int test_solver( char *fname ) {
         SDPData = NULL;
     }
     
+    HDSDPSetDualObjective(hsolve, rowRHS);
     HDSDP_CALL(HDSDPOptimize(hsolve, 0));
     
 exit_cleanup:

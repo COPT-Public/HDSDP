@@ -17,6 +17,7 @@ static hdsdp_retcode HKKTIAllocDenseKKT( hdsdp_kkt *HKKT ) {
     HDSDP_MEMCHECK(HKKT->kktMatElem);
     
     HDSDP_CALL(HFpLinsysCreate(&HKKT->kktM, HKKT->nRow, HDSDP_LINSYS_DENSE_ITERATIVE));
+    HFpLinsysSetParam(HKKT->kktM, 5.0 * KKT_ACCURACY, KKT_ACCURACY, -1, -1, -1);
     
     /* Mark the diagonal entries of the KKT solver */
     for ( int iCol = 0; iCol < HKKT->nRow; ++iCol ) {
@@ -315,6 +316,23 @@ exit_cleanup:
 extern void HKKTRegularize( hdsdp_kkt *HKKT, double dKKTReg ) {
     
     /* Regularize the diagonal of the Schur complement */
+    double dKKTMinDiag = HDSDP_INFINITY;
+    
+    for ( int iCol = 0; iCol < HKKT->nRow; ++iCol ) {
+        dKKTMinDiag = HDSDP_MIN(*HKKT->kktDiag[iCol], dKKTMinDiag);
+    }
+    
+    dKKTReg = dKKTReg * dKKTMinDiag;
+    dKKTReg = HDSDP_MIN(dKKTReg, 1e-05);
+    
+    if ( dKKTReg < 1e-14 ) {
+        dKKTReg = 0.0;
+    }
+    
+#ifdef HDSDP_KKT_DEBUG
+    hdsdp_printf("Regularizing KKT system with %5.2e\n", dKKTReg);
+#endif
+    
     for ( int iCol = 0; iCol < HKKT->nRow; ++iCol ) {
         *HKKT->kktDiag[iCol] += dKKTReg;
     }

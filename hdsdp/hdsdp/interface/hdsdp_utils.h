@@ -80,7 +80,7 @@ printf("Function Profiler: Line %d of %s by %d runs. "       \
 #define print_int_param(hdsdp, param, name) printf("  %-20s: %d\n", name, hdsdp->HIntParams[param])
 #define print_dbl_param(hdsdp, param, name) printf("  %-20s: %5.1e\n", name, hdsdp->HDblParams[param])
 #define print_int_feature(hdsdp, feature, name) printf("  %10s: %d\n", name, hdsdp->HIntFeatures[feature])
-#define print_dbl_feature(hdsdp, feature, name) printf("  %10s: %e\n", name, hdsdp->HDblFeatures[feature])
+#define print_dbl_feature(hdsdp, feature, name) printf("  %10s: %5.2e\n", name, hdsdp->HDblFeatures[feature])
 
 #ifdef __cplusplus
 extern "C" {

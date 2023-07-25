@@ -16,8 +16,10 @@
 
 //#define HDSDP_LANCZOS_DEBUG
 //#define HDSDP_CONIC_DEBUG
-//#define HDSDP_LINSYS_DEBUG
-//#define HDSDP_CONJGRAD_DEBUG
+#define HDSDP_KKT_DEBUG
+#define HDSDP_LINSYS_DEBUG
+#define HDSDP_CONJGRAD_DEBUG
+#define KKT_ACCURACY (1e-08)
 #define HDSDP_SPARSE_CONE_THRESHOLD  (0.3)
 #define HDSDP_SPARSE_SCHUR_THRESHOLD (0.3)
 
@@ -41,7 +43,9 @@ typedef enum {
 typedef enum {
     
     HDSDP_UNKNOWN,
-    HDSDP_OPTIMAL,
+    HDSDP_DUAL_FEASIBLE,
+    HDSDP_DUAL_OPTIMAL,
+    HDSDP_PRIMAL_DUAL_OPTIMAL,
     HDSDP_MAXITER,
     HDSDP_SUSPECT_INFEAS_OR_UNBOUNDED,
     HDSDP_INFEAS_OR_UNBOUNDED,
@@ -67,6 +71,9 @@ typedef struct hdsdp_solver_internal hdsdp;
 #define DBL_PARAM_TIMELIMIT     4
 #define DBL_PARAM_POTRHOVAL     5
 #define DBL_PARAM_HSDGAMMA      6
+#define DBL_PARAM_DUALBND       7
+#define DBL_PARAM_BARMUSTART    8
+#define DBL_PARAM_DUALSTART     9
 
 // Version information
 #define VERSION_MAJOR           1
@@ -85,6 +92,7 @@ extern "C" {
 extern hdsdp_retcode HDSDPCreate( hdsdp **pHSolver );
 extern hdsdp_retcode HDSDPInit( hdsdp *HSolver, int nRows, int nCones );
 extern hdsdp_retcode HDSDPSetCone( hdsdp *HSolver, int iCone, void *userCone );
+extern void HDSDPSetDualObjective( hdsdp *HSolver, double *dObj );
 extern hdsdp_retcode HDSDPOptimize( hdsdp *HSolver, int dOptOnly );
 extern hdsdp_retcode HDSDPGetRowDual( hdsdp *HSolver, double *pObjVal, double *dObjVal, double *dualVal );
 extern hdsdp_retcode HDSDPGetConeValues( hdsdp *HSolver, int iCone, double *conePrimal, double *coneDual );

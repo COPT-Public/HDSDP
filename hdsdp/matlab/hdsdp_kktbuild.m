@@ -14,12 +14,16 @@ csinvcsinv = trace(C * Sinv * C * Sinv); %#ok
 csinvrdcsinv = Rd * trace(Sinv * C * Sinv); %#ok
 
 for i = 1:m
+    if isempty(nonzeros(As{i}))
+        continue;
+    end % End if
     asinv(i) = trace(As{i} * Sinv); %#ok
     asinvcsinv(i) = trace(As{i} * Sinv * C * Sinv); %#ok
     asinvrdsinv(i) = Rd * trace(Sinv * As{i} * Sinv); %#ok
+    SinvAiSinv = Sinv * As{i} * Sinv; %#ok
     for j = 1:i
-        M(i, j) = trace(As{i} * Sinv * As{j} * Sinv); %#ok
-        M(j, i) = trace(As{i} * Sinv * As{j} * Sinv); %#ok
+        M(i, j) = trace(SinvAiSinv * As{j});
+        M(j, i) = M(i, j);
     end % End for
 end % End for
 

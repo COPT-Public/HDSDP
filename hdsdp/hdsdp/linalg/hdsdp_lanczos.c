@@ -41,6 +41,23 @@ static void HLanczosIPrepare( int n, double *vVec ) {
     return;
 }
 
+static void HLanczosICleanUp( hdsdp_lanczos *HLanczos ) {
+    
+    HDSDP_ZERO(HLanczos->wVec, double, HLanczos->nCol);
+    HDSDP_ZERO(HLanczos->z1Vec, double, HLanczos->nCol);
+    HDSDP_ZERO(HLanczos->z2Vec, double, HLanczos->nCol);
+    HDSDP_ZERO(HLanczos->vaVec, double, HLanczos->nCol);
+    HDSDP_ZERO(HLanczos->VMat, double, HLanczos->nCol * (HLanczos->nMaxSpaceDim + 1));
+    HDSDP_ZERO(HLanczos->HMat, double, (HLanczos->nMaxSpaceDim + 1) * (HLanczos->nMaxSpaceDim + 1));
+    HDSDP_ZERO(HLanczos->YMat, double, HLanczos->nMaxSpaceDim * 2);
+    HDSDP_ZERO(HLanczos->dArray, double, HLanczos->nMaxSpaceDim);
+    HDSDP_ZERO(HLanczos->UMat, double, HLanczos->nMaxSpaceDim * HLanczos->nMaxSpaceDim);
+    HDSDP_ZERO(HLanczos->eigDblMat, double, HLanczos->nMaxSpaceDim * SYEV_WORK);
+    HDSDP_ZERO(HLanczos->eigIntMat, int, HLanczos->nMaxSpaceDim * SYEV_IWORK);
+    
+    return;
+}
+
 extern hdsdp_retcode HLanczosCreate( hdsdp_lanczos **pHLanczos ) {
     
     hdsdp_retcode retcode = HDSDP_RETCODE_OK;
@@ -143,6 +160,7 @@ extern hdsdp_retcode HLanczosSolve( hdsdp_lanczos *HLanczos, double *LanczosStar
             HDSDP_LANCZOS_DEBUG("Starting Lanczos from scratch. %s\n", "");
             HLanczosIPrepare(HLanczos->nCol, HLanczos->vVec);
         } else {
+            HLanczosICleanUp(HLanczos);
             HDSDP_LANCZOS_DEBUG("Loaded Lanczos warm start from previous iteration. %s", "");
             HDSDP_MEMCPY(HLanczos->vVec, HLanczos->dLanczosWarmStart, double, HLanczos->nCol);
         }
@@ -179,15 +197,6 @@ extern hdsdp_retcode HLanczosSolve( hdsdp_lanczos *HLanczos, double *LanczosStar
         
         H(k, k) = - vAlp;
         HDSDP_LANCZOS_DEBUG("Lanczos Alp value: %f \n", -vAlp);
-        
-        /* Refinement */
-        if ( normPres < 0.99 * normPrev || 0 ) {
-            for ( int i = 0; i < k; ++i ) {
-                double alpha = - dot(&nVRow, &V(0, i), &HIntConstantOne, HLanczos->wVec, &HIntConstantOne);
-                axpy(&nVRow, &alpha, &V(0, i), &HIntConstantOne, HLanczos->wVec, &HIntConstantOne);
-                H(i, k) -= alpha;
-            }
-        }
         
         HDSDP_MEMCPY(HLanczos->vVec, HLanczos->wVec, double, HLanczos->nCol);
         normPres = normalize(&HLanczos->nCol, HLanczos->vVec);
@@ -249,6 +258,13 @@ extern hdsdp_retcode HLanczosSolve( hdsdp_lanczos *HLanczos, double *LanczosStar
                         *dMaxStep = 1.0 / ( valGamma + eigMin1 );
                     }
                     break;
+                    
+                } else {
+                    if ( normPres == 0.0 ) {
+                        retcode = HDSDP_RETCODE_FAILED;
+                        goto exit_cleanup;
+                    }
+                    *dMaxStep = 1.0 / ( valGamma + eigMin1 );
                 }
             }
         }

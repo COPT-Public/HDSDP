@@ -1,8 +1,9 @@
 clear;
 
-printconestat = 1;
-printdualslack = 1;
+printconestat = 0;
+printdualslack = 0;
 setupkkt = 1;
+solvehsd = 0;
 
 [At, b, c, K] = readsdpa(fullfile('/Users/gaowenzhi/Desktop/gwz/benchmark/sdplib', 'buck3.dat-s'));
 
@@ -106,6 +107,12 @@ for q = 1:s
         csinvall = csinvall + csinv;
         csinvcsinvall = csinvcsinvall + csinvcsinv;
         csinvrdcsinvall = csinvrdcsinvall + csinvrdcsinv;
+    end % End if
+    
+    if solvehsd
+        
+        [X, y, S] = dualpotsdp(Amat, b, Cmat{1}, 1);
+        
     end % End if
     
 end % End for
