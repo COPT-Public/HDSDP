@@ -53,20 +53,29 @@
 #define HDSDP_ALGO_DUAL_INFEAS     (0)
 #define HDSDP_ALGO_DUAL_HSD        (1)
 #define HDSDP_ALGO_DUAL_POTENTIAL  (2)
-static void HDSDP_SetStart( hdsdp *HSolver, int SDPMethod ) {
+static void HDSDP_SetStart( hdsdp *HSolver, int SDPMethod, int dOnly ) {
     
     /* Set staring point for the dual iterations. */
     HDSDP_ZERO(HSolver->dRowDual, double, HSolver->nRows);
     HSolver->dBarHsdTau = 1.0;
     
     if ( SDPMethod == HDSDP_ALGO_DUAL_HSD ) {
-        HSolver->dBarrierMu = 1e+08;
+        if ( dOnly ) {
+            HSolver->dBarrierMu = 1.0;
+        } else {
+            HSolver->dBarrierMu = 1e+08;
+        }
     } else {
         HSolver->dBarrierMu = get_dbl_param(HSolver, DBL_PARAM_BARMUSTART);
     }
     
     double objFroNorm = get_dbl_feature(HSolver, DBL_FEATURE_OBJFRONORM);
-    HSolver->dResidual = - objFroNorm * get_dbl_param(HSolver, DBL_PARAM_DUALSTART);
+    
+    if ( dOnly ) {
+        HSolver->dResidual = - objFroNorm * get_dbl_param(HSolver, DBL_PARAM_DUALSTART);
+    } else {
+        HSolver->dResidual = - objFroNorm * 1e+01;
+    }
     
     hdsdp_printf("Initialize with dual residual %3.1e\n", - HSolver->dResidual);
     
@@ -257,6 +266,13 @@ exit_cleanup:
 static hdsdp_retcode HDSDP_PhaseA_BarInfeasSolve( hdsdp *HSolver, int dOnly ) {
     
     hdsdp_retcode retcode = HDSDP_RETCODE_OK;
+    /* Implement the infeasible-start dual potential reduction method.
+       An adaptive stepsize strategy is applied to find eliminate dual infeasibility efficiently.
+       Also the output from the KKT solver will be reused as if in the corrector method of DSDP.
+     
+       Primal solution, if available. Will be recorded by this phase.
+       If it is hard to eliminate dual infeasibility, the embedding will be invoked to provide a certificate
+     */
     
     
     
@@ -268,7 +284,6 @@ static hdsdp_retcode HDSDP_PhaseA_BarHsdSolve( hdsdp *HSolver, int dOnly ) {
     
     hdsdp_retcode retcode = HDSDP_RETCODE_OK;
     
-    (void) dOnly;
     /* Implement the self-dual embedding method. In the current form, HDSDP does not try to extract
        primal solution from it and it serves as a certificate tool of dual (in)feasibility.
      
@@ -315,7 +330,7 @@ static hdsdp_retcode HDSDP_PhaseA_BarHsdSolve( hdsdp *HSolver, int dOnly ) {
     
     /* If we are starting from scratch */
     if ( HSolver->HStatus == HDSDP_UNKNOWN ) {
-        HDSDP_SetStart(HSolver, HDSDP_ALGO_DUAL_HSD);
+        HDSDP_SetStart(HSolver, HDSDP_ALGO_DUAL_HSD, dOnly);
     }
     
     HDSDP_PrintHeader(HSolver, HDSDP_ALGO_DUAL_HSD);
