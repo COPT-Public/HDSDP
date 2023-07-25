@@ -59,6 +59,7 @@ typedef struct {
     double dCSinvCSinv;
     double dCSinvRdSinv;
     double dCSinv;
+    double dTraceSinv;
     
 } hdsdp_kkt;
 

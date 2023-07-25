@@ -204,7 +204,7 @@ static void HDSDP_BuildHsdStep( hdsdp *HSolver ) {
     
     /* Compute dTau */
     HKKTExport(HSolver->HKKT, NULL, NULL, NULL,
-               &dHsdTraceCSinvCSinv, &dHsdTraceCSinv, &dHsdTraceCSinvRdCSinv);
+               &dHsdTraceCSinvCSinv, &dHsdTraceCSinv, &dHsdTraceCSinvRdCSinv, NULL);
     
     double dTauStepEnumerator = - bTy + mu / tau + mu * (dHsdTraceCSinv - dHsdTraceCSinvRdCSinv);
     double dTauStepDenominator = mu * dHsdTraceCSinvCSinv + mu / (tau * tau);
@@ -367,8 +367,8 @@ static hdsdp_retcode HDSDP_PhaseA_BarHsdSolve( hdsdp *HSolver, int dOnly ) {
         HKKTRegularize(HSolver->HKKT, 1e-05);
         
         /* Then we export information needed */
-        HKKTExport(HSolver->HKKT, HSolver->dMinvASinv, HSolver->dMinvASinvRdSinv, HSolver->dMinvASinvCSinv,
-                   NULL, NULL, NULL);
+        HKKTExport(HSolver->HKKT, HSolver->dMinvASinv, HSolver->dMinvASinvRdSinv,
+                   HSolver->dMinvASinvCSinv, NULL, NULL, NULL, NULL);
         
         /* Factorize the KKT system */
         HDSDP_CALL(HKKTFactorize(HSolver->HKKT));
@@ -475,7 +475,7 @@ exit_cleanup:
 static hdsdp_retcode HDSDP_PhaseB_BarDualPotentialSolve( hdsdp *HSolver ) {
     
     hdsdp_retcode retcode = HDSDP_RETCODE_OK;
-    
+    /* Implement the same potential reduction algorithm as in DSDP 5.8 */
     
     
     
@@ -486,7 +486,7 @@ exit_cleanup:
 static hdsdp_retcode HDSDP_PhaseC_BarPrimalInfeasCheck( hdsdp *HSolver ) {
     
     hdsdp_retcode retcode = HDSDP_RETCODE_OK;
-    
+    /* Check existence of improving ray */
     
     
     
@@ -494,12 +494,11 @@ exit_cleanup:
     return retcode;
 }
 
-static hdsdp_retcode HDSDP_Conic_Solve( hdsdp *HSolver ) {
+static hdsdp_retcode HDSDP_Conic_Solve( hdsdp *HSolver, int dOnly ) {
     
     hdsdp_retcode retcode = HDSDP_RETCODE_OK;
     
-    
-    
+    HDSDP_CALL(HDSDP_PhaseA_BarHsdSolve(HSolver, dOnly));
     
 exit_cleanup:
     return retcode;
@@ -520,7 +519,7 @@ extern hdsdp_retcode HDSDPSolve( hdsdp *HSolver, int dOnly ) {
     
     hdsdp_retcode retcode = HDSDP_RETCODE_OK;
     
-    HDSDP_CALL(HDSDP_PhaseA_BarHsdSolve(HSolver, dOnly));
+    HDSDP_CALL(HDSDP_Conic_Solve(HSolver, dOnly));
     
 exit_cleanup:
     return retcode;

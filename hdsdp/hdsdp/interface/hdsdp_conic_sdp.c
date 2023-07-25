@@ -1672,6 +1672,13 @@ extern hdsdp_retcode sdpDenseConeGetKKT( hdsdp_cone_sdp_dense *cone, void *kkt, 
         goto exit_cleanup;
     }
     
+    /* Get quantity for estimating primal objective */
+    if ( cone->dualResidual ) {
+        for ( int iCol = 0; iCol < cone->nCol; ++iCol ) {
+            Hkkt->dTraceSinv += Hkkt->invBuffer[iCol + iCol * cone->nCol];
+        }
+    }
+    
     for ( int iKKTCol = 0; iKKTCol < cone->nRow; ++iKKTCol ) {
         
         if ( sdpDataMatGetType(cone->sdpRow[cone->sdpConePerm[iKKTCol]]) == SDP_COEFF_ZERO ) {
@@ -1729,6 +1736,13 @@ extern hdsdp_retcode sdpDenseConeGetKKTByFixedStrategy( hdsdp_cone_sdp_dense *co
         goto exit_cleanup;
     }
     
+    /* Get quantity for estimating primal objective */
+    if ( cone->dualResidual ) {
+        for ( int iCol = 0; iCol < cone->nCol; ++iCol ) {
+            Hkkt->dTraceSinv += Hkkt->invBuffer[iCol + iCol * cone->nCol];
+        }
+    }
+    
     for ( int iKKTCol = 0; iKKTCol < cone->nRow; ++iKKTCol ) {
         
         if ( sdpDataMatGetType(cone->sdpRow[cone->sdpConePerm[iKKTCol]]) == SDP_COEFF_ZERO ) {
@@ -1783,6 +1797,13 @@ extern hdsdp_retcode sdpSparseConeGetKKT( hdsdp_cone_sdp_sparse *cone, void *kkt
         goto exit_cleanup;
     }
     
+    /* Get quantity for estimating primal objective */
+    if ( cone->dualResidual ) {
+        for ( int iCol = 0; iCol < cone->nCol; ++iCol ) {
+            Hkkt->dTraceSinv += Hkkt->invBuffer[iCol + iCol * cone->nCol];
+        }
+    }
+    
     for ( int iKKTNzCol = 0; iKKTNzCol < cone->nRowElem; ++iKKTNzCol ) {
         
         int KKTStrategy = KKT_M1;
@@ -1835,6 +1856,13 @@ extern hdsdp_retcode sdpSparseConeGetKKTByFixedStrategy( hdsdp_cone_sdp_sparse *
     
     /* Prepare inverse */
     HFpLinsysInvert(cone->dualFactor, Hkkt->invBuffer, Hkkt->kktBuffer);
+    
+    /* Get quantity for estimating primal objective */
+    if ( cone->dualResidual ) {
+        for ( int iCol = 0; iCol < cone->nCol; ++iCol ) {
+            Hkkt->dTraceSinv += Hkkt->invBuffer[iCol + iCol * cone->nCol];
+        }
+    }
     
     if ( typeKKT == KKT_TYPE_CORRECTOR ) {
         HDSDP_CALL(sdpSparseConeIGetKKTCorrectorComponents(cone, kkt));

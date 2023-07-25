@@ -325,7 +325,7 @@ extern hdsdp_retcode HDSDPOptimize( hdsdp *HSolver, int dOptOnly ) {
     hdsdp_retcode retcode = HDSDP_RETCODE_OK;
     
     /* Start optimization */
-    hdsdp_printf("\nHDSDP: software for semi-definite programming \n");
+    hdsdp_printf("\nHDSDP: software for semi-definite programming \n\n");
     hdsdp_printf("Wenzhi Gao, Dongdong Ge, Yinyu Ye, 2023\n");
     hdsdp_printf("---------------------------------------------\n");
     HSolver->dTimeBegin = HUtilGetTimeStamp();
@@ -357,7 +357,7 @@ extern hdsdp_retcode HDSDPOptimize( hdsdp *HSolver, int dOptOnly ) {
     HDSDPIPrintParams(HSolver);
     
     /* Invoke solver */
-    retcode = HDSDPSolve(HSolver, 1);
+    retcode = HDSDPSolve(HSolver, 0);
     HDSDPIPrintSolutionStats(HSolver);
     
 exit_cleanup:
@@ -462,7 +462,7 @@ extern void HDSDPDestroy( hdsdp **pHSolver ) {
     HDSDPClear(*pHSolver);
     HDSDP_FREE(*pHSolver);
     
-    hdsdp_printf("HDSDP ends. Exiting ... \n");
+    hdsdp_printf("HDSDP ends. Exiting \n");
     
     return;
 }

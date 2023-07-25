@@ -204,15 +204,15 @@ int test_file_io( char *fname ) {
     double dCSinvRdCSinv = 0.0;
     double dCSinvCSinv = 0.0;
     
-    HKKTExport(kkt, kktLhsBuffer, NULL, NULL, &dCSinvCSinv, &dCSinv, &dCSinvRdCSinv);
+    HKKTExport(kkt, kktLhsBuffer, NULL, NULL, &dCSinvCSinv, &dCSinv, &dCSinvRdCSinv, NULL);
     HDSDP_CALL(HKKTFactorize(kkt));
     HDSDP_CALL(HKKTSolve(kkt, kktLhsBuffer, NULL));
     
-    HKKTExport(kkt, NULL, kktLhsBuffer, NULL, &dCSinvCSinv, &dCSinv, &dCSinvRdCSinv);
+    HKKTExport(kkt, NULL, kktLhsBuffer, NULL, &dCSinvCSinv, &dCSinv, &dCSinvRdCSinv, NULL);
     HDSDP_CALL(HKKTFactorize(kkt));
     HDSDP_CALL(HKKTSolve(kkt, kktLhsBuffer, NULL));
     
-    HKKTExport(kkt, NULL, NULL, kktLhsBuffer, &dCSinvCSinv, &dCSinv, &dCSinvRdCSinv);
+    HKKTExport(kkt, NULL, NULL, kktLhsBuffer, &dCSinvCSinv, &dCSinv, &dCSinvRdCSinv, NULL);
     HDSDP_CALL(HKKTFactorize(kkt));
     HDSDP_CALL(HKKTSolve(kkt, kktLhsBuffer, NULL));
     

@@ -136,6 +136,8 @@ static void HKKTClean( hdsdp_kkt *HKKT, int typeKKT ) {
         HKKT->dCSinvRdSinv = 0.0;
     }
     
+    HKKT->dTraceSinv = 0.0;
+    
     if ( typeKKT == KKT_TYPE_INFEASIBLE || typeKKT == KKT_TYPE_HOMOGENEOUS ) {
         if ( HKKT->isKKTSparse ) {
             HDSDP_ZERO(HKKT->kktMatElem, double, HKKT->kktMatBeg[HKKT->nRow]);
@@ -263,7 +265,7 @@ exit_cleanup:
 }
 
 extern void HKKTExport( hdsdp_kkt *HKKT, double *dKKTASinvVec, double *dKKTASinvRdSinvVec, double *dKKTASinvCSinvVec,
-                       double *dCSinvCSinv, double *dCSinv, double *dCSinvRdCSinv ) {
+                       double *dCSinvCSinv, double *dCSinv, double *dCSinvRdCSinv, double *dTraceSinv ) {
     
     /* Export the vectors and information from KKT solver */
     if ( dKKTASinvVec ) {
@@ -288,6 +290,10 @@ extern void HKKTExport( hdsdp_kkt *HKKT, double *dKKTASinvVec, double *dKKTASinv
     
     if ( dCSinvRdCSinv ) {
         *dCSinvRdCSinv = HKKT->dCSinvRdSinv;
+    }
+    
+    if ( dTraceSinv ) {
+        *dTraceSinv = HKKT->dTraceSinv;
     }
 
     return;

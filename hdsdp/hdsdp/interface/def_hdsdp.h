@@ -70,6 +70,7 @@ struct hdsdp_solver_internal {
     double *dMinvASinvCSinv;
     double *dHAuxiVec1;
     double *dHAuxiVec2;
+    double dTraceSinv;
     
     /* Monitor */
     int nIterCount;
