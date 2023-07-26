@@ -151,8 +151,8 @@ static void HDSDP_PrintLog( hdsdp *HSolver, int SDPMethod ) {
     
     /* Get infeasibilities */
     double nSumCones = (double) get_dbl_feature(HSolver, INT_FEATURE_N_SUMCONEDIMS);
-    double pdObjScal = dRhsScal * dObjScal / HSolver->dBarHsdTau;
-    HSolver->dInfeas = dRhsScal * sqrt(nSumCones) * fabs(HSolver->dResidual) / HSolver->dBarHsdTau;
+    double pdObjScal = 1.0 / (dRhsScal * dObjScal * HSolver->dBarHsdTau);
+    HSolver->dInfeas =  sqrt(nSumCones) * fabs(HSolver->dResidual) / (dRhsScal * HSolver->dBarHsdTau);
     
     HSolver->dObjVal = HSolver->dObjInternal * pdObjScal;
     HSolver->pObjVal = HSolver->pObjInternal * pdObjScal;

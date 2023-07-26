@@ -291,6 +291,7 @@ static void sdpSparseConeIFreeDualMat( hdsdp_cone_sdp_sparse *cone ) {
     }
     
     HFpLinsysDestroy(&cone->dualFactor);
+    HFpLinsysDestroy(&cone->dualChecker);
     
     return;
 }
