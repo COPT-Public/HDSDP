@@ -9,7 +9,7 @@
 
 extern hdsdp_retcode HKKTCreate( hdsdp_kkt **pHKKT );
 extern hdsdp_retcode HKKTInit( hdsdp_kkt *HKKT, int nRow, int nCones, hdsdp_cone **cones );
-extern hdsdp_retcode HKKTBuildUp( hdsdp_kkt *HKKT, int newM );
+extern hdsdp_retcode HKKTBuildUp( hdsdp_kkt *HKKT, int typeKKT );
 extern hdsdp_retcode HKKTBuildUpFixed( hdsdp_kkt *HKKT, int typeKKT, int kktStrategy );
 extern void HKKTExport( hdsdp_kkt *HKKT, double *dKKTASinvVec, double *dKKTASinvRdSinvVec, double *dKKTASinvCSinvVec,
                        double *dCSinvCSinv, double *dCSinv, double *dCSinvRdCSinv, double *dTraceSinv );

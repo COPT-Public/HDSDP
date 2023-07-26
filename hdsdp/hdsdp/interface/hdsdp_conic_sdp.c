@@ -2079,13 +2079,13 @@ exit_cleanup:
 
 extern void sdpDenseConeReduceResidual( hdsdp_cone_sdp_dense *cone, double resiReduction ) {
     
-    cone->dualResidual *= resiReduction;
+    cone->dualResidual = resiReduction;
     return;
 }
 
 extern void sdpSparseConeReduceResidual( hdsdp_cone_sdp_sparse *cone, double resiReduction ) {
     
-    cone->dualResidual *= resiReduction;
+    cone->dualResidual = resiReduction;
     return;
 }
 

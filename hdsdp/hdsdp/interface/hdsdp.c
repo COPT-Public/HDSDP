@@ -150,12 +150,13 @@ static void HDSDPIAdjustParams( hdsdp *HSolver ) {
 static void HDSDPIGetDefaultParams( hdsdp *HSolver ) {
     
     set_int_param(HSolver, INT_PARAM_MAXITER, 100);
+    set_int_param(HSolver, INT_PARAM_CORRECTORA, 4);
+    set_int_param(HSolver, INT_PARAM_CORRECTORB, 0);
     
     set_dbl_param(HSolver, DBL_PARAM_ABSOPTTOL, 1e-08);
     set_dbl_param(HSolver, DBL_PARAM_ABSFEASTOL, 1e-08);
     set_dbl_param(HSolver, DBL_PARAM_RELOPTTOL, 1e-08);
     set_dbl_param(HSolver, DBL_PARAM_RELFEASTOL, 1e-08);
-    
     set_dbl_param(HSolver, DBL_PARAM_TIMELIMIT, 3600.0);
     set_dbl_param(HSolver, DBL_PARAM_POTRHOVAL, 5.0);
     set_dbl_param(HSolver, DBL_PARAM_HSDGAMMA, 0.5);
@@ -170,6 +171,8 @@ static void HDSDPIPrintParams( hdsdp *HSolver ) {
     
     hdsdp_printf("\nParameters\n");
     print_int_param(HSolver, INT_PARAM_MAXITER, "Maximum iteration");
+    print_int_param(HSolver, INT_PARAM_CORRECTORA, "Infeasible corrector");
+    print_int_param(HSolver, INT_PARAM_CORRECTORB, "Feasible corrector");
     
     print_dbl_param(HSolver, DBL_PARAM_ABSOPTTOL, "Abs optimality");
     print_dbl_param(HSolver, DBL_PARAM_RELOPTTOL, "Rel optimality");
