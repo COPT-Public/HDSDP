@@ -149,7 +149,7 @@ static void HDSDPIAdjustParams( hdsdp *HSolver ) {
 
 static void HDSDPIGetDefaultParams( hdsdp *HSolver ) {
     
-    set_int_param(HSolver, INT_PARAM_MAXITER, 100);
+    set_int_param(HSolver, INT_PARAM_MAXITER, 500);
     set_int_param(HSolver, INT_PARAM_CORRECTORA, 4);
     set_int_param(HSolver, INT_PARAM_CORRECTORB, 0);
     

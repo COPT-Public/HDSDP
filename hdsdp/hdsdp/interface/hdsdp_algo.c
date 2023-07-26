@@ -122,17 +122,17 @@ static void HDSDP_PrintHeader( hdsdp *HSolver, int SDPMethod ) {
     switch (SDPMethod) {
         case HDSDP_ALGO_DUAL_HSD:
             hdsdp_printf("HDSDP starts. Using self-dual method \n\n");
-            hdsdp_printf("    %5s  %12s  %12s  %8s  %8s  %5s  %5s  %5s \n",
+            hdsdp_printf("    %5s  %12s  %12s  %8s  %8s  %5s  %6s   %5s \n",
                          "nIter", "pObj", "dObj", "dInf", "Mu", "Step", "Tau", "T [H]");
             break;
         case HDSDP_ALGO_DUAL_INFEAS:
             hdsdp_printf("HDSDP starts. Using infeasible dual method \n\n");
-            hdsdp_printf("    %5s  %12s  %12s  %8s  %8s  %5s  %5s  %5s \n",
+            hdsdp_printf("    %5s  %12s  %12s  %8s  %8s  %5s  %6s   %5s \n",
                          "nIter", "pObj", "dObj", "dInf", "Mu", "Step", "|P|", "T [D]");
             break;
         case HDSDP_ALGO_DUAL_POTENTIAL:
             hdsdp_printf("HDSDP starts. Using feasible dual method \n\n");
-            hdsdp_printf("    %5s  %12s  %12s  %8s  %8s  %5s  %5s  %5s\n",
+            hdsdp_printf("    %5s  %12s  %12s  %8s  %8s  %5s  %6s   %5s\n",
                          "nIter", "pObj", "dObj", "pInf", "Mu", "Step", "|P|", "T [P]");
             break;
         default:
@@ -159,17 +159,17 @@ static void HDSDP_PrintLog( hdsdp *HSolver, int SDPMethod ) {
     
     switch (SDPMethod) {
         case HDSDP_ALGO_DUAL_HSD:
-            hdsdp_printf("    %5d  %+12.5e  %+12.5e  %8.2e  %8.2e  %5.2f  %5.2e  %4.1f\n", HSolver->nIterCount + 1,
+            hdsdp_printf("    %5d  %+12.5e  %+12.5e  %8.2e  %8.2e  %5.2f  %5.1e  %4.1f\n", HSolver->nIterCount + 1,
                    HDSDP_INFINITY, HSolver->dObjVal, HSolver->dInfeas,
-                   HSolver->dBarrierMu, HSolver->dDStep, elapsedTime, HSolver->dBarHsdTau);
+                   HSolver->dBarrierMu, HSolver->dDStep, HSolver->dBarHsdTau, elapsedTime);
             break;
         case HDSDP_ALGO_DUAL_INFEAS:
-            hdsdp_printf("    %5d  %+12.5e  %+12.5e  %8.2e  %8.2e  %5.2f  %5.2e  %4.1f \n", HSolver->nIterCount + 1,
+            hdsdp_printf("    %5d  %+12.5e  %+12.5e  %8.2e  %8.2e  %5.2f  %5.1e  %4.1f \n", HSolver->nIterCount + 1,
                    HSolver->pObjVal * pdObjScal, HSolver->dObjVal * pdObjScal, HSolver->dInfeas, HSolver->dBarrierMu,
                    HSolver->dDStep, HSolver->dProxNorm, elapsedTime);
             break;
         case HDSDP_ALGO_DUAL_POTENTIAL:
-            hdsdp_printf("    %5d  %+12.5e  %+12.5e  %8.2e  %8.2e  %5.2f  %5.2e  %4.1f \n", HSolver->nIterCount + 1,
+            hdsdp_printf("    %5d  %+12.5e  %+12.5e  %8.2e  %8.2e  %5.2f  %5.1e  %4.1f \n", HSolver->nIterCount + 1,
                    HSolver->pObjVal * pdObjScal, HSolver->dObjVal * pdObjScal, HSolver->pInfeas, HSolver->dBarrierMu,
                    HSolver->dDStep, HSolver->dProxNorm, elapsedTime);
             break;
@@ -912,6 +912,7 @@ static hdsdp_retcode HDSDP_PhaseA_BarHsdSolve( hdsdp *HSolver, int dOnly ) {
                 hdsdp_printf("Initial point is not in the cone. Adding slack value.\n");
                 HSolver->dResidual *= 100.0;
                 HDSDP_ResetStart(HSolver);
+                HSolver->nIterCount += 1;
                 continue;
             } else {
                 hdsdp_printf("Iteration %d is not in the cone. \n", HSolver->nIterCount);

@@ -187,7 +187,7 @@ extern int pds_r1_extract( int n, double *A, double *sgn, double *a ) {
         return 0;
     }
     
-    double s = ( A[k] > 0 ) ? 1.0 : 0.0;
+    double s = ( A[k] > 0 ) ? 1.0 : -1.0;
     double v = sqrt(fabs(A[k]));
     double eps = 0.0;
     

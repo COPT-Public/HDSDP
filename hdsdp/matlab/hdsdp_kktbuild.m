@@ -22,7 +22,7 @@ for i = 1:m
     asinvrdsinv(i) = Rd * trace(Sinv * As{i} * Sinv); %#ok
     SinvAiSinv = Sinv * As{i} * Sinv; %#ok
     for j = 1:i
-        M(i, j) = trace(SinvAiSinv * As{j});
+        M(i, j) = sum(sum(SinvAiSinv .* As{j}));
         M(j, i) = M(i, j);
     end % End for
 end % End for

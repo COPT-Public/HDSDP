@@ -1071,8 +1071,13 @@ static hdsdp_retcode sdpSparseConeIGetKKTColumnByKKT2( hdsdp_cone_sdp_sparse *co
         dSinAVecSign * sdpDataMatKKT2QuadForm(cone->sdpObj, dSinvAVecBuffer, dAuxiQuadFormVec);
     }
     
+    int iKKTPosition = 0;
     for ( int iRowElem = iKKTNzCol; iRowElem < cone->nRowElem; ++iRowElem ) {
-        int iKKTPosition = PACK_ENTRY(cone->kktMapping, cone->nRowElem, iRowElem, iKKTNzCol);
+        if ( kkt->isKKTSparse ) {
+            iKKTPosition = PACK_ENTRY(cone->kktMapping, cone->nRowElem, iRowElem, iKKTNzCol);
+        } else {
+            iKKTPosition = cone->rowIdx[iRowElem] + iKKTCol * kkt->nRow;
+        }
         kkt->kktMatElem[iKKTPosition] += \
         dSinAVecSign * sdpDataMatKKT2QuadForm(cone->sdpRow[iRowElem], dSinvAVecBuffer, dAuxiQuadFormVec);
     }
@@ -1119,8 +1124,13 @@ static hdsdp_retcode sdpSparseConeIGetKKTColumnByKKT3( hdsdp_cone_sdp_sparse *co
         sdpDataMatKKT3TraceABuffer(cone->sdpObj, dSinvASinvBuffer, dAuxiMat);
     }
     
+    int iKKTPosition = 0;
     for ( int iRowElem = iKKTNzCol; iRowElem < cone->nRowElem; ++iRowElem ) {
-        int iKKTPosition = PACK_ENTRY(cone->kktMapping, cone->nRowElem, iRowElem, iKKTNzCol);
+        if ( kkt->isKKTSparse ) {
+            iKKTPosition = PACK_ENTRY(cone->kktMapping, cone->nRowElem, iRowElem, iKKTNzCol);
+        } else {
+            iKKTPosition = cone->rowIdx[iRowElem] + iKKTCol * kkt->nRow;
+        }
         kkt->kktMatElem[iKKTPosition] += \
         sdpDataMatKKT3TraceABuffer(cone->sdpRow[iRowElem], dSinvASinvBuffer, dAuxiMat);
     }
@@ -1165,8 +1175,13 @@ static hdsdp_retcode sdpSparseConeIGetKKTColumnByKKT4( hdsdp_cone_sdp_sparse *co
         sdpDataMatKKT4TraceASinvBuffer(cone->sdpObj, cone->dualFactor, kkt->invBuffer, dASinvBuffer, dAuxiMat);
     }
     
+    int iKKTPosition = 0;
     for ( int iRowElem = iKKTNzCol; iRowElem < cone->nRowElem ; ++iRowElem ) {
-        int iKKTPosition = PACK_ENTRY(cone->kktMapping, cone->nRowElem, iRowElem, iKKTNzCol);
+        if ( kkt->isKKTSparse ) {
+            iKKTPosition = PACK_ENTRY(cone->kktMapping, cone->nRowElem, iRowElem, iKKTNzCol);
+        } else {
+            iKKTPosition = cone->rowIdx[iRowElem] + iKKTCol * kkt->nRow;
+        }
         kkt->kktMatElem[iKKTPosition] += \
         sdpDataMatKKT4TraceASinvBuffer(cone->sdpRow[iRowElem], cone->dualFactor, kkt->invBuffer, dASinvBuffer, dAuxiMat);
     }
@@ -1208,8 +1223,15 @@ static hdsdp_retcode sdpSparseConeIGetKKTColumnByKKT5( hdsdp_cone_sdp_sparse *co
         sdpDataMatKKT5TraceASinvBSinv(sdpTargetMatrix, cone->sdpObj, kkt->invBuffer, dAuxiMat);
     }
     
+    int iKKTPosition = 0;
     for ( int iRowElem = iKKTNzCol; iRowElem < cone->nRowElem; ++iRowElem ) {
-        int iKKTPosition = PACK_ENTRY(cone->kktMapping, cone->nRowElem, iRowElem, iKKTNzCol);
+        
+        if ( kkt->isKKTSparse ) {
+            iKKTPosition = PACK_ENTRY(cone->kktMapping, cone->nRowElem, iRowElem, iKKTNzCol);
+        } else {
+            iKKTPosition = cone->rowIdx[iRowElem] + iKKTCol * kkt->nRow;
+        }
+        
         kkt->kktMatElem[iKKTPosition] += \
         sdpDataMatKKT5TraceASinvBSinv(sdpTargetMatrix, cone->sdpRow[iRowElem], kkt->invBuffer, dAuxiMat);
     }
@@ -1832,7 +1854,7 @@ extern hdsdp_retcode sdpSparseConeGetKKT( hdsdp_cone_sdp_sparse *cone, void *kkt
         (void) KKTStrategy;
         
 #if 0
-        if ( cone->rowIdx[iKKTNzCol] == 0 ) {
+        if ( cone->rowIdx[iKKTNzCol] == 3 ) {
             printf("Here. \n");
         }
 #endif
