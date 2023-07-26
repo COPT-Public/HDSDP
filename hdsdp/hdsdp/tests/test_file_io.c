@@ -180,13 +180,13 @@ int test_file_io( char *fname ) {
         HConeUpdate(SDPCone, 1.0, rowDual);
 //        HConeView(SDPCone);
         
-        HDSDP_CALL(HConeGetLogBarrier(SDPCone, 1.5, rowDual, &logdet));
+        HDSDP_CALL(HConeGetLogBarrier(SDPCone, 1.5, rowDual, BUFFER_DUALVAR, &logdet));
 //        printf("- Conic log det (S) = %e. \n", logdet);
         
         double ratio = 0.0;
-        HDSDP_CALL(HConeRatioTest(SDPCone, 1.0, rowDualStep, 0.9, &ratio));
+        HDSDP_CALL(HConeRatioTest(SDPCone, 1.0, rowDualStep, 0.9, BUFFER_DUALVAR, &ratio));
         printf("- Conic ratio test: %e. \n", ratio);
-        HDSDP_CALL(HConeRatioTest(SDPCone, 1.0, rowDualStep, 0.9, &ratio));
+        HDSDP_CALL(HConeRatioTest(SDPCone, 1.0, rowDualStep, 0.9, BUFFER_DUALVAR, &ratio));
         printf("- Conic ratio test again: %e. \n", ratio);
         
         HUserDataClear(SDPData);
@@ -303,7 +303,7 @@ int test_solver( char *fname ) {
     }
     
     HDSDPSetDualObjective(hsolve, rowRHS);
-    HDSDP_CALL(HDSDPOptimize(hsolve, 0));
+    HDSDP_CALL(HDSDPOptimize(hsolve, 1));
     
 exit_cleanup:
     

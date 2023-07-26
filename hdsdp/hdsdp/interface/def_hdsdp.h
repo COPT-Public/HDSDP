@@ -74,6 +74,7 @@ struct hdsdp_solver_internal {
     
     /* Monitor */
     int nIterCount;
+    int nSmallStep;
     double dBarrierMu;
     double dProxNorm;
     double dPotentialVal;
@@ -91,6 +92,14 @@ struct hdsdp_solver_internal {
     double pInfeas;
     double dInfeas;
     double comp;
+    
+    /* Primal solution recovery */
+    double *dAccRowDualMaker;
+    double *dAccRowDualStepMaker;
+    double dAccBarrierMaker;
+    double *dInaccRowDualMaker;
+    double *dInaccRowDualStepMaker;
+    double dInaccBarrierMaker;
     
     double dTimeBegin;
     

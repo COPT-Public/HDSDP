@@ -181,6 +181,7 @@ static void HDSDPIPrintParams( hdsdp *HSolver ) {
     print_dbl_param(HSolver, DBL_PARAM_DUALBND, "Dual box radius");
     print_dbl_param(HSolver, DBL_PARAM_BARMUSTART, "Starting barrier mu");
     print_dbl_param(HSolver, DBL_PARAM_DUALSTART, "Starting residual");
+    print_dbl_param(HSolver, DBL_PARAM_POBJSTART, "Starting primal");
     
     hdsdp_printf("\n");
     
@@ -285,6 +286,18 @@ extern hdsdp_retcode HDSDPInit( hdsdp *HSolver, int nRows, int nCones ) {
     HDSDP_INIT(HSolver->dHAuxiVec2, double, nRows);
     HDSDP_MEMCHECK(HSolver->dHAuxiVec2);
     
+    HDSDP_INIT(HSolver->dAccRowDualMaker, double, nRows);
+    HDSDP_MEMCHECK(HSolver->dAccRowDualMaker);
+    
+    HDSDP_INIT(HSolver->dAccRowDualStepMaker, double, nRows);
+    HDSDP_MEMCHECK(HSolver->dAccRowDualStepMaker);
+    
+    HDSDP_INIT(HSolver->dInaccRowDualMaker, double, nRows);
+    HDSDP_MEMCHECK(HSolver->dInaccRowDualMaker);
+    
+    HDSDP_INIT(HSolver->dInaccRowDualStepMaker, double, nRows);
+    HDSDP_MEMCHECK(HSolver->dInaccRowDualStepMaker);
+    
     HSolver->dBarrierMu = 1e+10;
     HSolver->comp = HDSDP_INFINITY;
     
@@ -357,7 +370,7 @@ extern hdsdp_retcode HDSDPOptimize( hdsdp *HSolver, int dOptOnly ) {
     HDSDPIPrintParams(HSolver);
     
     /* Invoke solver */
-    retcode = HDSDPSolve(HSolver, 0);
+    retcode = HDSDPSolve(HSolver, dOptOnly);
     HDSDPIPrintSolutionStats(HSolver);
     
 exit_cleanup:
@@ -447,6 +460,10 @@ extern void HDSDPClear( hdsdp *HSolver ) {
     HDSDP_FREE(HSolver->dMinvASinvCSinv);
     HDSDP_FREE(HSolver->dHAuxiVec1);
     HDSDP_FREE(HSolver->dHAuxiVec2);
+    HDSDP_FREE(HSolver->dInaccRowDualMaker);
+    HDSDP_FREE(HSolver->dAccRowDualMaker);
+    HDSDP_FREE(HSolver->dInaccRowDualStepMaker);
+    HDSDP_FREE(HSolver->dAccRowDualStepMaker);
     
     HDSDP_ZERO(HSolver, hdsdp, 1);
     

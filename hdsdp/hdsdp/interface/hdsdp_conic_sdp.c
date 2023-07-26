@@ -105,6 +105,7 @@ static hdsdp_retcode sdpDenseConeIAllocDualMat( hdsdp_cone_sdp_dense *cone ) {
         HDSDP_INIT(cone->dualStep, double, cone->nCol * cone->nCol);
         HDSDP_MEMCHECK(cone->dualStep);
         HDSDP_CALL(HFpLinsysCreate(&cone->dualFactor, cone->nCol, HDSDP_LINSYS_DENSE_DIRECT));
+        HDSDP_CALL(HFpLinsysCreate(&cone->dualChecker, cone->nCol, HDSDP_LINSYS_DENSE_DIRECT));
         /* Done */
     } else {
         /* We are using the sparse dual representation */
@@ -138,6 +139,8 @@ static hdsdp_retcode sdpDenseConeIAllocDualMat( hdsdp_cone_sdp_dense *cone ) {
         /* Symbolic factorization is left in the presolve routine */
         HDSDP_CALL(HFpLinsysCreate(&cone->dualFactor, cone->nCol, HDSDP_LINSYS_SPARSE_DIRECT));
         HFpLinsysSetParam(cone->dualFactor, -1.0, -1.0, 4, -1, -1);
+        HDSDP_CALL(HFpLinsysCreate(&cone->dualChecker, cone->nCol, HDSDP_LINSYS_SPARSE_DIRECT));
+        HFpLinsysSetParam(cone->dualChecker, -1.0, -1.0, 4, -1, -1);
         /* Done */
     }
     
@@ -201,6 +204,7 @@ static hdsdp_retcode sdpSparseConeIAllocDualMat( hdsdp_cone_sdp_sparse *cone ) {
         HDSDP_INIT(cone->dualStep, double, cone->nCol * cone->nCol);
         HDSDP_MEMCHECK(cone->dualStep);
         HDSDP_CALL(HFpLinsysCreate(&cone->dualFactor, cone->nCol, HDSDP_LINSYS_DENSE_DIRECT));
+        HDSDP_CALL(HFpLinsysCreate(&cone->dualChecker, cone->nCol, HDSDP_LINSYS_DENSE_DIRECT));
         /* Done */
     } else {
         /* We are using the sparse dual representation */
@@ -233,7 +237,8 @@ static hdsdp_retcode sdpSparseConeIAllocDualMat( hdsdp_cone_sdp_sparse *cone ) {
         
         HDSDP_CALL(HFpLinsysCreate(&cone->dualFactor, cone->nCol, HDSDP_LINSYS_SPARSE_DIRECT));
         HFpLinsysSetParam(cone->dualFactor, -1.0, -1.0, 4, -1, -1);
-        
+        HDSDP_CALL(HFpLinsysCreate(&cone->dualChecker, cone->nCol, HDSDP_LINSYS_SPARSE_DIRECT));
+        HFpLinsysSetParam(cone->dualChecker, -1.0, -1.0, 4, -1, -1);
         /* Done */
     }
     
@@ -261,6 +266,7 @@ static void sdpDenseConeIFreeDualMat( hdsdp_cone_sdp_dense *cone ) {
     }
     
     HFpLinsysDestroy(&cone->dualFactor);
+    HFpLinsysDestroy(&cone->dualChecker);
     
     return;
 }
@@ -289,9 +295,6 @@ static void sdpSparseConeIFreeDualMat( hdsdp_cone_sdp_sparse *cone ) {
     return;
 }
 
-#define BUFFER_DUALVAR   (0)
-#define BUFFER_DUALCHECK (1)
-#define BUFFER_DUALSTEP  (2)
 static void sdpDenseConeIZeroBuffer( hdsdp_cone_sdp_dense *cone, int whichBuffer ) {
     
     double *target = NULL;
@@ -458,7 +461,7 @@ static void sdpDenseConeILanczosMultiply( void *cone, double *dLhsVec, double *d
     hdsdp_cone_sdp_dense *dsCone = (hdsdp_cone_sdp_dense *) cone;
     
     /* First step: backward solve */
-    HFpLinsysBSolve(dsCone->dualFactor, 1, dLhsVec, dRhsVec);
+    HFpLinsysBSolve(dsCone->LTarget, 1, dLhsVec, dRhsVec);
     
     /* Second step: multiplication. Multiply dRhsVec by -dS */
     if ( dsCone->isDualSparse ) {
@@ -480,7 +483,7 @@ static void sdpDenseConeILanczosMultiply( void *cone, double *dLhsVec, double *d
     }
     
     /* Last step: forward solve */
-    HFpLinsysFSolve(dsCone->dualFactor, 1, dsCone->dVecBuffer, dRhsVec);
+    HFpLinsysFSolve(dsCone->LTarget, 1, dsCone->dVecBuffer, dRhsVec);
     
     return;
 }
@@ -490,7 +493,7 @@ static void sdpSparseConeILanczosMultiply( void *cone, double *dLhsVec, double *
     hdsdp_cone_sdp_sparse *spCone = (hdsdp_cone_sdp_sparse *) cone;
     
     /* First step: backward solve */
-    HFpLinsysBSolve(spCone->dualFactor, 1, dLhsVec, dRhsVec);
+    HFpLinsysBSolve(spCone->LTarget, 1, dLhsVec, dRhsVec);
     
     /* Second step: multiplication. Multiply dRhsVec by -dS */
     if ( spCone->isDualSparse ) {
@@ -513,7 +516,7 @@ static void sdpSparseConeILanczosMultiply( void *cone, double *dLhsVec, double *
     }
     
     /* Last step: forward solve */
-    HFpLinsysFSolve(spCone->dualFactor, 1, spCone->dVecBuffer, dRhsVec);
+    HFpLinsysFSolve(spCone->LTarget, 1, spCone->dVecBuffer, dRhsVec);
     
     return;
 }
@@ -1597,10 +1600,12 @@ extern void sdpSparseConeUpdateImpl( hdsdp_cone_sdp_sparse *cone, double barHsdT
     return;
 }
 
-extern hdsdp_retcode sdpDenseConeRatioTestImpl( hdsdp_cone_sdp_dense *cone, double barHsdTauStep, double *rowDualStep, double dAdaRatio, double *maxStep ) {
+extern hdsdp_retcode sdpDenseConeRatioTestImpl( hdsdp_cone_sdp_dense *cone, double barHsdTauStep, double *rowDualStep, double dAdaRatio,
+                                                int whichBuffer, double *maxStep ) {
     /* Given conic quantity dy, get maximum distance from the cone
        Given dTau and dy, we first evaluate
      
+            B <- dResiCoef * I + dACoefScal * A' * y + C * dCCoef
             dS = dGamma * R_d - A' * dy + c * dTau
        
      In terms of the buffer utility, we take
@@ -1617,6 +1622,14 @@ extern hdsdp_retcode sdpDenseConeRatioTestImpl( hdsdp_cone_sdp_dense *cone, doub
     
     hdsdp_retcode retcode = HDSDP_RETCODE_OK;
     sdpDenseConeIUpdateBuffer(cone, barHsdTauStep, -1.0, rowDualStep, dAdaRatio * cone->dualResidual, BUFFER_DUALSTEP);
+    
+    /* Choose Lanczos target buffer */
+    if ( whichBuffer == BUFFER_DUALVAR ) {
+        cone->LTarget = cone->dualFactor;
+    } else {
+        cone->LTarget = cone->dualChecker;
+    }
+    
     /* Finished with setting up dS. Now do Lanczos computation */
     HDSDP_CALL(HLanczosSolve(cone->Lanczos, NULL, maxStep));
     
@@ -1624,10 +1637,19 @@ exit_cleanup:
     return retcode;
 }
 
-extern hdsdp_retcode sdpSparseConeRatioTestImpl( hdsdp_cone_sdp_sparse *cone, double barHsdTauStep, double *rowDualStep, double dAdaRatio, double *maxStep ) {
+extern hdsdp_retcode sdpSparseConeRatioTestImpl( hdsdp_cone_sdp_sparse *cone, double barHsdTauStep, double *rowDualStep, double dAdaRatio,
+                                                 int whichBuffer, double *maxStep ) {
     
     hdsdp_retcode retcode = HDSDP_RETCODE_OK;
     sdpSparseConeIUpdateBuffer(cone, barHsdTauStep, -1.0, rowDualStep, dAdaRatio * cone->dualResidual, BUFFER_DUALSTEP);
+    
+    /* Choose Lanczos target buffer */
+    if ( whichBuffer == BUFFER_DUALVAR ) {
+        cone->LTarget = cone->dualFactor;
+    } else {
+        cone->LTarget = cone->dualChecker;
+    }
+    
     /* Finished with setting up dS. Now do Lanczos computation */
     HDSDP_CALL(HLanczosSolve(cone->Lanczos, NULL, maxStep));
     
@@ -2002,7 +2024,7 @@ extern void sdpSparseConeGetSymMapping( hdsdp_cone_sdp_sparse *cone, int iCol, i
     return;
 }
 
-extern int sdpDenseConeInteriorCheck( hdsdp_cone_sdp_dense *cone, double barHsdTau, double *rowDual, int *isInterior ) {
+extern hdsdp_retcode sdpDenseConeInteriorCheck( hdsdp_cone_sdp_dense *cone, double barHsdTau, double *rowDual, int *isInterior ) {
     
     hdsdp_retcode retcode = HDSDP_RETCODE_OK;
     sdpDenseConeUpdateImpl(cone, barHsdTau, rowDual);
@@ -2012,11 +2034,44 @@ exit_cleanup:
     return retcode;
 }
 
-extern int sdpSparseConeInteriorCheck( hdsdp_cone_sdp_sparse *cone, double barHsdTau, double *rowDual, int *isInterior ) {
+extern hdsdp_retcode sdpSparseConeInteriorCheck( hdsdp_cone_sdp_sparse *cone, double barHsdTau, double *rowDual, int *isInterior ) {
     
     hdsdp_retcode retcode = HDSDP_RETCODE_OK;
     sdpSparseConeUpdateImpl(cone, barHsdTau, rowDual);
     HDSDP_CALL(HFpLinsysPsdCheck(cone->dualFactor, cone->dualMatBeg, cone->dualMatIdx, cone->dualMatElem, isInterior));
+    
+exit_cleanup:
+    return retcode;
+}
+
+extern hdsdp_retcode sdpDenseConeInteriorCheckExpert( hdsdp_cone_sdp_dense *cone, double dCCoef, double dACoefScal, double *dACoef, double dEyeCoef,
+                                                      int whichBuffer, int *isInterior ) {
+    
+    /* The expert routine for dense cone interior point check */
+    hdsdp_retcode retcode = HDSDP_RETCODE_OK;
+    sdpDenseConeIUpdateBuffer(cone, dCCoef, dACoefScal, dACoef, dEyeCoef, whichBuffer);
+    
+    if ( whichBuffer == BUFFER_DUALVAR ) {
+        HDSDP_CALL(HFpLinsysPsdCheck(cone->dualFactor, cone->dualMatBeg, cone->dualMatIdx, cone->dualMatElem, isInterior));
+    } else {
+        HDSDP_CALL(HFpLinsysPsdCheck(cone->dualFactor, cone->dualMatBeg, cone->dualMatIdx, cone->dualCheckerElem, isInterior));
+    }
+    
+exit_cleanup:
+    return retcode;
+}
+
+extern hdsdp_retcode sdpSparseConeInteriorCheckExpert( hdsdp_cone_sdp_sparse *cone, double dCCoef, double dACoefScal, double *dACoef, double dEyeCoef,
+                                                       int whichBuffer, int *isInterior ) {
+    
+    hdsdp_retcode retcode = HDSDP_RETCODE_OK;
+    sdpSparseConeIUpdateBuffer(cone, dCCoef, dACoefScal, dACoef, dEyeCoef, whichBuffer);
+    
+    if ( whichBuffer == BUFFER_DUALVAR ) {
+        HDSDP_CALL(HFpLinsysPsdCheck(cone->dualFactor, cone->dualMatBeg, cone->dualMatIdx, cone->dualMatElem, isInterior));
+    } else {
+        HDSDP_CALL(HFpLinsysPsdCheck(cone->dualFactor, cone->dualMatBeg, cone->dualMatIdx, cone->dualCheckerElem, isInterior));
+    }
     
 exit_cleanup:
     return retcode;
@@ -2034,7 +2089,7 @@ extern void sdpSparseConeReduceResidual( hdsdp_cone_sdp_sparse *cone, double res
     return;
 }
 
-extern hdsdp_retcode sdpDenseConeGetBarrier( hdsdp_cone_sdp_dense *cone, double barHsdTau, double *rowDual, double *logdet ) {
+extern hdsdp_retcode sdpDenseConeGetBarrier( hdsdp_cone_sdp_dense *cone, double barHsdTau, double *rowDual, int whichBuffer, double *logdet ) {
     
     /* Compute the barrier function at current dual slack
        If not supplied the barrier of the most recently updated dual solution is used
@@ -2042,12 +2097,23 @@ extern hdsdp_retcode sdpDenseConeGetBarrier( hdsdp_cone_sdp_dense *cone, double 
     hdsdp_retcode retcode = HDSDP_RETCODE_OK;
     double dLogDeterminant = 0.0;
     
-    if ( rowDual ) {
-        sdpDenseConeUpdateImpl(cone, barHsdTau, rowDual);
-        HDSDP_CALL(HFpLinsysNumeric(cone->dualFactor, cone->dualMatBeg, cone->dualMatIdx, cone->dualMatElem));
+    hdsdp_linsys_fp *sTarget = NULL;
+    double *sElememt = NULL;
+    
+    if ( whichBuffer == BUFFER_DUALVAR ) {
+        sTarget = cone->dualFactor;
+        sElememt = cone->dualMatElem;
+    } else {
+        sTarget = cone->dualChecker;
+        sElememt = cone->dualCheckerElem;
     }
     
-    HDSDP_CALL(HFpLinsysGetDiag(cone->dualFactor, cone->dualDiag));
+    if ( rowDual ) {
+        sdpDenseConeUpdateImpl(cone, barHsdTau, rowDual);
+        HDSDP_CALL(HFpLinsysNumeric(sTarget, cone->dualMatBeg, cone->dualMatIdx, sElememt));
+    }
+    
+    HDSDP_CALL(HFpLinsysGetDiag(sTarget, cone->dualDiag));
     
     /* The log determinant is directly obtained from diagonal of the Cholesky factor
        since log det(S) = log det(L * L') = log (det(L)^2) = 2 log det(L)
@@ -2063,20 +2129,30 @@ exit_cleanup:
     return retcode;
 }
 
-extern hdsdp_retcode sdpSparseConeGetBarrier( hdsdp_cone_sdp_sparse *cone, double barHsdTau, double *rowDual, double *logdet ) {
+extern hdsdp_retcode sdpSparseConeGetBarrier( hdsdp_cone_sdp_sparse *cone, double barHsdTau, double *rowDual, int whichBuffer, double *logdet ) {
     
     /* Compute the barrier function at current dual slack
-       If not supplied the barrier of the most recently updated dual solution is used
-     */
+       If not supplied the barrier of the most recently updated dual solution is used */
     hdsdp_retcode retcode = HDSDP_RETCODE_OK;
     double dLogDeterminant = 0.0;
     
-    if ( rowDual ) {
-        sdpSparseConeUpdateImpl(cone, barHsdTau, rowDual);
-        HDSDP_CALL(HFpLinsysNumeric(cone->dualFactor, cone->dualMatBeg, cone->dualMatIdx, cone->dualMatElem));
+    hdsdp_linsys_fp *sTarget = NULL;
+    double *sElement = NULL;
+    
+    if ( whichBuffer == BUFFER_DUALVAR ) {
+        sTarget = cone->dualFactor;
+        sElement = cone->dualMatElem;
+    } else {
+        sTarget = cone->dualChecker;
+        sElement = cone->dualCheckerElem;
     }
     
-    HDSDP_CALL(HFpLinsysGetDiag(cone->dualFactor, cone->dualDiag));
+    if ( rowDual ) {
+        sdpSparseConeUpdateImpl(cone, barHsdTau, rowDual);
+        HDSDP_CALL(HFpLinsysNumeric(sTarget, cone->dualMatBeg, cone->dualMatIdx, sElement));
+    }
+    
+    HDSDP_CALL(HFpLinsysGetDiag(sTarget, cone->dualDiag));
     
     /* The log determinant is directly obtained from diagonal of the Cholesky factor
        since log det(S) = log det(L * L') = log (det(L)^2) = 2 log det(L)
@@ -2087,6 +2163,68 @@ extern hdsdp_retcode sdpSparseConeGetBarrier( hdsdp_cone_sdp_sparse *cone, doubl
     }
     
     *logdet = 2.0 * dLogDeterminant;
+    
+exit_cleanup:
+    return retcode;
+}
+
+extern hdsdp_retcode sdpDenseConeAddStepToBufferAndCheck( hdsdp_cone_sdp_dense *cone, double dStep, int whichBuffer, int *isInterior ) {
+    
+    /* This utility add dS to the conic buffer and directly factorize it  */
+    hdsdp_retcode retcode = HDSDP_RETCODE_OK;
+    
+    hdsdp_linsys_fp *sTarget = NULL;
+    double *sElement = NULL;
+    int nDualNz = 0;
+    
+    if ( cone->isDualSparse ) {
+        nDualNz = cone->dualMatIdx[cone->nCol];
+    } else {
+        nDualNz = cone->nCol * cone->nCol;
+    }
+    
+    if ( whichBuffer == BUFFER_DUALVAR ) {
+        sTarget = cone->dualFactor;
+        sElement = cone->dualMatElem;
+    } else {
+        sTarget = cone->dualChecker;
+        sElement = cone->dualCheckerElem;
+        HDSDP_MEMCPY(cone->dualCheckerElem, cone->dualMatElem, double, nDualNz);
+    }
+    
+    axpy(&nDualNz, &dStep, cone->dualStep, &HIntConstantOne, sElement, &HIntConstantOne);
+    HDSDP_CALL(HFpLinsysPsdCheck(sTarget, cone->dualMatBeg, cone->dualMatIdx, sElement, isInterior));
+    
+exit_cleanup:
+    return retcode;
+}
+
+extern hdsdp_retcode sdpSparseConeAddStepToBufferAndCheck( hdsdp_cone_sdp_sparse *cone, double dStep, int whichBuffer, int *isInterior ) {
+    
+    /* This utility add dS to the conic buffer and directly factorize it  */
+    hdsdp_retcode retcode = HDSDP_RETCODE_OK;
+    
+    hdsdp_linsys_fp *sTarget = NULL;
+    double *sElement = NULL;
+    int nDualNz = 0;
+    
+    if ( cone->isDualSparse ) {
+        nDualNz = cone->dualMatIdx[cone->nCol];
+    } else {
+        nDualNz = cone->nCol * cone->nCol;
+    }
+    
+    if ( whichBuffer == BUFFER_DUALVAR ) {
+        sTarget = cone->dualFactor;
+        sElement = cone->dualMatElem;
+    } else {
+        sTarget = cone->dualChecker;
+        sElement = cone->dualCheckerElem;
+        HDSDP_MEMCPY(cone->dualCheckerElem, cone->dualMatElem, double, nDualNz);
+    }
+    
+    axpy(&nDualNz, &dStep, cone->dualStep, &HIntConstantOne, sElement, &HIntConstantOne);
+    HDSDP_CALL(HFpLinsysPsdCheck(sTarget, cone->dualMatBeg, cone->dualMatIdx, sElement, isInterior));
     
 exit_cleanup:
     return retcode;
@@ -2251,4 +2389,3 @@ extern void sdpSparseConeViewImpl( hdsdp_cone_sdp_sparse *cone ) {
     
     return;
 }
-

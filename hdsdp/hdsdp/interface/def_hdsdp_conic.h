@@ -68,7 +68,7 @@ typedef struct {
     /* Conic algorithm interface */
     void   (*coneSetStart)    ( void *, double );
     void   (*coneUpdate)      ( void *, double, double * );
-    hdsdp_retcode (*coneRatioTest)   ( void *, double, double *, double, double * );
+    hdsdp_retcode (*coneRatioTest)   ( void *, double, double *, double, int, double * );
     
     /* Schur complement and algorithm iterates */
     int64_t (*coneGetSymNnz)   ( void * );
@@ -80,7 +80,9 @@ typedef struct {
     
     /* Barrier, projection and recovery */
     hdsdp_retcode (*coneInteriorCheck) ( void *, double, double *, int * );
-    hdsdp_retcode (*coneGetBarrier)  ( void *, double, double *, double * );
+    hdsdp_retcode (*coneInteriorCheckExpert) ( void *, double, double, double *, double, int, int *);
+    hdsdp_retcode (*coneGetBarrier)  ( void *, double, double *, int, double * );
+    hdsdp_retcode (*coneAxpyBufferAndCheck) ( void *, double, int, int * );
     int     (*conePFeasCheck)  ( void *, double, double * );
     void    (*coneReduceResi)  ( void *, double );
     void    (*conePRecover)    ( void *, double * );
@@ -117,10 +119,14 @@ typedef struct {
     double *dualStep;
     /* Dual factorization */
     hdsdp_linsys_fp *dualFactor;
+    /* Dual checker */
+    hdsdp_linsys_fp *dualChecker;
     /* Dual diagonal */
     double *dualDiag;
     /* Dual Lanczos */
     hdsdp_lanczos *Lanczos;
+    /* Lanczos linear system pointer */
+    hdsdp_linsys_fp *LTarget;
     /* Dual vector buffer */
     double *dVecBuffer;
     
@@ -160,10 +166,14 @@ typedef struct {
     double *dualStep;
     /* Dual factorization */
     hdsdp_linsys_fp *dualFactor;
+    /* Dual checker */
+    hdsdp_linsys_fp *dualChecker;
     /* Dual diagonal */
     double *dualDiag;
     /* Dual Lanczos */
     hdsdp_lanczos *Lanczos;
+    /* Lanczos linear system pointer */
+    hdsdp_linsys_fp *LTarget;
     /* Dual vector buffer */
     double *dVecBuffer;
     

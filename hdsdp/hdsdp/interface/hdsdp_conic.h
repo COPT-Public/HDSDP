@@ -20,6 +20,9 @@ extern "C" {
 #define ABS_NORM    (1)
 #define FRO_NORM    (2)
 
+#define BUFFER_DUALVAR   (0)
+#define BUFFER_DUALCHECK (1)
+#define BUFFER_DUALSTEP  (2)
 extern hdsdp_retcode HConeCreate( hdsdp_cone **pHCone );
 extern hdsdp_retcode HConeSetData( hdsdp_cone *HCone, user_data *coneData );
 extern hdsdp_retcode HConeProcData( hdsdp_cone *HCone );
@@ -30,7 +33,7 @@ extern void HConeView( hdsdp_cone *HCone );
 
 extern void HConeSetStart( hdsdp_cone *HCone, double dConeStartVal );
 extern void HConeUpdate( hdsdp_cone *HCone, double barHsdTau, double *rowDual );
-extern hdsdp_retcode HConeRatioTest( hdsdp_cone *HCone, double barHsdTauStep, double *rowDualStep, double dAdaRatio, double *maxStep );
+extern hdsdp_retcode HConeRatioTest( hdsdp_cone *HCone, double barHsdTauStep, double *rowDualStep, double dAdaRatio, int whichBuffer, double *maxStep );
 extern int64_t HConeGetSymNnz( hdsdp_cone *HCone );
 extern void HConeAddSymNz( hdsdp_cone *HCone, int iCol, int *schurMatCol );
 extern void HConeGetSymMapping( hdsdp_cone *HCone, int iCol, int *schurMatCol );
@@ -39,8 +42,10 @@ extern double HConeGetCoeffNorm( hdsdp_cone *HCone, int whichNorm );
 extern double HConeGetObjNorm( hdsdp_cone *HCone, int whichNorm );
 extern hdsdp_retcode HConeBuildSchurComplement( hdsdp_cone *HCone, void *schurMat, int typeKKT );
 extern hdsdp_retcode HConeBuildSchurComplementFixed( hdsdp_cone *HCone, void *schurMat, int typeKKT, int kktStrategy );
-extern hdsdp_retcode HConeGetLogBarrier( hdsdp_cone *HCone, double barHsdTau, double *rowDual, double *logdet );
+extern hdsdp_retcode HConeGetLogBarrier( hdsdp_cone *HCone, double barHsdTau, double *rowDual, int whichBuffer, double *logdet );
+extern hdsdp_retcode HConeAddStepToBufferAndCheck( hdsdp_cone *HCone, double dStep, int whichBuffer, int *isInterior );
 extern hdsdp_retcode HConeCheckIsInterior( hdsdp_cone *HCone, double barHsdTau, double *rowDual, int *isInterior );
+extern hdsdp_retcode HConeCheckIsInteriorExpert( hdsdp_cone *HCone, double dCCoef, double dACoefScal, double *dACoef, double dEyeCoef, int whichBuffer, int *isInterior );
 extern void HConeReduceResi( hdsdp_cone *HCone, double resiReduction );
 extern int HConePFeasSolFound( hdsdp_cone *HCone, double barHsdTauStep, double *rowDualStep );
 extern void HConePVarRecover( hdsdp_cone *HCone, double *pVarArr );

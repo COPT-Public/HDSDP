@@ -74,6 +74,7 @@ typedef struct hdsdp_solver_internal hdsdp;
 #define DBL_PARAM_DUALBND       7
 #define DBL_PARAM_BARMUSTART    8
 #define DBL_PARAM_DUALSTART     9
+#define DBL_PARAM_POBJSTART    10
 
 // Version information
 #define VERSION_MAJOR           1
