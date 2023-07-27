@@ -96,6 +96,7 @@ extern void HUtilAscendSortDblByInt( double *data, int *ref, int low, int up );
 extern void HUtilPrintDblContent( int n, double *d );
 extern void HUtilPrintIntContent( int n, int *d );
 extern void HUtilPrintDblSum( int n, double *d );
+extern void HUtilPrintDblAbsSum( int n, double *d );
 extern int HUtilCheckUserInterrupt( void );
 
 extern void HUtilStartCtrlCCheck( void );

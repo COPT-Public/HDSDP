@@ -832,7 +832,7 @@ static hdsdp_retcode conjGradSolve( iterative_linsys *cg, double *rhsVec, double
         }
     }
     
-    if ( iter >= nCGMaxIter ) {
+    if ( iter >= nCGMaxIter || cg->solStatus == ITERATIVE_STATUS_MAXITER ) {
         cg->solStatus = ITERATIVE_STATUS_MAXITER;
         if ( cg->useJacobi ) {
 #ifdef HDSDP_CONJGRAD_DEBUG

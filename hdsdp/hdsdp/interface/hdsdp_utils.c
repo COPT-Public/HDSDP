@@ -161,7 +161,19 @@ extern void HUtilPrintDblSum( int n, double *d ) {
         ds += d[i];
     }
     
-    printf("Sum = %10.6e \n", ds);
+    printf("Sum = %20.10e \n", ds);
+    return;
+}
+
+extern void HUtilPrintDblAbsSum( int n, double *d ) {
+    
+    double ds = 0.0;
+    
+    for ( int i = 0; i < n; ++i ) {
+        ds += fabs(d[i]);
+    }
+    
+    printf("Sum = %20.10e \n", ds);
     return;
 }
 

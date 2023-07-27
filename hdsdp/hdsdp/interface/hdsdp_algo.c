@@ -131,7 +131,7 @@ static void HDSDP_PrintHeader( hdsdp *HSolver, int SDPMethod ) {
                          "nIter", "pObj", "dObj", "dInf", "Mu", "Step", "|P|", "T [D]");
             break;
         case HDSDP_ALGO_DUAL_POTENTIAL:
-            hdsdp_printf("HDSDP starts. Using feasible dual method \n\n");
+            hdsdp_printf("HDSP re-starts. Using feasible dual method \n\n");
             hdsdp_printf("    %5s  %12s  %12s  %8s  %8s  %5s  %6s   %5s\n",
                          "nIter", "pObj", "dObj", "pInf", "Mu", "Step", "|P|", "T [P]");
             break;
@@ -150,7 +150,7 @@ static void HDSDP_PrintLog( hdsdp *HSolver, int SDPMethod ) {
     double elapsedTime = HUtilGetTimeStamp() - HSolver->dTimeBegin;
     
     /* Get infeasibilities */
-    double nSumCones = (double) get_dbl_feature(HSolver, INT_FEATURE_N_SUMCONEDIMS);
+    double nSumCones = (double) get_int_feature(HSolver, INT_FEATURE_N_SUMCONEDIMS);
     double pdObjScal = 1.0 / (dRhsScal * dObjScal * HSolver->dBarHsdTau);
     HSolver->dInfeas =  sqrt(nSumCones) * fabs(HSolver->dResidual) / (dRhsScal * HSolver->dBarHsdTau);
     
@@ -703,7 +703,7 @@ static hdsdp_retcode HDSDP_PhaseA_BarInfeasSolve( hdsdp *HSolver, int dOnly ) {
     double dAbsfeasTol = get_dbl_param(HSolver, DBL_PARAM_ABSFEASTOL);
     double dRelfeasTol = get_dbl_param(HSolver, DBL_PARAM_RELFEASTOL);
     double dTimeLimit = get_dbl_param(HSolver, DBL_PARAM_TIMELIMIT);
-    double nSumCones = (double) get_dbl_feature(HSolver, INT_FEATURE_N_SUMCONEDIMS);
+    double nSumCones = (double) get_int_feature(HSolver, INT_FEATURE_N_SUMCONEDIMS);
     double dObjScal = get_dbl_feature(HSolver, DBL_FEATURE_OBJSCALING);
     double dObjOneNorm = get_dbl_feature(HSolver, DBL_FEATURE_OBJONENORM);
     double dFeasTol = HDSDP_MIN(dAbsfeasTol, dRelfeasTol * (1 + dObjOneNorm));
@@ -860,7 +860,7 @@ static hdsdp_retcode HDSDP_PhaseA_BarHsdSolve( hdsdp *HSolver, int dOnly ) {
     double dTimeLimit = get_dbl_param(HSolver, DBL_PARAM_TIMELIMIT);
     double dObjOneNorm = get_dbl_feature(HSolver, DBL_FEATURE_OBJONENORM);
     double dObjScal = get_dbl_feature(HSolver, DBL_FEATURE_OBJSCALING);
-    double nSumCones = (double) get_dbl_feature(HSolver, INT_FEATURE_N_SUMCONEDIMS);
+    double nSumCones = (double) get_int_feature(HSolver, INT_FEATURE_N_SUMCONEDIMS);
     
     /* Here we need to transform between two convergence criteria
        Recall that for absolute measure we have
@@ -970,7 +970,7 @@ static hdsdp_retcode HDSDP_PhaseA_BarHsdSolve( hdsdp *HSolver, int dOnly ) {
         /* Reduce barrier parameter */
         double dBarrierMuTarget = 0.0;
         if ( HSolver->dBarrierMu > 1e-12 ) {
-            if ( HSolver->dDStep > 0.6 && HSolver->dBarHsdTau > 1.0 ) {
+            if ( HSolver->dDStep > 0.8 && HSolver->dBarHsdTau > 1.0 ) {
                 dBarrierMuTarget = 0.1 * HSolver->dBarrierMu;
                 dBarrierMuTarget = HDSDP_MAX(dBarrierMuTarget, -0.1 * HSolver->dResidual / HSolver->dBarHsdTau);
                 HSolver->dBarrierMu = HDSDP_MIN(HSolver->dBarrierMu, dBarrierMuTarget);
