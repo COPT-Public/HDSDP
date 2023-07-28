@@ -349,7 +349,7 @@ extern hdsdp_retcode sBoundConeGetBarrier( hdsdp_cone_bound_scalar *cone, double
     }
     
     for ( int iCol = 0; iCol < cone->nRow; ++iCol ) {
-        dLogDeterminant += log(ltarget[iCol]);
+        dLogDeterminant += log(ltarget[iCol]) + log(utarget[iCol]);
     }
     
     if ( dLogDeterminant != dLogDeterminant ) {

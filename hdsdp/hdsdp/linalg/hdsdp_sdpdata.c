@@ -2059,10 +2059,12 @@ static double dataMatRankOneDenseKKT5SinvADotSinvImpl( void *A, hdsdp_linsys *S,
     
     double dFactorSign = 0.0;
     double *dSinvAVec = aux;
+    double dNorm = 0.0;
     
     dataMatRankOneDenseKKT2SolveRankOneImpl(A, S, Sinv, &dFactorSign, dSinvAVec);
+    dNorm = nrm2(&dsr1->nSDPCol, dSinvAVec, &HIntConstantOne);
     
-    return dFactorSign * dot(&dsr1->nSDPCol, dSinvAVec, &HIntConstantOne, dsr1->r1MatFactor, &HIntConstantOne);
+    return dFactorSign * dNorm * dNorm;
 }
 
 static void sdpDataMatIChooseType( sdp_coeff *sdpCoeff, sdp_coeff_type dataType ) {
