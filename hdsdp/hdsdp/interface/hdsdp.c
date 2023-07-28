@@ -15,6 +15,7 @@
 #include "hdsdp.h"
 #include "hdsdp_conic.h"
 #include "hdsdp_utils.h"
+#include "def_hdsdp_user_data.h"
 #include "hdsdp_user_data.h"
 #include "hdsdp_schur.h"
 #include "hdsdp_algo.h"
@@ -35,6 +36,8 @@ static void HDSDPIGetStatistics( hdsdp *HSolver ) {
     set_int_feature(HSolver, INT_FEATURE_N_SUMCONEDIMS, sumConeDims);
     set_int_feature(HSolver, INT_FEATURE_N_ROWS, HSolver->nRows);
     set_int_feature(HSolver, INT_FEATURE_N_CONES, HSolver->nCones);
+    
+    HSolver->dAllConeDims = (double) sumConeDims + 2 * HSolver->nRows;
     
     /* Get norms */
     double objOneNorm = 0.0;
@@ -160,9 +163,12 @@ static void HDSDPIGetDefaultParams( hdsdp *HSolver ) {
     set_dbl_param(HSolver, DBL_PARAM_TIMELIMIT, 3600.0);
     set_dbl_param(HSolver, DBL_PARAM_POTRHOVAL, 5.0);
     set_dbl_param(HSolver, DBL_PARAM_HSDGAMMA, 0.5);
-    set_dbl_param(HSolver, DBL_PARAM_DUALBND, 1e+06);
-    set_dbl_param(HSolver, DBL_PARAM_BARMUSTART, 1e+10);
-    set_dbl_param(HSolver, DBL_PARAM_DUALSTART, 1e+01);
+    set_dbl_param(HSolver, DBL_PARAM_DUALBOX_UP, 1e+07);
+    set_dbl_param(HSolver, DBL_PARAM_DUALBOX_LOW, -1e+07);
+    set_dbl_param(HSolver, DBL_PARAM_BARMUSTART, 1e+05);
+    set_dbl_param(HSolver, DBL_PARAM_POBJSTART, 1e+05);
+    set_dbl_param(HSolver, DBL_PARAM_DUALSTART, 1e+03);
+    set_dbl_param(HSolver, DBL_PARAM_TRXESTIMATE, 1e+02);
     
     return;
 }
@@ -181,7 +187,8 @@ static void HDSDPIPrintParams( hdsdp *HSolver ) {
     print_dbl_param(HSolver, DBL_PARAM_TIMELIMIT, "Time limit");
     print_dbl_param(HSolver, DBL_PARAM_POTRHOVAL, "Potential param");
     print_dbl_param(HSolver, DBL_PARAM_HSDGAMMA, "Mu reduction rate");
-    print_dbl_param(HSolver, DBL_PARAM_DUALBND, "Dual box radius");
+    print_dbl_param(HSolver, DBL_PARAM_DUALBOX_LOW, "Dual box low");
+    print_dbl_param(HSolver, DBL_PARAM_DUALBOX_UP, "Dual box up");
     print_dbl_param(HSolver, DBL_PARAM_BARMUSTART, "Starting barrier mu");
     print_dbl_param(HSolver, DBL_PARAM_DUALSTART, "Starting residual");
     print_dbl_param(HSolver, DBL_PARAM_POBJSTART, "Starting primal");
@@ -219,7 +226,10 @@ static void HDSDPIPrintSolutionStats( hdsdp *HSolver ) {
         assert( 0 );
     }
     
+    hdsdp_printf("Primal Obj: %+10.10e\n", HDSDP_INFINITY);
+    hdsdp_printf("Dual Obj  : %+10.10e\n", HSolver->dObjVal);
     hdsdp_printf("\n");
+    
     return;
 }
 
@@ -262,6 +272,7 @@ extern hdsdp_retcode HDSDPInit( hdsdp *HSolver, int nRows, int nCones ) {
         HDSDP_CALL(HConeCreate(&HSolver->HCones[iCone]));
     }
     
+    HDSDP_CALL(HConeCreate(&HSolver->HBndCone));
     HDSDP_CALL(HKKTCreate(&HSolver->HKKT));
     
     /* Allocate vectors */
@@ -366,6 +377,23 @@ extern hdsdp_retcode HDSDPOptimize( hdsdp *HSolver, int dOptOnly ) {
     /* Adjust parameters */
     HDSDPIAdjustParams(HSolver);
     
+    hdsdp_printf("  Creating range constraint \n");
+    user_data udata;
+    udata.coneMatBeg = NULL;
+    udata.coneMatIdx = NULL;
+    udata.cone = HDSDP_CONETYPE_SCALAR_BOUND;
+    udata.nConicCol = 0;
+    udata.nConicRow = HSolver->nRows;
+    double boxRange[2] = {get_dbl_param(HSolver, DBL_PARAM_DUALBOX_LOW),
+                          get_dbl_param(HSolver, DBL_PARAM_DUALBOX_UP)};
+    udata.coneMatElem = boxRange;
+    HConeSetData(HSolver->HBndCone, &udata);
+    HDSDP_CALL(HConeProcData(HSolver->HBndCone));
+    HDSDP_CALL(HConePresolveData(HSolver->HBndCone));
+    
+    hdsdp_printf("    Dual box low: %+5.1e\n", boxRange[0]);
+    hdsdp_printf("    Dual box up : %+5.1e\n", boxRange[1]);
+    
     /* End pre-solver */
     hdsdp_printf("Pre-solver ends. Elapsed time: %3.1f seconds \n", HUtilGetTimeStamp() - HSolver->dTimeBegin);
     
@@ -453,6 +481,8 @@ extern void HDSDPClear( hdsdp *HSolver ) {
     }
     
     HDSDP_FREE(HSolver->HCones);
+    HConeDestroy(&HSolver->HBndCone);
+    
     HKKTDestroy(&HSolver->HKKT);
     
     HDSDP_FREE(HSolver->dRowDual);

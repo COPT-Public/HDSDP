@@ -8,12 +8,14 @@
 #include "interface/hdsdp_user_data.h"
 #include "interface/def_hdsdp_conic.h"
 #include "interface/hdsdp_conic_sdp.h"
+#include "interface/hdsdp_conic_bound.h"
 #else
 #include "hdsdp_utils.h"
 #include "def_hdsdp_user_data.h"
 #include "hdsdp_user_data.h"
 #include "def_hdsdp_conic.h"
 #include "hdsdp_conic_sdp.h"
+#include "hdsdp_conic_bound.h"
 #endif
 
 extern hdsdp_retcode HConeCreate( hdsdp_cone **pHCone ) {
@@ -39,31 +41,31 @@ extern hdsdp_retcode HConeSetData( hdsdp_cone *HCone, user_data *usrData ) {
     HCone->cone = HUserDataChooseCone(usrData);
     
     switch ( HCone->cone ) {
-        case HDSDP_CONETYPE_BOUND:
-            set_func_pointer(HCone->coneCreate, NULL);
-            set_func_pointer(HCone->coneProcData, NULL);
-            set_func_pointer(HCone->conePresolveData, NULL);
-            set_func_pointer(HCone->coneDestroyData, NULL);
-            set_func_pointer(HCone->coneSetStart, NULL);
-            set_func_pointer(HCone->coneUpdate, NULL);
-            set_func_pointer(HCone->coneRatioTest, NULL);
-            set_func_pointer(HCone->coneGetSymNnz, NULL);
-            set_func_pointer(HCone->coneAddSymNz, NULL);
-            set_func_pointer(HCone->coneGetKKTMap, NULL);
-            set_func_pointer(HCone->coneGetObjNorm, NULL);
-            set_func_pointer(HCone->coneGetDim, NULL);
-            set_func_pointer(HCone->coneGetObjNorm, NULL);
-            set_func_pointer(HCone->coneScal, NULL);
-            set_func_pointer(HCone->coneGetCoeffNorm, NULL);
-            set_func_pointer(HCone->coneBuildSchur, NULL);
-            set_func_pointer(HCone->coneBuildSchurFixed, NULL);
-            set_func_pointer(HCone->coneGetBarrier, NULL);
-            set_func_pointer(HCone->coneAxpyBufferAndCheck, NULL);
-            set_func_pointer(HCone->coneInteriorCheck, NULL);
-            set_func_pointer(HCone->coneInteriorCheckExpert, NULL);
+        case HDSDP_CONETYPE_SCALAR_BOUND:
+            set_func_pointer(HCone->coneCreate, sBoundConeCreateImpl);
+            set_func_pointer(HCone->coneProcData, sBoundConeProcDataImpl);
+            set_func_pointer(HCone->conePresolveData, sBoundConePresolveDummyImpl);
+            set_func_pointer(HCone->coneDestroyData, sBoundConeDestroyImpl);
+            set_func_pointer(HCone->coneSetStart, sBoundConeSetStartDummyImpl);
+            set_func_pointer(HCone->coneUpdate, sBoundConeUpdateImpl);
+            set_func_pointer(HCone->coneRatioTest, sBoundConeRatioTestImpl);
+            set_func_pointer(HCone->coneGetSymNnz, sBoundConeGetSymNnzImpl);
+            set_func_pointer(HCone->coneAddSymNz, sBoundConeAddSymNnzImpl);
+            set_func_pointer(HCone->coneGetKKTMap, sBoundConeGetSymMappingImpl);
+            set_func_pointer(HCone->coneGetDim, sBoundConeGetDimImpl);
+            set_func_pointer(HCone->coneGetObjNorm, sBoundConeGetObjNormDummyImpl);
+            set_func_pointer(HCone->coneGetCoeffNorm, sBoundConeGetCoeffNormDummyImpl);
+            set_func_pointer(HCone->coneScal, sBoundConeScalDummyImpl);
+            set_func_pointer(HCone->coneBuildSchur, sBoundConeGetKKT);
+            set_func_pointer(HCone->coneBuildSchurFixed, sBoundConeGetKKTByFixedStrategy);
+            set_func_pointer(HCone->coneGetBarrier, sBoundConeGetBarrier);
+            set_func_pointer(HCone->coneAxpyBufferAndCheck, sBoundConeAddStepToBufferAndCheck);
+            set_func_pointer(HCone->coneInteriorCheck, sBoundConeInteriorCheck);
+            set_func_pointer(HCone->coneInteriorCheckExpert, sBoundConeInteriorCheckExpert);
+            set_func_pointer(HCone->coneReduceResi, sBoundConeReduceResidual);
             set_func_pointer(HCone->conePFeasCheck, NULL);
             set_func_pointer(HCone->conePRecover, NULL);
-            set_func_pointer(HCone->coneView, NULL);
+            set_func_pointer(HCone->coneView, sdpDenseConeViewImpl);
             break;
         case HDSDP_CONETYPE_LP:
             set_func_pointer(HCone->coneCreate, NULL);
@@ -102,7 +104,6 @@ extern hdsdp_retcode HConeSetData( hdsdp_cone *HCone, user_data *usrData ) {
             set_func_pointer(HCone->coneGetSymNnz, sdpDenseConeGetSymNnzImpl);
             set_func_pointer(HCone->coneAddSymNz, sdpDenseConeAddSymNnzImpl);
             set_func_pointer(HCone->coneGetKKTMap, sdpDenseConeGetSymMapping);
-            set_func_pointer(HCone->coneGetObjNorm, sdpDenseConeGetObjNorm);
             set_func_pointer(HCone->coneGetDim, sdpDenseConeGetDim);
             set_func_pointer(HCone->coneGetObjNorm, sdpDenseConeGetObjNorm);
             set_func_pointer(HCone->coneGetCoeffNorm, sdpDenseConeGetCoeffNorm);
@@ -127,7 +128,6 @@ extern hdsdp_retcode HConeSetData( hdsdp_cone *HCone, user_data *usrData ) {
             set_func_pointer(HCone->coneUpdate, sdpSparseConeUpdateImpl);
             set_func_pointer(HCone->coneRatioTest, sdpSparseConeRatioTestImpl);
             set_func_pointer(HCone->coneGetDim, sdpSparseConeGetDim);
-            set_func_pointer(HCone->coneGetObjNorm, sdpSparseConeGetObjNorm);
             set_func_pointer(HCone->coneGetCoeffNorm, sdpSparseConeGetCoeffNorm);
             set_func_pointer(HCone->coneGetSymNnz, sdpSparseConeGetSymNnzImpl);
             set_func_pointer(HCone->coneAddSymNz, sdpSparseConeAddSymNnzImpl);
@@ -322,7 +322,7 @@ exit_cleanup:
 extern hdsdp_retcode HConeCheckIsInteriorExpert( hdsdp_cone *HCone, double dCCoef, double dACoefScal, double *dACoef, double dEyeCoef, int whichBuffer, int *isInterior ) {
     
     hdsdp_retcode retcode = HDSDP_RETCODE_OK;
-    HDSDP_CALL(HCone->coneInteriorCheckExpert(HCone, dCCoef, dACoefScal, dACoef, dEyeCoef, whichBuffer, isInterior));
+    HDSDP_CALL(HCone->coneInteriorCheckExpert(HCone->coneData, dCCoef, dACoefScal, dACoef, dEyeCoef, whichBuffer, isInterior));
     
 exit_cleanup:
     return retcode;

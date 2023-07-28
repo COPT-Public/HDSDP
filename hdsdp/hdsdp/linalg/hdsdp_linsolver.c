@@ -1244,6 +1244,8 @@ extern hdsdp_retcode HFpLinsysNumeric( hdsdp_linsys_fp *HLin, int *colMatBeg, in
         HDSDP_CALL(HFpLinsysSwitchToIndefinite(HLin));
     }
     
+    HLin->nFactorizes += 1;
+    
 exit_cleanup:
     return retcode;
 }
@@ -1252,6 +1254,8 @@ extern hdsdp_retcode HFpLinsysPsdCheck( hdsdp_linsys_fp *HLin, int *colMatBeg, i
     
     hdsdp_retcode retcode = HDSDP_RETCODE_OK;
     HDSDP_CALL(HLin->cholPsdCheck(HLin->chol, colMatBeg, colMatIdx, colMatElem, isPsd));
+    
+    HLin->nFactorizes += 1;
     
 exit_cleanup:
     return retcode;
@@ -1281,6 +1285,8 @@ extern hdsdp_retcode HFpLinsysSolve( hdsdp_linsys_fp *HLin, int nRhs, double *rh
         HDSDP_CALL(HFpLinsysSwitchToIndefinite(HLin));
         HDSDP_CALL(HFpLinsysSolve(HLin, nRhs, rhsVec, solVec));
     }
+    
+    HLin->nSolves += 1;
     
 exit_cleanup:
     

@@ -74,7 +74,7 @@ extern cone_type HUserDataChooseCone( user_data *Hdata ) {
         
     /* Automatic choice between different cone types*/
     if ( Hdata->cone == HDSDP_CONETYPE_SOCP || Hdata->cone == HDSDP_CONETYPE_BOUND ||
-         Hdata->cone == HDSDP_CONETYPE_SPARSE_SDP ) {
+         Hdata->cone == HDSDP_CONETYPE_SPARSE_SDP || Hdata->cone == HDSDP_CONETYPE_SCALAR_BOUND ) {
         
         return Hdata->cone;
         

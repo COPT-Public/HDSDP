@@ -24,6 +24,7 @@ typedef enum {
     HDSDP_CONETYPE_UNKNOWN,
     HDSDP_CONETYPE_LP,         /* A' * y <= c */
     HDSDP_CONETYPE_BOUND,      /*      y <= u */
+    HDSDP_CONETYPE_SCALAR_BOUND,
     HDSDP_CONETYPE_DENSE_SDP,
     HDSDP_CONETYPE_SPARSE_SDP,
     HDSDP_CONETYPE_SOCP
@@ -208,19 +209,36 @@ typedef struct {
     
 } hdsdp_cone_lp;
 
-/* A bound cone */
 typedef struct {
     
     int nRow;
     
-    double *colDualUpSlack;
-    double *colDualLowSlack;
+    double *dualUpper;
+    double *dualLower;
+    double *dualUpperInverse;
+    double *dualLowerInverse;
+    double *dualUpperStep;
+    double *dualLowerStep;
+    double *dualUpperChecker;
+    double *dualLowerChecker;
+    double dBoundLow;
+    double dBoundUp;
     
-    int    *dBoundLowIdx;
-    double *dBoundLow;
-    int    *dBoundUpIdx;
-    double *dBoundUp;
-    
-} hdsdp_cone_bound;
+} hdsdp_cone_bound_scalar;
+
+/* A bound cone */
+//typedef struct {
+//
+//    int nRow;
+//
+//    double *colDualUpSlack;
+//    double *colDualLowSlack;
+//
+//    int    *dBoundLowIdx;
+//    double *dBoundLow;
+//    int    *dBoundUpIdx;
+//    double *dBoundUp;
+//
+//} hdsdp_cone_bound;
 
 #endif /* def_hdsdp_conic_h */

@@ -51,6 +51,9 @@ typedef struct {
     
     void (*cholDestroy) ( void ** );
     
+    int nSolves;
+    int nFactorizes;
+    
 } hdsdp_linsys_fp;
 
 /* Sparse direct */

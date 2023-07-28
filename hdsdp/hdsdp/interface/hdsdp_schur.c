@@ -250,6 +250,15 @@ exit_cleanup:
     return retcode;
 }
 
+extern hdsdp_retcode HKKTBuildUpExtraCone( hdsdp_kkt *HKKT, hdsdp_cone *cone, int typeKKT ) {
+    
+    hdsdp_retcode retcode = HDSDP_RETCODE_OK;
+    HDSDP_CALL(HConeBuildSchurComplement(cone, HKKT, typeKKT));
+    
+exit_cleanup:
+    return retcode;
+}
+
 extern hdsdp_retcode HKKTBuildUpFixed( hdsdp_kkt *HKKT, int typeKKT, int kktStrategy ) {
     
     hdsdp_retcode retcode = HDSDP_RETCODE_OK;

@@ -55,6 +55,8 @@ struct hdsdp_solver_internal {
     /* Cones */
     int nCones;
     hdsdp_cone **HCones;
+    /* Bound cone */
+    hdsdp_cone *HBndCone;
     
     /* KKT solver */
     hdsdp_kkt *HKKT;
@@ -73,6 +75,7 @@ struct hdsdp_solver_internal {
     double dTraceSinv;
     
     /* Monitor */
+    int whichMethod;
     int nIterCount;
     int nSmallStep;
     double dBarrierMu;
@@ -84,11 +87,13 @@ struct hdsdp_solver_internal {
     double dResidual;
     
     /* Convergence criterion */
+    double dAllConeDims;
     double dPotentialRho;
     double pObjVal;
     double dObjVal;
     double pObjInternal;
     double dObjInternal;
+    double dObjImprove;
     double pInfeas;
     double dInfeas;
     double comp;

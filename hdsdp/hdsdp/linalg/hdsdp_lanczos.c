@@ -184,7 +184,7 @@ extern hdsdp_retcode HLanczosSolve( hdsdp_lanczos *HLanczos, double *LanczosStar
     for ( k = 0; k < HLanczos->nMaxSpaceDim; ++k ) {
         
         HLanczos->Mvec(HLanczos->MMat, HLanczos->vVec, HLanczos->wVec);
-        double normPrev = nrm2(&HLanczos->nCol, HLanczos->wVec, &HIntConstantOne);
+        // double normPrev = nrm2(&HLanczos->nCol, HLanczos->wVec, &HIntConstantOne);
         
         if ( k > 0 ) {
             double negHElem = - H(k, k - 1);

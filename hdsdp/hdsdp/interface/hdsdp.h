@@ -73,10 +73,12 @@ typedef struct hdsdp_solver_internal hdsdp;
 #define DBL_PARAM_TIMELIMIT     4
 #define DBL_PARAM_POTRHOVAL     5
 #define DBL_PARAM_HSDGAMMA      6
-#define DBL_PARAM_DUALBND       7
-#define DBL_PARAM_BARMUSTART    8
-#define DBL_PARAM_DUALSTART     9
-#define DBL_PARAM_POBJSTART    10
+#define DBL_PARAM_DUALBOX_LOW   7
+#define DBL_PARAM_DUALBOX_UP    8
+#define DBL_PARAM_BARMUSTART    9
+#define DBL_PARAM_DUALSTART    10
+#define DBL_PARAM_POBJSTART    11
+#define DBL_PARAM_TRXESTIMATE  12
 
 // Version information
 #define VERSION_MAJOR           1
