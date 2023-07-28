@@ -1964,7 +1964,6 @@ static double dataMatRankOneDenseKKT5TraceASinvBSinvImpl( void *A, sdp_coeff *B,
 /*==========================================================================================*/
 static double dataMatZeroKKT5SinvADotSinvImpl( void *A, hdsdp_linsys *S, double *Sinv, double *aux ) {
     
-    assert( 0 );
     return 0.0;
 }
 

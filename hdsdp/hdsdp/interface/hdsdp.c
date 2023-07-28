@@ -127,8 +127,6 @@ static void HDSDPIAdjustParams( hdsdp *HSolver ) {
         rhsScal = 1e-08;
     } else if ( rhsInfNorm > 1e+08 ) {
         rhsScal = 1e-06;
-    } else if ( rhsInfNorm > 1e+04 ) {
-        rhsScal = 1e-02;
     } else {
         rhsScal = 1.0;
     }
@@ -153,7 +151,7 @@ static void HDSDPIAdjustParams( hdsdp *HSolver ) {
 static void HDSDPIGetDefaultParams( hdsdp *HSolver ) {
     
     set_int_param(HSolver, INT_PARAM_MAXITER, 500);
-    set_int_param(HSolver, INT_PARAM_CORRECTORA, 4);
+    set_int_param(HSolver, INT_PARAM_CORRECTORA, 6);
     set_int_param(HSolver, INT_PARAM_CORRECTORB, 0);
     
     set_dbl_param(HSolver, DBL_PARAM_ABSOPTTOL, 1e-08);
@@ -166,9 +164,9 @@ static void HDSDPIGetDefaultParams( hdsdp *HSolver ) {
     set_dbl_param(HSolver, DBL_PARAM_DUALBOX_UP, 1e+07);
     set_dbl_param(HSolver, DBL_PARAM_DUALBOX_LOW, -1e+07);
     set_dbl_param(HSolver, DBL_PARAM_BARMUSTART, 1e+05);
-    set_dbl_param(HSolver, DBL_PARAM_POBJSTART, 1e+05);
-    set_dbl_param(HSolver, DBL_PARAM_DUALSTART, 1e+03);
-    set_dbl_param(HSolver, DBL_PARAM_TRXESTIMATE, 1e+02);
+    set_dbl_param(HSolver, DBL_PARAM_POBJSTART, 1e+10);
+    set_dbl_param(HSolver, DBL_PARAM_DUALSTART, 1e+05);
+    set_dbl_param(HSolver, DBL_PARAM_TRXESTIMATE, 1e+08);
     
     return;
 }
@@ -226,7 +224,7 @@ static void HDSDPIPrintSolutionStats( hdsdp *HSolver ) {
         assert( 0 );
     }
     
-    hdsdp_printf("Primal Obj: %+10.10e\n", HDSDP_INFINITY);
+    hdsdp_printf("Primal Obj: %+10.10e\n", HSolver->pObjVal);
     hdsdp_printf("Dual Obj  : %+10.10e\n", HSolver->dObjVal);
     hdsdp_printf("\n");
     
