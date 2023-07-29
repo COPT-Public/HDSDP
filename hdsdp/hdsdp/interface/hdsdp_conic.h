@@ -47,8 +47,9 @@ extern hdsdp_retcode HConeAddStepToBufferAndCheck( hdsdp_cone *HCone, double dSt
 extern hdsdp_retcode HConeCheckIsInterior( hdsdp_cone *HCone, double barHsdTau, double *rowDual, int *isInterior );
 extern hdsdp_retcode HConeCheckIsInteriorExpert( hdsdp_cone *HCone, double dCCoef, double dACoefScal, double *dACoef, double dEyeCoef, int whichBuffer, int *isInterior );
 extern void HConeReduceResi( hdsdp_cone *HCone, double resiReduction );
+extern void HConeSetPerturb( hdsdp_cone *HCone, double dPerturb );
 extern int HConePFeasSolFound( hdsdp_cone *HCone, double barHsdTauStep, double *rowDualStep );
-extern void HConePVarRecover( hdsdp_cone *HCone, double *pVarArr );
+extern void HConeGetPrimal( hdsdp_cone *HCone, double dBarrierMu, double *dRowDual, double *dRowDualStep, double *dConePrimal, double *dConePrimal2 );
 extern void HConeScalByConstant( hdsdp_cone *HCone, double dScal );
 
 #ifdef __cplusplus

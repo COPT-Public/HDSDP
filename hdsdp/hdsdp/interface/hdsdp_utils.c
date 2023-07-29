@@ -155,7 +155,7 @@ extern void HUtilPrintIntContent( int n, int *d ) {
     return;
 }
 
-extern void HUtilPrintDblSum( int n, double *d ) {
+extern double HUtilPrintDblSum( int n, double *d ) {
     
     double ds = 0.0;
     
@@ -163,11 +163,10 @@ extern void HUtilPrintDblSum( int n, double *d ) {
         ds += d[i];
     }
     
-    printf("Sum = %20.10e \n", ds);
-    return;
+    return ds;
 }
 
-extern void HUtilPrintDblAbsSum( int n, double *d ) {
+extern double HUtilPrintDblAbsSum( int n, double *d ) {
     
     double ds = 0.0;
     
@@ -175,8 +174,7 @@ extern void HUtilPrintDblAbsSum( int n, double *d ) {
         ds += fabs(d[i]);
     }
     
-    printf("Sum = %20.10e \n", ds);
-    return;
+    return ds;
 }
 
 /* Sorting */

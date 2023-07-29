@@ -370,10 +370,14 @@ static inline void sdpDenseConeIUpdateBuffer( hdsdp_cone_sdp_dense *cone, double
     for ( int iRow = 0; iRow < cone->nRow; ++iRow ) {
         sdpDataMatAddToBuffer(cone->sdpRow[iRow], dACoefScal * dACoef[iRow], cone->dualPosToElemMap, target);
     }
+    
     /* Add c * tau */
     sdpDataMatAddToBuffer(cone->sdpObj, dCCoef, cone->dualPosToElemMap, target);
     
-    /* Add residual */
+    /* Add cone perturbation */
+    dEyeCoef += cone->dualPerturb;
+    
+    /* Add residual and perturbation */
     if ( dEyeCoef != 0.0 ) {
         if ( cone->isDualSparse ) {
             int *iPos = cone->dualPosToElemMap;
@@ -422,8 +426,12 @@ static inline void sdpSparseConeIUpdateBuffer( hdsdp_cone_sdp_sparse *cone, doub
         sdpDataMatAddToBuffer(cone->sdpRow[iElem], dACoefScal * dACoef[cone->rowIdx[iElem]],
                               cone->dualPosToElemMap, target);
     }
+    
     /* Add c * tau */
     sdpDataMatAddToBuffer(cone->sdpObj, dCCoef, cone->dualPosToElemMap, target);
+    
+    /* Add cone perturbation */
+    dEyeCoef += cone->dualPerturb;
     
     /* Add residual */
     if ( dEyeCoef != 0.0 ) {
@@ -2122,6 +2130,22 @@ extern void sdpDenseConeReduceResidual( hdsdp_cone_sdp_dense *cone, double resiR
 extern void sdpSparseConeReduceResidual( hdsdp_cone_sdp_sparse *cone, double resiReduction ) {
     
     cone->dualResidual = resiReduction;
+    return;
+}
+
+extern void sdpDenseConeSetPerturb( hdsdp_cone_sdp_dense *cone, double dDualPerturb ) {
+    
+    assert( dDualPerturb >= 0.0 );
+    cone->dualPerturb = dDualPerturb;
+    
+    return;
+}
+
+extern void sdpSparseConeSetPerturb( hdsdp_cone_sdp_sparse *cone, double dDualPerturb ) {
+    
+    assert( dDualPerturb >= 0.0 );
+    cone->dualPerturb = dDualPerturb;
+    
     return;
 }
 

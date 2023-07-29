@@ -33,6 +33,7 @@ extern hdsdp_retcode sdpDenseConeGetKKTByFixedStrategy( hdsdp_cone_sdp_dense *co
 extern hdsdp_retcode sdpDenseConeInteriorCheck( hdsdp_cone_sdp_dense *cone, double barHsdTau, double *rowDual, int *isInterior );
 extern hdsdp_retcode sdpDenseConeInteriorCheckExpert( hdsdp_cone_sdp_dense *cone, double dCCoef, double dACoefScal, double *dACoef, double dEyeCoef, int whichBuffer, int *isInterior );
 extern void sdpDenseConeReduceResidual( hdsdp_cone_sdp_dense *cone, double resiReduction );
+extern void sdpDenseConeSetPerturb( hdsdp_cone_sdp_dense *cone, double dDualPerturb );
 extern hdsdp_retcode sdpDenseConeGetBarrier( hdsdp_cone_sdp_dense *cone, double barHsdTau, double *rowDual, int whichBuffer, double *logdet );
 extern hdsdp_retcode sdpDenseConeAddStepToBufferAndCheck( hdsdp_cone_sdp_dense *cone, double dStep, int whichBuffer, int *isInterior );
 extern void sdpDenseConeClearImpl( hdsdp_cone_sdp_dense *cone );
@@ -60,6 +61,7 @@ extern void sdpSparseConeGetSymMapping( hdsdp_cone_sdp_sparse *cone, int iCol, i
 extern hdsdp_retcode sdpSparseConeInteriorCheck( hdsdp_cone_sdp_sparse *cone, double barHsdTau, double *rowDual, int *isInterior );
 extern hdsdp_retcode sdpSparseConeInteriorCheckExpert( hdsdp_cone_sdp_sparse *cone, double dCCoef, double dACoefScal, double *dACoef, double dEyeCoef, int whichBuffer, int *isInterior );
 extern void sdpSparseConeReduceResidual( hdsdp_cone_sdp_sparse *cone, double resiReduction );
+extern void sdpSparseConeSetPerturb( hdsdp_cone_sdp_sparse *cone, double dDualPerturb );
 extern hdsdp_retcode sdpSparseConeGetBarrier( hdsdp_cone_sdp_sparse *cone, double barHsdTau, double *rowDual, int whichBuffer, double *logdet );
 extern hdsdp_retcode sdpSparseConeAddStepToBufferAndCheck( hdsdp_cone_sdp_sparse *cone, double dStep, int whichBuffer, int *isInterior );
 extern void sdpSparseConeClearImpl( hdsdp_cone_sdp_sparse *cone );

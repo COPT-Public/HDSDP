@@ -89,6 +89,7 @@ struct hdsdp_solver_internal {
     double dPStep;
     double dDStep;
     double dResidual;
+    double dPerturb;
     
     /* Convergence criterion */
     double dAllConeDims;

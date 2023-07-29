@@ -86,7 +86,8 @@ typedef struct {
     hdsdp_retcode (*coneAxpyBufferAndCheck) ( void *, double, int, int * );
     int     (*conePFeasCheck)  ( void *, double, double * );
     void    (*coneReduceResi)  ( void *, double );
-    void    (*conePRecover)    ( void *, double * );
+    void    (*coneSetPerturb)  ( void *, double );
+    void    (*conePRecover)    ( void *, double, double *, double *, double *, double *);
     
     double  (*coneGetCoeffNorm) ( void *, int );
     double  (*coneGetObjNorm)  ( void *, int );
@@ -106,6 +107,7 @@ typedef struct {
     int  isDualSparse;
     
     double dualResidual;
+    double dualPerturb;
     
     /* Dual symbolic structure */
     int  *dualMatBeg;
@@ -153,6 +155,7 @@ typedef struct {
     int isDualSparse;
     
     double dualResidual;
+    double dualPerturb;
     
     /* Dual symbolic structure */
     int  *dualMatBeg;

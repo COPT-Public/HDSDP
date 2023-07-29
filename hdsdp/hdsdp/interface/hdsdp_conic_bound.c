@@ -329,6 +329,12 @@ extern void sBoundConeReduceResidual( hdsdp_cone_bound_scalar *cone, double dumm
     return;
 }
 
+extern void sBoundConeSetPerturb( hdsdp_cone_bound_scalar *cone, double dummy ) {
+    
+    (void) dummy;
+    return;
+}
+
 extern hdsdp_retcode sBoundConeGetBarrier( hdsdp_cone_bound_scalar *cone, double barHsdTau, double *rowDual, int whichBuffer, double *logdet ) {
     
     double dLogDeterminant = 0.0;
@@ -391,6 +397,26 @@ extern hdsdp_retcode sBoundConeAddStepToBufferAndCheck( hdsdp_cone_bound_scalar 
     }
     
     *isInterior = 1;
+    
+    return HDSDP_RETCODE_OK;
+}
+
+extern hdsdp_retcode sBoundConeGetPrimal( hdsdp_cone_bound_scalar *cone, double dBarrierMu, double *dRowDual, double *dRowDualStep, double *dBoundLowerPrimal, double *dBoundUpperPrimal ) {
+    
+    
+    double dRowDualStepElem = 0.0;
+    double dualLowerElem = 0.0;
+    double dualUpperElem = 0.0;
+    
+    for ( int iRow = 0; iRow < cone->nRow; ++iRow ) {
+        dRowDualStepElem = dRowDualStep[iRow];
+        dualUpperElem = cone->dBoundUp - dRowDual[iRow];
+        dualLowerElem = dRowDual[iRow] - cone->dBoundLow;
+        dBoundLowerPrimal[iRow] = 1.0 / dualLowerElem - dRowDualStepElem / ( dualLowerElem * dualLowerElem );
+        dBoundUpperPrimal[iRow] = 1.0 / dualUpperElem + dRowDualStepElem / ( dualUpperElem * dualUpperElem );
+        dBoundLowerPrimal[iRow] *= dBarrierMu;
+        dBoundUpperPrimal[iRow] *= dBarrierMu;
+    }
     
     return HDSDP_RETCODE_OK;
 }
