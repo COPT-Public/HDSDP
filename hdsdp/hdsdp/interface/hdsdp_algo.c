@@ -823,9 +823,23 @@ static hdsdp_retcode HDSDP_PhaseA_BarInfeasSolve( hdsdp *HSolver, int dOnly ) {
     /* Enter the main iteration */
     while ( 1 ) {
         
+        /* Restart if there is no valid primal bound */
+        if ( HSolver->nIterCount == 3 && !pObjFound ) {
+            hdsdp_printf("Increasing dual infeasibility \n");
+            HDSDP_ResetStart(HSolver);
+            for ( int iCone = 0; iCone < HSolver->nCones; ++iCone ) {
+                HDSDP_CALL(HConeCheckIsInterior(HSolver->HCones[iCone], HSolver->dBarHsdTau,
+                                                HSolver->dRowDual, &isInteriorPoint));
+                if ( !isInteriorPoint ) {
+                    retcode = HDSDP_RETCODE_FAILED;
+                    goto exit_cleanup;
+                }
+            }
+        }
+        
         /* Build up the Schur complement */
         HDSDP_CALL(HKKTBuildUp(HSolver->HKKT, KKT_TYPE_INFEASIBLE));
-#if 1
+#if 0
         HDSDP_CALL(HUtilKKTCheck(HSolver->HKKT));
 #endif
         
@@ -896,20 +910,6 @@ static hdsdp_retcode HDSDP_PhaseA_BarInfeasSolve( hdsdp *HSolver, int dOnly ) {
         }
         HSolver->dResidual = HSolver->dResidual * (1.0 - dAdaRatio * HSolver->dDStep);
         HDSDP_SetResidual(HSolver, HSolver->dResidual);
-        
-        /* Restart if there is no valid primal bound */
-        if ( HSolver->nIterCount == 100 && !pObjFound ) {
-            hdsdp_printf("Increasing dual infeasibility \n");
-            HDSDP_ResetStart(HSolver);
-            for ( int iCone = 0; iCone < HSolver->nCones; ++iCone ) {
-                HDSDP_CALL(HConeCheckIsInterior(HSolver->HCones[iCone], HSolver->dBarHsdTau,
-                                                HSolver->dRowDual, &isInteriorPoint));
-                if ( !isInteriorPoint ) {
-                    retcode = HDSDP_RETCODE_FAILED;
-                    goto exit_cleanup;
-                }
-            }
-        }
         
         /* Print log */
         HDSDP_CALL(HDSDP_Infeasible_Corrector(HSolver, 0));
