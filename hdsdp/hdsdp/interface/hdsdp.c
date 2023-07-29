@@ -86,7 +86,17 @@ static void HDSDPIGetStatistics( hdsdp *HSolver ) {
     if ( HSolver->nCones >= 100 ) {
         set_int_feature(HSolver, INT_FEATURE_I_MANYCONES, 1);
     }
-
+    
+    /* How many sparse cones ? */
+    int coneStats[7] = {0};
+    for ( int iCone = 0; iCone < HSolver->nCones; ++iCone ) {
+        coneStats[(int) HSolver->HCones[iCone]->cone] += 1;
+    }
+    
+    set_int_feature(HSolver, INT_FEATURE_N_DSSDPCONES, coneStats[HDSDP_CONETYPE_DENSE_SDP]);
+    set_int_feature(HSolver, INT_FEATURE_N_SPSDPCONES, coneStats[HDSDP_CONETYPE_SPARSE_SDP]);
+    set_int_feature(HSolver, INT_FEATURE_N_LPCONES, coneStats[HDSDP_CONETYPE_LP]);
+    
     return;
 }
 
@@ -96,6 +106,8 @@ static void HDSDPIPrintStatistics( hdsdp *HSolver ) {
     
     print_int_feature(HSolver, INT_FEATURE_N_ROWS, "Number of rows");
     print_int_feature(HSolver, INT_FEATURE_N_CONES, "Number of cones");
+    print_int_feature(HSolver, INT_FEATURE_N_SPSDPCONES, "Number of sparse SDP cones");
+    print_int_feature(HSolver, INT_FEATURE_N_DSSDPCONES, "Number of dense SDP cones");
     print_int_feature(HSolver, INT_FEATURE_N_SUMCONEDIMS, "Cone dimensions");
     print_dbl_feature(HSolver, DBL_FEATURE_OBJONENORM, "Norm of objective");
     print_dbl_feature(HSolver, DBL_FEATURE_DATAONENORM, "Norm of SDP data");
@@ -165,7 +177,7 @@ static void HDSDPIGetDefaultParams( hdsdp *HSolver ) {
     set_dbl_param(HSolver, DBL_PARAM_DUALBOX_LOW, -1e+07);
     set_dbl_param(HSolver, DBL_PARAM_BARMUSTART, 1e+05);
     set_dbl_param(HSolver, DBL_PARAM_POBJSTART, 1e+10);
-    set_dbl_param(HSolver, DBL_PARAM_DUALSTART, 1e+05);
+    set_dbl_param(HSolver, DBL_PARAM_DUALSTART, 1.0);
     set_dbl_param(HSolver, DBL_PARAM_TRXESTIMATE, 1e+08);
     
     return;

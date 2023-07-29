@@ -4,8 +4,10 @@
  */
 #ifdef HEADERPATH
 #include "interface/hdsdp_utils.h"
+#include "interface/hdsdp_schur.h"
 #else
 #include "hdsdp_utils.h"
+#include "hdsdp_schur.h"
 #endif
 
 #include <math.h>
@@ -250,4 +252,178 @@ extern int HUtilCheckCtrlC( void ) {
 extern void HUtilResetCtrl( void ) {
     
     isCtrlC = 0;
+}
+
+hdsdp_retcode HUtilKKTCheck( void *Hkkt ) {
+    
+    hdsdp_retcode retcode = HDSDP_RETCODE_OK;
+    
+    hdsdp_kkt *kkt = (hdsdp_kkt *) Hkkt;
+    int isValid = 1;
+    
+    double *kktBuffer2345 = NULL;
+    double *kktBuffer3 = NULL;
+    double *kktBuffer4 = NULL;
+    double *kktASinvVecBuffer2345 = NULL;
+    double *kktASinvVecBuffer3 = NULL;
+    double *kktASinvVecBuffer4 = NULL;
+    
+    double *kktASinvRdSinvVecBuffer2345 = NULL;
+    double *kktASinvRdSinvVecBuffer3 = NULL;
+    double *kktASinvRdSinvVecBuffer4 = NULL;
+    
+    int nKKTNzs = 0;
+    
+    if ( kkt->isKKTSparse ) {
+        nKKTNzs = kkt->kktMatBeg[kkt->nRow];
+    } else {
+        nKKTNzs = kkt->nRow * kkt->nRow;
+    }
+    
+    HDSDP_INIT(kktBuffer2345, double, nKKTNzs);
+    HDSDP_MEMCHECK(kktBuffer2345);
+    
+    HDSDP_INIT(kktBuffer3, double, nKKTNzs);
+    HDSDP_MEMCHECK(kktBuffer3);
+    
+    HDSDP_INIT(kktBuffer4, double, nKKTNzs);
+    HDSDP_MEMCHECK(kktBuffer4);
+    
+    HDSDP_INIT(kktASinvVecBuffer3, double, kkt->nRow);
+    HDSDP_MEMCHECK(kktASinvVecBuffer3);
+    
+    HDSDP_INIT(kktASinvVecBuffer4, double, kkt->nRow);
+    HDSDP_MEMCHECK(kktASinvVecBuffer4);
+    
+    HDSDP_INIT(kktASinvVecBuffer2345, double, kkt->nRow);
+    HDSDP_MEMCHECK(kktASinvVecBuffer2345);
+    
+    HDSDP_INIT(kktASinvRdSinvVecBuffer3, double, kkt->nRow);
+    HDSDP_MEMCHECK(kktASinvRdSinvVecBuffer3);
+    
+    HDSDP_INIT(kktASinvRdSinvVecBuffer4, double, kkt->nRow);
+    HDSDP_MEMCHECK(kktASinvRdSinvVecBuffer4);
+    
+    HDSDP_INIT(kktASinvRdSinvVecBuffer2345, double, kkt->nRow);
+    HDSDP_MEMCHECK(kktASinvRdSinvVecBuffer2345);
+    
+    /* Use hybrid strategy as a benchmark */
+    printf("KKT check starts \n");
+    HDSDP_CALL(HKKTBuildUpFixed(kkt, KKT_TYPE_INFEASIBLE, KKT_M3));
+    HKKTExport(kkt, kktASinvVecBuffer3, kktASinvRdSinvVecBuffer3,
+               NULL, NULL, NULL, NULL, NULL);
+    HDSDP_MEMCPY(kktBuffer3, kkt->kktMatElem, double, nKKTNzs);
+    printf("KKT check 1/3 \n");
+    
+    HDSDP_CALL(HKKTBuildUpFixed(kkt, KKT_TYPE_INFEASIBLE, KKT_M4));
+    HKKTExport(kkt, kktASinvVecBuffer4, kktASinvRdSinvVecBuffer4,
+               NULL, NULL, NULL, NULL, NULL);
+    HDSDP_MEMCPY(kktBuffer4, kkt->kktMatElem, double, nKKTNzs);
+    printf("KKT check 2/3 \n");
+    
+    HDSDP_CALL(HKKTBuildUp(kkt, KKT_TYPE_INFEASIBLE));
+    HDSDP_MEMCPY(kktBuffer2345, kkt->kktMatElem, double, nKKTNzs);
+    HKKTExport(kkt, kktASinvVecBuffer2345, kktASinvRdSinvVecBuffer2345,
+               NULL, NULL, NULL, NULL, NULL);
+    printf("KKT check 3/3 \n");
+    
+    double err3_4 = 0.0;
+    double err3_2345 = 0.0;
+    double err4_2345 = 0.0;
+    
+    double aerr3_4 = 0.0;
+    double aerr3_2345 = 0.0;
+    double aerr4_2345 = 0.0;
+    
+    double e3_4 = 0.0;
+    double e3_2345 = 0.0;
+    double e4_2345 = 0.0;
+    
+    for ( int iElem = 0; iElem < nKKTNzs; ++iElem ) {
+        
+        e3_4 = fabs(kktBuffer3[iElem] - kktBuffer4[iElem]) / (fabs(kktBuffer3[iElem]) + 1e-04);
+        e3_2345 = fabs(kktBuffer3[iElem] - kktBuffer2345[iElem]) / (fabs(kktBuffer3[iElem]) + 1e-04);
+        e4_2345 = fabs(kktBuffer4[iElem] - kktBuffer2345[iElem]) / (fabs(kktBuffer3[iElem]) + 1e-04);
+        
+        err3_4 += e3_4;
+        err3_2345 += e3_2345;
+        err4_2345 += e4_2345;
+        
+        aerr3_4 = HDSDP_MAX(aerr3_4, e3_4);
+        aerr3_2345 = HDSDP_MAX(aerr3_2345, e3_2345);
+        aerr4_2345 = HDSDP_MAX(aerr4_2345, e4_2345);
+        
+        if ( aerr3_4 >= 1e-08 || aerr3_2345 >= 1e-08 || aerr4_2345 >= 1e-08 ) {
+            if ( isValid ) {
+                printf("Warning. KKT consistency check failed at element %d \n", iElem);
+                isValid = 0;
+                retcode = HDSDP_RETCODE_FAILED;
+            }
+        }
+        
+    }
+    
+    for ( int iRow = 0; iRow < kkt->nRow; ++iRow ) {
+        
+        e3_4 = fabs(kktASinvVecBuffer3[iRow] - kktASinvVecBuffer4[iRow]) / (fabs(kktASinvVecBuffer3[iRow]) + 1e-04);
+        e3_2345 = fabs(kktASinvVecBuffer3[iRow] - kktASinvVecBuffer2345[iRow]) / (fabs(kktASinvVecBuffer3[iRow]) + 1e-04);
+        e4_2345 = fabs(kktASinvVecBuffer4[iRow] - kktASinvVecBuffer2345[iRow]) / (fabs(kktASinvVecBuffer3[iRow]) + 1e-04);
+        
+        err3_4 += e3_4;
+        err3_2345 += e3_2345;
+        err4_2345 += e4_2345;
+        
+        aerr3_4 = HDSDP_MAX(aerr3_4, e3_4);
+        aerr3_2345 = HDSDP_MAX(aerr3_2345, e3_2345);
+        aerr4_2345 = HDSDP_MAX(aerr4_2345, e4_2345);
+        
+        if ( aerr3_4 >= 1e-08 || aerr3_2345 >= 1e-08 || aerr4_2345 >= 1e-08 ) {
+            if ( isValid ) {
+                printf("Warning. KKT consistency check failed at ASinv buffer, row %d \n", iRow);
+                isValid = 0;
+                retcode = HDSDP_RETCODE_FAILED;
+            }
+        }
+    }
+    
+    for ( int iRow = 0; iRow < kkt->nRow; ++iRow ) {
+        
+        e3_4 = fabs(kktASinvRdSinvVecBuffer3[iRow] - kktASinvRdSinvVecBuffer4[iRow]) / (fabs(kktASinvRdSinvVecBuffer3[iRow]) + 1e-04);
+        e3_2345 = fabs(kktASinvRdSinvVecBuffer3[iRow] - kktASinvRdSinvVecBuffer2345[iRow]) / (fabs(kktASinvRdSinvVecBuffer3[iRow]) + 1e-04);
+        e4_2345 = fabs(kktASinvRdSinvVecBuffer4[iRow] - kktASinvRdSinvVecBuffer2345[iRow]) / (fabs(kktASinvRdSinvVecBuffer3[iRow]) + 1e-04);
+        
+        err3_4 += e3_4;
+        err3_2345 += e3_2345;
+        err4_2345 += e4_2345;
+        
+        aerr3_4 = HDSDP_MAX(aerr3_4, e3_4);
+        aerr3_2345 = HDSDP_MAX(aerr3_2345, e3_2345);
+        aerr4_2345 = HDSDP_MAX(aerr4_2345, e4_2345);
+        
+        if ( aerr3_4 >= 1e-08 || aerr3_2345 >= 1e-08 || aerr4_2345 >= 1e-08 ) {
+            if ( isValid ) {
+                printf("Warning. KKT consistency check failed at ASinvRdSinv buffer, row %d \n", iRow);
+                isValid = 0;
+                retcode = HDSDP_RETCODE_FAILED;
+            }
+        }
+    }
+    
+    
+    printf("KKT consistency check: | 3-4: %6.3e | 3-2345: %6.3e | 4-2345: %6.3e \n",
+           aerr3_4, aerr3_2345, aerr4_2345);
+    
+exit_cleanup:
+    
+    HDSDP_FREE(kktBuffer2345);
+    HDSDP_FREE(kktBuffer3);
+    HDSDP_FREE(kktBuffer4);
+    HDSDP_FREE(kktASinvVecBuffer2345);
+    HDSDP_FREE(kktASinvVecBuffer3);
+    HDSDP_FREE(kktASinvVecBuffer4);
+    HDSDP_FREE(kktASinvRdSinvVecBuffer2345);
+    HDSDP_FREE(kktASinvRdSinvVecBuffer3);
+    HDSDP_FREE(kktASinvRdSinvVecBuffer4);
+    
+    return retcode;
 }

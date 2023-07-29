@@ -468,15 +468,14 @@ static void sdpDenseConeILanczosMultiply( void *cone, double *dLhsVec, double *d
     if ( dsCone->isDualSparse ) {
         HDSDP_ZERO(dsCone->dVecBuffer, double, dsCone->nCol);
         /* Compute -dS * x. Note that only the lower triangular part is stored in dS. */
-        for ( int iCol = 0; iCol < dsCone->nCol; ++iCol ) {
+        for ( int iCol = 0, iRow = 0; iCol < dsCone->nCol; ++iCol ) {
             /* The first element of each column must be on the diagonal due to the identity dual residual */
-            dsCone->dVecBuffer[dsCone->dualMatIdx[dsCone->dualMatBeg[iCol]]] -= \
-                dsCone->dualStep[dsCone->dualMatBeg[iCol]] * dRhsVec[dsCone->dualMatIdx[dsCone->dualMatBeg[iCol]]];
+            iRow = dsCone->dualMatBeg[iCol];
+            dsCone->dVecBuffer[dsCone->dualMatIdx[iRow]] -= dsCone->dualStep[iRow] * dRhsVec[iCol];
             /* For each of element not in the diagonal, we have to map it to its symmetric position */
-            for ( int iElem = dsCone->dualMatBeg[iCol] + 1; iElem < dsCone->dualMatBeg[iCol + 1]; ++iElem ) {
-                int iRow = dsCone->dualMatIdx[iElem];
-                dsCone->dVecBuffer[iRow] -= dsCone->dualStep[iElem] * dRhsVec[iCol];
-                dsCone->dVecBuffer[iCol] -= dsCone->dualStep[iElem] * dRhsVec[iRow];
+            for ( iRow = dsCone->dualMatBeg[iCol] + 1; iRow < dsCone->dualMatBeg[iCol + 1]; ++iRow ) {
+                dsCone->dVecBuffer[dsCone->dualMatIdx[iRow]] -= dsCone->dualStep[iRow] * dRhsVec[iCol];
+                dsCone->dVecBuffer[iCol] -= dsCone->dualStep[iRow] * dRhsVec[dsCone->dualMatIdx[iRow]];
             }
         }
     } else {
@@ -500,16 +499,14 @@ static void sdpSparseConeILanczosMultiply( void *cone, double *dLhsVec, double *
     if ( spCone->isDualSparse ) {
         HDSDP_ZERO(spCone->dVecBuffer, double, spCone->nCol);
         /* Compute -dS * x. Note that only the lower triangular part is stored in dS. */
-        for ( int iCol = 0; iCol < spCone->nCol; ++iCol ) {
+        for ( int iCol = 0, iRow = 0; iCol < spCone->nCol; ++iCol ) {
             /* The first element of each column must be on the diagonal due to the identity dual residual */
-            spCone->dVecBuffer[spCone->dualMatIdx[spCone->dualMatBeg[iCol]]] -= \
-            spCone->dualStep[iCol] * dRhsVec[spCone->dualMatIdx[spCone->dualMatBeg[iCol]]];
+            iRow = spCone->dualMatBeg[iCol];
+            spCone->dVecBuffer[spCone->dualMatIdx[iRow]] -= spCone->dualStep[iRow] * dRhsVec[iCol];
             /* For each of element not in the diagonal, we have to map it to its symmetric position */
-            for ( int iRow = spCone->dualMatBeg[iCol] + 1; iRow < spCone->dualMatBeg[iCol + 1]; ++iRow ) {
-                spCone->dVecBuffer[spCone->dualMatIdx[iRow]] -= \
-                spCone->dualStep[iCol] * dRhsVec[spCone->dualMatIdx[iRow]];
-                spCone->dVecBuffer[spCone->dualMatIdx[iCol]] -= \
-                spCone->dualStep[iRow] * dRhsVec[spCone->dualMatIdx[iCol]];
+            for ( iRow = spCone->dualMatBeg[iCol] + 1; iRow < spCone->dualMatBeg[iCol + 1]; ++iRow ) {
+                spCone->dVecBuffer[spCone->dualMatIdx[iRow]] -= spCone->dualStep[iRow] * dRhsVec[iCol];
+                spCone->dVecBuffer[iCol] -= spCone->dualStep[iRow] * dRhsVec[spCone->dualMatIdx[iRow]];
             }
         }
     } else {
@@ -1292,7 +1289,7 @@ static hdsdp_retcode sdpSparseConeIGetKKTCorrectorComponents( hdsdp_cone_sdp_spa
     
     if ( cone->dualResidual ) {
         for ( int iRowElem = 0; iRowElem < cone->nRowElem; ++iRowElem ) {
-            kkt->dASinvRdSinvVec[iRowElem] += cone->dualResidual * \
+            kkt->dASinvRdSinvVec[cone->rowIdx[iRowElem]] += cone->dualResidual * \
             sdpDataMatKKT5SinvADotSinv(cone->sdpRow[iRowElem], cone->dualFactor, kkt->invBuffer, kkt->kktBuffer);
         }
     }
@@ -1653,7 +1650,16 @@ extern hdsdp_retcode sdpDenseConeRatioTestImpl( hdsdp_cone_sdp_dense *cone, doub
     }
     
     /* Finished with setting up dS. Now do Lanczos computation */
-    HDSDP_CALL(HLanczosSolve(cone->Lanczos, NULL, maxStep));
+    if ( cone->nCol == 1 ) {
+        if ( whichBuffer == BUFFER_DUALVAR ) {
+            *maxStep = (cone->dualStep[0] > 0.0) ? HDSDP_INFINITY : (-cone->dualMatElem[0] / cone->dualStep[0]);
+        } else {
+            *maxStep = (cone->dualStep[0] > 0.0) ? HDSDP_INFINITY : (-cone->dualCheckerElem[0] / cone->dualStep[0]);
+        }
+        
+    }  else {
+        HDSDP_CALL(HLanczosSolve(cone->Lanczos, NULL, maxStep));
+    }
     
 exit_cleanup:
     return retcode;
@@ -1672,8 +1678,16 @@ extern hdsdp_retcode sdpSparseConeRatioTestImpl( hdsdp_cone_sdp_sparse *cone, do
         cone->LTarget = cone->dualChecker;
     }
     
-    /* Finished with setting up dS. Now do Lanczos computation */
-    HDSDP_CALL(HLanczosSolve(cone->Lanczos, NULL, maxStep));
+    if ( cone->nCol == 1 ) {
+        if ( whichBuffer == BUFFER_DUALVAR ) {
+            *maxStep = (cone->dualStep[0] > 0.0) ? HDSDP_INFINITY : (-cone->dualMatElem[0] / cone->dualStep[0]);
+        } else {
+            *maxStep = (cone->dualStep[0] > 0.0) ? HDSDP_INFINITY : (-cone->dualCheckerElem[0] / cone->dualStep[0]);
+        }
+        
+    } else {
+        HDSDP_CALL(HLanczosSolve(cone->Lanczos, NULL, maxStep));
+    }
     
 exit_cleanup:
     return retcode;

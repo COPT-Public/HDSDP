@@ -18,94 +18,6 @@
 
 #include <math.h>
 
-hdsdp_retcode test_schur_consistency( hdsdp_kkt *kkt ) {
-    
-    hdsdp_retcode retcode = HDSDP_RETCODE_OK;
-    
-    int isValid = 1;
-    
-    double *kktBuffer2345 = NULL;
-    double *kktBuffer3 = NULL;
-    double *kktBuffer4 = NULL;
-    
-    int nKKTNzs = 0;
-    
-    if ( kkt->isKKTSparse ) {
-        nKKTNzs = kkt->kktMatBeg[kkt->nRow];
-    } else {
-        nKKTNzs = kkt->nRow * kkt->nRow;
-    }
-    
-    HDSDP_INIT(kktBuffer2345, double, nKKTNzs);
-    HDSDP_MEMCHECK(kktBuffer2345);
-    
-    HDSDP_INIT(kktBuffer3, double, nKKTNzs);
-    HDSDP_MEMCHECK(kktBuffer3);
-    
-    HDSDP_INIT(kktBuffer4, double, nKKTNzs);
-    HDSDP_MEMCHECK(kktBuffer4);
-    
-    /* Use hybrid strategy as a benchmark */
-    printf("KKT check starts \n");
-    HDSDP_CALL(HKKTBuildUpFixed(kkt, KKT_TYPE_INFEASIBLE, KKT_M3));
-    HDSDP_MEMCPY(kktBuffer3, kkt->kktMatElem, double, nKKTNzs);
-    printf("KKT check 1/3 \n");
-    
-    HDSDP_CALL(HKKTBuildUpFixed(kkt, KKT_TYPE_INFEASIBLE, KKT_M4));
-    HDSDP_MEMCPY(kktBuffer4, kkt->kktMatElem, double, nKKTNzs);
-    printf("KKT check 2/3 \n");
-    
-    HDSDP_CALL(HKKTBuildUp(kkt, KKT_TYPE_INFEASIBLE));
-    HDSDP_MEMCPY(kktBuffer2345, kkt->kktMatElem, double, nKKTNzs);
-    printf("KKT check 3/3 \n");
-    
-    double err3_4 = 0.0;
-    double err3_2345 = 0.0;
-    double err4_2345 = 0.0;
-    
-    double aerr3_4 = 0.0;
-    double aerr3_2345 = 0.0;
-    double aerr4_2345 = 0.0;
-    
-    double e3_4 = 0.0;
-    double e3_2345 = 0.0;
-    double e4_2345 = 0.0;
-    
-    for ( int iElem = 0; iElem < nKKTNzs; ++iElem ) {
-        
-        e3_4 = fabs(kktBuffer3[iElem] - kktBuffer4[iElem]) / (fabs(kktBuffer3[iElem]) + 1e-04);
-        e3_2345 = fabs(kktBuffer3[iElem] - kktBuffer2345[iElem]) / (fabs(kktBuffer3[iElem]) + 1e-04);
-        e4_2345 = fabs(kktBuffer4[iElem] - kktBuffer2345[iElem]) / (fabs(kktBuffer3[iElem]) + 1e-04);
-        
-        err3_4 += e3_4;
-        err3_2345 += e3_2345;
-        err4_2345 += e4_2345;
-        
-        aerr3_4 = HDSDP_MAX(aerr3_4, e3_4);
-        aerr3_2345 = HDSDP_MAX(aerr3_2345, e3_2345);
-        aerr4_2345 = HDSDP_MAX(aerr4_2345, e4_2345);
-        
-        if ( aerr3_4 >= 1e-08 || aerr3_2345 >= 1e-08 || aerr4_2345 >= 1e-08 ) {
-            if ( isValid ) {
-                printf("Warning. KKT consistency check failed. \n");
-                isValid = 0;
-            }
-        }
-        
-    }
-    
-    printf("KKT consistency check: | 3-4: %6.3e | 3-2345: %6.3e | 4-2345: %6.3e \n",
-           aerr3_4, aerr3_2345, aerr4_2345);
-    
-exit_cleanup:
-    
-    HDSDP_FREE(kktBuffer2345);
-    HDSDP_FREE(kktBuffer3);
-    HDSDP_FREE(kktBuffer4);
-    
-    return retcode;
-}
-
 int test_file_io( char *fname ) {
     
     
@@ -136,6 +48,7 @@ int test_file_io( char *fname ) {
     hdsdp_kkt *kkt = NULL;
     
     double timeStart = HUtilGetTimeStamp();
+    printf("Filename: %s\n", fname);
     
     HDSDP_CALL(HReadSDPA(fname, &nConstrs, &nBlks, &BlkDims, &rowRHS, &coneMatBeg,
                          &coneMatIdx, &coneMatElem, &nCols, &nLpCols, &LpMatBeg,
@@ -169,7 +82,7 @@ int test_file_io( char *fname ) {
         HDSDP_CALL(HConeProcData(SDPCone));
 //        HConeView(SDPCone);
         HDSDP_CALL(HConePresolveData(SDPCone));
-//        HConeView(SDPCone);
+        HConeView(SDPCone);
         
         for ( int i = 0; i < nConstrs; ++i ) {
             rowDual[i] = 0.0 * (double) (i + 1) / nConstrs;
@@ -217,7 +130,7 @@ int test_file_io( char *fname ) {
     HDSDP_CALL(HKKTSolve(kkt, kktLhsBuffer, NULL));
     
     /* KKT consistency */
-//    HDSDP_CALL(test_schur_consistency(kkt));
+    HDSDP_CALL(HUtilKKTCheck(kkt));
     
 exit_cleanup:
     
@@ -280,6 +193,7 @@ int test_solver( char *fname ) {
     user_data *SDPData = NULL;
     
     double timeStart = HUtilGetTimeStamp();
+    printf("Filename: %s\n", fname);
     
     HDSDP_CALL(HReadSDPA(fname, &nConstrs, &nBlks, &BlkDims, &rowRHS, &coneMatBeg,
                          &coneMatIdx, &coneMatElem, &nCols, &nLpCols, &LpMatBeg,

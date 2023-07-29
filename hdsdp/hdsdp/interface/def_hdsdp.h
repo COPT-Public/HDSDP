@@ -30,6 +30,10 @@
 #define INT_FEATURE_I_VERYDENSE    7
 #define INT_FEATURE_I_IMPTRACE     8
 #define INT_FEATURE_I_IMPDBOUNDD   9
+#define INT_FEATURE_N_SPSDPCONES   10
+#define INT_FEATURE_N_DSSDPCONES   11
+#define INT_FEATURE_N_LPCONES      12
+#define INT_FEATURE_N_BNDCONES     13
 
 #define DBL_FEATURE_OBJFRONORM     0
 #define DBL_FEATURE_OBJONENORM     1
@@ -113,8 +117,8 @@ struct hdsdp_solver_internal {
     /* Parameters */
     int HIntParams[20];
     double HDblParams[20];
-    int HIntFeatures[10];
-    double HDblFeatures[10];
+    int HIntFeatures[20];
+    double HDblFeatures[20];
 };
 
 #endif /* def_hdsdp_h */

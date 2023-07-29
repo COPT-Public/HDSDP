@@ -103,6 +103,7 @@ extern void HUtilStartCtrlCCheck( void );
 extern int HUtilCheckCtrlC( void );
 extern void HUtilResetCtrl( void );
 
+hdsdp_retcode HUtilKKTCheck( void *kkt );
 
 #ifdef __cplusplus
 }

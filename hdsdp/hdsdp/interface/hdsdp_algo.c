@@ -108,10 +108,10 @@ static void HDSDP_ResetStart( hdsdp *HSolver ) {
     
     double objFroNorm = get_dbl_feature(HSolver, DBL_FEATURE_OBJFRONORM);
     HSolver->dResidual = - HDSDP_MAX(objFroNorm, 1e+02);
-    HSolver->dResidual = - HSolver->dResidual * 1e+10;
+    HSolver->dResidual = HSolver->dResidual * 1e+10;
     HSolver->dResidual = HDSDP_MAX(HSolver->dResidual, -1e+15);
     
-    hdsdp_printf("Reset with dual residual %3.1e\n", - HSolver->dResidual);
+    hdsdp_printf("Reset with dual residual %3.1e\n", HSolver->dResidual);
     for ( int iCone = 0; iCone < HSolver->nCones; ++iCone ) {
         HConeSetStart(HSolver->HCones[iCone], HSolver->dResidual);
     }
@@ -441,10 +441,11 @@ static hdsdp_retcode HDSDP_PhaseA_AdaptiveResi( hdsdp *HSolver, double *dResiRat
         dMaxStep = HDSDP_MIN(dMaxStep, dStep);
     }
     
-//    HDSDP_CALL(HConeRatioTest(HSolver->HBndCone, 0.0, HSolver->dHAuxiVec1, 0.0, BUFFER_DUALVAR, &dStep));
-//    dMaxStep = HDSDP_MIN(dMaxStep, dStep);
+    HDSDP_CALL(HConeRatioTest(HSolver->HBndCone, 0.0, HSolver->dHAuxiVec1, 0.0, BUFFER_DUALVAR, &dStep));
+    dMaxStep = HDSDP_MIN(dMaxStep, dStep);
     
-    dAlphaC = HDSDP_MIN(0.98 * dMaxStep, 1.0) ;
+    dAlphaC = HDSDP_MIN(0.98 * dMaxStep, 1.0);
+    dMaxStep = dAlphaC;
     
     /* Perform line search to guarantee validity */
     int isInterior = 0;
@@ -484,7 +485,7 @@ static hdsdp_retcode HDSDP_PhaseA_AdaptiveResi( hdsdp *HSolver, double *dResiRat
         dAdaRatio = HDSDP_MAX(0.9, dAdaRatio);
     } else if ( HSolver->dProxNorm < 10.0 ) {
         dAdaRatio = HDSDP_MAX(0.3, dAdaRatio);
-    } else {
+    } else if ( HSolver->dProxNorm < 50.0 ){
         dAdaRatio = HDSDP_MAX(0.1, dAdaRatio);
     }
     
@@ -592,11 +593,20 @@ static hdsdp_retcode HDSDP_Infeasible_Corrector( hdsdp *HSolver, int lastStep ) 
         HKKTExport(HSolver->HKKT, HSolver->dMinvASinv, HSolver->dMinvASinvRdSinv,
                    NULL, NULL, NULL, NULL, NULL);
         
+#ifdef HDSDP_ALGO_DEBUG
+        HUtilPrintDblSum(HSolver->nRows, HSolver->dMinvASinv);
+        HUtilPrintDblSum(HSolver->nRows, HSolver->dMinvASinvRdSinv);
+#endif
         HDSDP_CALL(HKKTSolve(HSolver->HKKT, HSolver->dMinvASinv, NULL));
         
         if ( dAdaRatioMax ) {
             HDSDP_CALL(HKKTSolve(HSolver->HKKT, HSolver->dMinvASinvRdSinv, NULL));
         }
+        
+#ifdef HDSDP_ALGO_DEBUG
+        HUtilPrintDblSum(HSolver->nRows, HSolver->dMinvASinv);
+        HUtilPrintDblSum(HSolver->nRows, HSolver->dMinvASinvRdSinv);
+#endif
         
         /* Build direction */
         for ( int iRow = 0; iRow < HSolver->nRows; ++iRow ) {
@@ -618,7 +628,6 @@ static hdsdp_retcode HDSDP_Infeasible_Corrector( hdsdp *HSolver, int lastStep ) 
             
             if ( !isInterior ) {
                 dMaxStep *= 0.5;
-                break;
             }
             
             if ( isInterior || dMaxStep < 5e-03 ) {
@@ -627,6 +636,8 @@ static hdsdp_retcode HDSDP_Infeasible_Corrector( hdsdp *HSolver, int lastStep ) 
         }
         
         if ( dMaxStep < 5e-03 ) {
+            isInterior = HDSDP_CheckIsInterior(HSolver, 1.0, HSolver->dRowDual);
+            assert( isInterior );
             break;
         }
         
@@ -638,7 +649,10 @@ static hdsdp_retcode HDSDP_Infeasible_Corrector( hdsdp *HSolver, int lastStep ) 
             for ( int iRow = 0; iRow < HSolver->nRows; ++iRow ) {
                 HSolver->dHAuxiVec1[iRow] = HSolver->dRowDual[iRow] + dMaxStep * HSolver->dRowDualStep[iRow];
             }
+            
             isInterior = HDSDP_CheckIsInterior(HSolver, 1.0, HSolver->dHAuxiVec1);
+            dBarrierVal = -HDSDP_INFINITY;
+            
             assert( isInterior );
         }
         
@@ -660,7 +674,9 @@ static hdsdp_retcode HDSDP_Infeasible_Corrector( hdsdp *HSolver, int lastStep ) 
         
         /* Guarantee feasibility after further reduction */
         double dResi = HSolver->dResidual;
-        for ( int iTry = 0; dAdaRatio > 1e-03; ++iTry ) {
+        for ( int iTry = 0; ; ++iTry ) {
+            
+            HSolver->dResidual = dResi * (1 - dAlphaC * dAdaRatio);
             HDSDP_SetResidual(HSolver, dResi * (1 - dAlphaC * dAdaRatio));
             for ( int iRow = 0; iRow < HSolver->nRows; ++iRow ) {
                 HSolver->dHAuxiVec1[iRow] = HSolver->dRowDual[iRow] + dAlphaC * \
@@ -691,21 +707,16 @@ static hdsdp_retcode HDSDP_Infeasible_Corrector( hdsdp *HSolver, int lastStep ) 
             dAdaRatioMax = HDSDP_MIN(dAdaRatioMax * 2.0, 0.8);
         }
         
-        algo_debug("Infeasible corrector step %d. AdaRatio %f\n", nCorr + 1, dAdaRatio);
+        algo_debug("Infeasible corrector step %d. Resi reduction %f\n", nCorr + 1, dAdaRatio * dAlphaC);
         
         /* Save progress */
-        if ( dAdaRatioMax ) {
-            HSolver->dResidual = dResi * (1 - dAlphaC * dAdaRatio);
-            HDSDP_MEMCPY(HSolver->dRowDual, HSolver->dHAuxiVec1, double, HSolver->nRows);
-            dBarrierVal = -HDSDP_INFINITY;
-        } else {
-            isInterior = HDSDP_CheckIsInterior(HSolver, 1.0, HSolver->dRowDual);
-            assert( isInterior );
-        }
+        HDSDP_MEMCPY(HSolver->dRowDual, HSolver->dHAuxiVec1, double, HSolver->nRows);
         
         if ( dAdaRatioMax == 0.0 ) {
             break;
         }
+        
+        dBarrierVal = dNewBarrierVal;
     }
     
 exit_cleanup:
@@ -814,11 +825,20 @@ static hdsdp_retcode HDSDP_PhaseA_BarInfeasSolve( hdsdp *HSolver, int dOnly ) {
         
         /* Build up the Schur complement */
         HDSDP_CALL(HKKTBuildUp(HSolver->HKKT, KKT_TYPE_INFEASIBLE));
+#if 1
+        HDSDP_CALL(HUtilKKTCheck(HSolver->HKKT));
+#endif
+        
         /* Schur complement now contains an extra bound cone */
         HDSDP_CALL(HKKTBuildUpExtraCone(HSolver->HKKT, HSolver->HBndCone, KKT_TYPE_INFEASIBLE));
         /* Export the information needed */
         HKKTExport(HSolver->HKKT, HSolver->dMinvASinv, HSolver->dMinvASinvRdSinv,
                    NULL, NULL, NULL, NULL, NULL);
+        
+#ifdef HDSDP_ALGO_DEBUG
+        HUtilPrintDblSum(HSolver->nRows, HSolver->dMinvASinv);
+        HUtilPrintDblSum(HSolver->nRows, HSolver->dMinvASinvRdSinv);
+#endif
         
         /* Factorize the KKT system */
         HDSDP_CALL(HKKTFactorize(HSolver->HKKT));
@@ -828,8 +848,15 @@ static hdsdp_retcode HDSDP_PhaseA_BarInfeasSolve( hdsdp *HSolver, int dOnly ) {
         HDSDP_CALL(HKKTSolve(HSolver->HKKT, HSolver->dMinvASinv, NULL));
         HDSDP_CALL(HKKTSolve(HSolver->HKKT, HSolver->dMinvASinvRdSinv, NULL));
         
+#ifdef HDSDP_ALGO_DEBUG
+        HUtilPrintDblSum(HSolver->nRows, HSolver->dMinvRowRHS);
+        HUtilPrintDblSum(HSolver->nRows, HSolver->dMinvASinv);
+        HUtilPrintDblSum(HSolver->nRows, HSolver->dMinvASinvRdSinv);
+#endif
+        
         /* Compute proximity norm and verify primal feasibility */
         pObjFound += HDSDP_PhaseA_ProxMeasure(HSolver);
+        algo_debug("Proximity norm %e \n", HSolver->dProxNorm);
         
         /* Update barrier parameter */
         double dBarrierTarget = HSolver->pObjInternal - HSolver->dObjInternal;
@@ -840,18 +867,20 @@ static hdsdp_retcode HDSDP_PhaseA_BarInfeasSolve( hdsdp *HSolver, int dOnly ) {
             HSolver->dBarrierMu = HSolver->dBarrierMu * 0.005;
         } else if ( HSolver->dProxNorm < 5.0 ) {
             HSolver->dBarrierMu = HSolver->dBarrierMu * 0.01;
-            HSolver->dBarrierMu = HDSDP_MAX(HSolver->dBarrierMu, dBarrierTarget);
+            HSolver->dBarrierMu = HDSDP_MAX(HSolver->dBarrierMu, dBarrierTarget * 0.1);
         } else if ( HSolver->dProxNorm < 10.0 ) {
             HSolver->dBarrierMu = HSolver->dBarrierMu * 0.1;
-            HSolver->dBarrierMu = HDSDP_MAX(HSolver->dBarrierMu, dBarrierTarget);
+            HSolver->dBarrierMu = HDSDP_MAX(HSolver->dBarrierMu, dBarrierTarget * 0.8);
         } else {
             HSolver->dBarrierMu = HSolver->dBarrierMu * 0.95;
             HSolver->dBarrierMu = HDSDP_MAX(HSolver->dBarrierMu, dBarrierTarget);
         }
         
+        algo_debug("Mu target: %e \n", HSolver->dBarrierMu);
+        
         /* Compute adaptive ration gamma */
         HDSDP_CALL(HDSDP_PhaseA_AdaptiveResi(HSolver, &dAdaRatio));
-        algo_debug("Adaptive ratio: %f\n", dAdaRatio);
+        algo_debug("Adaptive ratio: %e\n", dAdaRatio);
         
         /* Assemble direction */
         HDSDP_Infeasible_BuildStep(HSolver, dAdaRatio);
@@ -859,7 +888,7 @@ static hdsdp_retcode HDSDP_PhaseA_BarInfeasSolve( hdsdp *HSolver, int dOnly ) {
         /* Final ratio test */
         HDSDP_Infeasible_RatioTest(HSolver, dAdaRatio, &HSolver->dDStep);
         HSolver->dDStep = HDSDP_MIN(0.95 * HSolver->dDStep, 1.0);
-        algo_debug("Stepsize: %f\n", HSolver->dDStep);
+        algo_debug("Stepsize: %e\n", HSolver->dDStep);
         
         /* Take step */
         for ( int iRow = 0; iRow < HSolver->nRows; ++iRow ) {
@@ -869,7 +898,7 @@ static hdsdp_retcode HDSDP_PhaseA_BarInfeasSolve( hdsdp *HSolver, int dOnly ) {
         HDSDP_SetResidual(HSolver, HSolver->dResidual);
         
         /* Restart if there is no valid primal bound */
-        if ( HSolver->nIterCount == 3 && !pObjFound ) {
+        if ( HSolver->nIterCount == 100 && !pObjFound ) {
             hdsdp_printf("Increasing dual infeasibility \n");
             HDSDP_ResetStart(HSolver);
             for ( int iCone = 0; iCone < HSolver->nCones; ++iCone ) {
@@ -899,6 +928,7 @@ static hdsdp_retcode HDSDP_PhaseA_BarInfeasSolve( hdsdp *HSolver, int dOnly ) {
         
         if ( HSolver->dDStep < 1e-03 ) {
             HSolver->HStatus = HDSDP_SUSPECT_INFEAS_OR_UNBOUNDED;
+            break;
         }
         
         if ( HUtilGetTimeStamp() - HSolver->dTimeBegin >= dTimeLimit ) {
@@ -1140,6 +1170,7 @@ static hdsdp_retcode HDSDP_Conic_Solve( hdsdp *HSolver, int dOnly ) {
     HDSDP_CALL(HDSDP_PhaseA_BarInfeasSolve(HSolver, dOnly));
     
     if ( HSolver->HStatus == HDSDP_SUSPECT_INFEAS_OR_UNBOUNDED ) {
+        hdsdp_printf("\nInfeasible method stops due to suspected infeasibility \n");
         HDSDP_CALL(HDSDP_PhaseA_BarHsdSolve(HSolver, dOnly));
     }
     
