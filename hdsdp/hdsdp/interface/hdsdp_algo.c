@@ -1072,7 +1072,6 @@ static hdsdp_retcode HDSDP_PhaseA_BarInfeasSolve( hdsdp *HSolver, int dOnly ) {
 #if 0
         HDSDP_CALL(HUtilKKTCheck(HSolver->HKKT));
 #endif
-        
         /* Schur complement now contains an extra bound cone */
         HDSDP_CALL(HKKTBuildUpExtraCone(HSolver->HKKT, HSolver->HBndCone, KKT_TYPE_INFEASIBLE));
         /* Export the information needed */
@@ -1160,7 +1159,7 @@ static hdsdp_retcode HDSDP_PhaseA_BarInfeasSolve( hdsdp *HSolver, int dOnly ) {
         }
         
         if ( HSolver->nSmallStep > 3 ) {
-            HSolver->HStatus = HDSDP_NUMERICAL;
+            HSolver->HStatus = HDSDP_SUSPECT_INFEAS_OR_UNBOUNDED;
             break;
         }
         
