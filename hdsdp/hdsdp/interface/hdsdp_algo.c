@@ -1584,7 +1584,7 @@ static hdsdp_retcode HDSDP_Feasible_Corrector( hdsdp *HSolver ) {
             break;
         } else {
             HDSDP_MEMCPY(HSolver->dRowDual, HSolver->dHAuxiVec2, double, HSolver->nRows);
-        }    
+        }
     }
     
 exit_cleanup:
@@ -1648,7 +1648,7 @@ static hdsdp_retcode HDSDP_PhaseB_BarDualPotentialSolve( hdsdp *HSolver ) {
         /* Build up Schur complement */
         HDSDP_CALL(HKKTBuildUp(HSolver->HKKT, KKT_TYPE_INFEASIBLE));
         HDSDP_CALL(HKKTBuildUpExtraCone(HSolver->HKKT, HSolver->HBndCone, KKT_TYPE_INFEASIBLE));
-        HKKTRegularize(HSolver->HKKT, HSolver->dBarrierMu * 1e-05);
+        HKKTRegularize(HSolver->HKKT, 1e-05);
 #if 0
         HDSDP_CALL(HUtilKKTCheck(HSolver->HKKT));
 #endif
