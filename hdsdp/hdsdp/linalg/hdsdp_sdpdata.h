@@ -31,6 +31,8 @@ extern sdp_coeff_type sdpDataMatGetType( sdp_coeff *sdpCoeff );
 extern void sdpDataMatClear( sdp_coeff *sdpCoeff );
 extern void sdpDataMatDestroy( sdp_coeff **psdpCoeff );
 extern void sdpDataMatView( sdp_coeff *sdpCoeff );
+extern int sdpDataMatIsEye( sdp_coeff *sdpCoeff, double *dEyeMultiple );
+extern int sdpDataMatIsUnitCol( sdp_coeff *sdpCoeff, int *iUnitCol );
 
 /* KKT operations */
 extern void sdpDataMatKKT2SolveRankOne( sdp_coeff *sdpCoeff, hdsdp_linsys *dualFactor,

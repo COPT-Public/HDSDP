@@ -96,6 +96,9 @@ typedef struct {
     /* Debugging */
     void    (*coneView)        ( void * );
     
+    /* Feature detection */
+    void    (*getstat)         ( void *, double *, int [20], double [20] );
+    
 } hdsdp_cone;
 
 /* A dense SDP block */

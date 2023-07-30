@@ -38,6 +38,7 @@ extern hdsdp_retcode sdpDenseConeGetBarrier( hdsdp_cone_sdp_dense *cone, double 
 extern hdsdp_retcode sdpDenseConeAddStepToBufferAndCheck( hdsdp_cone_sdp_dense *cone, double dStep, int whichBuffer, int *isInterior );
 extern void sdpDenseConeClearImpl( hdsdp_cone_sdp_dense *cone );
 extern void sdpDenseConeDestroyImpl( hdsdp_cone_sdp_dense **pCone );
+extern void sdpDenseConeFeatureDetectImpl( hdsdp_cone_sdp_dense *cone, double *rowRHS, int coneIntFeatures[20], double coneDblFeatures[20] );
 extern void sdpDenseConeViewImpl( hdsdp_cone_sdp_dense *cone );
 
 /* Sparse SDP cone */
@@ -66,6 +67,7 @@ extern hdsdp_retcode sdpSparseConeGetBarrier( hdsdp_cone_sdp_sparse *cone, doubl
 extern hdsdp_retcode sdpSparseConeAddStepToBufferAndCheck( hdsdp_cone_sdp_sparse *cone, double dStep, int whichBuffer, int *isInterior );
 extern void sdpSparseConeClearImpl( hdsdp_cone_sdp_sparse *cone );
 extern void sdpSparseConeDestroyImpl( hdsdp_cone_sdp_sparse **pCone );
+extern void sdpSparseConeFeatureDetectImpl( hdsdp_cone_sdp_dense *cone, double *rowRHS, int coneIntFeatures[20], double coneDblFeatures[20] );
 extern void sdpSparseConeViewImpl( hdsdp_cone_sdp_sparse *cone );
 
 #ifdef __cplusplus

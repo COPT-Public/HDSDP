@@ -20,20 +20,26 @@
 #define NUM_INT_PARAM  20
 #define NUM_DBL_PARAM  20
 
-#define INT_FEATURE_N_SUMCONEDIMS  0
-#define INT_FEATURE_N_CONES        1
-#define INT_FEATURE_N_ROWS         2
-#define INT_FEATURE_I_NULLOBJ      3
-#define INT_FEATURE_I_MANYCONES    4
-#define INT_FEATURE_I_NOPINTERIOR  5
-#define INT_FEATURE_I_NODINTERIOR  6
-#define INT_FEATURE_I_VERYDENSE    7
-#define INT_FEATURE_I_IMPTRACE     8
-#define INT_FEATURE_I_IMPDBOUNDD   9
-#define INT_FEATURE_N_SPSDPCONES   10
-#define INT_FEATURE_N_DSSDPCONES   11
-#define INT_FEATURE_N_LPCONES      12
-#define INT_FEATURE_N_BNDCONES     13
+#define INT_FEATURE_I_NULLOBJ      0
+#define INT_FEATURE_I_MANYCONES    1
+#define INT_FEATURE_I_NOPINTERIOR  2
+#define INT_FEATURE_I_NODINTERIOR  3
+#define INT_FEATURE_I_VERYDENSE    4
+#define INT_FEATURE_I_IMPTRACE     5
+#define INT_FEATURE_I_IMPYBOUND    6
+#define INT_FEATURE_N_SUMCONEDIMS  7
+#define INT_FEATURE_N_MAXCONEDIM   8
+#define INT_FEATURE_N_CONES        9
+#define INT_FEATURE_N_ROWS         10
+#define INT_FEATURE_N_SPSDPCONES   11
+#define INT_FEATURE_N_DSSDPCONES   12
+#define INT_FEATURE_N_LPCONES      13
+#define INT_FEATURE_N_BNDCONES     14
+#define INT_FEATURE_N_ZEORMATS     15
+#define INT_FEATURE_N_SPMATS       16
+#define INT_FEATURE_N_DSMATS       17
+#define INT_FEATURE_N_SPR1MATS     18
+#define INT_FEATURE_N_DSR1MATS     19
 
 #define DBL_FEATURE_OBJFRONORM     0
 #define DBL_FEATURE_OBJONENORM     1
@@ -44,10 +50,14 @@
 #define DBL_FEATURE_RHSSCALING     6
 #define DBL_FEATURE_DATAFRONORM    7
 #define DBL_FEATURE_DATAONENORM    8
+#define DBL_FEATURE_IMPYBOUNDUP    9
+#define DBL_FEATURE_IMPYBOUNDLOW   10
+#define DBL_FEATURE_IMPTRACEX      11
 
 struct hdsdp_solver_internal {
     
-    char *coneModelName[100];
+    char coneModelName[100];
+    char modelFeatures[200];
     
     /* Logging */
     int HPhaseA;

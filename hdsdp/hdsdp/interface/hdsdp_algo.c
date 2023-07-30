@@ -1015,6 +1015,13 @@ static hdsdp_retcode HDSDP_PhaseA_BarInfeasSolve( hdsdp *HSolver, int dOnly ) {
     HSolver->whichMethod = HDSDP_ALGO_DUAL_INFEAS;
     
     int nMaxIter = get_int_param(HSolver, INT_PARAM_MAXITER);
+    int allowReset = 1;
+    
+    if ( get_int_feature(HSolver, INT_FEATURE_I_MANYCONES) ||
+        get_int_feature(HSolver, INT_FEATURE_I_IMPTRACE) ) {
+        allowReset = 0;
+    }
+    
     double dAbsfeasTol = get_dbl_param(HSolver, DBL_PARAM_ABSFEASTOL);
     double dRelfeasTol = get_dbl_param(HSolver, DBL_PARAM_RELFEASTOL);
     double dTimeLimit = get_dbl_param(HSolver, DBL_PARAM_TIMELIMIT);
@@ -1054,7 +1061,7 @@ static hdsdp_retcode HDSDP_PhaseA_BarInfeasSolve( hdsdp *HSolver, int dOnly ) {
     while ( 1 ) {
         
         /* Restart if there is no valid primal bound */
-        if ( HSolver->nIterCount == 3 && !pObjFound ) {
+        if ( HSolver->nIterCount == 3 && !pObjFound && allowReset ) {
             hdsdp_printf("Increasing dual infeasibility \n");
             HDSDP_ResetStart(HSolver);
             for ( int iCone = 0; iCone < HSolver->nCones; ++iCone ) {
@@ -1505,6 +1512,8 @@ static hdsdp_retcode HDSDP_Feasible_Corrector( hdsdp *HSolver ) {
         /* Build up corrector components */
         HDSDP_CALL(HKKTBuildUp(HSolver->HKKT, KKT_TYPE_CORRECTOR));
         HDSDP_CALL(HKKTBuildUpExtraCone(HSolver->HKKT, HSolver->HBndCone, KKT_TYPE_CORRECTOR));
+        HKKTRegularize(HSolver->HKKT, HSolver->dBarrierMu * 1e-05);
+        
         HKKTExport(HSolver->HKKT, HSolver->dMinvASinv, NULL, NULL, NULL, NULL, NULL, NULL);
         HDSDP_CALL(HKKTSolve(HSolver->HKKT, HSolver->dMinvASinv, NULL));
         

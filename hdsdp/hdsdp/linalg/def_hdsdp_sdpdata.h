@@ -53,6 +53,8 @@ struct sdp_coeff_s {
     void (*add2buffer)    ( void *, double, int *, double *);
     void (*destroy)       ( void ** );
     void (*view)          ( void * );
+    int  (*iseye)         ( void *, double * );
+    int  (*isunitcol)     ( void *, int * );
     
     /* Schur complement operations */
     /* KKT strategy 2 */

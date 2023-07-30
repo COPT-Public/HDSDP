@@ -29,10 +29,13 @@ static void HDSDPIGetStatistics( hdsdp *HSolver ) {
     
     /* Get sum of conic dimensions. Used to convert the identity matrix to Frobenius norm */
     int sumConeDims = 0;
+    int maxConeDim = 0;
     for ( int iCone = 0; iCone < HSolver->nCones; ++iCone ) {
+        maxConeDim = HDSDP_MAX(maxConeDim, HConeGetDim(HSolver->HCones[iCone]));
         sumConeDims += HConeGetDim(HSolver->HCones[iCone]);
     }
     
+    set_int_feature(HSolver, INT_FEATURE_N_MAXCONEDIM, maxConeDim);
     set_int_feature(HSolver, INT_FEATURE_N_SUMCONEDIMS, sumConeDims);
     set_int_feature(HSolver, INT_FEATURE_N_ROWS, HSolver->nRows);
     set_int_feature(HSolver, INT_FEATURE_N_CONES, HSolver->nCones);
@@ -109,9 +112,66 @@ static void HDSDPIPrintStatistics( hdsdp *HSolver ) {
     print_int_feature(HSolver, INT_FEATURE_N_SPSDPCONES, "Number of sparse SDP cones");
     print_int_feature(HSolver, INT_FEATURE_N_DSSDPCONES, "Number of dense SDP cones");
     print_int_feature(HSolver, INT_FEATURE_N_SUMCONEDIMS, "Cone dimensions");
+    print_int_feature(HSolver, INT_FEATURE_N_MAXCONEDIM, "Max cone dimension");
     print_dbl_feature(HSolver, DBL_FEATURE_OBJONENORM, "Norm of objective");
     print_dbl_feature(HSolver, DBL_FEATURE_DATAONENORM, "Norm of SDP data");
     print_dbl_feature(HSolver, DBL_FEATURE_RHSONENORM, "Norm of RHS");
+    
+    return;
+}
+
+static void HDSDPIAdjustOneConeParams( hdsdp *HSolver ) {
+    
+    /* Detect features when there is one cone */
+    HConeDetectFeature(HSolver->HCones[0], HSolver->rowRHS, HSolver->HIntFeatures, HSolver->HDblFeatures);
+    
+    int isHit = 0;
+    int isImpliedTrace = get_int_feature(HSolver, INT_FEATURE_I_IMPTRACE);
+    int isNoPrimalInterior = get_int_feature(HSolver, INT_FEATURE_I_NOPINTERIOR);
+    int isExtremelyDense = get_int_feature(HSolver, INT_FEATURE_I_VERYDENSE);
+    int isImpliedDual = get_int_feature(HSolver, INT_FEATURE_I_IMPYBOUND);
+    int isNoObj = get_int_feature(HSolver, INT_FEATURE_I_NULLOBJ);
+    
+    HDSDP_ZERO(HSolver->modelFeatures, char, 200);
+    
+    if ( isImpliedTrace + isNoPrimalInterior + isExtremelyDense + isImpliedDual + isNoObj ) {
+        isHit = 1;
+        strcat(HSolver->modelFeatures, "This is a ");
+    }
+    
+    if ( isExtremelyDense ) {
+        set_int_param(HSolver, INT_PARAM_CORRECTORA, 4);
+        set_dbl_param(HSolver, DBL_PARAM_DUALSTART, 1.0);
+        set_dbl_param(HSolver, DBL_PARAM_DUALBOX_UP, 1e+04);
+        set_dbl_param(HSolver, DBL_PARAM_DUALBOX_LOW, -1e+04);
+        strcat(HSolver->modelFeatures, "dense ");
+    }
+    
+    if ( isImpliedTrace ) {
+        set_dbl_param(HSolver, DBL_PARAM_DUALSTART, 1e+03);
+        set_dbl_param(HSolver, DBL_PARAM_TRXESTIMATE, get_dbl_feature(HSolver, DBL_FEATURE_IMPTRACEX));
+        set_dbl_param(HSolver, DBL_PARAM_POBJSTART, 1e+05);
+        set_dbl_param(HSolver, DBL_PARAM_POTRHOVAL, 5.0);
+        strcat(HSolver->modelFeatures, "trace-implied ");
+    }
+    
+    if ( isNoPrimalInterior ) {
+        set_dbl_param(HSolver, DBL_PARAM_DUALBOX_UP, 1e+04);
+        set_dbl_param(HSolver, DBL_PARAM_DUALBOX_LOW, -1e+04);
+        set_dbl_param(HSolver, DBL_PARAM_DUALSTART, 1e+03);
+        strcat(HSolver->modelFeatures, "no-primal interior ");
+    }
+    
+    if ( isNoObj ) {
+        set_dbl_param(HSolver, DBL_PARAM_DUALSTART, 1.0);
+        set_dbl_param(HSolver, DBL_PARAM_DUALBOX_UP, 1.0);
+        set_dbl_param(HSolver, DBL_PARAM_DUALBOX_LOW, -1.0);
+        strcat(HSolver->modelFeatures, "no objective ");
+    }
+    
+    if ( isHit ) {
+        strcat(HSolver->modelFeatures, "SDP problem\n");
+    }
     
     return;
 }
@@ -168,14 +228,62 @@ static void HDSDPIAdjustParams( hdsdp *HSolver ) {
         set_int_param(HSolver, INT_PARAM_THREADS, nMaxThreads);
     }
     
+    /* Determine correctors */
+    int nCorrA = 0;
+    int nCorrB = 0;
+    
+    nCorrA = (int) (HSolver->nRows - 2) / get_int_feature(HSolver, INT_FEATURE_N_MAXCONEDIM);
+    
+    if ( get_int_feature(HSolver, INT_FEATURE_N_SUMCONEDIMS) < 100 && nCorrA == 0 ) {
+        nCorrA = 1;
+    }
+    
+    if ( nCorrA >= 1 ) {
+        nCorrA += 1;
+    }
+    
+    nCorrA = nCorrA * nCorrA;
+    
+    if ( HSolver->nRows < 2000 && nCorrA > 10 ) {
+        nCorrA = 10;
+    }
+    
+    nCorrB = nCorrA;
+    
+    if ( get_int_feature(HSolver, INT_FEATURE_N_MAXCONEDIM) >= 5 * HSolver->nRows ) {
+        nCorrB = 0;
+        nCorrA = 2;
+    } else if ( get_int_feature(HSolver, INT_FEATURE_N_MAXCONEDIM) >= HSolver->nRows ) {
+        nCorrB = HDSDP_MIN(nCorrB, 2);
+        nCorrA = 4;
+    } else {
+        nCorrA = 6;
+    }
+    
+    nCorrA = HDSDP_MAX(nCorrA, 2);
+
+    set_int_param(HSolver, INT_PARAM_CORRECTORA, nCorrA);
+    set_int_param(HSolver, INT_PARAM_CORRECTORB, nCorrB);
+    
+    if ( get_int_feature(HSolver, INT_FEATURE_I_MANYCONES) ) {
+        set_int_param(HSolver, INT_PARAM_CORRECTORA, 6);
+        set_int_param(HSolver, INT_PARAM_CORRECTORB, 0);
+        set_dbl_param(HSolver, DBL_PARAM_DUALSTART, 1.0);
+        set_dbl_param(HSolver, DBL_PARAM_POBJSTART, 1e+10);
+    }
+    
+    if ( HSolver->nCones == 1 ) {
+        HDSDPIAdjustOneConeParams(HSolver);
+    }
+    
     return;
 }
 
 static void HDSDPIGetDefaultParams( hdsdp *HSolver ) {
     
     set_int_param(HSolver, INT_PARAM_MAXITER, 500);
-    set_int_param(HSolver, INT_PARAM_CORRECTORA, 4);
-    set_int_param(HSolver, INT_PARAM_CORRECTORB, 0);
+    set_int_param(HSolver, INT_PARAM_CORRECTORA, 12);
+    set_int_param(HSolver, INT_PARAM_CORRECTORB, 12);
     set_int_param(HSolver, INT_PARAM_THREADS, 8);
     
     set_dbl_param(HSolver, DBL_PARAM_ABSOPTTOL, 1e-08);
@@ -183,12 +291,12 @@ static void HDSDPIGetDefaultParams( hdsdp *HSolver ) {
     set_dbl_param(HSolver, DBL_PARAM_RELOPTTOL, 1e-08);
     set_dbl_param(HSolver, DBL_PARAM_RELFEASTOL, 1e-08);
     set_dbl_param(HSolver, DBL_PARAM_TIMELIMIT, 3600.0);
-    set_dbl_param(HSolver, DBL_PARAM_POTRHOVAL, 5.0);
+    set_dbl_param(HSolver, DBL_PARAM_POTRHOVAL, 4.0);
     set_dbl_param(HSolver, DBL_PARAM_HSDGAMMA, 0.5);
     set_dbl_param(HSolver, DBL_PARAM_DUALBOX_UP, 1e+07);
     set_dbl_param(HSolver, DBL_PARAM_DUALBOX_LOW, -1e+07);
     set_dbl_param(HSolver, DBL_PARAM_BARMUSTART, 1e+05);
-    set_dbl_param(HSolver, DBL_PARAM_POBJSTART, 1e+05);
+    set_dbl_param(HSolver, DBL_PARAM_POBJSTART, 1e+10);
     set_dbl_param(HSolver, DBL_PARAM_DUALSTART, 1e+05);
     set_dbl_param(HSolver, DBL_PARAM_TRXESTIMATE, 1e+08);
     
@@ -430,6 +538,7 @@ extern hdsdp_retcode HDSDPOptimize( hdsdp *HSolver, int dOptOnly ) {
     HDSDPIPrintStatistics(HSolver);
     HDSDPIPrintParams(HSolver);
     
+    hdsdp_printf("%s", HSolver->modelFeatures);
     hdsdp_printf("Optimizing over %d threads \n", get_int_param(HSolver, INT_PARAM_THREADS));
     
     /* Invoke solver */

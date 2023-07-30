@@ -9,6 +9,7 @@
 #include "linalg/vec_opts.h"
 #include "linalg/hdsdp_linsolver.h"
 #include "external/hdsdp_cs.h"
+#include "external/def_hdsdp.h"
 #else
 #include "hdsdp_conic_sdp.h"
 #include "def_hdsdp_user_data.h"
@@ -20,6 +21,7 @@
 #include "vec_opts.h"
 #include "hdsdp_linsolver.h"
 #include "hdsdp_cs.h"
+#include "def_hdsdp.h"
 #endif
 
 #include <math.h>
@@ -2364,6 +2366,119 @@ extern void sdpSparseConeDestroyImpl( hdsdp_cone_sdp_sparse **pCone ) {
     
     sdpSparseConeClearImpl(*pCone);
     HDSDP_FREE(*pCone);
+    
+    return;
+}
+
+extern void sdpDenseConeFeatureDetectImpl( hdsdp_cone_sdp_dense *cone, double *rowRHS,
+                                           int coneIntFeatures[20], double coneDblFeatures[20] ) {
+    /* When there is a single SDP cone. This routine detects if the SDP has the following structures
+     
+      1. (Almost) no primal interior point
+      2. (Almost) no dual interior point
+      3. Implied trace bound tr(X) == Z
+      4. Implied dual upperbound and lower bound l <= y <= u
+      5. No objective
+      6. Dense cone
+     
+     Also the number of different cones will be records as the conic features (including objective)
+     */
+    
+    /* We detect the case of no primal interior by seeking constraints that look like
+       trace(a * a' * X) = b \approx 0.0
+     */
+    
+    /* Get statistics */
+    coneIntFeatures[INT_FEATURE_N_ZEORMATS] = cone->sdpConeStats[SDP_COEFF_ZERO];
+    coneIntFeatures[INT_FEATURE_N_DSMATS] = cone->sdpConeStats[SDP_COEFF_DENSE];
+    coneIntFeatures[INT_FEATURE_N_SPMATS] = cone->sdpConeStats[SDP_COEFF_SPARSE];
+    coneIntFeatures[INT_FEATURE_N_SPR1MATS] = cone->sdpConeStats[SDP_COEFF_SPR1];
+    coneIntFeatures[INT_FEATURE_N_DSR1MATS] = cone->sdpConeStats[SDP_COEFF_DSR1];
+    
+    int isNoPrimalInterior = 0;
+    int isImpliedTraceX = 0;
+    double dImpliedTraceX = 0.0;
+    int iUnitCol = 0;
+    int *iUnitColIdx = NULL;
+    
+    /* Detect if there is no primal interior point */
+    for ( int iRow = 0; iRow < cone->nRow; ++iRow ) {
+        if ( sdpDataMatGetRank(cone->sdpRow[iRow]) == 1 &&
+            fabs(rowRHS[iRow]) < 1e-03 * sdpDataMatNorm(cone->sdpRow[iRow], FRO_NORM) ) {
+            isNoPrimalInterior = 1;
+        }
+    }
+    
+    if ( isNoPrimalInterior ) {
+        coneIntFeatures[INT_FEATURE_I_NOPINTERIOR] = 1;
+    }
+    
+    /* Detect implied trace bound
+       We detect two cases of implied bound.
+     
+       The first case is the constraint trace(I * X) == a
+       The second case is the diagonal constraint diag(X) = d */
+    
+    /* First detect is there is trace(I * X) == a */
+    int isEyeMultiple = 0;
+    for ( int iRow = 0; iRow < cone->nRow; ++iRow ) {
+        isEyeMultiple = sdpDataMatIsEye(cone->sdpRow[iRow], &dImpliedTraceX);
+        if ( isEyeMultiple && rowRHS[iRow] / dImpliedTraceX > 0.0 ) {
+            isImpliedTraceX = 1;
+            dImpliedTraceX = rowRHS[iRow] / dImpliedTraceX;
+            break;
+        }
+    }
+    
+    /* Then detect if there is diag(X) constraint. These constraints are of rank-one sparse coeffients */
+    HDSDP_INIT(iUnitColIdx, int, cone->nRow);
+    dImpliedTraceX = 0.0;
+    if ( iUnitColIdx && !isImpliedTraceX ) {
+        for ( int iRow = 0; iRow < cone->nRow; ++iRow ) {
+            if ( sdpDataMatIsUnitCol(cone->sdpRow[iRow], &iUnitCol) && !iUnitColIdx[iUnitCol] ) {
+                iUnitColIdx[iUnitCol] = 1;
+                dImpliedTraceX += rowRHS[iRow];
+            }
+        }
+    }
+    
+    int nSumUnit = 0;
+    for ( int iRow = 0; iRow < cone->nRow; ++iRow ) {
+        nSumUnit += iUnitColIdx[iRow];
+    }
+    
+    if ( nSumUnit == cone->nCol ) {
+        isImpliedTraceX = 1;
+    }
+    
+    HDSDP_FREE(iUnitColIdx);
+    
+    if ( isImpliedTraceX ) {
+        coneIntFeatures[INT_FEATURE_I_IMPTRACE] = 1;
+        coneDblFeatures[DBL_FEATURE_IMPTRACEX] = dImpliedTraceX;
+    }
+    
+    /* Detect if there is no objective */
+    if ( sdpDataMatGetType(cone->sdpObj) == SDP_COEFF_ZERO ) {
+        coneIntFeatures[INT_FEATURE_I_NULLOBJ] = 1;
+    }
+    
+    /* Detect dense cone */
+    if ( cone->sdpConeStats[SDP_COEFF_DENSE] >= 0.7 * cone->nRow ) {
+        coneIntFeatures[INT_FEATURE_I_VERYDENSE] = 1;
+    }
+    
+    return;
+}
+
+extern void sdpSparseConeFeatureDetectImpl( hdsdp_cone_sdp_dense *cone, double *rowRHS,
+                                            int coneIntFeatures[20], double coneDblFeatures[20] ) {
+    
+    coneIntFeatures[INT_FEATURE_N_ZEORMATS] = cone->sdpConeStats[SDP_COEFF_ZERO];
+    coneIntFeatures[INT_FEATURE_N_DSMATS] = cone->sdpConeStats[SDP_COEFF_DENSE];
+    coneIntFeatures[INT_FEATURE_N_SPMATS] = cone->sdpConeStats[SDP_COEFF_SPARSE];
+    coneIntFeatures[INT_FEATURE_N_SPR1MATS] = cone->sdpConeStats[SDP_COEFF_SPR1];
+    coneIntFeatures[INT_FEATURE_N_DSR1MATS] = cone->sdpConeStats[SDP_COEFF_DSR1];
     
     return;
 }

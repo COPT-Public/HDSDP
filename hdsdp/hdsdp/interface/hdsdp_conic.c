@@ -67,6 +67,7 @@ extern hdsdp_retcode HConeSetData( hdsdp_cone *HCone, user_data *usrData ) {
             set_func_pointer(HCone->conePFeasCheck, NULL);
             set_func_pointer(HCone->conePRecover, sBoundConeGetPrimal);
             set_func_pointer(HCone->coneView, sBoundConeViewImpl);
+            set_func_pointer(HCone->getstat, NULL);
             break;
         case HDSDP_CONETYPE_LP:
             set_func_pointer(HCone->coneCreate, NULL);
@@ -95,6 +96,7 @@ extern hdsdp_retcode HConeSetData( hdsdp_cone *HCone, user_data *usrData ) {
             set_func_pointer(HCone->conePFeasCheck, NULL);
             set_func_pointer(HCone->conePRecover, NULL);
             set_func_pointer(HCone->coneView, NULL);
+            set_func_pointer(HCone->getstat, NULL);
             break;
         case HDSDP_CONETYPE_DENSE_SDP:
             set_func_pointer(HCone->coneCreate, sdpDenseConeCreateImpl);
@@ -122,6 +124,7 @@ extern hdsdp_retcode HConeSetData( hdsdp_cone *HCone, user_data *usrData ) {
             set_func_pointer(HCone->conePFeasCheck, NULL);
             set_func_pointer(HCone->conePRecover, NULL);
             set_func_pointer(HCone->coneView, sdpDenseConeViewImpl);
+            set_func_pointer(HCone->getstat, sdpDenseConeFeatureDetectImpl);
             break;
         case HDSDP_CONETYPE_SPARSE_SDP:
             set_func_pointer(HCone->coneCreate, sdpSparseConeCreateImpl);
@@ -149,6 +152,7 @@ extern hdsdp_retcode HConeSetData( hdsdp_cone *HCone, user_data *usrData ) {
             set_func_pointer(HCone->conePFeasCheck, NULL);
             set_func_pointer(HCone->conePRecover, NULL);
             set_func_pointer(HCone->coneView, sdpSparseConeViewImpl);
+            set_func_pointer(HCone->getstat, sdpSparseConeFeatureDetectImpl);
             break;
         case HDSDP_CONETYPE_SOCP:
             retcode = HDSDP_RETCODE_FAILED;
@@ -359,5 +363,12 @@ extern void HConeGetPrimal( hdsdp_cone *HCone, double dBarrierMu, double *dRowDu
 extern void HConeScalByConstant( hdsdp_cone *HCone, double dScal ) {
     
     HCone->coneScal(HCone->coneData, dScal);
+    return;
+}
+
+
+extern void HConeDetectFeature( hdsdp_cone *HCone, double *rowRHS, int coneIntFeatures[20], double coneDblFeatures[20] ) {
+    
+    HCone->getstat(HCone->coneData, rowRHS, coneIntFeatures, coneDblFeatures);
     return;
 }

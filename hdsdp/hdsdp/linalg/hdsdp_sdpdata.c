@@ -897,6 +897,88 @@ static void dataMatNormalizeRankOneDenseImpl( sdp_coeff_dsr1 *A ) {
     
     return;
 }
+
+static int dataMatZeroIsEye( void *A, double *dEyeMultiple ) {
+    
+    return 0;
+}
+
+static int dataMatSparseIsEye( void *A, double *dEyeMultiple ) {
+    
+    sdp_coeff_sparse *sparse = (sdp_coeff_sparse *) A;
+    
+    if ( sparse->nTriMatElem != sparse->nSDPCol ) {
+        return 0;
+    }
+    
+    double dDiagElem = sparse->triMatElem[0];
+    
+    for ( int iElem = 0; iElem < sparse->nTriMatElem; ++iElem ) {
+        if ( sparse->triMatCol[iElem] != sparse->triMatRow[iElem] ) {
+            return 0;
+        }
+        
+        if ( sparse->triMatElem[iElem] != dDiagElem ) {
+            return 0;
+        }
+    }
+    
+    if ( dEyeMultiple ) {
+        *dEyeMultiple = dDiagElem;
+    }
+    
+    return 1;
+}
+
+static int dataMatDenseIsEye( void *A, double *dEyeMultiple ) {
+    
+    return 0;
+}
+
+static int dataMatRankOneSparseIsEye( void *A, double *dEyeMultiple ) {
+    
+    return 0;
+}
+
+static int dataMatRankOneDenseIsEye( void *A, double *dEyeMultiple ) {
+    
+    return 0;
+}
+
+static int dataMatZeroIsUnitCol( void *A, int *iUnitCol ) {
+    
+    return 0;
+}
+
+static int dataMatSparseIsUnitCol( void *A, int *iUnitCol ) {
+    
+    return 0;
+}
+
+static int dataMatDenseIsUnitCol( void *A, int *iUnitCol ) {
+    
+    return 0;
+}
+
+static int dataMatRankOneSparseIsUnitCol( void *A, int *iUnitCol ) {
+    
+    sdp_coeff_spr1 *spr1 = (sdp_coeff_spr1 *) A;
+    
+    if ( spr1->nSpR1FactorElem == 1 && spr1->spR1MatElem[0] == 1.0 && spr1->spR1FactorSign == 1.0 ) {
+        if ( iUnitCol ) {
+            *iUnitCol = spr1->spR1MatIdx[0];
+        }
+        return 1;
+    }
+    
+    return 0;
+}
+
+static int dataMatRankOneDenseIsUnitCol( void *A, int *iUnitCol ) {
+    
+    return 0;
+}
+
 /*==========================================================================================*/
 /* KKT operation: compute v = S^-1 a if A = sign * a * a'                                   */
 /*==========================================================================================*/
@@ -1296,7 +1378,6 @@ static double dataMatSparseKKT4ComputeASinvImpl( void *A, hdsdp_linsys *S, doubl
     
     double *ASinv = B;
     double *ASinvRow = NULL;
-    double *ASinvCol = NULL;
     double *SinvCol = NULL;
     double *SinvRow = NULL;
     double dElem = 0.0;
@@ -2040,6 +2121,8 @@ static void sdpDataMatIChooseType( sdp_coeff *sdpCoeff, sdp_coeff_type dataType 
             sdpCoeff->add2buffer = dataMatAddZeroToBufferImpl;
             sdpCoeff->destroy = dataMatDestroyZeroImpl;
             sdpCoeff->view = dataMatViewZeroImpl;
+            sdpCoeff->iseye = dataMatZeroIsEye;
+            sdpCoeff->isunitcol = dataMatZeroIsUnitCol;
             sdpCoeff->kkt2r1solve = dataMatZeroKKT2SolveRankOneImpl;
             sdpCoeff->kkt2quadform = dataMatZeroKKT2ComputeQuadForm;
             sdpCoeff->kkt2r1asinv = dataMatZeroKKT2TraceASinvImpl;
@@ -2061,6 +2144,8 @@ static void sdpDataMatIChooseType( sdp_coeff *sdpCoeff, sdp_coeff_type dataType 
             sdpCoeff->add2buffer = dataMatAddSparseToBufferImpl;
             sdpCoeff->destroy = dataMatDestroySparseImpl;
             sdpCoeff->view = dataMatViewSparseImpl;
+            sdpCoeff->iseye = dataMatSparseIsEye;
+            sdpCoeff->isunitcol = dataMatSparseIsUnitCol;
             sdpCoeff->kkt2r1solve = dataMatSparseKKT2SolveRankOneImpl;
             sdpCoeff->kkt2quadform = dataMatSparseKKT2ComputeQuadForm;
             sdpCoeff->kkt2r1asinv = dataMatSparseKKT2TraceASinvImpl;
@@ -2082,6 +2167,8 @@ static void sdpDataMatIChooseType( sdp_coeff *sdpCoeff, sdp_coeff_type dataType 
             sdpCoeff->add2buffer = dataMatAddDenseToBufferImpl;
             sdpCoeff->destroy = dataMatDestroyDenseImpl;
             sdpCoeff->view = dataMatViewDenseImpl;
+            sdpCoeff->iseye = dataMatDenseIsEye;
+            sdpCoeff->isunitcol = dataMatDenseIsUnitCol;
             sdpCoeff->kkt2r1solve = dataMatDenseKKT2SolveRankOneImpl;
             sdpCoeff->kkt2quadform = dataMatDenseKKT2ComputeQuadForm;
             sdpCoeff->kkt2r1asinv = dataMatDenseKKT2TraceASinvImpl;
@@ -2103,6 +2190,8 @@ static void sdpDataMatIChooseType( sdp_coeff *sdpCoeff, sdp_coeff_type dataType 
             sdpCoeff->add2buffer = dataMatAddRankOneSparseToBufferImpl;
             sdpCoeff->destroy = dataMatDestroyRankOneSparseImpl;
             sdpCoeff->view = dataMatViewRankOneSparseImpl;
+            sdpCoeff->iseye = dataMatRankOneSparseIsEye;
+            sdpCoeff->isunitcol = dataMatRankOneSparseIsUnitCol;
             sdpCoeff->kkt2r1solve = dataMatRankOneSparseKKT2SolveRankOneImpl;
             sdpCoeff->kkt2quadform = dataMatRankOneSparseKKT2ComputeQuadForm;
             sdpCoeff->kkt2r1asinv = dataMatRankOneSparseKKT2TraceASinvImpl;
@@ -2124,6 +2213,8 @@ static void sdpDataMatIChooseType( sdp_coeff *sdpCoeff, sdp_coeff_type dataType 
             sdpCoeff->add2buffer = dataMatAddRankOneDenseToBufferImpl;
             sdpCoeff->destroy = dataMatDestroyRankOneDenseImpl;
             sdpCoeff->view = dataMatViewRankOneDenseImpl;
+            sdpCoeff->iseye = dataMatRankOneDenseIsEye;
+            sdpCoeff->isunitcol = dataMatRankOneDenseIsUnitCol;
             sdpCoeff->kkt2r1solve = dataMatRankOneDenseKKT2SolveRankOneImpl;
             sdpCoeff->kkt2quadform = dataMatRankOneDenseKKT2ComputeQuadForm;
             sdpCoeff->kkt2r1asinv = dataMatRankOneDenseKKT2TraceASinvImpl;
@@ -2373,6 +2464,16 @@ extern inline void sdpDataMatView( sdp_coeff *sdpCoeff ) {
     sdpCoeff->view(sdpCoeff->dataMat);
     
     return;
+}
+
+extern int sdpDataMatIsEye( sdp_coeff *sdpCoeff, double *dEyeMultiple ) {
+    
+    return sdpCoeff->iseye(sdpCoeff->dataMat, dEyeMultiple);
+}
+
+extern int sdpDataMatIsUnitCol( sdp_coeff *sdpCoeff, int *iUnitCol ) {
+    
+    return sdpCoeff->isunitcol(sdpCoeff->dataMat, iUnitCol) ;
 }
 
 /* Data-dependent KKT operations */
