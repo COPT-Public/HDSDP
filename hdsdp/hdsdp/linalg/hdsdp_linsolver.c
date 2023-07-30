@@ -36,7 +36,7 @@ static hdsdp_retcode pardisoLinSolverCreate( void **pchol, int nCol ) {
     /* Symbolic ordering */
     set_pardiso_param(pds->iparm, PARDISO_PARAM_SYMBOLIC, PARDISO_PARAM_SYMBOLIC_MMD);
     /* Pivoting perturbation */
-    set_pardiso_param(pds->iparm, PARDISO_PARAM_PERTURBATION, 6);
+    set_pardiso_param(pds->iparm, PARDISO_PARAM_PERTURBATION, 13);
     /* Solve in-place*/
     set_pardiso_param(pds->iparm, PARDISO_PARAM_INPLACE, 1);
     /* Use 0-based index*/
