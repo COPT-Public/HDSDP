@@ -6,6 +6,10 @@ int test_solver( char *fname );
 
 int main(int argc, const char * argv[]) {
  
-    char *fname = "/Users/gaowenzhi/Desktop/gwz/DSDP/DSDP6/matlab/benchmark/sdplib/buck3.dat-s";
-    return test_solver(fname);
+    if ( argc > 1 ) {
+        return test_solver(argv[1]);
+    } else {
+        char *fname = "/Users/gaowenzhi/Desktop/gwz/benchmark/sdplib/G55mc.dat-s";
+        return test_solver(fname);
+    }
 }

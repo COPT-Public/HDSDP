@@ -157,14 +157,26 @@ static void HDSDPIAdjustParams( hdsdp *HSolver ) {
     hdsdp_printf("    Scale cone objective by %5.1e \n", objScal);
     hdsdp_printf("    Scale rhs by %5.1e \n", rhsScal);
     
+    int nMaxThreads = HUtilGetGlobalMKLThreads();
+    int nTargetThreads = get_int_param(HSolver, INT_PARAM_THREADS);
+
+    if ( nMaxThreads > nTargetThreads ) {
+        HUtilSetGlobalMKLThreads(nTargetThreads);
+    } else {
+        HUtilSetGlobalMKLThreads(nMaxThreads);
+        hdsdp_printf("    Hardware has %d threads\n", nMaxThreads);
+        set_int_param(HSolver, INT_PARAM_THREADS, nMaxThreads);
+    }
+    
     return;
 }
 
 static void HDSDPIGetDefaultParams( hdsdp *HSolver ) {
     
     set_int_param(HSolver, INT_PARAM_MAXITER, 500);
-    set_int_param(HSolver, INT_PARAM_CORRECTORA, 6);
+    set_int_param(HSolver, INT_PARAM_CORRECTORA, 4);
     set_int_param(HSolver, INT_PARAM_CORRECTORB, 0);
+    set_int_param(HSolver, INT_PARAM_THREADS, 8);
     
     set_dbl_param(HSolver, DBL_PARAM_ABSOPTTOL, 1e-08);
     set_dbl_param(HSolver, DBL_PARAM_ABSFEASTOL, 1e-08);
@@ -176,8 +188,8 @@ static void HDSDPIGetDefaultParams( hdsdp *HSolver ) {
     set_dbl_param(HSolver, DBL_PARAM_DUALBOX_UP, 1e+07);
     set_dbl_param(HSolver, DBL_PARAM_DUALBOX_LOW, -1e+07);
     set_dbl_param(HSolver, DBL_PARAM_BARMUSTART, 1e+05);
-    set_dbl_param(HSolver, DBL_PARAM_POBJSTART, 1e+10);
-    set_dbl_param(HSolver, DBL_PARAM_DUALSTART, 1.0);
+    set_dbl_param(HSolver, DBL_PARAM_POBJSTART, 1e+05);
+    set_dbl_param(HSolver, DBL_PARAM_DUALSTART, 1e+05);
     set_dbl_param(HSolver, DBL_PARAM_TRXESTIMATE, 1e+08);
     
     return;
@@ -189,6 +201,7 @@ static void HDSDPIPrintParams( hdsdp *HSolver ) {
     print_int_param(HSolver, INT_PARAM_MAXITER, "Maximum iteration");
     print_int_param(HSolver, INT_PARAM_CORRECTORA, "Infeasible corrector");
     print_int_param(HSolver, INT_PARAM_CORRECTORB, "Feasible corrector");
+    print_int_param(HSolver, INT_PARAM_THREADS, "Threads");
     
     print_dbl_param(HSolver, DBL_PARAM_ABSOPTTOL, "Abs optimality");
     print_dbl_param(HSolver, DBL_PARAM_RELOPTTOL, "Rel optimality");
@@ -236,8 +249,9 @@ static void HDSDPIPrintSolutionStats( hdsdp *HSolver ) {
         assert( 0 );
     }
     
-    hdsdp_printf("Primal Obj: %+10.10e\n", HSolver->pObjVal);
-    hdsdp_printf("Dual Obj  : %+10.10e\n", HSolver->dObjVal);
+    hdsdp_printf("Primal Obj: %+20.10e\n", HSolver->pObjVal);
+    hdsdp_printf("Dual Obj  : %+20.10e\n", HSolver->dObjVal);
+    hdsdp_printf("PD Gap    : %+20.10e\n", (HSolver->pObjVal - HSolver->dObjVal) / (fabs(HSolver->pObjVal) + fabs(HSolver->dObjVal) + 1.0));
     hdsdp_printf("\n");
     
     return;
@@ -309,6 +323,12 @@ extern hdsdp_retcode HDSDPInit( hdsdp *HSolver, int nRows, int nCones ) {
     
     HDSDP_INIT(HSolver->dHAuxiVec2, double, nRows);
     HDSDP_MEMCHECK(HSolver->dHAuxiVec2);
+    
+    HDSDP_INIT(HSolver->dPInfeasUpper, double, nRows);
+    HDSDP_MEMCHECK(HSolver->dPInfeasUpper);
+    
+    HDSDP_INIT(HSolver->dPInfeasLower, double, nRows);
+    HDSDP_MEMCHECK(HSolver->dPInfeasLower);
     
     HDSDP_INIT(HSolver->dAccRowDualMaker, double, nRows);
     HDSDP_MEMCHECK(HSolver->dAccRowDualMaker);
@@ -410,6 +430,8 @@ extern hdsdp_retcode HDSDPOptimize( hdsdp *HSolver, int dOptOnly ) {
     HDSDPIPrintStatistics(HSolver);
     HDSDPIPrintParams(HSolver);
     
+    hdsdp_printf("Optimizing over %d threads \n", get_int_param(HSolver, INT_PARAM_THREADS));
+    
     /* Invoke solver */
     retcode = HDSDPSolve(HSolver, dOptOnly);
     HDSDPIPrintSolutionStats(HSolver);
@@ -503,6 +525,8 @@ extern void HDSDPClear( hdsdp *HSolver ) {
     HDSDP_FREE(HSolver->dMinvASinvCSinv);
     HDSDP_FREE(HSolver->dHAuxiVec1);
     HDSDP_FREE(HSolver->dHAuxiVec2);
+    HDSDP_FREE(HSolver->dPInfeasUpper);
+    HDSDP_FREE(HSolver->dPInfeasLower);
     HDSDP_FREE(HSolver->dInaccRowDualMaker);
     HDSDP_FREE(HSolver->dAccRowDualMaker);
     HDSDP_FREE(HSolver->dInaccRowDualStepMaker);

@@ -65,8 +65,8 @@ extern hdsdp_retcode HConeSetData( hdsdp_cone *HCone, user_data *usrData ) {
             set_func_pointer(HCone->coneReduceResi, sBoundConeReduceResidual);
             set_func_pointer(HCone->coneSetPerturb, sBoundConeSetPerturb);
             set_func_pointer(HCone->conePFeasCheck, NULL);
-            set_func_pointer(HCone->conePRecover, NULL);
-            set_func_pointer(HCone->coneView, sdpDenseConeViewImpl);
+            set_func_pointer(HCone->conePRecover, sBoundConeGetPrimal);
+            set_func_pointer(HCone->coneView, sBoundConeViewImpl);
             break;
         case HDSDP_CONETYPE_LP:
             set_func_pointer(HCone->coneCreate, NULL);

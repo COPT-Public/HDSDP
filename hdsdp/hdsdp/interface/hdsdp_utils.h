@@ -103,6 +103,9 @@ extern void HUtilStartCtrlCCheck( void );
 extern int HUtilCheckCtrlC( void );
 extern void HUtilResetCtrl( void );
 
+extern int HUtilGetGlobalMKLThreads( void );
+extern void HUtilSetGlobalMKLThreads( int nTargetThreads );
+
 hdsdp_retcode HUtilKKTCheck( void *kkt );
 
 #ifdef __cplusplus

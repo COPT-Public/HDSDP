@@ -205,13 +205,12 @@ extern hdsdp_retcode sBoundConeGetKKT( hdsdp_cone_bound_scalar *cone, void *kkt,
         cone->dualUpperInverse[iRow] = 1.0 / cone->dualUpper[iRow];
     }
     
+    for ( int iRow = 0; iRow < Hkkt->nRow; ++iRow ) {
+        Hkkt->dASinvVec[iRow] -= cone->dualLowerInverse[iRow];
+        Hkkt->dASinvVec[iRow] += cone->dualUpperInverse[iRow];
+    }
+    
     if ( typeKKT == KKT_TYPE_CORRECTOR ) {
-        /* We need to set up kkt->dASinvVec for the corrector step */
-        for ( int iRow = 0; iRow < Hkkt->nRow; ++iRow ) {
-            Hkkt->dASinvVec[iRow] -= cone->dualLowerInverse[iRow] ;
-            Hkkt->dASinvVec[iRow] += cone->dualUpperInverse[iRow];
-        }
-
         return HDSDP_RETCODE_OK;
     }
     
@@ -401,7 +400,7 @@ extern hdsdp_retcode sBoundConeAddStepToBufferAndCheck( hdsdp_cone_bound_scalar 
     return HDSDP_RETCODE_OK;
 }
 
-extern hdsdp_retcode sBoundConeGetPrimal( hdsdp_cone_bound_scalar *cone, double dBarrierMu, double *dRowDual, double *dRowDualStep, double *dBoundLowerPrimal, double *dBoundUpperPrimal ) {
+extern void sBoundConeGetPrimal( hdsdp_cone_bound_scalar *cone, double dBarrierMu, double *dRowDual, double *dRowDualStep, double *dBoundLowerPrimal, double *dBoundUpperPrimal ) {
     
     
     double dRowDualStepElem = 0.0;
@@ -409,7 +408,7 @@ extern hdsdp_retcode sBoundConeGetPrimal( hdsdp_cone_bound_scalar *cone, double 
     double dualUpperElem = 0.0;
     
     for ( int iRow = 0; iRow < cone->nRow; ++iRow ) {
-        dRowDualStepElem = dRowDualStep[iRow];
+        dRowDualStepElem = - dRowDualStep[iRow];
         dualUpperElem = cone->dBoundUp - dRowDual[iRow];
         dualLowerElem = dRowDual[iRow] - cone->dBoundLow;
         dBoundLowerPrimal[iRow] = 1.0 / dualLowerElem - dRowDualStepElem / ( dualLowerElem * dualLowerElem );
@@ -418,7 +417,7 @@ extern hdsdp_retcode sBoundConeGetPrimal( hdsdp_cone_bound_scalar *cone, double 
         dBoundUpperPrimal[iRow] *= dBarrierMu;
     }
     
-    return HDSDP_RETCODE_OK;
+    return;
 }
 
 extern void sBoundConeClearImpl( hdsdp_cone_bound_scalar *cone ) {

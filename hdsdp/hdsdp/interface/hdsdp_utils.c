@@ -425,3 +425,18 @@ exit_cleanup:
     
     return retcode;
 }
+
+extern int MKL_Get_Max_Threads( void );
+extern int MKL_Set_Num_Threads( int nth );
+
+extern int HUtilGetGlobalMKLThreads( void ) {
+    
+    return MKL_Get_Max_Threads();
+}
+
+extern void HUtilSetGlobalMKLThreads( int nTargetThreads ) {
+    
+    MKL_Set_Num_Threads(nTargetThreads);
+    
+    return;
+}

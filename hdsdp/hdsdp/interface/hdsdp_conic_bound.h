@@ -32,7 +32,7 @@ extern void sBoundConeReduceResidual( hdsdp_cone_bound_scalar *cone, double dumm
 extern void sBoundConeSetPerturb( hdsdp_cone_bound_scalar *cone, double dummy );
 extern hdsdp_retcode sBoundConeGetBarrier( hdsdp_cone_bound_scalar *cone, double barHsdTau, double *rowDual, int whichBuffer, double *logdet );
 extern hdsdp_retcode sBoundConeAddStepToBufferAndCheck( hdsdp_cone_bound_scalar *cone, double dStep, int whichBuffer, int *isInterior );
-extern hdsdp_retcode sBoundConeGetPrimal( hdsdp_cone_bound_scalar *cone, double dBarrierMu, double *dRowDual, double *dRowDualStep, double *dBoundLowerPrimal, double *dBoundUpperPrimal );
+extern void sBoundConeGetPrimal( hdsdp_cone_bound_scalar *cone, double dBarrierMu, double *dRowDual, double *dRowDualStep, double *dBoundLowerPrimal, double *dBoundUpperPrimal );
 extern void sBoundConeClearImpl( hdsdp_cone_bound_scalar *cone );
 extern void sBoundConeDestroyImpl( hdsdp_cone_bound_scalar **pCone );
 extern void sBoundConeViewImpl( hdsdp_cone_bound_scalar *cone );

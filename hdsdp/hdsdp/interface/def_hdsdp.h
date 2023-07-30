@@ -90,6 +90,8 @@ struct hdsdp_solver_internal {
     double dDStep;
     double dResidual;
     double dPerturb;
+    double *dPInfeasUpper;
+    double *dPInfeasLower;
     
     /* Convergence criterion */
     double dAllConeDims;
@@ -111,6 +113,7 @@ struct hdsdp_solver_internal {
     double *dInaccRowDualStepMaker;
     double dInaccBarrierMaker;
     
+    /* Starting time */
     double dTimeBegin;
     
     hdsdp_status HStatus;

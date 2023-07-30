@@ -64,6 +64,7 @@ typedef struct hdsdp_solver_internal hdsdp;
 #define INT_PARAM_MAXITER       0
 #define INT_PARAM_CORRECTORA    1
 #define INT_PARAM_CORRECTORB    2
+#define INT_PARAM_THREADS       3
 
 // Double Parameters
 #define DBL_PARAM_RELFEASTOL    0
