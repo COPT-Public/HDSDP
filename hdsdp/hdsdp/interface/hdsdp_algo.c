@@ -451,7 +451,7 @@ static hdsdp_retcode HDSDP_PhaseA_BarHsdSolve( hdsdp *HSolver, int dOnly ) {
         
         /* Afterwards, we set up the Schur complement system */
         HDSDP_CALL(HKKTBuildUp(HSolver->HKKT, KKT_TYPE_HOMOGENEOUS));
-        HKKTRegularize(HSolver->HKKT, 1e-05);
+        // HKKTRegularize(HSolver->HKKT, 0.0);
         
         /* Then we export information needed */
         HKKTExport(HSolver->HKKT, HSolver->dMinvASinv, HSolver->dMinvASinvRdSinv,
@@ -1648,7 +1648,7 @@ static hdsdp_retcode HDSDP_PhaseB_BarDualPotentialSolve( hdsdp *HSolver ) {
         /* Build up Schur complement */
         HDSDP_CALL(HKKTBuildUp(HSolver->HKKT, KKT_TYPE_INFEASIBLE));
         HDSDP_CALL(HKKTBuildUpExtraCone(HSolver->HKKT, HSolver->HBndCone, KKT_TYPE_INFEASIBLE));
-        HKKTRegularize(HSolver->HKKT, 1e-05);
+        // HKKTRegularize(HSolver->HKKT, 0.0);
 #if 0
         HDSDP_CALL(HUtilKKTCheck(HSolver->HKKT));
 #endif
