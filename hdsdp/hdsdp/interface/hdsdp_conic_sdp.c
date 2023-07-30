@@ -31,7 +31,7 @@
 #endif
 
 #ifndef SPARSE_DUAL_THRESHOLD
-#define SPARSE_DUAL_THRESHOLD (0.4)
+#define SPARSE_DUAL_THRESHOLD (0.6)
 #endif
 static hdsdp_retcode sdpDenseConeIAllocDualMat( hdsdp_cone_sdp_dense *cone ) {
     /* This routine allocates the dual information for a dense SDP cone
@@ -556,9 +556,9 @@ static int sdpDenseConeIChooseKKTStrategy( int *rowRanks, int *rowSparsity, int 
     
     /* Compute the score function */
     KKTScore2 = rowRank * ((double) rowSparsity[iPerm] * nCol + 3 * SPARSE_EFFICIENCY * nNzAfter);
-    KKTScore3 = (double) nCol * SPARSE_EFFICIENCY * rowSparsity[iPerm] + nCubed + SPARSE_EFFICIENCY * nNzAfter;
-    KKTScore4 = (double) nCol * SPARSE_EFFICIENCY * rowSparsity[iPerm] + SPARSE_EFFICIENCY * (nCol + 1) * nNzAfter;
-    KKTScore5 = SPARSE_EFFICIENCY * (2.0 * SPARSE_EFFICIENCY * rowSparsity[iPerm] + 1) * nNzAfter;
+    KKTScore3 = (double) nCol * SPARSE_EFFICIENCY * rowSparsity[iPerm] + nCubed + SPARSE_EFFICIENCY * nNzAfter + nCubed / nRow;
+    KKTScore4 = (double) nCol * SPARSE_EFFICIENCY * rowSparsity[iPerm] + SPARSE_EFFICIENCY * (nCol + 1) * nNzAfter + nCubed / nRow;
+    KKTScore5 = SPARSE_EFFICIENCY * (2.0 * SPARSE_EFFICIENCY * rowSparsity[iPerm] + 1) * nNzAfter + nCubed / nRow;
         
     /* Choose the best KKT strategy */
     if ( KKTScore2 <= bestKKTScore ) {
@@ -646,6 +646,16 @@ static hdsdp_retcode sdpDenseConeIGetKKTOrdering( hdsdp_cone_sdp_dense *cone ) {
         sdpDenseConeIChooseKKTStrategy(rowRanks, rowSparsity,
                                        cone->sdpConePerm, cone->nRow, cone->nCol, iPerm);
     }
+    
+#if 1
+    int KKTMethods[5] = {0};
+    for ( int iRow = 0; iRow < cone->nRow; ++iRow ) {
+        KKTMethods[cone->KKTStrategies[iRow]] += 1;
+    }
+    printf("    M1: %d M2: %d M3: %d M4: %d M5: %d \n",
+           KKTMethods[0], KKTMethods[1], KKTMethods[2], KKTMethods[3], KKTMethods[4]);
+    
+#endif
     
 exit_cleanup:
         

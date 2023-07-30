@@ -39,6 +39,8 @@ static hdsdp_retcode pardisoLinSolverCreate( void **pchol, int nCol ) {
     set_pardiso_param(pds->iparm, PARDISO_PARAM_PERTURBATION, 13);
     /* Solve in-place*/
     set_pardiso_param(pds->iparm, PARDISO_PARAM_INPLACE, 1);
+    /* Refinement */
+    set_pardiso_param(pds->iparm, PARDISO_PARAM_REFINEMENT, 0);
     /* Use 0-based index*/
     set_pardiso_param(pds->iparm, PARDISO_PARAM_INDEX, PARDISO_PARAM_INDEX_C);
     /* Get diagonal elements */
@@ -56,7 +58,7 @@ static void pardisoLinSolverSetThreads( void *chol, void *pThreads ) {
     pardiso_linsys *pds = (pardiso_linsys *) chol;
     
     int nThreads = *((int *) pThreads);
-    set_pardiso_param(pds->iparm, PARDISO_PARAM_THREADS, nThreads);
+    // set_pardiso_param(pds->iparm, PARDISO_PARAM_THREADS, nThreads);
     
     return;
 }
