@@ -16,19 +16,22 @@
 
 //#define HDSDP_LANCZOS_DEBUG
 //#define HDSDP_CONIC_DEBUG
-#define HDSDP_KKT_DEBUG
-#define HDSDP_LINSYS_DEBUG
-#define HDSDP_CONJGRAD_DEBUG
-#define KKT_ACCURACY (1e-08)
+//#define HDSDP_KKT_DEBUG
+//#define HDSDP_LINSYS_DEBUG
+//#define HDSDP_CONJGRAD_DEBUG
+//#define HDSDP_ALGO_DEBUG
+#define KKT_ACCURACY (1e-06)
 #define HDSDP_SPARSE_CONE_THRESHOLD  (0.3)
 #define HDSDP_SPARSE_SCHUR_THRESHOLD (0.3)
 
+#ifdef MEMORY_DEBUG
 #ifndef MEMWATCH
 #define MEMWATCH
 #ifdef HEADERPATH
 #include "external/memwatch.h"
 #else
 #include "memwatch.h"
+#endif
 #endif
 #endif
 

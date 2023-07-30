@@ -199,6 +199,11 @@ int test_solver( char *fname ) {
                          &coneMatIdx, &coneMatElem, &nCols, &nLpCols, &LpMatBeg,
                          &LpMatIdx, &LpMatElem, &nElem));
     
+    if ( nLpCols > 0 ) {
+        printf("LP Cone is being developed. \n");
+        goto exit_cleanup;
+    }
+    
     printf("Reading SDPA file in %f seconds \n", HUtilGetTimeStamp() - timeStart);
     
     HDSDP_INIT(SDPDatas, user_data *, nBlks);
