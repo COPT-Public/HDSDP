@@ -1210,7 +1210,7 @@ extern void HFpLinsysSetParam( hdsdp_linsys_fp *HLin, double relTol, double absT
         iterative_params params;
         params.absTol = absTol;
         params.relTol = relTol;
-        params.maxIter = relTol;
+        params.maxIter = maxIter;
         params.nRestartFreq = nRestartFreq;
         HLin->cholSetParam(HLin->chol, &params);
         

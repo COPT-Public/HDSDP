@@ -260,6 +260,18 @@ static void HDSDPIAdjustParams( hdsdp *HSolver ) {
         nCorrA = 6;
     }
     
+    if ( HSolver->nRows > 20 * get_int_feature(HSolver, INT_FEATURE_N_MAXCONEDIM) ) {
+        nCorrB = HDSDP_MAX(nCorrB, 12);
+        nCorrA = 12;
+    } else if ( HSolver->nRows > 5 * get_int_feature(HSolver, INT_FEATURE_N_MAXCONEDIM) ) {
+        nCorrB = HDSDP_MAX(nCorrB, 10);
+        nCorrA = 10;
+    } else if ( HSolver->nRows > 2 * get_int_feature(HSolver, INT_FEATURE_N_MAXCONEDIM) ) {
+        nCorrB = HDSDP_MAX(nCorrB, 8);
+        nCorrA = 8;
+    }
+    
+    nCorrB = HDSDP_MIN(nCorrB, 12);
     nCorrA = HDSDP_MAX(nCorrA, 2);
 
     set_int_param(HSolver, INT_PARAM_CORRECTORA, nCorrA);

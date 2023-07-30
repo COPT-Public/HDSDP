@@ -17,7 +17,22 @@ static hdsdp_retcode HKKTIAllocDenseKKT( hdsdp_kkt *HKKT ) {
     HDSDP_MEMCHECK(HKKT->kktMatElem);
     
     HDSDP_CALL(HFpLinsysCreate(&HKKT->kktM, HKKT->nRow, HDSDP_LINSYS_DENSE_ITERATIVE));
-    HFpLinsysSetParam(HKKT->kktM, 5.0 * KKT_ACCURACY, KKT_ACCURACY, -1, -1, -1);
+    
+    double dCGAcc = KKT_ACCURACY;
+    int nCGIteration = -1;
+    
+    if ( HKKT->nRow > 20000 ) {
+        dCGAcc = KKT_ACCURACY * 100.0;
+        nCGIteration = 500;
+    } else if ( HKKT->nRow > 15000 ) {
+        dCGAcc = KKT_ACCURACY * 50.0;
+        nCGIteration = 450;
+    } else if ( HKKT->nRow > 5000 ) {
+        dCGAcc = KKT_ACCURACY * 5.0;
+        nCGIteration = 120;
+    }
+    
+    HFpLinsysSetParam(HKKT->kktM, 5.0 * dCGAcc, dCGAcc, -1, nCGIteration, -1);
     
     /* Mark the diagonal entries of the KKT solver */
     for ( int iCol = 0; iCol < HKKT->nRow; ++iCol ) {
