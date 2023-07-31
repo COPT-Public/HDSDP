@@ -5,16 +5,20 @@ years of computational experience and {{\texttt{HDSDP}}} aims to achieve
 further improvement on a special class of SDPs where dual method has
 advantage over the primal-dual solvers. In this section, we introduce several
 classes of SDPs suitable for the dual method and we compare the performance
-of {{\texttt{HDSDP}}}, {{\texttt{DSDP5.8}}} and \text{{\ttfamily{COPT 5.0}}} (fastest solver on Mittelmann's benchmark implementing both primal-dual and dual method) on
+of {{\texttt{HDSDP}}}, {{\texttt{DSDP5.8}}} and \text{{\ttfamily{COPT 6.5}}} (fastest solver on Mittelmann's benchmark implementing both primal-dual and dual method) on
 several benchmark datasets to verify the performance improvement of
 {{\texttt{HDSDP}}}. For each problem, we only describe the mathematical model
 and refer the readers to
 {\cite{mittelmann2003independent,borchers1999sdplib}} for the detailed
-background and formulation. The time statistics in this section are obtained
+background and formulation. 
+
+The time statistics in this section are obtained
 using \text{{\ttfamily{Intel(R) Xeon(R) CPU E5-2640 v4 @ 2.40GHz}}} with
 \text{{\ttfamily{64GB}}} memory.
 
-\subsection{Maximum-cut}
+\subsection{Experiment Setup}
+
+\subsection{Maximum Cut}
 
 The SDP relaxation of the max-cut problem is represented by
 \begin{eqnarray*}
@@ -29,11 +33,12 @@ is rank-one and has only one non-zero entry, {\textbf{M2}} and
 {\textbf{M5}} can greatly reduce the computation of the Schur matrix.
 
 \begin{table}[h]
-  \begin{tabular}{c|c|c|c|c|c|c|c}
+  \caption{Max-cut problems}
+  \begin{tabular}{cccccccc}
     \hline
     Instance & {{\texttt{HDSDP}}} & {{\texttt{DSDP5.8}}} & \text{{\ttfamily{COPT
-    v5.0}}} & Instance & {{\texttt{HDSDP}}} & {{\texttt{DSDP5.8}}} &
-    \text{{\ttfamily{COPT v5.0}}}\\
+    v6.5}}} & Instance & {{\texttt{HDSDP}}} & {{\texttt{DSDP5.8}}} &
+    \text{{\ttfamily{COPT v6.5}}}\\
     \hline
     \text{{\ttfamily{mcp100}}} & \textcolor{red}{0.03} & \textcolor{red}{0.03} & 0.12 & \text{{\ttfamily{maxG51}}} & \textcolor{red}{1.46} &
     4.65 & 5.97\\
@@ -67,7 +72,6 @@ is rank-one and has only one non-zero entry, {\textbf{M2}} and
     \textcolor{red}{19.27} & 91.67 & 117.92\\
     \hline
   \end{tabular}
-  \caption{Max-cut problems}
 \end{table}
 
 Computational experience suggests that on large-scale max-cut instances, {{\texttt{HDSDP}}} 
@@ -77,9 +81,9 @@ is $2\sim3$ times faster than {{\texttt{DSDP5.8}}}.
 
 The SDP relaxation of the graph partitioning problem is given by
 \begin{eqnarray*}
-  \min_{\mathbf{X}} & \left\langle \mathbf{C}, \mathbf{X} \right\rangle & \\
+  \min_{\mathbf{X}} & \langle \mathbf{C}, \mathbf{X} \rangle & \\
   \text{subject to} & \ensuremath{\operatorname{diag}} \left( \mathbf{X} \right) = \textbf{1} & \\
-  & \left\langle \textbf{{\textbf{1}}1}^{\top}, \mathbf{X} \right\rangle = \beta &
+  & \langle \textbf{{\textbf{1}}1}^{\top}, \mathbf{X} \rangle = \beta &
   \\
   & k \mathbf{X} - \textbf{{\textbf{1}}1}^{\top} \succeq \textbf{0} & \\
   & \mathbf{X} \geq \textbf{0}, & 
@@ -89,11 +93,12 @@ parameters. Although the dual $\mathbf{S}$ no longer enjoys sparsity, the low-ra
 structure is still available to accelerate convergence.
 
 \begin{table}[h]
+  \caption{Graph partitioning problems}
   \begin{tabular}{c|c|c|c|c|c|c|c}
     \hline
     Instance & {{\texttt{HDSDP}}} & {{\texttt{DSDP5.8}}} & \text{{\ttfamily{COPT
     v5.0}}} & Instance & {{\texttt{HDSDP}}} & {{\texttt{DSDP5.8}}} &
-    \text{{\ttfamily{COPT v5.0}}}\\
+    \text{{\ttfamily{COPT v6.5}}}\\
     \hline
     \text{{\ttfamily{gpp100}}} & \textcolor{red}{0.03} & 0.04 & 0.19 & \text{{\ttfamily{gpp250-4}}} & 0.19 &
     \textcolor{red}{0.16} & 1.21\\
@@ -113,7 +118,6 @@ structure is still available to accelerate convergence.
     \text{{\ttfamily{Failed}}} & \text{{\ttfamily{Failed}}} & \text{{\ttfamily{Failed}}}\\
     \hline
   \end{tabular}
-  \caption{Graph partitioning problems}
 \end{table}
 On graph partitioning, we see that {{\texttt{HDSDP}}} has comparable performance to {{\texttt{DSDP}}} but is more robust on some problems.
 
@@ -121,8 +125,8 @@ On graph partitioning, we see that {{\texttt{HDSDP}}} has comparable performance
 
 The optimal diagonal pre-conditioning problem originates from
 {\cite{qu2020diagonal}}, where given a matrix $\mathbf{B} \succ \textbf{0}$, finding a
-diagonal matrix $\mathbf{D}$ to minimize the condition number $\kappa \left(
-\mathbf{D}^{- 1 / 2} \mathbf{B} \mathbf{D}^{- 1 / 2} \right)$ can be modeled as an
+diagonal matrix $\mathbf{D}$ to minimize the condition number $\kappa (
+\mathbf{D}^{- 1 / 2} \mathbf{B} \mathbf{D}^{- 1 / 2} )$ can be modeled as an
 SDP. The formulation for optimal diagonal pre-conditioning is given by
 \begin{eqnarray*}
   \max_{\tau, \mathbf{D}} & \tau & \\
@@ -134,6 +138,7 @@ in the SDP dual form. If $\mathbf{B}$ is also sparse, the problem can be
 efficiently solved using the dual method.
 \begin{table}[h]
 \centering
+  \caption{Optimal diagonal pre-conditioning problems}
   \begin{tabular}{c|c|c|c}
     \hline
     Instance & {{\texttt{HDSDP}}} & {{\texttt{DSDP5.8}}} & \text{{\ttfamily{COPT
@@ -148,77 +153,76 @@ efficiently solved using the dual method.
     \text{{\ttfamily{diag-bench-micromass\_10NN}}} & \textcolor{red}{9.35} & 60.127 & 51.71\\
     \hline
   \end{tabular}
-  \caption{Optimal diagonal pre-conditioning problems}
 \end{table}
 When the matrix $\mathbf{B}$ is large and sparse, 
-we see that {{\texttt{HDSDP}}} dominates the performance of {{\texttt{DSDP}}} due to the Schur complement tricks.
+we see that {{\texttt{HDSDP}}} dominates the performance of {{\texttt{DSDP}}} due to the Schur complement techniques.
 
-\begin{remark}
-For optimal pre-conditioning, we start {{\texttt{HDSDP}}} from
-  a non-default trivial dual feasible solution $\tau = - 10^6, \mathbf{D} =
-  \mathbf{0}$.
-\end{remark}
+%\begin{remark}
+%For optimal pre-conditioning, we start {{\texttt{HDSDP}}} from
+%  a non-default trivial dual feasible solution $\tau = - 10^6, \mathbf{D} =
+%  \mathbf{0}$.
+%\end{remark}
 
-\subsection{Other Problems}
-
-So far {{\texttt{HDSDP}}} is tested and tuned over a large set of benchmarks
-including \text{{\ttfamily{SDPLIB}}} {\cite{borchers1999sdplib}} and Hans
-Mittelmann's sparse SDP benchmark {\cite{mittelmann2003independent}}. By the time this manuscript is written, {{\texttt{HDSDP}}} is the fourth fastest among all the benchmarked solvers.
-\begin{center}
-\begin{lstlisting}
-			Scaled shifted geometric means of runtimes ("1" is fastest solver)
-            			      1    2.30     4.61     2.28     12.3     3.72
-			----------------------------------------------------------------
-			count of "a"      8       5       17       13        2       11
-			solved of 75     74      70       61       69       64       70
-			================================================================
-			problem        COPT    CSDP     SDPA    SDPT3   SeDuMi    HDSDP
-			================================================================
-\end{lstlisting}	
-\end{center}
-
-We report the solution accuracy and local CPU time of {{\texttt{HDSDP}}} on
-Mittlelmann's benchmark in the appendix. Readers can refer to
-{\cite{mittelmann2003independent}} for a detailed explanation of the error
-measures and the criterion of a successful solve. Among all of 75 problems, 70
-are successfully solved; 3 problems fail due to insufficient memory, 1 fails due to failure to 
-find a feasible dual solution and 1 fails
- due to error in primal solution recovery. The benchmark test proves the
-efficiency and robustness of {{\texttt{HDSDP}}} as a general purpose SDP
-solver. Below we present some benchmark datasets with nice structure
-for {{\texttt{HDSDP}}}. They enjoy at least one of sparsity and low-rank
-structure.
-
-\begin{table}[h]
-\centering
-  \begin{tabular}{c|c|c|c|c|c}
-    \hline
-    Instance & Background & Feature & {{\texttt{HDSDP}}} &
-    {{\texttt{DSDP5.8}}} & \text{{\ttfamily{COPT v5.0}}}\\
-    \hline
-    \text{{\ttfamily{checker\_1.5}}} & unknown & sparse, low-rank & \textcolor{red}{55.38} & 146.80 &
-    137.15\\
-    \text{{\ttfamily{foot}}} & unknown & sparse, low-rank & \textcolor{red}{25.76} & 23.83 & 262.54\\
-    \text{{\ttfamily{hand}}} & unknown & low-rank & \textcolor{red}{5.60} & 5.57 & 50.70\\
-    \text{{\ttfamily{ice\_2.0}}} & unknown & low-rank & \textcolor{red}{706.16} & 1106.00 & 1542.96\\
-    \text{{\ttfamily{p\_auss2\_3.0}}} & unknown & sparse, low-rank & \textcolor{red}{739.40} & 1066.00
-    & 1111.72\\
-    \text{{\ttfamily{rendl1\_2000\_1e-6}}} & unknown & low-rank & \textcolor{red}{15.74} & 22.31 &
-    231.80\\
-    \text{{\ttfamily{trto3}}} & topology design & sparse, low-rank & \textcolor{red}{1.67} & 1.73 &
-    3.04\\
-    \text{{\ttfamily{trto4}}} & topology design & sparse, low-rank & \textcolor{red}{12.28} & 12.40 &
-    30.09\\
-    \text{{\ttfamily{trto5}}} & topology design & sparse, low-rank & \textcolor{red}{111.59} & 151.00 &
-    233.16\\
-    \text{{\ttfamily{sensor\_500b}}} & sensor network localization & sparse, low-rank
-    & 86.73 & {37.87} & \textcolor{red}{7.01}\\
-    \text{{\ttfamily{sensor\_1000b}}} & sensor network localization & sparse,
-    low-rank & 232.05 & {143.32} & \textcolor{red}{32.27}\\
-    \hline
-  \end{tabular}
-  \caption{Feature of several benchmark problems}
-\end{table}
+%\subsection{Other Problems}
+%
+%So far {{\texttt{HDSDP}}} is tested and tuned over a large set of benchmarks
+%including \text{{\ttfamily{SDPLIB}}} {\cite{borchers1999sdplib}} and Hans
+%Mittelmann's sparse SDP benchmark {\cite{mittelmann2003independent}}. By the time this manuscript is written, {{\texttt{HDSDP}}} is the fourth fastest among all the benchmarked solvers.
+%\begin{center}
+%\begin{lstlisting}
+%			Scaled shifted geometric means of runtimes ("1" is fastest solver)
+%            			      1    2.30     4.61     2.28     12.3     3.72
+%			----------------------------------------------------------------
+%			count of "a"      8       5       17       13        2       11
+%			solved of 75     74      70       61       69       64       70
+%			================================================================
+%			problem        COPT    CSDP     SDPA    SDPT3   SeDuMi    HDSDP
+%			================================================================
+%\end{lstlisting}	
+%\end{center}
+%
+%We report the solution accuracy and local CPU time of {{\texttt{HDSDP}}} on
+%Mittlelmann's benchmark in the appendix. Readers can refer to
+%{\cite{mittelmann2003independent}} for a detailed explanation of the error
+%measures and the criterion of a successful solve. Among all of 75 problems, 70
+%are successfully solved; 3 problems fail due to insufficient memory, 1 fails due to failure to 
+%find a feasible dual solution and 1 fails
+% due to error in primal solution recovery. The benchmark test proves the
+%efficiency and robustness of {{\texttt{HDSDP}}} as a general purpose SDP
+%solver. Below we present some benchmark datasets with nice structure
+%for {{\texttt{HDSDP}}}. They enjoy at least one of sparsity and low-rank
+%structure.
+%
+%\begin{table}[h]
+%\centering
+%  \begin{tabular}{c|c|c|c|c|c}
+%    \hline
+%    Instance & Background & Feature & {{\texttt{HDSDP}}} &
+%    {{\texttt{DSDP5.8}}} & \text{{\ttfamily{COPT v6.5}}}\\
+%    \hline
+%    \text{{\ttfamily{checker\_1.5}}} & unknown & sparse, low-rank & \textcolor{red}{55.38} & 146.80 &
+%    137.15\\
+%    \text{{\ttfamily{foot}}} & unknown & sparse, low-rank & \textcolor{red}{25.76} & 23.83 & 262.54\\
+%    \text{{\ttfamily{hand}}} & unknown & low-rank & \textcolor{red}{5.60} & 5.57 & 50.70\\
+%    \text{{\ttfamily{ice\_2.0}}} & unknown & low-rank & \textcolor{red}{706.16} & 1106.00 & 1542.96\\
+%    \text{{\ttfamily{p\_auss2\_3.0}}} & unknown & sparse, low-rank & \textcolor{red}{739.40} & 1066.00
+%    & 1111.72\\
+%    \text{{\ttfamily{rendl1\_2000\_1e-6}}} & unknown & low-rank & \textcolor{red}{15.74} & 22.31 &
+%    231.80\\
+%    \text{{\ttfamily{trto3}}} & topology design & sparse, low-rank & \textcolor{red}{1.67} & 1.73 &
+%    3.04\\
+%    \text{{\ttfamily{trto4}}} & topology design & sparse, low-rank & \textcolor{red}{12.28} & 12.40 &
+%    30.09\\
+%    \text{{\ttfamily{trto5}}} & topology design & sparse, low-rank & \textcolor{red}{111.59} & 151.00 &
+%    233.16\\
+%    \text{{\ttfamily{sensor\_500b}}} & sensor network localization & sparse, low-rank
+%    & 86.73 & {37.87} & \textcolor{red}{7.01}\\
+%    \text{{\ttfamily{sensor\_1000b}}} & sensor network localization & sparse,
+%    low-rank & 232.05 & {143.32} & \textcolor{red}{32.27}\\
+%    \hline
+%  \end{tabular}
+%  \caption{Feature of several benchmark problems}
+%\end{table}
 
 \subsection{Summary}
 {{\texttt{HDSDP}}} implements data structures and computational techniques specially optimized for \textit{sparse} SDPs with \textit{low-rank} constraint structure. Vast computational experiments suggests that on these problems {{\texttt{HDSDP}}} outperforms both primal-dual and conventional dual solvers in terms of efficiency and robustness on these instances. 
@@ -231,7 +235,7 @@ more tractable in the dual form than by the primal-dual methods. This is
 the principle for the techniques implemented by {{\texttt{HDSDP}}}.
 Here are some rules in mind when deciding whether to use the dual method (or
 {{\texttt{HDSDP}}}).
-\begin{enumerate}
+\begin{enumerate}[leftmargin=20pt]
   \item Does the problem enjoys nice dual structure?
   
   Many combinatorial problems have formulations friendly to the dual methods.
@@ -262,9 +266,7 @@ Here are some rules in mind when deciding whether to use the dual method (or
   The first phase of {{\texttt{HDSDP}}} adopts the infeasible Newton's method
   and focuses on eliminating the dual infeasibility. This principle works well
   if the dual constraints are relatively easy to satisfy, but if this
-  condition fails to hold (e.g., empty dual interior), experiments suggest the embedding
+  condition fails to hold (for example, empty dual interior), experiments suggest the embedding
   spend a long time deciding feasibility. In this case it is suggested using
   {{\texttt{DSDP5.8}}} or supply an initial dual solution.
 \end{enumerate}
-To conclude, {{\texttt{HDSDP}}} solves SDPs but it solves {{\em certain\/}}
-SDPs {{\em efficiently\/}}.
