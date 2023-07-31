@@ -5,9 +5,10 @@ Internally {{\texttt{HDSDP}}} deals with the following problem
   \min_{\mathbf{X}} & \left\langle \mathbf{C}, \mathbf{X} \right\rangle + \mathbf{u}^{\top} \mathbf{x}_u +
   \mathbf{l}^{\top} \mathbf{x}_l & \\
   \text{subject to} & \mathcal{A} \mathbf{X} + \mathbf{x}^u - \mathbf{x}^l = \mathbf{b} & \\
-  & \mathbf{X} \succeq \textbf{0}, \mathbf{x}_u \geq \textbf{0}, \mathbf{x}_l \geq \textbf{0} & 
+  & \mathbf{X} \succeq \textbf{0}, \mathbf{x}_u \geq \textbf{0}, \mathbf{x}_l \geq \textbf{0}. & 
 \end{eqnarray*}
-and together with its dual, the HSD embedding is
+
+Together with its dual, the embedding is given by
 \begin{align*}
   \mathcal{A} \mathbf{X} + \mathbf{x}^u - \mathbf{x}^l - \mathbf{b} \tau & = \textbf{0}\\
   - \mathcal{A}^{\ast} \mathbf{y} + \mathbf{C} \tau - \mathbf{S} & = \textbf{0}\\
@@ -15,17 +16,13 @@ and together with its dual, the HSD embedding is
   \mathbf{l}^{\top} \mathbf{x}_l - \kappa & = 0\\
   \mathbf{X}, \mathbf{S} \succeq 0, &  \kappa, \tau \geq 0,
 \end{align*}
-where the primal problem is relaxed by two slack variables with penalty
+
+\revised{where the primal problem is relaxed by two slack variables with penalty
 $\textbf{{\textbf{l}}}, \mathbf{u}$ to prevent $\mathbf{y}$ going too large. Using the embedding, 
 {{\texttt{HDSDP}}} needs no big-$M$ initialization
-in the dual variable and starts from arbitrary $\mathbf{S} \succ \textbf{0}, \tau > 0$. By default
-default $\mathbf{S}$ is initialized by a multiple of the identity matrix.
-One feature of the HSD embedding is its capability to
-detect infeasibility. Given infeasibility tolerance $\varepsilon_f$, {{\texttt{HDSDP}}}
-classifies the problem as primal unbounded, dual infeasible if $\left\| \mathbf{R}
+in the dual variable and starts from arbitrary $\mathbf{S} \succ \textbf{0}, \tau > 0$. By default {\texttt{HDSDP}} starts from $\tau = 1, \mathbf{y} = \mathbf{0}$ and $\mathbf{S}$ is initialized with $\mathbf{C} + 10^p\cdot\|\mathbf{C}\| \mathbf{I}$. One feature of the embedding is its capability to detect infeasibility.} Given infeasibility tolerance $\varepsilon_f$, {{\texttt{HDSDP}}} classifies the problem as primal unbounded, dual infeasible if $\left\| \mathbf{R}
 \right\|_F > \varepsilon_f \tau, \tau / \kappa < \varepsilon_f$ and $\mu /
-\mu_0 \leq \varepsilon_f^2$. If $\mathbf{R}$ is eliminated by {{\texttt{HDSDP}}}, then
-the embedding certificates dual feasibility. If $\mathbf{b}^{\top} \mathbf{y} >
+\mu_0 \leq \varepsilon_f^2$. If $\mathbf{b}^{\top} \mathbf{y} >
 \varepsilon_f^{- 1}$, then {{\texttt{HDSDP}}} begins checking if the Newton's
-step $\left( \Delta \mathbf{y}, \Delta \mathbf{S} \right)$ is a dual improving ray. Once a ray is detected, the problem is classified as primal
-infeasible dual unbounded.
+step $( \Delta \mathbf{y}, \Delta \mathbf{S} )$ is a dual improving ray. Once a ray is detected, the problem is classified as primal
+infeasible and dual unbounded.

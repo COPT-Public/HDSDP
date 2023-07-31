@@ -67,7 +67,7 @@ leverage the well-known HSD embedding.}
 
 \subsection{Dual-scaling Algorithm using Embedding Technique}
 Now we are ready to introduce the idea behind {{\texttt{HDSDP}}}.
-Given a standard form SDP, its homogeneous self-dual model is a skew symmetric system that contains the original problem data, whose non-trivial interior point solution certificates primal-dual feasibility. {\hdsdp} adopts the following simplified embedding system {\cite{potra1998homogeneous}}.
+Given a standard form SDP, its homogeneous self-dual model is a skew symmetric system that contains the original problem data, whose non-trivial interior point solution certificates primal-dual feasibility. {\texttt{HDSDP}} adopts the following simplified embedding system {\cite{potra1998homogeneous}}.
 \begin{align}
   \mathcal{A} \mathbf{X} - \mathbf{b} \tau ={} & \textbf{0} \nonumber\\
   - \mathcal{A}^{\ast} \mathbf{y} + \mathbf{C} \tau - \mathbf{S} ={} & \textbf{0}  \\
@@ -150,131 +150,41 @@ whose optimal solution is $\mathbf{X}' (\mu) := \mu \mathbf{S}^{- 1} ( \mathbf{C
 \mathcal{A}^{\ast} ( \mathbf{y} - \Delta' \mathbf{y} ) - \mathbf{R} ) \mathbf{S}^{- 1}$, where
 $\Delta \mathbf{y}' = \frac{\tau}{\mu} \Delta \mathbf{y}_1 - \Delta \mathbf{y}_2$ and
 \[ z' = \langle \mathbf{C} \tau, \mathbf{X}' (\mu) \rangle = \mu \{
-   \langle \mathbf{R}, \mathbf{S}^{- 1} \rangle + ( \mathcal{A} \mathbf{S}^{- 1} \mathbf{R}}
-   \mathbf{S}^{- 1} + \mathcal{A} \mathbf{S}^{- 1} )^{\top} \Delta' \mathbf{y} + n \} + \tau
+   \langle \mathbf{R}, \mathbf{S}^{- 1} \rangle + ( \mathcal{A} \mathbf{S}^{- 1} \mathbf{R}
+   \mathbf{S}^{- 1} + \mathcal{A} \mathbf{S}^{- 1})^{\top} \Delta' \mathbf{y} + n \} + \tau
    \mathbf{b}^{\top} \mathbf{y} . \]
-One major computationally intensive part in {{\texttt{HDSDP}}} is the setup of
-the Schur complement matrix $\mathbf{M}$. Since the objective $\mathbf{C}$ often does not
-enjoy the same structure as $\{ \mathbf{A}_i \}$, the additional cost from
-$\mathcal{A} \mathbf{S}^{- 1} \mathbf{C} \mathbf{S}^{- 1}$ and $\langle \mathbf{C}, \mathbf{S}^{- 1} \mathbf{C} \mathbf{S}^{- 1}
-\rangle$ calls for more efficient techniques to set up $\mathbf{M}$. In
-{{\texttt{HDSDP}}}, a permutation $\sigma (m)$ of the rows of $\mathbf{M}$ is
-generated heuristically to reduce the flops to set up $\mathbf{M}$ row by row.
-\[ \left(\begin{array}{ccc}
-     \langle \mathbf{A}_{\sigma (1)}, \mathbf{S}^{- 1} \mathbf{A}_{\sigma (1)} \mathbf{S}^{- 1}
-     \rangle & \cdots & \langle \mathbf{A}_{\sigma (1)}, \mathbf{S}^{- 1}
-     \mathbf{A}_{\sigma (m)} \mathbf{S}^{- 1} \rangle\\
-     & \ddots & \vdots\\
-     &  & \langle \mathbf{A}_{\sigma (m)}, \mathbf{S}^{- 1} \mathbf{A}_{\sigma (m)} \mathbf{S}^{- 1}
-     \rangle
-   \end{array}\right) \]
-   
-Technique {\textbf{M1}} and {\textbf{M2}} are inherited from
-{{\texttt{DSDP}}}. They exploit the low-rank structure of the problem data and
-an eigen-decomposition of the problem data
-$\mathbf{A}_i = \sum_{r = 1}^{\ensuremath{\operatorname{rank}} \left( \mathbf{A}_i \right)} \lambda_{i r}
-   \mathbf{a}_{i, r} \mathbf{a}^{\top}_{i, r}$
-needs to be computed at the beginning of the algorithm.\\
 
+Using the Newton's direction $\Delta \mathbf{y}$, {{\texttt{HDSDP}}} applies a simple ratio test
+\begin{equation}
+\alpha = \max \left\{ \alpha \in [0, 1] : \mathbf{S} + \alpha \Delta \mathbf{S} \succeq \textbf{0},
+\tau + \alpha \Delta \tau \geq 0 \right\} \label{ratiotest}	
+\end{equation}
+ through a Lanczos procedure
+{\cite{toh2002note}}. \revised{But to determine the aforementioned damping factor $\gamma$, we  
+resort to the following adaptive heuristic: assuming that $\mu \rightarrow \infty, \tau = 1$ and fixing $\Delta\tau = 0$, the dual update can be decomposed by 
+\begin{align}
+  \mathbf{S} + \alpha \Delta \mathbf{S} ={} & \mathbf{S} + \alpha (\gamma
+  \mathbf{R} -\mathcal{A}^{\ast} \Delta \mathbf{y}) \nonumber\\
+  ={} & \mathbf{S} + \alpha (\gamma \mathbf{R} -\mathcal{A}^{\ast} (\gamma
+  \Delta \mathbf{y}_3 - \Delta \mathbf{y}_2)) \nonumber\\
+  ={} & \mathbf{S} + \alpha \mathcal{A}^{\ast} \Delta \mathbf{y}_2 + \alpha
+  \gamma (\mathbf{R} -\mathcal{A}^{\ast} \Delta \mathbf{y}_3), \nonumber
+\end{align}
+where the first term $\mathbf{S} + \alpha \mathcal{A}^{\ast} \Delta \mathbf{y}_2$ is independent of $\gamma$ and improves centrality of the iteration. {\texttt{HDSDP}} conducts a Lanczos line-search to find $\alpha_c$ such that the logarithmic barrier function is improved \[- \log \det ( \mathbf{S}
++ \alpha_c \Delta \mathbf{S} ) - \log \det (\tau + \alpha_c \Delta \tau) \leq -
+\log \det  \mathbf{S} - \log \det \tau. \] 
+Then given $\alpha = \alpha_c$, by a second Lanczos line-search we find the maximum possible $\gamma \leq 1$ such that $\mathbf{S} + \alpha_c \Delta \mathbf{S} = \mathbf{S} + \alpha_c \mathcal{A}^{\ast} \Delta \mathbf{y}_2 + \alpha_c \gamma (\mathbf{R} -\mathcal{A}^{\ast} \Delta \mathbf{y}_3) \succeq 0$.
+Finally,  a full Newton's direction is determined by $\gamma$ and
+a third Lanczos procedure finally carries out the ratio test \eqref{ratiotest}.
+The intuition of the above heuristic is to eliminate infeasibility under the centrality restrictions, so that the iterations stay away from the boundary of the cone. After the ratio test, {\texttt{HDSDP}} updates $\mathbf{y} \leftarrow \mathbf{y} + 0.95 \alpha
+\Delta \mathbf{y}$ and $\tau \leftarrow \tau + 0.95 \alpha \Delta \tau$ to ensure the feasibility of the next iteration. 
+To make further use of the Schur complement $\mathbf{M}$, the above procedure is repeated several times in an iteration with $\mathbf{M}$ unchanged.}
 
-{	\begin{minipage}{0.8\textwidth}
-		{\textbf{KKT Technique M1}}
-\begin{enumerate}
-  \item {\textbf{Setup}} $\mathbf{B}_{\sigma (i)} = \sum_{r =
-  1}^{\ensuremath{\operatorname{rank}} ( \mathbf{A}_{\sigma (i)} )} \lambda_r \big( \mathbf{S}^{- 1}
-  \mathbf{a}_{\sigma (i), r} \big) ( \mathbf{S}^{- 1} \mathbf{a}_{\sigma (i), r})^{\top}$.
-  
-  \item {\textbf{Compute}} $M_{\sigma (i) \sigma (j)} = \langle
-  \mathbf{B}_{\sigma (i)}, \mathbf{A}_{\sigma (j)} \rangle, \text{for all } j \geq i$.
-\end{enumerate}
-{\textbf{KKT Technique M2}}
-\begin{enumerate}
-  \item {\textbf{Setup}} $\mathbf{S}^{- 1} \mathbf{a}_{\sigma (i), r}, r = 1, \ldots,
-  r_{\sigma (i)}$.
-  \item {\textbf{Compute}} $M_{\sigma (i) \sigma (j)} = \sum_{r =
-  1}^{\ensuremath{\operatorname{rank}} ( \mathbf{A}_{\sigma (i)} )} \big( \mathbf{S}^{- 1}
-  \mathbf{a}_{\sigma (i), r} )^{\top} \mathbf{A}_{\sigma (j)} ( \mathbf{S}^{- 1}
-  \mathbf{a}_{\sigma (i), r} \big)$.\\
-\end{enumerate}
-\end{minipage}} 
-
-Technique {\textbf{M3}}, {\textbf{M4}} and {\textbf{M5}} exploit sparsity and need evaluation of $\mathbf{S}^{-1}$ {\cite{fujisawa1997exploiting}}.\\
-
-	{\begin{minipage}{0.8\textwidth}
-{\textbf{KKT Technique M3}}
-\begin{enumerate}
-  \item {\textbf{Setup}} $\mathbf{B}_{\sigma (i)} = \mathbf{S}^{- 1} \mathbf{A}_{\sigma
-  (i)} \mathbf{S}^{- 1}$
-  \item {\textbf{Compute}} $M_{\sigma (i) \sigma (j)} = \langle
-  \mathbf{B}_{\sigma (i)}, \mathbf{A}_{\sigma (j)} \rangle, \text{for all } j \geq i$
-\end{enumerate}
-
-{\textbf{KKT Technique M4}}
-\begin{enumerate}
-  \item {\textbf{Setup}} $\mathbf{B}_{\sigma (i)} = \mathbf{S}^{- 1} \mathbf{A}_{\sigma
-  (i)}$
-  
-  \item {\textbf{Compute}} $M_{\sigma (i) \sigma (j)} = \left\langle
-  \mathbf{B}_{\sigma (i)} \mathbf{S}^{- 1}, \mathbf{A}_{\sigma (j)} \right\rangle, \text{for all } j
-  \geq i$
-\end{enumerate}
-{\textbf{KKT Technique M5}}
-\begin{enumerate}
-  \item {\textbf{Compute}} $M_{\sigma (i) \sigma (j)} = \langle \mathbf{S}^{-
-  1} \mathbf{A}_{\sigma (i)} \mathbf{S}^{- 1}, \mathbf{A}_{\sigma (j)} \rangle, \text{for all } j \geq
-  i$ directly.\\
-\end{enumerate}
-\end{minipage}}
-
-\noindent\rule{\textwidth}{0.5pt}
-
-At the beginning of the algorithm, {{\texttt{HDSDP}}} estimates the
-number of flops using each technique and each row of $\mathbf{M}$ is associated with the cheapest
-technique to minimize the overall computation cost. This is a major
-improvement over {{\texttt{DSDP5.8}}} in the computational aspect and 
-we leave the details to the later sections. \\
-
-After setting up $\mathbf{M}$, conjugate gradient (CG) method is
-employed to solve the linear systems. The maximum number of iterations is
-chosen around $50 / m$ and is heuristically adjusted. Either the diagonal of
-$\mathbf{M}$ or its Cholesky decomposition is chosen as pre-conditioner and
-after a Cholesky pre-conditioner is computed, {{\texttt{HDSDP}}} reuses it for 
-the consecutive solves till a heuristic determines that the current
-pre-conditioner is outdated. When the algorithm approaches optimality, $\mathbf{M}$
-might become ill-conditioned and {{\texttt{HDSDP}}} switches to {\textsf{LDLT}} decomposition in case Cholesky fails.
-
-Using the Newton's direction, {{\texttt{HDSDP}}} computes the maximum stepsize
-$$\alpha = \max \left\{ \alpha \in [0, 1] : \mathbf{S} + \alpha \Delta \mathbf{S} \succeq \textbf{0},
-\tau + \alpha \Delta \tau \geq 0 \right\}$$ via a Lanczos procedure
-{\cite{toh2002note}}. Then to determine a proper stepsize, one line-search
-determines $\alpha_c$ such that the barrier satisfies $- \log \det \left( \mathbf{S}
-+ \alpha_c \Delta \mathbf{S} \right) - \log \det (\tau + \alpha_c \Delta \tau) \leq -
-\log \det \left( \mathbf{S} + \alpha_c \Delta \mathbf{S} \right) - \log \det (\tau +
-\alpha_c \Delta \tau)$ and a second line-search chooses $\gamma$ such that $\mathbf{S}
-+ \alpha_c \mathcal{A}^{\ast} \Delta \mathbf{y}_2 + \alpha_c \gamma \left( \mathbf{R}
--\mathcal{A}^{\ast} \Delta \mathbf{y}_3 \right) \succeq \textbf{0}$. Next a full direction
-$\left( \Delta \mathbf{y}^{\gamma}, \Delta \mathbf{S}^{\gamma}, \Delta \tau^{\gamma} \right)$
-is assembled from the Newton system with damping factor $\gamma$ and
-a third Lanczos procedure computes  \[\alpha' = \max \left\{ \alpha \in [0, 1] :
-\mathbf{S} + \alpha \Delta \mathbf{S}^r \succeq \textbf{0}, \tau + \alpha \Delta \tau^r \geq 0
-\right\}\]. Last {{\texttt{HDSDP}}} updates $\mathbf{y} \leftarrow \mathbf{y} + 0.95 \alpha'
-\Delta \mathbf{y}^r$ and $\tau \leftarrow \tau + 0.95 \alpha \Delta \tau^r$. To make
-further use of the Schur matrix and to maintain centrality, the
-above procedure is repeated several times in an iteration. \\
-
-In {{\texttt{HDSDP}}}, the update of the barrier parameter $\mu$ is another
-critical factor. At the end of each iteration, {{\texttt{HDSDP}}} updates the
-barrier parameter $\mu$ by $\left( \bar{z} - \mathbf{b}^{\top} \mathbf{y} + \theta \left\|
-\mathbf{R} \right\|_F \right) / \rho n$, where $\rho$ and $\theta$ are pre-defined
-parameters. Heuristics also adjust $\mu$ using  previously computed $\alpha_c, \alpha'$ and $\gamma$. \\
-
-To get the best of the two worlds, {{\texttt{HDSDP}}} implements the same
-dual-scaling algorithm as in \text{{\ttfamily{DSDP5.8}}} assuming a dual feasible solution. 
-When the dual infeasibility
-$\left\| \mathcal{A}^{\ast} \mathbf{y} + \mathbf{S} - \mathbf{C} \right\|_F \leq \varepsilon \tau$ and $\mu$
-are sufficiently small, {{\texttt{HDSDP}}} fixes $\tau = 1$, re-starts with
-$\left( \mathbf{y} / \tau, \mathbf{S} / \tau \right)$ and applies dual-scaling to guide
-convergence. For the detailed implementation of dual-scaling in
-\text{{\ttfamily{DSDP5.8}}} refer to {\cite{benson2008algorithm}}. To sum up,
+\revised{
+In {\texttt{HDSDP}}, the barrier parameter $\mu$ also significantly affects the algorithm. At the end of each iteration, {\texttt{HDSDP}} updates the
+barrier parameter $\mu$ by $( \bar{z} - \mathbf{b}^{\top} \mathbf{y} + \theta \left\|
+\mathbf{R} \right\|_F ) / \rho n$, where $\rho$ and $\theta$ are pre-defined
+parameters. Heuristics also adjust $\mu$ based on $\alpha_c$ and $\gamma$. To get the best of both worlds, {\texttt{HDSDP}} implements the same dual-scaling algorithm as in \text{{\ttfamily{DSDP5.8}}}.  If dual infeasibility satisfies
+$\left\| \mathcal{A}^{\ast} \mathbf{y} + \mathbf{S} - \mathbf{C} \right\|_F \leq \varepsilon \tau$ and $\mu$ is sufficiently small, {{\texttt{HDSDP}}} fixes $\tau = 1$, re-starts with $( \mathbf{y} / \tau, \mathbf{S} / \tau )$ and instead applies dual potential function to guide convergence. To sum up,
 {{\texttt{HDSDP}}} implements strategies and computational tricks tailored for
-the embedding and can switch to {{\texttt{DSDP5.8}}} once a dual feasible solution is available.
+the embedding and can switch to {{\texttt{DSDP5.8}}} once a dual feasible solution is available.}
