@@ -21,7 +21,7 @@ numerically solve it. Theoretically, SDP is a convex conic problem  admitting po
 {\cite{polik2007sedumi}}, \text{{\ttfamily{SDPT3}}} {\cite{toh2012implementation}},
 \text{{\ttfamily{CSDP}}} {\cite{borchers2006csdp}}, \text{{\ttfamily{SDPA}}} 
 {\cite{yamashita2012latest}} and so forth. While most SDP codes are IPM-based, there are also several successful attempts using other methods (e.g., {\cite{kocvara2006pensdp, kwasniewiczimplementation, yang2015sdpnal}})
-and a list of these SDP softwares is reviewed by {\citet{majumdar2020recent}}.\\
+and a list of these SDP softwares is reviewed by {\citet{majumdar2020recent}}.
 
 SDP solvers based on IPM variants enjoy competitive convergence behavior both theoretically and practically. Most softwares implement primal-dual path-following approaches using either infeasible start
 {\cite{potra1998superlinearly}} or the embedding technique
@@ -29,7 +29,7 @@ SDP solvers based on IPM variants enjoy competitive convergence behavior both th
 {{\texttt{DSDP}}} adopts a dual IPM method based on the potential reduction framework developed by {\citet{benson1999mixed}}.
 Since its initial release {\cite{benson2000solving}}, {{\texttt{DSDP}}} has gone a long way through several major updates, and finally evolved into one of the most popular SDP softwares {\cite{benson2008algorithm}}.
 To further improve {{\texttt{DSDP}}}, we make an important extension by incorporating the well-known homogeneous self-dual (HSD)
-embedding technique into the dual algorithm. This new implementation, named {{\texttt{HDSDP}}}, is presented in this manuscript.\\
+embedding technique into the dual algorithm. This new implementation, named {{\texttt{HDSDP}}}, is presented in this manuscript.
 
 The manuscript is organized as follows. \textbf{Section \ref{sec2}} 
 describes the formulation of interest and some basic notations;
@@ -65,7 +65,6 @@ relation $\mathbf{X} \in \mathbb{S}_+^n$, and the linear map $\mathcal{A} : \mat
 y_i$. $\left\| \mathbf{A} \right\|_F := \sqrt{\sum_{i j} a_{i j}^2}$ denotes the
 matrix Frobenius norm. With the above notations, we rewrite the primal and
 dual problems by
-
 {\center{\qquad\qquad\qquad\qquad$\begin{array}{lccl}
   (P) & \min_{\mathbf{X}}  & \left\langle \mathbf{C}, \mathbf{X} \right\rangle & \\
   & \text{subject to} & \mathcal{A} \mathbf{X} = \mathbf{b}, & \\

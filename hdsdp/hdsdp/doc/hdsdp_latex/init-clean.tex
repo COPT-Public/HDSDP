@@ -8,13 +8,13 @@ Internally {{\texttt{HDSDP}}} deals with the following problem
   & \mathbf{X} \succeq \textbf{0}, \mathbf{x}_u \geq \textbf{0}, \mathbf{x}_l \geq \textbf{0} & 
 \end{eqnarray*}
 and together with its dual, the HSD embedding is
-\begin{eqnarray*}
-  \mathcal{A} \mathbf{X} + \mathbf{x}^u - \mathbf{x}^l - \mathbf{b} \tau & = & \textbf{0}\\
-  - \mathcal{A}^{\ast} \mathbf{y} + \mathbf{C} \tau - \mathbf{S} & = & \textbf{0}\\
+\begin{align*}
+  \mathcal{A} \mathbf{X} + \mathbf{x}^u - \mathbf{x}^l - \mathbf{b} \tau & = \textbf{0}\\
+  - \mathcal{A}^{\ast} \mathbf{y} + \mathbf{C} \tau - \mathbf{S} & = \textbf{0}\\
   \mathbf{b}^{\top} \mathbf{y} - \left\langle \mathbf{C}, \mathbf{X} \right\rangle - \mathbf{u}^{\top} \mathbf{x}_u -
-  \mathbf{l}^{\top} \mathbf{x}_l - \kappa & = & 0\\
-  \mathbf{X}, \mathbf{S} \succeq 0, &  & \kappa, \tau \geq 0,
-\end{eqnarray*}
+  \mathbf{l}^{\top} \mathbf{x}_l - \kappa & = 0\\
+  \mathbf{X}, \mathbf{S} \succeq 0, &  \kappa, \tau \geq 0,
+\end{align*}
 where the primal problem is relaxed by two slack variables with penalty
 $\textbf{{\textbf{l}}}, \mathbf{u}$ to prevent $\mathbf{y}$ going too large. Using the embedding, 
 {{\texttt{HDSDP}}} needs no big-$M$ initialization
