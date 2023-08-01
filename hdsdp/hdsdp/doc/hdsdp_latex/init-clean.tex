@@ -23,6 +23,6 @@ $\textbf{{\textbf{l}}}, \mathbf{u}$ to prevent $\mathbf{y}$ going too large. Usi
 in the dual variable and starts from arbitrary $\mathbf{S} \succ \textbf{0}, \tau > 0$. By default {\texttt{HDSDP}} starts from $\tau = 1, \mathbf{y} = \mathbf{0}$ and $\mathbf{S}$ is initialized with $\mathbf{C} + 10^p\cdot\|\mathbf{C}\| \mathbf{I}$. One feature of the embedding is its capability to detect infeasibility.} Given infeasibility tolerance $\varepsilon_f$, {{\texttt{HDSDP}}} classifies the problem as primal unbounded, dual infeasible if $\left\| \mathbf{R}
 \right\|_F > \varepsilon_f \tau, \tau / \kappa < \varepsilon_f$ and $\mu /
 \mu_0 \leq \varepsilon_f^2$. If $\mathbf{b}^{\top} \mathbf{y} >
-\varepsilon_f^{- 1}$, then {{\texttt{HDSDP}}} begins checking if the Newton's
+\varepsilon_f^{- 1}$, {{\texttt{HDSDP}}} starts checking if the Newton's
 step $( \Delta \mathbf{y}, \Delta \mathbf{S} )$ is a dual improving ray. Once a ray is detected, the problem is classified as primal
 infeasible and dual unbounded.

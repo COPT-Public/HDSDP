@@ -1,7 +1,7 @@
 \section{Dual and Homogeneous Dual Scaling Algorithm }\label{sec3}
 
 In this section, we briefly review the dual-scaling algorithm in
-{{\texttt{DSDP}}}, and give its interpretation through Newton's method on the KKT system. Then we show how it can be naturally generalized to the embedding formation.
+{{\texttt{DSDP}}}, and give its interpretation through Newton's method on the KKT system. Then we show how it naturally generalizes to the embedding.
 \subsection{Dual-scaling Algorithm}
 Dual-scaling method
 {\cite{benson1999mixed}} works under three conditions. {\textbf{1)}} the
@@ -13,10 +13,10 @@ strong duality and the existence of an optimal primal-dual solution pair $\left(
 \mathbf{X}^{\ast}, \mathbf{y}^{\ast}, \mathbf{S}^{\ast} \right)$ satisfying complementarity
 $\left\langle \mathbf{X}^{\ast}, \mathbf{S}^{\ast} \right\rangle = 0$. Also, the central path $\mathcal{C} (\mu) :=
 \left\{ \left( \mathbf{X}, \mathbf{y}, \mathbf{S} \right) \in \mathcal{F}^0 (P) \times \mathcal{F}^0
-(D) : \mathbf{X} \mathbf{S} = \mu \mathbf{I} \right\}$ is well-defined, which serves as a foundation of
-path-following approaches. Given a centrality parameter $\mu$, 
+(D) : \mathbf{X} \mathbf{S} = \mu \mathbf{I} \right\}$, which serves as a foundation of
+path-following approaches, is well-defined. Given a centrality parameter $\mu$, 
 dual method starts from
-$\left( \mathbf{y}, \mathbf{S} \right) \in \mathcal{F}^0(D)$ and takes Newton's step towards the perturbed KKT system $\mathcal{A} \mathbf{X} = \mathbf{b},
+$\left( \mathbf{y}, \mathbf{S} \right) \in \mathcal{F}^0(D)$ and takes Newton's step towards the solution of the perturbed KKT system $\mathcal{A} \mathbf{X} = \mathbf{b},
 \mathcal{A}^{\ast} \mathbf{y} + \mathbf{S} = \mathbf{C}$ and $\mathbf{X} \mathbf{S} = \mu \mathbf{I}$
 \begin{align}\label{dsdpnewton}
   \mathcal{A} \left( \mathbf{X} + \Delta \mathbf{X} \right) & = \mathbf{b} \nonumber \\
@@ -40,7 +40,7 @@ vanish in the Schur complement of \eqref{dsdpnewton}
    \end{array}\right) \Delta \mathbf{y} = \frac{1}{\mu} \mathbf{b} - \mathcal{A} \mathbf{S}^{- 1},
 \end{eqnarray}\\
 and the dual algorithm thereby avoids explicit reference to the primal
-variable $\mathbf{X}$. For brevity we sometimes denote the left-hand side matrix in \eqref{dsdpM} by $\mathbf{M}$.
+variable $\mathbf{X}$. For brevity we denote the left-hand side matrix in \eqref{dsdpM} by $\mathbf{M}$.
 If $\left\{ \mathbf{A}_i \right\}, \mathbf{C}$ are sparse, any feasible dual slack $\mathbf{S} = \mathbf{C}
 -\mathcal{A}^{\ast} \mathbf{y}$ inherits the aggregated sparsity pattern from the data and it is
 computationally cheaper to iterate in the dual space.
@@ -50,24 +50,23 @@ aforementioned properties characterize the behavior of the dual-scaling method.
 
 However, the desirable theoretical properties of the dual method is not free.  First, an initial dual feasible solution is needed, while obtaining such a
 solution is often as difficult as solving the original problem. Second, due to
-a lack of information from the primal space, the dual-scaling has to be properly guided to avoid deviating from the central path. Last,
-dual-scaling linearizes the highly nonlinear relation $\mathbf{X} = \mu \mathbf{S}^{- 1}$ and
-this imposes strict constraint on the step length towards the Newton's direction. To overcome the aforementioned difficulties, {{\texttt{DSDP}}}
-introduces artificial variables with big-$M$ penalty to ensure nonempty interior and a trivial dual feasible solution. Moreover, a potential function is introduced 
-to guide the dual iterations. These solutions work well in practice and enhance {{\texttt{DSDP}}} greatly. For a complete description of the theoretical aspects of {{\texttt{DSDP}}} and
-its delicate implementation, we refer the interested readers to
-{\cite{benson2000solving, benson2008algorithm}}.
+a lack of information from primal space, dual-scaling method has to be properly guided to avoid deviating from the central path. 
+%Last,
+%dual-scaling linearizes the highly nonlinear relation $\mathbf{X} = \mu \mathbf{S}^{- 1}$ and
+%this imposes strict constraint on the step length towards the Newton's direction. 
+To overcome the aforementioned difficulties, {{\texttt{DSDP}}}
+introduces artificial variables with big-$M$ penalty to ensure a nonempty interior and a trivial dual feasible solution. Moreover, a potential function is introduced 
+to guide the dual iterations. This works well in practice and enhance performance of {{\texttt{DSDP}}}. We refer the interested readers to
+{\cite{benson2000solving, benson2008algorithm}} for more implementation details.
 
 \revised{Although {{\texttt{DSDP}}} proves efficient in real practice, the big-$M$
 method requires prior estimation of the optimal solution to avoid losing optimality. 
 Also, a large penalty often leads to numerical difficulties and
-misclassification of infeasible problems when the problem is ill-conditioned. 
-Taking into account of In this paper, we propose to
-leverage the well-known HSD embedding.}
-
+mis-classification of infeasible problems when the problem is ill-conditioned. 
+Therefore it is natural to seek better alternatives to the big-$M$ method, and the self-dual embedding is an ideal candidate.
+}
 \subsection{Dual-scaling Algorithm using Embedding Technique}
-Now we are ready to introduce the idea behind {{\texttt{HDSDP}}}.
-Given a standard form SDP, its homogeneous self-dual model is a skew symmetric system that contains the original problem data, whose non-trivial interior point solution certificates primal-dual feasibility. {\texttt{HDSDP}} adopts the following simplified embedding system {\cite{potra1998homogeneous}}.
+Given a standard form SDP, its homogeneous self-dual model is a skew symmetric system containing the original problem data, whose non-trivial interior point solution certificates primal-dual feasibility. {\texttt{HDSDP}} adopts the following simplified embedding {\cite{potra1998homogeneous}}.
 \begin{align}
   \mathcal{A} \mathbf{X} - \mathbf{b} \tau ={} & \textbf{0} \nonumber\\
   - \mathcal{A}^{\ast} \mathbf{y} + \mathbf{C} \tau - \mathbf{S} ={} & \textbf{0}  \\
@@ -86,7 +85,7 @@ detection. The central path of barrier parameter $\mu$ is given by
 Here $\left( \mathbf{y}, \mathbf{S}, \tau \right)$ are jointly considered as dual variables.
 Given an (infeasible) dual point $\left( \mathbf{y}, \mathbf{S}, \tau \right)$ such that $- \mathcal{A}^{\ast} \mathbf{y} +
 \mathbf{C} \tau - \mathbf{S} = \mathbf{R}$, {{\texttt{HDSDP}}} selects a damping factor $\gamma \in
-(0, 1]$ and takes Newton's step towards
+[0, 1]$ and takes Newton's step towards
 \begin{align*}
   \mathcal{A} ( \mathbf{X} + \Delta \mathbf{X} ) - \mathbf{b} (\tau + \Delta \tau) & =\textbf{0}\\
   -\mathcal{A}^{\ast} ( \mathbf{y} + \Delta \mathbf{y}) + \mathbf{C} (\tau + \Delta \tau)
@@ -94,8 +93,8 @@ Given an (infeasible) dual point $\left( \mathbf{y}, \mathbf{S}, \tau \right)$ s
   \mu \mathbf{S}^{- 1} \Delta \mathbf{S} \mathbf{S}^{- 1} + \Delta \mathbf{X} & = \mu \mathbf{S}^{- 1} - \mathbf{X},\\
   \mu \tau^{- 2} \Delta \tau + \Delta \kappa & =\mu \tau^{- 1} - \kappa,
 \end{align*}
-where, as in {{\texttt{DSDP}}}, we modify \eqref{hdsdpcompl} and linearize $\mathbf{X} = \mu \mathbf{S}^{- 1}$ and $\kappa
-= \mu \tau^{- 1}$. We use this damping factor and the barrier parameter to manage a trade-off between dual infeasibility, centrality and optimality. 
+where, similar to {{\texttt{DSDP}}}, we modify \eqref{hdsdpcompl} and linearize $\mathbf{X} = \mu \mathbf{S}^{- 1}, \kappa
+= \mu \tau^{- 1}$. We use this damping factor $\gamma$ and the barrier parameter $\mu$ to manage a trade-off between dual infeasibility, centrality and optimality. 
 If we set $\gamma = 0$, then the Newton's direction $\left( \Delta \mathbf{y}, \Delta \tau \right)$ is computed through
 the following Schur complement.
 
@@ -122,16 +121,15 @@ the following Schur complement.
 In practice, {{\texttt{HDSDP}}} solves $\Delta \mathbf{y}_1 := \mathbf{M}^{- 1} \mathbf{b},
 \Delta \mathbf{y}_2 := \mathbf{M}^{- 1} \mathcal{A} \mathbf{S}^{- 1}, \Delta \mathbf{y}_3 := \mathbf{M}^{- 1} \mathcal{A}
 \mathbf{S}^{- 1} \mathbf{R} \mathbf{S}^{- 1}, \Delta \mathbf{y}_4 = \mathbf{M}^{- 1} \mathcal{A} \mathbf{S}^{- 1} \mathbf{C} \mathbf{S}^{-
-1}$, plugs $\Delta \mathbf{y} = \frac{\tau + \Delta \tau}{\mu} \Delta \mathbf{y}_1 - \Delta
-\mathbf{y}_2 + \Delta \mathbf{y}_3 + \Delta \mathbf{y}_4 \Delta \tau$ to get $\Delta \tau$ and finally assembles $\Delta \mathbf{y}$.
+1}$, plugs the solution into $\Delta \mathbf{y} = \frac{\tau + \Delta \tau}{\mu} \Delta \mathbf{y}_1 - \Delta
+\mathbf{y}_2 + \Delta \mathbf{y}_3 + \Delta \mathbf{y}_4 \Delta \tau$ to get $\Delta \tau$, and finally assembles $\Delta \mathbf{y}$.
 
  With the above relations, $\mathbf{X} (\mu) := \mu \mathbf{S}^{- 1}
 ( \mathbf{S} - \mathbf{R} +\mathcal{A}^{\ast} \Delta \mathbf{y} - \mathbf{C} \Delta \tau ) \mathbf{S}^{-
 1}$ satisfies $\mathcal{A} \mathbf{X} (\mu) - \mathbf{b} (\tau + \Delta \tau) = \textbf{0}$ and $\mathbf{X} (\mu)
 \succeq \textbf{0}$ if and only if the backward Newton step $-\mathcal{A}^{\ast} ( \mathbf{y} - \Delta \mathbf{y} ) + \mathbf{C} (\tau
 - \Delta \tau) - \mathbf{R} \succeq \textbf{0}$. When $-\mathcal{A}^{\ast} ( \mathbf{y} -
-\Delta \mathbf{y} ) + \mathbf{C} (\tau - \Delta \tau) - \mathbf{R}$ is positive definite, an
-objective follows from simple algebraic manupulation
+\Delta \mathbf{y} ) + \mathbf{C} (\tau - \Delta \tau) - \mathbf{R}$ is positive definite, a primal upper-bound follows from simple algebraic manipulation
 \begin{align*}
 \bar{z}  ={} & \langle \mathbf{C} \tau, \mathbf{X} (\mu) \rangle\\
 	  ={} & \langle \mathbf{R} + \mathbf{S} + \mathcal{A}^{\ast} \mathbf{y}, \mu \mathbf{S}^{- 1} ( \mathbf{S} - \mathbf{R}
@@ -147,7 +145,7 @@ objective bound from the projection problem
 \[   \min_{\mathbf{X}} ~ \| \mathbf{S}^{1 / 2} \mathbf{X} \mathbf{S}^{1 / 2} - \mu \mathbf{I} \|_F^2 \quad \text{subject to} \quad \mathcal{A} \mathbf{X} = \mathbf{b} \tau \]
 
 whose optimal solution is $\mathbf{X}' (\mu) := \mu \mathbf{S}^{- 1} ( \mathbf{C} \tau -
-\mathcal{A}^{\ast} ( \mathbf{y} - \Delta' \mathbf{y} ) - \mathbf{R} ) \mathbf{S}^{- 1}$, where
+\mathcal{A}^{\ast} ( \mathbf{y} - \Delta' \mathbf{y} ) - \mathbf{R} ) \mathbf{S}^{- 1}$. Here
 $\Delta \mathbf{y}' = \frac{\tau}{\mu} \Delta \mathbf{y}_1 - \Delta \mathbf{y}_2$ and
 \[ z' = \langle \mathbf{C} \tau, \mathbf{X}' (\mu) \rangle = \mu \{
    \langle \mathbf{R}, \mathbf{S}^{- 1} \rangle + ( \mathcal{A} \mathbf{S}^{- 1} \mathbf{R}
@@ -176,15 +174,15 @@ where the first term $\mathbf{S} + \alpha \mathcal{A}^{\ast} \Delta \mathbf{y}_2
 Then given $\alpha = \alpha_c$, by a second Lanczos line-search we find the maximum possible $\gamma \leq 1$ such that $\mathbf{S} + \alpha_c \Delta \mathbf{S} = \mathbf{S} + \alpha_c \mathcal{A}^{\ast} \Delta \mathbf{y}_2 + \alpha_c \gamma (\mathbf{R} -\mathcal{A}^{\ast} \Delta \mathbf{y}_3) \succeq 0$.
 Finally,  a full Newton's direction is determined by $\gamma$ and
 a third Lanczos procedure finally carries out the ratio test \eqref{ratiotest}.
-The intuition of the above heuristic is to eliminate infeasibility under the centrality restrictions, so that the iterations stay away from the boundary of the cone. After the ratio test, {\texttt{HDSDP}} updates $\mathbf{y} \leftarrow \mathbf{y} + 0.95 \alpha
+The intuition of the above heuristic is to eliminate infeasibility under centrality restrictions, so that the iterations stay away from the boundary of the cone. After the ratio test, {\texttt{HDSDP}} updates $\mathbf{y} \leftarrow \mathbf{y} + 0.95 \alpha
 \Delta \mathbf{y}$ and $\tau \leftarrow \tau + 0.95 \alpha \Delta \tau$ to ensure the feasibility of the next iteration. 
 To make further use of the Schur complement $\mathbf{M}$, the above procedure is repeated several times in an iteration with $\mathbf{M}$ unchanged.}
 
 \revised{
 In {\texttt{HDSDP}}, the barrier parameter $\mu$ also significantly affects the algorithm. At the end of each iteration, {\texttt{HDSDP}} updates the
-barrier parameter $\mu$ by $( \bar{z} - \mathbf{b}^{\top} \mathbf{y} + \theta \left\|
-\mathbf{R} \right\|_F ) / \rho n$, where $\rho$ and $\theta$ are pre-defined
-parameters. Heuristics also adjust $\mu$ based on $\alpha_c$ and $\gamma$. To get the best of both worlds, {\texttt{HDSDP}} implements the same dual-scaling algorithm as in \text{{\ttfamily{DSDP5.8}}}.  If dual infeasibility satisfies
+barrier parameter $\mu$ by $(z - \mathbf{b}^{\top} \mathbf{y} + \theta \left\|
+\mathbf{R} \right\|_F ) / \rho n$, where $z$ is the best primal bound so far and  $\rho, \theta$ are pre-defined
+parameters. By default $\rho = 4$ and $\theta = 10^8$. Heuristics also adjust $\mu$ based on $\alpha_c$ and $\gamma$. To get the best of both worlds, {\texttt{HDSDP}} implements the same dual-scaling algorithm as in \text{{\ttfamily{DSDP5.8}}}.  If dual infeasibility satisfies
 $\left\| \mathcal{A}^{\ast} \mathbf{y} + \mathbf{S} - \mathbf{C} \right\|_F \leq \varepsilon \tau$ and $\mu$ is sufficiently small, {{\texttt{HDSDP}}} fixes $\tau = 1$, re-starts with $( \mathbf{y} / \tau, \mathbf{S} / \tau )$ and instead applies dual potential function to guide convergence. To sum up,
 {{\texttt{HDSDP}}} implements strategies and computational tricks tailored for
 the embedding and can switch to {{\texttt{DSDP5.8}}} once a dual feasible solution is available.}

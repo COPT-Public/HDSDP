@@ -8,28 +8,27 @@ by
   & \mathbf{X} \in \mathbb{S}_+^n, & \nonumber
 \end{eqnarray}
 where we study linear optimization subject to affine constraints over the cone of
-positive-semidefinite matrices. Due to its extensive modeling capability, SDP is employed by several communities including combinatorial optimization {\cite{goemans1995improved, laurent2005semidefinite}},
+positive-semidefinite matrices. Due to its extensive modeling capability, SDP has been broadly adopted by communities including combinatorial optimization {\cite{goemans1995improved, laurent2005semidefinite}},
 dynamic systems {\cite{vandenberghe1996semidefinite}}, sums of squares
 optimization {\cite{laurent2009sums}}, quantum
 information {\cite{hayashi2016quantum}}, and distance geometry
 {\cite{biswas2004semidefinite, so2007theory}}. We refer the interested
-readers to {\cite{wolkowicz2005semidefinite}} for a more comprehensive review. \\
+readers to {\cite{wolkowicz2005semidefinite}} for a more comprehensive review. 
 
-While SDP proves useful in practice, a fundamental issue is how to
+While SDP proves useful in practice, a fundamental issue is to
 numerically solve it. Theoretically, SDP is a convex conic problem  admitting polynomial-time algorithms, and for general SDPs, the interior point method (IPM) is known as a robust and efficient approach. Since the 1990s, high-performance SDP softwares based on the IPM have been developed, including {{\texttt{DSDP}}} {\cite{benson2008algorithm}}, \text{{\ttfamily{COPT}}}
 {\cite{copt}}, \text{{\ttfamily{Mosek}}} {\cite{aps2019mosek}}, \text{{\ttfamily{Sedumi}}}
 {\cite{polik2007sedumi}}, \text{{\ttfamily{SDPT3}}} {\cite{toh2012implementation}},
 \text{{\ttfamily{CSDP}}} {\cite{borchers2006csdp}}, \text{{\ttfamily{SDPA}}} 
-{\cite{yamashita2012latest}} and so forth. While most SDP codes are IPM-based, there are also several successful attempts using other methods (e.g., {\cite{kocvara2006pensdp, kwasniewiczimplementation, yang2015sdpnal}})
-and a list of these SDP softwares is reviewed by {\citet{majumdar2020recent}}.
+{\cite{yamashita2012latest}} and so forth. While most SDP codes are IPM-based, there are also  successful attempts using other methods (for example, {\cite{kocvara2006pensdp, kwasniewiczimplementation, yang2015sdpnal}})
+and a list of these softwares is reviewed by {\citet{majumdar2020recent}}.
 
-SDP solvers based on IPM variants enjoy competitive convergence behavior both theoretically and practically. Most softwares implement primal-dual path-following approaches using either infeasible start
+SDP solvers based on IPM variants exhibit competitive convergence behavior both theoretically and practically. Most softwares implement primal-dual path-following approaches using either infeasible start
 {\cite{potra1998superlinearly}} or the embedding technique
 {\cite{potra1998homogeneous}}, with {{\texttt{DSDP}}} being an exception:
 {{\texttt{DSDP}}} adopts a dual IPM method based on the potential reduction framework developed by {\citet{benson1999mixed}}.
-Since its initial release {\cite{benson2000solving}}, {{\texttt{DSDP}}} has gone a long way through several major updates, and finally evolved into one of the most popular SDP softwares {\cite{benson2008algorithm}}.
-To further improve {{\texttt{DSDP}}}, we make an important extension by incorporating the well-known homogeneous self-dual (HSD)
-embedding technique into the dual algorithm. This new implementation, named {{\texttt{HDSDP}}}, is presented in this manuscript.
+Since its initial release {\cite{benson2000solving}}, {{\texttt{DSDP}}} has gone through several major updates and evolved into a popular SDP software {\cite{benson2008algorithm}}.
+To further improve {{\texttt{DSDP}}}, we make an important extension by incorporating the homogeneous self-dual embedding technique into the dual algorithm. This new implementation, named {{\texttt{HDSDP}}}, is presented in this manuscript.
 
 The manuscript is organized as follows. \textbf{Section \ref{sec2}} 
 describes the formulation of interest and some basic notations;
@@ -59,7 +58,7 @@ c_{i j} x_{i j}$ and $\mathbb{S}_+^n$ denotes the cone of positive
 semidefinite matrices. For brevity we use $\mathbf{X} \succeq \textbf{0}$ to denote the
 relation $\mathbf{X} \in \mathbb{S}_+^n$, and the linear map $\mathcal{A} : \mathbb{S}^n
 \rightarrow \mathbb{R}^m$ together with its adjoint $\mathcal{A}^{\ast} : \mathbb{R}^m
-\rightarrow \mathbb{S}^n$ is respectively defined by $\mathcal{A} \mathbf{X} := \left(
+\rightarrow \mathbb{S}^n$ is defined by $\mathcal{A} \mathbf{X} := \left(
 \left\langle \mathbf{A}, \mathbf{X}_1 \right\rangle, \ldots, \left\langle \mathbf{A}_m, \mathbf{X}_m
 \right\rangle \right)^{\top}$ and $\mathcal{A}^{\ast} \mathbf{y} := \sum_{i = 1}^m \mathbf{A}_i
 y_i$. $\left\| \mathbf{A} \right\|_F := \sqrt{\sum_{i j} a_{i j}^2}$ denotes the
@@ -75,12 +74,12 @@ dual problems by
   &  & \mathbf{S} \succeq \textbf{0} .
 \end{array}$}}\\
 
-and primal and dual feasible regions are respectively
+and primal and dual feasible regions are
 \[\mathcal{F} (P) := \left\{ \mathbf{X} : \mathcal{A} \mathbf{X} = \mathbf{b}, \mathbf{X} \succeq \textbf{0} \right\} \qquad \mathcal{F} (D) := \left\{ \left( \mathbf{y}, \mathbf{S} \right) : \mathcal{A}^{\ast} \mathbf{y} +
-\mathbf{S} = \mathbf{C}, \mathbf{S} \succeq \textbf{0} \right\}\]
+\mathbf{S} = \mathbf{C}, \mathbf{S} \succeq \textbf{0} \right\}.\]
 $\mathbf{X} \in \mathcal{F} (P)$ is primal
 feasible and $\left( \mathbf{y}, \mathbf{S} \right) \in \mathcal{F} (D)$ is dual feasible.
-The interior of the regions are denoted by $\mathcal{F}^0 (P),
+The interior of these regions are denoted by $\mathcal{F}^0 (P),
 \mathcal{F}^0 (D)$ and a solution in $\mathcal{F}^0$ is an interior
 point solution.  {{\texttt{HDSDP}}} implements a dual method solving ({{\em P\/}}) and ({{\em D\/}}) through the self-dual embedding technique.
 %\begin{remark}

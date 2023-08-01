@@ -1,22 +1,26 @@
 \section{Computational results}
 
-The efficiency of robustness of {{\texttt{DSDP5.8}}} has been proven through
-years of computational experience and {{\texttt{HDSDP}}} aims to achieve
-further improvement on a special class of SDPs where dual method has
-advantage over the primal-dual solvers. In this section, we introduce several
-classes of SDPs suitable for the dual method and we compare the performance
-of {{\texttt{HDSDP}}}, {{\texttt{DSDP5.8}}} and \text{{\ttfamily{COPT 6.5}}} (fastest solver on Mittelmann's benchmark implementing both primal-dual and dual method) on
-several benchmark datasets to verify the performance improvement of
-{{\texttt{HDSDP}}}. For each problem, we only describe the mathematical model
-and refer the readers to
-{\cite{mittelmann2003independent,borchers1999sdplib}} for the detailed
-background and formulation. 
-
-The time statistics in this section are obtained
-using \text{{\ttfamily{Intel(R) Xeon(R) CPU E5-2640 v4 @ 2.40GHz}}} with
-\text{{\ttfamily{64GB}}} memory.
+\revised{
+The efficiency of {{\texttt{DSDP5.8}}} has been proven through
+years of computational experience, and {{\texttt{HDSDP}}} aims to achieve
+further improvement on instances where dual method has
+advantage over the primal-dual method.  In this section, we introduce several types of SDPs suitable for the dual method and we compare the performance of {{\texttt{HDSDP}}}, {{\texttt{DSDP5.8}}} and \text{{\ttfamily{COPT 6.5}}} (fastest solver on Mittelmann's benchmark) on several benchmark datasets to verify the performance improvement of
+{{\texttt{HDSDP}}}.}
 
 \subsection{Experiment Setup}
+
+\revised{We configure the experiment as follows
+\begin{enumerate}
+	\item (Testing platform). The tests are run on an \text{{\ttfamily{intel i11700K}}} PC with 128GB memory and 12 threads.We choose \texttt{HDSDP}, \texttt{DSDP5.8} and \texttt{COPT6.5} are selected as benchmark softwares.
+	\item (Compiler and third-party dependency). Both \texttt{HDSDP} and \texttt{DSDP5.8} are compiled using \texttt{icc} with \texttt{-O2} optimization and linked with threaded version intel MKL. Executable of \texttt{COPT} is directly obtained from its official website.
+	\item (Threading). We set the number of MKL threads to be 12 for \texttt{DSDP5.8}; the \texttt{Threads} parameter of \texttt{COPT} is also set to 12. To enhance reproducibility \texttt{HDSDP} uses 8 threads.
+	\item (Dataset). Datasets are chosen from three sources: 1). SDP benchmark datasets from Hans Mittelmann's website \cite{mittelmann2003independent}; 2). SDP benchmark datasets from \texttt{SDPLIB} \cite{borchers1999sdplib}. 3). Optimal diagonal pre-conditioner SDPs generated according to \cite{qu2020diagonal}.
+	\item (Algorithm). Default methods in \texttt{HDSDP}, \texttt{DSDP5.8}, and the primal-dual interior point method implemented in \texttt{COPT} are compared.
+	\item (Tolerance). All the feasibility and optimality tolerances are set to $5\times10^{-6}$.
+	\item (Solution status). We adopt the broadly accepted DIMACs error to determine if a solution is qualified. According to \citet{mittelmann2003independent}, if any of the DIMACS errors exceeds $10^{-2}$, the solution is considered invalid.
+	\item (Performance Metric). We use shifted geometric mean to compare the overall speed between different solvers.
+\end{enumerate}}
+
 
 \subsection{Maximum Cut}
 
@@ -34,48 +38,48 @@ is rank-one and has only one non-zero entry, {\textbf{M2}} and
 
 \begin{table}[h]
   \caption{Max-cut problems}
-  \begin{tabular}{cccccccc}
-    \hline
+  \begin{tabular}{crrrcrrr}
+    \toprule
     Instance & {{\texttt{HDSDP}}} & {{\texttt{DSDP5.8}}} & \text{{\ttfamily{COPT
     v6.5}}} & Instance & {{\texttt{HDSDP}}} & {{\texttt{DSDP5.8}}} &
     \text{{\ttfamily{COPT v6.5}}}\\
-    \hline
-    \text{{\ttfamily{mcp100}}} & \textcolor{red}{0.03} & \textcolor{red}{0.03} & 0.12 & \text{{\ttfamily{maxG51}}} & \textcolor{red}{1.46} &
-    4.65 & 5.97\\
-    \text{{\ttfamily{mcp124-1}}} & 0.05 & \textcolor{red}{0.03} & 0.15 & \text{{\ttfamily{maxG55}}} & \textcolor{red}{146.92}
-    & 606.66 & 520.05\\
-    \text{{\ttfamily{mcp124-2}}} & 0.05 & \textcolor{red}{0.02} & 0.17 & \text{{\ttfamily{maxG60}}} & \textcolor{red}{323.62}
-    & 1485.00 & 1269.83\\
-    \text{{\ttfamily{mcp124-3}}} & 0.05 & \textcolor{red}{0.04} & 0.16 & \text{{\ttfamily{G40\_mb}}} & \textcolor{red}{12.76}
-    & 17.08 & 25.76\\
-    \text{{\ttfamily{mcp124-4}}} & 0.06 & \textcolor{red}{0.05} & 0.15 & \text{{\ttfamily{G40\_mc}}} & \textcolor{red}{8.09} &
-    38.54 & 49.07\\
-    \text{{\ttfamily{mcp250-1}}} & 0.15 & \textcolor{red}{0.10} & 0.66 & \text{{\ttfamily{G48\_mb}}} & \textcolor{red}{16.70}
-    & 29.71 & 50.49\\
-    \text{{\ttfamily{mcp250-2}}} & \textcolor{red}{0.11} & 0.15 & 0.66 & \text{{\ttfamily{G48mc}}} & \textcolor{red}{4.42} &
-    18.10 & 33.19\\
-    \text{{\ttfamily{mcp250-3}}} & \textcolor{red}{0.17} & 0.21 & 0.62 & \text{{\ttfamily{G55mc}}} & \textcolor{red}{118.11} &
-    344.80 & 505.18\\
-    \text{{\ttfamily{mcp250-4}}} & \textcolor{red}{0.19} & 0.29 & 0.69 & \text{{\ttfamily{G59mc}}} & \textcolor{red}{181.20} &
-    774.70 & 727.89\\
-    \text{{\ttfamily{mcp500-1}}} & 0.60 & \textcolor{red}{0.32} & 0.48 & \text{{\ttfamily{G60\_mb}}} & \textcolor{red}{261.50}
-    & 650.00 & 964.20\\
-    \text{{\ttfamily{mcp500-2}}} & \textcolor{red}{0.69} & 0.74 & 0.72 & \text{{\ttfamily{G60mc}}} & \textcolor{red}{257.10} &
-    600.08 & 962.79\\
-    \text{{\ttfamily{mcp500-3}}} & \textcolor{red}{0.82} & 1.12 & 1.11 & \text{{\ttfamily{torusg3-8}}} & \textcolor{red}{0.85}
-    & 1.42 & 1.04\\
-    \text{{\ttfamily{mcp500-4}}} & \textcolor{red}{1.11} & 1.84 & 2.35 & \text{{\ttfamily{torusg3-15}}} &
-    \textcolor{red}{23.77} & 178.8 & 137.60\\
-    \text{{\ttfamily{maxG11}}} & 1.27 & \textcolor{red}{0.82} & 1.07 & \text{{\ttfamily{toruspm3-8-50}}} &
-    \textcolor{red}{0.76} & 0.93 & 0.76\\
-    \text{{\ttfamily{maxG32}}} & \textcolor{red}{5.13} & 8.57 & 10.77 & \text{{\ttfamily{toruspm3-15-50}}} &
-    \textcolor{red}{19.27} & 91.67 & 117.92\\
-    \hline
+    \midrule
+    \text{{\ttfamily{mcp100}}} & {0.03} & {0.02} & 0.11 & \text{{\ttfamily{maxG51}}} & {1.45} &
+    2.52 & 14.40 \\
+    \text{{\ttfamily{mcp124-1}}} & 0.04 & {0.02} & 0.17 & \text{{\ttfamily{maxG55}}} & {38.21}
+    & 273.60 & 1096.02 \\
+    \text{{\ttfamily{mcp124-2}}} & 0.04 & {0.02} & 0.17 & \text{{\ttfamily{maxG60}}} & {87.59}
+    & 535.20 & 2926.11 \\
+    \text{{\ttfamily{mcp124-3}}} & 0.05 & {0.02} & 0.16 & \text{{\ttfamily{G40\_mb}}} & {15.77}
+    & 8.77 & 98.97\\
+    \text{{\ttfamily{mcp124-4}}} & 0.06 & {0.05} & 0.17 & \text{{\ttfamily{G40\_mc}}} & {6.53} &
+    18.68 & 80.45\\
+    \text{{\ttfamily{mcp250-1}}} & 0.09 & {0.08} & 0.70 & \text{{\ttfamily{G48\_mb}}} & {17.83}
+    & 12.48 & 183.95\\
+    \text{{\ttfamily{mcp250-2}}} & {0.08} & 0.09 & 0.72 & \text{{\ttfamily{G48mc}}} & {5.09} &
+    8.43 & 118.79\\
+    \text{{\ttfamily{mcp250-3}}} & {0.09} & 0.12 & 0.65 & \text{{\ttfamily{G55mc}}} & {38.06} &
+    168.1 & 1026.10\\
+    \text{{\ttfamily{mcp250-4}}} & {0.19} & 0.16 & 0.71 & \text{{\ttfamily{G59mc}}} & {48.73} &
+    302.3 & 1131.24\\
+    \text{{\ttfamily{mcp500-1}}} & 0.26 & {0.21} & 2.78 & \text{{\ttfamily{G60\_mb}}} & {211.22}
+    & 213.4 & 5188.11\\
+    \text{{\ttfamily{mcp500-2}}} & {0.25} & 0.32 & 2.82 & \text{{\ttfamily{G60mc}}} & {208.96} &
+    218.8 & 5189.29 \\
+    \text{{\ttfamily{mcp500-3}}} & {0.30} & 0.50 & 2.59 & \text{{\ttfamily{torusg3-8}}} & {0.50}
+    & 0.77 & 1.04\\
+    \text{{\ttfamily{mcp500-4}}} & {0.39} & 0.86 & 2.86 & \text{{\ttfamily{torusg3-15}}} &
+    {15.30} & 178.8 & 137.60\\
+    \text{{\ttfamily{maxG11}}} & 0.60 & {0.46} & 7.15 & \text{{\ttfamily{toruspm3-8-50}}} &
+    {0.41} & 0.40 & 2.65\\
+    \text{{\ttfamily{maxG32}}} & {4.68} & 3.66 & 68.32 & \text{{\ttfamily{toruspm3-15-50}}} &
+    {13.32} & 43.67 & 309.25 \\
+    \bottomrule
   \end{tabular}
 \end{table}
 
-Computational experience suggests that on large-scale max-cut instances, {{\texttt{HDSDP}}} 
-is $2\sim3$ times faster than {{\texttt{DSDP5.8}}}.
+Computational experience suggests that on large-scale sparse max-cut instances, {{\texttt{HDSDP}}} 
+is more than $5$ times faster than {{\texttt{DSDP5.8}}}. Two exceptions are \text{{\ttfamily{G60mc}}} and \text{{\ttfamily{G60\_mb}}}, where the aggregated sparsity pattern of the dual matrix is lost due to the dense objective coefficient, and thereby the dense MKL routines take up most of the computation.
 
 \subsection{Graph Partitioning}
 
@@ -94,32 +98,31 @@ structure is still available to accelerate convergence.
 
 \begin{table}[h]
   \caption{Graph partitioning problems}
-  \begin{tabular}{c|c|c|c|c|c|c|c}
-    \hline
+  \begin{tabular}{crrrcrrr}
+    \toprule
     Instance & {{\texttt{HDSDP}}} & {{\texttt{DSDP5.8}}} & \text{{\ttfamily{COPT
-    v5.0}}} & Instance & {{\texttt{HDSDP}}} & {{\texttt{DSDP5.8}}} &
+    v6.5}}} & Instance & {{\texttt{HDSDP}}} & {{\texttt{DSDP5.8}}} &
     \text{{\ttfamily{COPT v6.5}}}\\
-    \hline
-    \text{{\ttfamily{gpp100}}} & \textcolor{red}{0.03} & 0.04 & 0.19 & \text{{\ttfamily{gpp250-4}}} & 0.19 &
-    \textcolor{red}{0.16} & 1.21\\
-    \text{{\ttfamily{gpp124-1}}} & \textcolor{red}{0.04} & 0.09 & 0.28 & \text{{\ttfamily{gpp500-1}}} & \textcolor{red}{0.60}
-    & 0.63 & 0.64\\
-    \text{{\ttfamily{gpp124-2}}} & \textcolor{red}{0.05} & \textcolor{red}{0.05} & 0.28 & \text{{\ttfamily{gpp500-2}}} & 0.69
-    & \textcolor{red}{0.60} & 0.56\\
-    \text{{\ttfamily{gpp124-3}}} & \textcolor{red}{0.05} & \textcolor{red}{0.05} & 0.34 & \text{{\ttfamily{gpp500-3}}} & 0.82
-    & \textcolor{red}{0.55} & 0.56\\
-    \text{{\ttfamily{gpp124-4}}} & 0.06 & \textcolor{red}{0.05} & 0.36 & \text{{\ttfamily{gpp500-4}}} & {1.11}
-    & \textcolor{red}{0.58} & 0.51\\
-    \text{{\ttfamily{gpp250-1}}} & \textcolor{red}{0.15} & 0.16 & 1.58 & \text{{\ttfamily{bm1}}} & \textcolor{red}{2.28} &
-    2.36 & 1.74\\
-    \text{{\ttfamily{gpp250-2}}} & \textcolor{red}{0.11} & 0.15 & 1.33 & \text{{\ttfamily{biomedP}}} & \textcolor{red}{221.2}
+    \midrule
+    \text{{\ttfamily{gpp100}}} & {0.05} & 0.05 & 0.19 & \text{{\ttfamily{gpp250-4}}} & 0.15 &
+    {0.14} & 1.52\\
+    \text{{\ttfamily{gpp124-1}}} & {0.07} & 0.07 & 0.33 & \text{{\ttfamily{gpp500-1}}} & {0.89}
+    & 0.44 & 5.52\\
+    \text{{\ttfamily{gpp124-2}}} & {0.06} & Failed & 0.30 & \text{{\ttfamily{gpp500-2}}} & 0.80
+    & {0.43} & 5.43\\
+    \text{{\ttfamily{gpp124-3}}} & {0.06} & {0.06} & 0.31 & \text{{\ttfamily{gpp500-3}}} & 0.65
+    & {0.36} & 5.54\\
+    \text{{\ttfamily{gpp124-4}}} & 0.06 & {0.06} & 0.29 & \text{{\ttfamily{gpp500-4}}} & {0.68}
+    & {0.38} & 5.40\\
+    \text{{\ttfamily{gpp250-1}}} & {0.20} & Failed & 1.65 & \text{{\ttfamily{bm1}}} & {2.28} &
+    1.18 & 18.45 \\
+    \text{{\ttfamily{gpp250-2}}} & {0.17} & 0.14 & 1.21 & \text{{\ttfamily{biomedP}}} & {171.64}
     & \text{{\ttfamily{Failed}}} & \text{{\ttfamily{Failed}}}\\
-    \text{{\ttfamily{gpp250-3}}} & 0.17 & \textcolor{red}{0.14} & 1.46 & \text{{\ttfamily{industry2}}} &
-    \text{{\ttfamily{Failed}}} & \text{{\ttfamily{Failed}}} & \text{{\ttfamily{Failed}}}\\
-    \hline
+    \text{{\ttfamily{gpp250-3}}} & 0.17 & {0.13} & 1.41 & \\
+    \bottomrule
   \end{tabular}
 \end{table}
-On graph partitioning, we see that {{\texttt{HDSDP}}} has comparable performance to {{\texttt{DSDP}}} but is more robust on some problems.
+On graph partitioning instances, we see that {{\texttt{HDSDP}}} has comparable performance to {{\texttt{DSDP}}} but is more robust on some of the problems.
 
 \subsection{Optimal Diagonal Pre-conditioning}
 
@@ -136,26 +139,24 @@ SDP. The formulation for optimal diagonal pre-conditioning is given by
 Expressing $\mathbf{D} = \sum_i \mathbf{e}_i \mathbf{e}_i^{\top} d_i$, the problem is exactly
 in the SDP dual form. If $\mathbf{B}$ is also sparse, the problem can be
 efficiently solved using the dual method.
-\begin{table}[h]
+\begin{table}[H]
 \centering
   \caption{Optimal diagonal pre-conditioning problems}
-  \begin{tabular}{c|c|c|c}
-    \hline
+  \begin{tabular}{rrrr}
+    \toprule
     Instance & {{\texttt{HDSDP}}} & {{\texttt{DSDP5.8}}} & \text{{\ttfamily{COPT
-    v5.0}}}\\
-    \hline
-    \text{{\ttfamily{diag-bench-500-0.1}}} & \textcolor{red}{6.70} & 7.50 & 6.80\\
-    \text{{\ttfamily{diag-bench-1000-0.01}}} & \textcolor{red}{44.50} & 55.20 & 53.90\\
-    \text{{\ttfamily{diag-bench-2000-0.05}}} & \textcolor{red}{34.30} & 340.70 & 307.10\\
-    \text{{\ttfamily{diag-bench-west0989}}} & \textcolor{red}{6.72} & 113.23 & 108.20\\
-    \text{{\ttfamily{diag-bench-DK01R}}} & \textcolor{red}{13.18} & \text{{\ttfamily{Failed}}} &
-    \text{{\ttfamily{Failed}}}\\
-    \text{{\ttfamily{diag-bench-micromass\_10NN}}} & \textcolor{red}{9.35} & 60.127 & 51.71\\
-    \hline
+    v6.5}}}\\
+    \midrule
+    \text{{\ttfamily{diag-bench-1000-0.01}}} & {37.670} & 207.500 & 38.61\\
+    \text{{\ttfamily{diag-bench-2000-0.05}}} & 276.960 & 971.700 & {161.17} \\
+    \text{{\ttfamily{diag-bench-west0989}}} & {35.280} & \text{{\ttfamily{Failed}}} & 76.900 \\
+    \text{{\ttfamily{diag-bench-DK01R}}} & {5.010} & \text{{\ttfamily{Failed}}}  & \text{{\ttfamily{Failed}}} \\
+    \text{{\ttfamily{diag-bench-micromass\_10NN}}} & 20.510  &  38.45 & {17.430} \\
+    \bottomrule
   \end{tabular}
 \end{table}
-When the matrix $\mathbf{B}$ is large and sparse, 
-we see that {{\texttt{HDSDP}}} dominates the performance of {{\texttt{DSDP}}} due to the Schur complement techniques.
+%When the matrix $\mathbf{B}$ is large and sparse, 
+%we see that {{\texttt{HDSDP}}} dominates the performance of {{\texttt{DSDP}}} due to the Schur complement techniques.
 
 %\begin{remark}
 %For optimal pre-conditioning, we start {{\texttt{HDSDP}}} from
@@ -163,11 +164,13 @@ we see that {{\texttt{HDSDP}}} dominates the performance of {{\texttt{DSDP}}} du
 %  \mathbf{0}$.
 %\end{remark}
 
-%\subsection{Other Problems}
-%
-%So far {{\texttt{HDSDP}}} is tested and tuned over a large set of benchmarks
-%including \text{{\ttfamily{SDPLIB}}} {\cite{borchers1999sdplib}} and Hans
-%Mittelmann's sparse SDP benchmark {\cite{mittelmann2003independent}}. By the time this manuscript is written, {{\texttt{HDSDP}}} is the fourth fastest among all the benchmarked solvers.
+\subsection{Other Problems}
+
+So far {{\texttt{HDSDP}}} is tested and tuned over a broad set of benchmarks
+including \text{{\ttfamily{SDPLIB}}} {\cite{borchers1999sdplib}} and Hans
+Mittelmann's sparse SDP benchmark {\cite{mittelmann2003independent}}. 
+Using geometric mean as the metric, compared to {{\texttt{DSDP5.8}}}, {{\texttt{HDSDP}}} achieves a speedup of 21\% on \text{{\ttfamily{SDPLIB}}} and around 17\% speedup on Hans Mittelmann's benchmark dataset. Below we list some example benchmark datasets of nice structure for {{\texttt{HDSDP}}} to exploit.
+%By the time this manuscript is written, {{\texttt{HDSDP}}} is the fourth fastest among all the benchmarked solvers.
 %\begin{center}
 %\begin{lstlisting}
 %			Scaled shifted geometric means of runtimes ("1" is fastest solver)
@@ -189,44 +192,39 @@ we see that {{\texttt{HDSDP}}} dominates the performance of {{\texttt{DSDP}}} du
 %find a feasible dual solution and 1 fails
 % due to error in primal solution recovery. The benchmark test proves the
 %efficiency and robustness of {{\texttt{HDSDP}}} as a general purpose SDP
-%solver. Below we present some benchmark datasets with nice structure
-%for {{\texttt{HDSDP}}}. They enjoy at least one of sparsity and low-rank
-%structure.
-%
-%\begin{table}[h]
-%\centering
-%  \begin{tabular}{c|c|c|c|c|c}
-%    \hline
-%    Instance & Background & Feature & {{\texttt{HDSDP}}} &
-%    {{\texttt{DSDP5.8}}} & \text{{\ttfamily{COPT v6.5}}}\\
-%    \hline
-%    \text{{\ttfamily{checker\_1.5}}} & unknown & sparse, low-rank & \textcolor{red}{55.38} & 146.80 &
-%    137.15\\
-%    \text{{\ttfamily{foot}}} & unknown & sparse, low-rank & \textcolor{red}{25.76} & 23.83 & 262.54\\
-%    \text{{\ttfamily{hand}}} & unknown & low-rank & \textcolor{red}{5.60} & 5.57 & 50.70\\
-%    \text{{\ttfamily{ice\_2.0}}} & unknown & low-rank & \textcolor{red}{706.16} & 1106.00 & 1542.96\\
-%    \text{{\ttfamily{p\_auss2\_3.0}}} & unknown & sparse, low-rank & \textcolor{red}{739.40} & 1066.00
-%    & 1111.72\\
-%    \text{{\ttfamily{rendl1\_2000\_1e-6}}} & unknown & low-rank & \textcolor{red}{15.74} & 22.31 &
-%    231.80\\
-%    \text{{\ttfamily{trto3}}} & topology design & sparse, low-rank & \textcolor{red}{1.67} & 1.73 &
-%    3.04\\
-%    \text{{\ttfamily{trto4}}} & topology design & sparse, low-rank & \textcolor{red}{12.28} & 12.40 &
-%    30.09\\
-%    \text{{\ttfamily{trto5}}} & topology design & sparse, low-rank & \textcolor{red}{111.59} & 151.00 &
-%    233.16\\
-%    \text{{\ttfamily{sensor\_500b}}} & sensor network localization & sparse, low-rank
-%    & 86.73 & {37.87} & \textcolor{red}{7.01}\\
-%    \text{{\ttfamily{sensor\_1000b}}} & sensor network localization & sparse,
-%    low-rank & 232.05 & {143.32} & \textcolor{red}{32.27}\\
-%    \hline
-%  \end{tabular}
-%  \caption{Feature of several benchmark problems}
-%\end{table}
+%solver. 
 
-\subsection{Summary}
-{{\texttt{HDSDP}}} implements data structures and computational techniques specially optimized for \textit{sparse} SDPs with \textit{low-rank} constraint structure. Vast computational experiments suggests that on these problems {{\texttt{HDSDP}}} outperforms both primal-dual and conventional dual solvers in terms of efficiency and robustness on these instances. 
+\begin{table}[h]
+\centering
+  \caption{Features of several benchmark problems}
+  \begin{tabular}{cccrrr}
+    \toprule
+    Instance & Background & Feature & {{\texttt{HDSDP}}} &
+    {{\texttt{DSDP5.8}}} & \text{{\ttfamily{COPT v6.5}}}\\
+    \midrule
+    \text{{\ttfamily{checker\_1.5}}} & unknown & sparse, low-rank & {39.55} & 64.04 &
+    868.37\\
+    \text{{\ttfamily{foot}}} & unknown & sparse, low-rank & {26.68} & 13.65 & 245.41\\
+    \text{{\ttfamily{hand}}} & unknown & low-rank & {6.60} & 2.64 & 49.39\\
+    \text{{\ttfamily{ice\_2.0}}} & unknown & low-rank & {284.90} & 504.70 & 8561.74\\
+    \text{{\ttfamily{p\_auss2\_3.0}}} & unknown & sparse, low-rank & {528.00} & 1066.00
+    & 1111.72\\
+    \text{{\ttfamily{rendl1\_2000\_1e-6}}} & unknown & low-rank & {16.17} & 14.38 &
+    111.43\\
+    \text{{\ttfamily{trto4}}} & topology design & sparse, low-rank & {6.25} & 6.30 &
+    27.16\\
+    \text{{\ttfamily{trto5}}} & topology design & sparse, low-rank & {67.22} & 75.20 &
+    391.83\\
+    \text{{\ttfamily{sensor\_500b}}} & sensor network localization & sparse, low-rank
+    & 19.84 & {35.11} & {8.97}\\
+    \text{{\ttfamily{sensor\_1000b}}} & sensor network localization & sparse,
+    low-rank & 76.39 & {98.18} & {38.96}\\
+    \bottomrule
+  \end{tabular}
+\end{table}
 
+%\subsection{Summary}
+%{{\texttt{HDSDP}}} implements data structures and computational techniques specially optimized for \textit{sparse} SDPs with \textit{low-rank} constraint structure. Vast computational experiments suggests that on these problems {{\texttt{HDSDP}}} outperforms both primal-dual and conventional dual solvers in terms of efficiency and robustness on these instances. 
 
 \section{When (not) to use DSDP/HDSDP}
 
