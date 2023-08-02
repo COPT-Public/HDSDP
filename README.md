@@ -4,6 +4,10 @@
 
 HDSDP implements a dual-scaling interior point method for sparse Semi-definite programming problems (SDPs). The solver interits several features from  **DSDP5.8** [1] and presents some new aspects for the dual-scaling algorithm. HDSDP is written in ANSI C and is maintained by Cardinal Operations COPT development team. More features are still under active development.
 
+### New release
+
+HDSDP is now undergoing a major update, equipped with a conic interface and flexible linear system routines. See branch hdsdp-dev for more details.
+
 #### Solver overview
 
 HDSDP solves standard form semi-definite programs expressed by
