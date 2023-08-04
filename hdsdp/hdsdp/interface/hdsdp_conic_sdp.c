@@ -2302,6 +2302,115 @@ exit_cleanup:
     return retcode;
 }
 
+extern void sdpDenseConeGetPrimal( hdsdp_cone_sdp_dense *cone, double dBarrierMu, double *dRowDual, double *dRowDualStep, double *dConePrimal, double *dAuxiMat ) {
+    
+    int isInterior = 0;
+    sdpDenseConeInteriorCheckExpert(cone, 1.0, -1.0, dRowDual, 0.0, BUFFER_DUALCHECK, &isInterior);
+    assert( isInterior );
+    sdpDenseConeIUpdateBuffer(cone, 1.0, -1.0, dRowDualStep, 0.0, BUFFER_DUALSTEP);
+    
+    if ( cone->isDualSparse ) {
+        csp_dump(cone->nCol, cone->dualMatBeg, cone->dualMatIdx, cone->dualStep, dConePrimal);
+        HFpLinsysFSolve(cone->dualChecker, cone->nCol, dConePrimal, dAuxiMat);
+    } else {
+        HFpLinsysFSolve(cone->dualChecker, cone->nCol, cone->dualStep, dAuxiMat);
+    }
+    
+    HUtilMatTranspose(cone->nCol, dAuxiMat);
+    HFpLinsysFSolve(cone->dualChecker, cone->nCol, dAuxiMat, dConePrimal);
+    
+    double dTmpElem = 0.0;
+    for ( int iCol = 0; iCol < cone->nCol; ++iCol ) {
+        dConePrimal[iCol * cone->nCol + iCol] += 1.0;
+        for ( int iRow = iCol + 1; iRow < cone->nCol; ++iRow ) {
+            dTmpElem = 0.5 * (dConePrimal[iRow * cone->nCol + iCol] + \
+                              dConePrimal[iCol * cone->nCol + iRow]);
+            dConePrimal[iRow * cone->nCol + iCol] = \
+            dConePrimal[iCol * cone->nCol + iRow] = dTmpElem;
+        }
+    }
+    
+    HFpLinsysBSolve(cone->dualChecker, cone->nCol, dConePrimal, dAuxiMat);
+    HUtilMatTranspose(cone->nCol, dAuxiMat);
+    HFpLinsysBSolve(cone->dualChecker, cone->nCol, dAuxiMat, dConePrimal);
+    
+    for ( int iCol = 0; iCol < cone->nCol; ++iCol ) {
+        dConePrimal[iCol * cone->nCol + iCol] += 1.0;
+        for ( int iRow = iCol + 1; iRow < cone->nCol; ++iRow ) {
+            dTmpElem = 0.5 * (dConePrimal[iRow * cone->nCol + iCol] + \
+                              dConePrimal[iCol * cone->nCol + iRow]);
+            dConePrimal[iRow * cone->nCol + iCol] = \
+            dConePrimal[iCol * cone->nCol + iRow] = dTmpElem;
+        }
+    }
+    
+    return;
+}
+
+extern void sdpSparseConeGetPrimal( hdsdp_cone_sdp_sparse *cone, double *dBarrierMu, double *dRowDual, double *dRowDualStep, double *dConePrimal, double *dAuxiMat ) {
+    
+    int isInterior = 0;
+    sdpSparseConeInteriorCheckExpert(cone, 1.0, -1.0, dRowDual, 0.0, BUFFER_DUALCHECK, &isInterior);
+    assert( isInterior );
+    sdpSparseConeIUpdateBuffer(cone, 1.0, -1.0, dRowDualStep, 0.0, BUFFER_DUALSTEP);
+    
+    if ( cone->isDualSparse ) {
+        csp_dump(cone->nCol, cone->dualMatBeg, cone->dualMatIdx, cone->dualStep, dConePrimal);
+        HFpLinsysFSolve(cone->dualChecker, cone->nCol, dConePrimal, dAuxiMat);
+    } else {
+        HFpLinsysFSolve(cone->dualChecker, cone->nCol, cone->dualStep, dAuxiMat);
+    }
+    
+    HUtilMatTranspose(cone->nCol, dAuxiMat);
+    HFpLinsysFSolve(cone->dualChecker, cone->nCol, dAuxiMat, dConePrimal);
+    
+    double dTmpElem = 0.0;
+    for ( int iCol = 0; iCol < cone->nCol; ++iCol ) {
+        dConePrimal[iCol * cone->nCol + iCol] += 1.0;
+        for ( int iRow = iCol + 1; iRow < cone->nCol; ++iRow ) {
+            dTmpElem = 0.5 * (dConePrimal[iRow * cone->nCol + iCol] + \
+                              dConePrimal[iCol * cone->nCol + iRow]);
+            dConePrimal[iRow * cone->nCol + iCol] = \
+            dConePrimal[iCol * cone->nCol + iRow] = dTmpElem;
+        }
+    }
+    
+    HFpLinsysBSolve(cone->dualChecker, cone->nCol, dConePrimal, dAuxiMat);
+    HUtilMatTranspose(cone->nCol, dAuxiMat);
+    HFpLinsysBSolve(cone->dualChecker, cone->nCol, dAuxiMat, dConePrimal);
+    
+    for ( int iCol = 0; iCol < cone->nCol; ++iCol ) {
+        dConePrimal[iCol * cone->nCol + iCol] += 1.0;
+        for ( int iRow = iCol + 1; iRow < cone->nCol; ++iRow ) {
+            dTmpElem = 0.5 * (dConePrimal[iRow * cone->nCol + iCol] + \
+                              dConePrimal[iCol * cone->nCol + iRow]);
+            dConePrimal[iRow * cone->nCol + iCol] = \
+            dConePrimal[iCol * cone->nCol + iRow] = dTmpElem;
+        }
+    }
+
+    return;
+}
+
+extern void sdpDenseConeATimesX( hdsdp_cone_sdp_dense *cone, double *dPrimalX, double *dATimesX ) {
+    
+    for ( int iRow = 0; iRow < cone->nRow; ++iRow ) {
+        dATimesX[iRow] += sdpDataMatKKT3TraceABuffer(cone->sdpRow[iRow], dPrimalX, cone->dVecBuffer);
+    }
+    
+    return;
+}
+
+extern void sdpSparseConeATimesX( hdsdp_cone_sdp_sparse *cone, double *dPrimalX, double *dATimesX ) {
+    
+    for ( int iRowElem = 0; iRowElem < cone->nRowElem; ++iRowElem ) {
+        dATimesX[cone->rowIdx[iRowElem]] += \
+        sdpDataMatKKT3TraceABuffer(cone->sdpRow[iRowElem], dPrimalX, cone->dVecBuffer);
+    }
+    
+    return;
+}
+
 extern void sdpDenseConeClearImpl( hdsdp_cone_sdp_dense *cone ) {
     
     if ( !cone ) {

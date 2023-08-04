@@ -136,6 +136,18 @@ extern void HUtilMatSymmetrize( int n, double *v ) {
     return;
 }
 
+extern void HUtilMatTranspose( int n, double *A ) {
+    
+    double tmp = 0.0;
+    for (int i = 0, j; i < n; ++i) {
+        for (j = i + 1; j < n; ++j) {
+            tmp = A[i * n + j];
+            A[i * n + j] = A[j * n + i];
+            A[j * n + i] = tmp;
+        }
+    }
+}
+
 /* Debugging */
 extern void HUtilPrintDblContent( int n, double *d ) {
     

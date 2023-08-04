@@ -88,6 +88,7 @@ extern "C" {
 
 extern double HUtilGetTimeStamp( void );
 extern void HUtilMatSymmetrize( int n, double *v );
+extern void HUtilMatTranspose( int n, double *A );
 extern int HUtilCheckIfAscending( int n, int *idx );
 extern void HUtilDescendSortIntByInt( int *data, int *ref, int low, int up );
 extern void HUtilSortIntbyDbl( int *data, double *ref, int low, int up );

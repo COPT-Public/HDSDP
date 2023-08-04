@@ -51,6 +51,7 @@ extern void HConeReduceResi( hdsdp_cone *HCone, double resiReduction );
 extern void HConeSetPerturb( hdsdp_cone *HCone, double dPerturb );
 extern int HConePFeasSolFound( hdsdp_cone *HCone, double barHsdTauStep, double *rowDualStep );
 extern void HConeGetPrimal( hdsdp_cone *HCone, double dBarrierMu, double *dRowDual, double *dRowDualStep, double *dConePrimal, double *dConePrimal2 );
+extern void HConeComputeATimesX( hdsdp_cone *HCone, double *dConePrimal, double *dATimesX );
 extern void HConeScalByConstant( hdsdp_cone *HCone, double dScal );
 
 #ifdef __cplusplus

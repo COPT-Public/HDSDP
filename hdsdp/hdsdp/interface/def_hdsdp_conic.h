@@ -84,10 +84,10 @@ typedef struct {
     hdsdp_retcode (*coneInteriorCheckExpert) ( void *, double, double, double *, double, int, int *);
     hdsdp_retcode (*coneGetBarrier)  ( void *, double, double *, int, double * );
     hdsdp_retcode (*coneAxpyBufferAndCheck) ( void *, double, int, int * );
-    int     (*conePFeasCheck)  ( void *, double, double * );
     void    (*coneReduceResi)  ( void *, double );
     void    (*coneSetPerturb)  ( void *, double );
     void    (*conePRecover)    ( void *, double, double *, double *, double *, double *);
+    void    (*coneATimesX)     ( void *, double *, double * );
     
     double  (*coneGetCoeffNorm) ( void *, int );
     double  (*coneGetObjNorm)  ( void *, int );
