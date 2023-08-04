@@ -150,7 +150,7 @@ static void HDSDPIAdjustOneConeParams( hdsdp *HSolver ) {
     if ( isImpliedTrace ) {
         set_dbl_param(HSolver, DBL_PARAM_DUALSTART, 1e+03);
         set_dbl_param(HSolver, DBL_PARAM_TRXESTIMATE, get_dbl_feature(HSolver, DBL_FEATURE_IMPTRACEX));
-        set_dbl_param(HSolver, DBL_PARAM_POBJSTART, 1e+05);
+        set_dbl_param(HSolver, DBL_PARAM_POBJSTART, 1e+10);
         set_dbl_param(HSolver, DBL_PARAM_POTRHOVAL, 5.0);
         strcat(HSolver->modelFeatures, "trace-implied ");
     }
