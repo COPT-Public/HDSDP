@@ -184,7 +184,7 @@ extern double normalize( int *n, double *a ) {
     
     double norm = nrm2(n, a, &HIntConstantOne);
     
-    if ( norm > 1e-16 ) {
+    if ( norm > 0.0 ) {
         drscl(n, &norm, a, &HIntConstantOne);
     } else {
         norm = 0.0;

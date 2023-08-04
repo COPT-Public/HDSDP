@@ -156,8 +156,8 @@ static void HDSDPIAdjustOneConeParams( hdsdp *HSolver ) {
     }
     
     if ( isNoPrimalInterior ) {
-        set_dbl_param(HSolver, DBL_PARAM_DUALBOX_UP, 1e+04);
-        set_dbl_param(HSolver, DBL_PARAM_DUALBOX_LOW, -1e+04);
+        set_dbl_param(HSolver, DBL_PARAM_DUALBOX_UP, 1e+06);
+        set_dbl_param(HSolver, DBL_PARAM_DUALBOX_LOW, -1e+06);
         set_dbl_param(HSolver, DBL_PARAM_DUALSTART, 1e+03);
         strcat(HSolver->modelFeatures, "no-primal interior ");
     }
@@ -187,12 +187,14 @@ static void HDSDPIAdjustParams( hdsdp *HSolver ) {
     double objScal = 0.0;
     double rhsScal = 0.0;
     
+    objScal = 1.0;
+    
     if ( objOneNorm > 1e+10 ) {
         objScal = 1e-08;
     } else if ( objOneNorm > 1e+08 ) {
         objScal = 1e-06;
-    } else {
-        objScal = 1.0;
+    } else if ( objOneNorm > 1e+05 ) {
+        objScal = 1e-05;
     }
     
     if ( rhsInfNorm > 1e+10 ) {
@@ -296,12 +298,12 @@ static void HDSDPIGetDefaultParams( hdsdp *HSolver ) {
     set_int_param(HSolver, INT_PARAM_MAXITER, 500);
     set_int_param(HSolver, INT_PARAM_CORRECTORA, 12);
     set_int_param(HSolver, INT_PARAM_CORRECTORB, 12);
-    set_int_param(HSolver, INT_PARAM_THREADS, 20);
+    set_int_param(HSolver, INT_PARAM_THREADS, 12);
     
-    set_dbl_param(HSolver, DBL_PARAM_ABSOPTTOL, 1e-08);
-    set_dbl_param(HSolver, DBL_PARAM_ABSFEASTOL, 1e-08);
-    set_dbl_param(HSolver, DBL_PARAM_RELOPTTOL, 1e-08);
-    set_dbl_param(HSolver, DBL_PARAM_RELFEASTOL, 1e-08);
+    set_dbl_param(HSolver, DBL_PARAM_ABSOPTTOL, 1e-10);
+    set_dbl_param(HSolver, DBL_PARAM_ABSFEASTOL, 1e-10);
+    set_dbl_param(HSolver, DBL_PARAM_RELOPTTOL, 1e-10);
+    set_dbl_param(HSolver, DBL_PARAM_RELFEASTOL, 1e-10);
     set_dbl_param(HSolver, DBL_PARAM_TIMELIMIT, 3600.0);
     set_dbl_param(HSolver, DBL_PARAM_POTRHOVAL, 4.0);
     set_dbl_param(HSolver, DBL_PARAM_HSDGAMMA, 0.5);

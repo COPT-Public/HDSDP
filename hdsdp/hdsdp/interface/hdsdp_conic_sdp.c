@@ -647,7 +647,7 @@ static hdsdp_retcode sdpDenseConeIGetKKTOrdering( hdsdp_cone_sdp_dense *cone ) {
                                        cone->sdpConePerm, cone->nRow, cone->nCol, iPerm);
     }
     
-#if 1
+#if 0
     int KKTMethods[5] = {0};
     for ( int iRow = 0; iRow < cone->nRow; ++iRow ) {
         KKTMethods[cone->KKTStrategies[iRow]] += 1;

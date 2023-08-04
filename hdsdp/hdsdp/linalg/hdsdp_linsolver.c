@@ -14,6 +14,35 @@
 
 #include <math.h>
 
+#ifdef HDSDP_LINSYS_PROFILE
+static int iPrintPardiso = 1;
+static double dPardisoNumeric = 0.0;
+static double dPardisoPsdCheck = 0.0;
+static double dPardisoForward = 0.0;
+static double dPardisoBackward = 0.0;
+static double dPardisoSolve = 0.0;
+static double dPardisoInvert = 0.0;
+static int nPardisoNumeric = 0;
+static int nPardisoPsdCheck = 0;
+static int nPardisoForward = 0;
+static int nPardisoBackward = 0;
+static int nPardisoSolve = 0;
+static int nPardisoInvert = 0;
+static int iPrintLapack = 1;
+static double dLapackNumeric = 0.0;
+static double dLapackPsdCheck = 0.0;
+static double dLapackForward = 0.0;
+static double dLapackBackward = 0.0;
+static double dLapackSolve = 0.0;
+static double dLapackInvert = 0.0;
+static int nLapackNumeric = 0;
+static int nLapackPsdCheck = 0;
+static int nLapackForward = 0;
+static int nLapackBackward = 0;
+static int nLapackSolve = 0;
+static int nLapackInvert = 0;
+#endif
+
 /* Sparse direct solver interface */
 static hdsdp_retcode pardisoLinSolverCreate( void **pchol, int nCol ) {
     
@@ -58,7 +87,7 @@ static void pardisoLinSolverSetThreads( void *chol, void *pThreads ) {
     pardiso_linsys *pds = (pardiso_linsys *) chol;
     
     int nThreads = *((int *) pThreads);
-    // set_pardiso_param(pds->iparm, PARDISO_PARAM_THREADS, nThreads);
+    set_pardiso_param(pds->iparm, PARDISO_PARAM_THREADS, nThreads);
     
     return;
 }
@@ -175,9 +204,18 @@ static hdsdp_retcode pardisoLinSolverNumeric( void *chol, int *colMatBeg, int *c
     int maxfct = 1, mnum = 1, mtype = PARDISO_SYM_POSDEFINITE, phase = PARDISO_PHASE_FAC;
     int idummy = 0, msg = 0, pdsret = PARDISO_RET_OK;
     
+#ifdef HDSDP_LINSYS_PROFILE
+    double dTBeg = HUtilGetTimeStamp();
+#endif
+    
     pardiso(pds->pt, &maxfct, &mnum, &mtype, &phase,
             &pds->nCol, colMatElem, colMatBeg, colMatIdx, &idummy, &idummy,
             pds->iparm, &msg, NULL, NULL, &pdsret);
+    
+#ifdef HDSDP_LINSYS_PROFILE
+    dPardisoNumeric += HUtilGetTimeStamp() - dTBeg;
+    nPardisoNumeric += 1;
+#endif
     
     if ( pdsret != PARDISO_RET_OK ) {
         retcode = HDSDP_RETCODE_FAILED;
@@ -201,9 +239,18 @@ static hdsdp_retcode pardisoLinSolverPsdCheck( void *chol, int *colMatBeg, int *
     int maxfct = 1, mnum = 1, mtype = PARDISO_SYM_POSDEFINITE, phase = PARDISO_PHASE_FAC;
     int idummy = 0, msg = 0, pdsret = PARDISO_RET_OK;
     
+#ifdef HDSDP_LINSYS_PROFILE
+    double dTBeg = HUtilGetTimeStamp();
+#endif
+    
     pardiso(pds->pt, &maxfct, &mnum, &mtype, &phase,
             &pds->nCol, colMatElem, colMatBeg, colMatIdx, &idummy, &idummy,
             pds->iparm, &msg, NULL, NULL, &pdsret);
+    
+#ifdef HDSDP_LINSYS_PROFILE
+    dPardisoPsdCheck += HUtilGetTimeStamp() - dTBeg;
+    nPardisoPsdCheck += 1;
+#endif
     
     if ( pdsret == PARDISO_RET_OK ) {
         *isPsd = 1;
@@ -226,6 +273,10 @@ static void pardisoLinSolverForwardN( void *chol, int nRhs, double *rhsVec, doub
     int maxfct = 1, mnum = 1, mtype = PARDISO_SYM_POSDEFINITE, phase = PARDISO_PHASE_FORWARD;
     int idummy = 0, msg = 0, pdsret = PARDISO_RET_OK;
     
+#ifdef HDSDP_LINSYS_PROFILE
+    double dTBeg = HUtilGetTimeStamp();
+#endif
+    
     /* Do not overwrite */
     if ( solVec ) {
         set_pardiso_param(pds->iparm, PARDISO_PARAM_INPLACE, 0);
@@ -240,6 +291,11 @@ static void pardisoLinSolverForwardN( void *chol, int nRhs, double *rhsVec, doub
                 &pds->nCol, pds->colMatElem, pds->colMatBeg, pds->colMatIdx, &idummy, &nRhs,
                 pds->iparm, &msg, rhsVec, pds->dWork, &pdsret);
     }
+    
+#ifdef HDSDP_LINSYS_PROFILE
+    dPardisoForward += HUtilGetTimeStamp() - dTBeg;
+    nPardisoForward += 1;
+#endif
     
     return;
 }
@@ -251,6 +307,10 @@ static void pardisoLinSolverBackwardN( void *chol, int nRhs, double *rhsVec, dou
     int maxfct = 1, mnum = 1, mtype = PARDISO_SYM_POSDEFINITE, phase = PARDISO_PHASE_BACKWARD;
     int idummy = 0, msg = 0, pdsret = PARDISO_RET_OK;
     
+#ifdef HDSDP_LINSYS_PROFILE
+    double dTBeg = HUtilGetTimeStamp();
+#endif
+    
     /* Do not overwrite */
     if ( solVec ) {
         set_pardiso_param(pds->iparm, PARDISO_PARAM_INPLACE, 0);
@@ -265,6 +325,11 @@ static void pardisoLinSolverBackwardN( void *chol, int nRhs, double *rhsVec, dou
                 &pds->nCol, pds->colMatElem, pds->colMatBeg, pds->colMatIdx, &idummy, &nRhs,
                 pds->iparm, &msg, rhsVec, pds->dWork, &pdsret);
     }
+    
+#ifdef HDSDP_LINSYS_PROFILE
+    dPardisoBackward += HUtilGetTimeStamp() - dTBeg;
+    nPardisoBackward += 1;
+#endif
     
     return;
 }
@@ -276,6 +341,10 @@ static hdsdp_retcode pardisoLinSolverSolveN( void *chol, int nRhs, double *rhsVe
     int maxfct = 1, mnum = 1, mtype = PARDISO_SYM_POSDEFINITE, phase = PARDISO_PHASE_SOLVE;
     int idummy = 0, msg = 0, pdsret = PARDISO_RET_OK;
     
+#ifdef HDSDP_LINSYS_PROFILE
+    double dTBeg = HUtilGetTimeStamp();
+#endif
+    
     /* Do not overwrite */
     if ( solVec ) {
         set_pardiso_param(pds->iparm, PARDISO_PARAM_INPLACE, 0);
@@ -290,6 +359,11 @@ static hdsdp_retcode pardisoLinSolverSolveN( void *chol, int nRhs, double *rhsVe
                 &pds->nCol, pds->colMatElem, pds->colMatBeg, pds->colMatIdx, &idummy, &nRhs,
                 pds->iparm, &msg, rhsVec, pds->dWork, &pdsret);
     }
+    
+#ifdef HDSDP_LINSYS_PROFILE
+    dPardisoSolve += HUtilGetTimeStamp() - dTBeg;
+    nPardisoSolve += 1;
+#endif
     
     return HDSDP_RETCODE_OK;
 }
@@ -328,7 +402,16 @@ static void pardisoLinSolverInvert( void *chol, double *dFullMatrix, double *dAu
         pElem += pds->nCol + 1;
     }
     
+#ifdef HDSDP_LINSYS_PROFILE
+    double dTBeg = HUtilGetTimeStamp();
+#endif
+    
     pardisoLinSolverSolveN(chol, pds->nCol, dAuxiMatrix, dFullMatrix);
+    
+#ifdef HDSDP_LINSYS_PROFILE
+    dPardisoInvert += HUtilGetTimeStamp() - dTBeg;
+    nPardisoInvert += 1;
+#endif
     
     return;
 }
@@ -414,7 +497,17 @@ static hdsdp_retcode lapackLinSolverNumeric( void *chol, int *dummy1, int *dummy
     
     int info = LAPACK_RET_OK;
     char uplolow = LAPACK_UPLOW_LOW;
+    
+#ifdef HDSDP_LINSYS_PROFILE
+    double dTBeg = HUtilGetTimeStamp();
+#endif
+    
     dpotrf(&uplolow, &lap->nCol, lap->dFullMatElem, &lap->nCol, &info);
+    
+#ifdef HDSDP_LINSYS_PROFILE
+    dLapackNumeric += HUtilGetTimeStamp() - dTBeg;
+    nLapackNumeric += 1;
+#endif
     
     if ( info != LAPACK_RET_OK ) {
         retcode = HDSDP_RETCODE_FAILED;
@@ -434,7 +527,17 @@ static hdsdp_retcode lapackLinSolverPsdCheck( void *chol, int *dummy1, int *dumm
     
     int info = LAPACK_RET_OK;
     char uplolow = LAPACK_UPLOW_LOW;
+    
+#ifdef HDSDP_LINSYS_PROFILE
+    double dTBeg = HUtilGetTimeStamp();
+#endif
+    
     dpotrf(&uplolow, &lap->nCol, lap->dFullMatElem, &lap->nCol, &info);
+    
+#ifdef HDSDP_LINSYS_PROFILE
+    dLapackPsdCheck += HUtilGetTimeStamp() - dTBeg;
+    nLapackPsdCheck += 1;
+#endif
     
     if ( info == LAPACK_RET_OK ) {
         *isPsd = 1;
@@ -456,6 +559,9 @@ static void lapackLinSolverForwardN( void *chol, int nRhs, double *rhsVec, doubl
     char uplolow = LAPACK_UPLOW_LOW, sideleft = LAPACK_SIDE_LEFT, notrans = LAPACK_NOTRANS, nonunit = LAPACK_DIAG_NONUNIT;
     double done = 1.0;
     
+#ifdef HDSDP_LINSYS_PROFILE
+    double dTBeg = HUtilGetTimeStamp();
+#endif
     if ( solVec ) {
         HDSDP_MEMCPY(solVec, rhsVec, double, nRhs * lap->nCol);
         dtrsm(&sideleft, &uplolow, &notrans, &nonunit, &lap->nCol, &nRhs,
@@ -464,6 +570,10 @@ static void lapackLinSolverForwardN( void *chol, int nRhs, double *rhsVec, doubl
         dtrsm(&sideleft, &uplolow, &notrans, &nonunit, &lap->nCol, &nRhs,
               &done, lap->dFullMatElem, &lap->nCol, rhsVec, &lap->nCol);
     }
+#ifdef HDSDP_LINSYS_PROFILE
+    dLapackForward += HUtilGetTimeStamp() - dTBeg;
+    nLapackForward += 1;
+#endif
  
     return;
 }
@@ -475,6 +585,9 @@ static void lapackLinSolverBackwardN( void *chol, int nRhs, double *rhsVec, doub
     char uplolow = LAPACK_UPLOW_LOW, sideleft = LAPACK_SIDE_LEFT, trans = LAPACK_TRANS, nonunit = LAPACK_DIAG_NONUNIT;
     double done = 1.0;
     
+#ifdef HDSDP_LINSYS_PROFILE
+    double dTBeg = HUtilGetTimeStamp();
+#endif
     if ( solVec ) {
         HDSDP_MEMCPY(solVec, rhsVec, double, nRhs * lap->nCol);
         dtrsm(&sideleft, &uplolow, &trans, &nonunit, &lap->nCol, &nRhs,
@@ -483,6 +596,10 @@ static void lapackLinSolverBackwardN( void *chol, int nRhs, double *rhsVec, doub
         dtrsm(&sideleft, &uplolow, &trans, &nonunit, &lap->nCol, &nRhs,
               &done, lap->dFullMatElem, &lap->nCol, rhsVec, &lap->nCol);
     }
+#ifdef HDSDP_LINSYS_PROFILE
+    dLapackBackward += HUtilGetTimeStamp() - dTBeg;
+    nLapackBackward += 1;
+#endif
  
     return;
 }
@@ -494,6 +611,9 @@ static hdsdp_retcode lapackLinSolverSolveN( void *chol, int nRhs, double *rhsVec
     int info = LAPACK_RET_OK;
     char uplolow = LAPACK_UPLOW_LOW;
     
+#ifdef HDSDP_LINSYS_PROFILE
+    double dTBeg = HUtilGetTimeStamp();
+#endif
     if ( solVec ) {
         HDSDP_MEMCPY(solVec, rhsVec, double, nRhs * lap->nCol);
         dpotrs(&uplolow, &lap->nCol, &nRhs, lap->dFullMatElem,
@@ -502,6 +622,11 @@ static hdsdp_retcode lapackLinSolverSolveN( void *chol, int nRhs, double *rhsVec
         dpotrs(&uplolow, &lap->nCol, &nRhs, lap->dFullMatElem,
                &lap->nCol, rhsVec, &lap->nCol, &info);
     }
+    
+#ifdef HDSDP_LINSYS_PROFILE
+    dLapackSolve += HUtilGetTimeStamp() - dTBeg;
+    nLapackSolve += 1;
+#endif
     
     assert( info == LAPACK_RET_OK );
     
@@ -528,8 +653,15 @@ static void lapackLinSolverInvert( void *chol, double *dFullMatrix, double *dAux
     int info = LAPACK_RET_OK;
     char uplolow = LAPACK_UPLOW_LOW;
     
+#ifdef HDSDP_LINSYS_PROFILE
+    double dTBeg = HUtilGetTimeStamp();
+#endif
     dpotri(&uplolow, &lap->nCol, dFullMatrix, &lap->nCol, &info);
     HUtilMatSymmetrize(lap->nCol, dFullMatrix);
+#ifdef HDSDP_LINSYS_PROFILE
+    dLapackInvert += HUtilGetTimeStamp() - dTBeg;
+    nLapackInvert += 1;
+#endif
     
     assert( info == LAPACK_RET_OK );
     
@@ -1305,7 +1437,6 @@ exit_cleanup:
     return retcode;
 }
 
-
 extern void HFpLinsysInvert( hdsdp_linsys_fp *HLin, double *dFullMatrix, double *dAuxiMatrix ) {
     
     HLin->cholInvert(HLin->chol, dFullMatrix, dAuxiMatrix);
@@ -1333,6 +1464,60 @@ extern void HFpLinsysDestroy( hdsdp_linsys_fp **HLin ) {
     
     HFpLinsysClear(*HLin);
     HDSDP_FREE(*HLin);
+    
+#ifdef HDSDP_LINSYS_PROFILE
+    
+    if ( iPrintPardiso ) {
+        hdsdp_printf("\n-------------------------------\n");
+        hdsdp_printf("Sparse Linear system statistics \n");
+        hdsdp_printf("-------------------------------\n");
+        hdsdp_printf("\nPardiso time: \nNumeric: %f \nSolve: %f \nCheck: %f \nInvert %f \nForward: %f \nBackward: %f \n",
+               dPardisoNumeric, dPardisoSolve, dPardisoPsdCheck, dPardisoInvert, dPardisoForward, dPardisoBackward);
+        hdsdp_printf("\nPardiso call: \nNumeric: %d \nSolve: %d \nCheck: %d \nInvert %d \nForward: %d \nBackward: %d \n",
+               nPardisoNumeric, nPardisoSolve, nPardisoPsdCheck, nPardisoInvert, nPardisoForward, nPardisoBackward);
+        iPrintPardiso = 0;
+    }
+    
+    dPardisoSolve = 0.0;
+    dPardisoNumeric = 0.0;
+    dPardisoPsdCheck = 0.0;
+    dPardisoInvert = 0.0;
+    dPardisoForward = 0.0;
+    dPardisoBackward = 0.0;
+    
+    nPardisoSolve = -1;
+    nPardisoNumeric = -1;
+    nPardisoPsdCheck = -1;
+    nPardisoInvert = -1;
+    nPardisoForward = -1;
+    nPardisoBackward = -1;
+    
+    if ( iPrintLapack ) {
+        hdsdp_printf("\n------------------------------\n");
+        hdsdp_printf("Dense Linear system statistics  \n");
+        hdsdp_printf("------------------------------\n");
+        hdsdp_printf("\nLapack time: \nNumeric: %f \nSolve: %f \nCheck: %f \nInvert %f \nForward: %f \nBackward: %f \n",
+               dLapackNumeric, dLapackSolve, dLapackPsdCheck, dLapackInvert, dLapackForward, dLapackBackward);
+        hdsdp_printf("\nLapack call: \nNumeric: %d \nSolve: %d \nCheck: %d \nInvert %d \nForward: %d \nBackward: %d \n",
+               nLapackNumeric, nLapackSolve, nLapackPsdCheck, nLapackInvert, nLapackForward, nLapackBackward);
+        iPrintLapack = 0;
+    }
+    
+    dLapackSolve = 0.0;
+    dLapackNumeric = 0.0;
+    dLapackPsdCheck = 0.0;
+    dLapackInvert = 0.0;
+    dLapackForward = 0.0;
+    dLapackBackward = 0.0;
+    
+    nLapackSolve = -1;
+    nLapackNumeric = -1;
+    nLapackPsdCheck = -1;
+    nLapackInvert = -1;
+    nLapackForward = -1;
+    nLapackBackward = -1;
+    
+#endif
     
     return;
 }

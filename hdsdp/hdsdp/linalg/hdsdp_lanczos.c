@@ -156,7 +156,7 @@ extern hdsdp_retcode HLanczosSolve( hdsdp_lanczos *HLanczos, double *LanczosStar
         HDSDP_LANCZOS_DEBUG("Loaded user Lanczos warm-start. %s\n", "");
         HDSDP_MEMCPY(HLanczos->vVec, LanczosStart, double, HLanczos->nCol);
     } else {
-        if ( HLanczos->nComputed == 0 ) {
+        if ( HLanczos->nComputed == 0 || 1 ) {
             HDSDP_LANCZOS_DEBUG("Starting Lanczos from scratch. %s\n", "");
             HLanczosIPrepare(HLanczos->nCol, HLanczos->vVec);
         } else {
@@ -200,11 +200,14 @@ extern hdsdp_retcode HLanczosSolve( hdsdp_lanczos *HLanczos, double *LanczosStar
         
         HDSDP_MEMCPY(HLanczos->vVec, HLanczos->wVec, double, HLanczos->nCol);
         normPres = normalize(&HLanczos->nCol, HLanczos->vVec);
-        HDSDP_MEMCPY(&V(0, k + 1), HLanczos->vVec, double, HLanczos->nCol);
-        H(k + 1, k) = H(k, k + 1) = normPres;
+        
+        if ( normPres > 0.0 ) {
+            HDSDP_MEMCPY(&V(0, k + 1), HLanczos->vVec, double, HLanczos->nCol);
+            H(k + 1, k) = H(k, k + 1) = normPres;
+        }
         
         /* Frequently check subspace */
-        if ( ( k + 1 ) % LCheckFrequency == 0 || k > HLanczos->nMaxSpaceDim - 1 ) {
+        if ( ( k + 1 ) % LCheckFrequency == 0 || k > HLanczos->nMaxSpaceDim - 1 || normPres == 0.0 ) {
             
             HDSDP_LANCZOS_DEBUG("Entering Lanczos internal check at iteration %d.\n", k);
             

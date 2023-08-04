@@ -66,6 +66,7 @@ static void HDSDP_SetStart( hdsdp *HSolver, int SDPMethod, int dOnly ) {
     HSolver->dBarHsdTau = 1.0;
     
     double objFroNorm = get_dbl_feature(HSolver, DBL_FEATURE_OBJFRONORM);
+    objFroNorm = objFroNorm * get_dbl_feature(HSolver, DBL_FEATURE_OBJSCALING);
     objFroNorm = HDSDP_MAX(objFroNorm, 100.0);
     
     if ( SDPMethod == HDSDP_ALGO_DUAL_HSD ) {
@@ -81,7 +82,7 @@ static void HDSDP_SetStart( hdsdp *HSolver, int SDPMethod, int dOnly ) {
     } else if ( SDPMethod == HDSDP_ALGO_DUAL_INFEAS ) {
         
         /* Initialization for dual infeasible algorithm */
-        HSolver->dResidual = - objFroNorm * get_dbl_param(HSolver, DBL_PARAM_DUALSTART) * get_dbl_feature(HSolver, DBL_FEATURE_OBJSCALING);
+        HSolver->dResidual = - objFroNorm * get_dbl_param(HSolver, DBL_PARAM_DUALSTART);
         HSolver->pInfeas = 1.0 + get_dbl_feature(HSolver, DBL_FEATURE_RHSFRONORM);
         HSolver->pObjInternal = get_dbl_param(HSolver, DBL_PARAM_POBJSTART);
         HSolver->dBarrierMu = HSolver->pObjInternal - HSolver->dObjInternal - \
@@ -188,12 +189,12 @@ static void HDSDP_PrintLog( hdsdp *HSolver, int SDPMethod ) {
             break;
         case HDSDP_ALGO_DUAL_INFEAS:
             hdsdp_printf("    %5d  %+12.5e  %+12.5e  %8.2e  %8.2e  %5.2f  %5.1e  %4.1f \n", HSolver->nIterCount + 1,
-                   HSolver->pObjVal * pdObjScal, HSolver->dObjVal * pdObjScal, HSolver->dInfeas, HSolver->dBarrierMu,
+                   HSolver->pObjVal, HSolver->dObjVal, HSolver->dInfeas, HSolver->dBarrierMu,
                    HSolver->dDStep, HSolver->dProxNorm, elapsedTime);
             break;
         case HDSDP_ALGO_DUAL_POTENTIAL:
             hdsdp_printf("    %5d  %+12.5e  %+12.5e  %8.2e  %8.2e  %5.2f  %5.1e  %4.1f \n", HSolver->nIterCount + 1,
-                   HSolver->pObjVal * pdObjScal, HSolver->dObjVal * pdObjScal, HSolver->pInfeas, HSolver->dBarrierMu,
+                   HSolver->pObjVal, HSolver->dObjVal, HSolver->pInfeas, HSolver->dBarrierMu,
                    HSolver->dDStep, HSolver->dProxNorm, elapsedTime);
             break;
         default:
@@ -355,8 +356,6 @@ static hdsdp_retcode HDSDP_HSD_RatioTest( hdsdp *HSolver, double *dMaxDist ) {
         HSolver->nSmallStep += 1;
         if ( HSolver->nSmallStep > 2 ) {
             hdsdp_printf("HDSDP stagates at the cone boundary. \n");
-            retcode = HDSDP_RETCODE_FAILED;
-            goto exit_cleanup;
         }
     }
     
@@ -760,10 +759,6 @@ static hdsdp_retcode HDSDP_RatioTest( hdsdp *HSolver, double dAdaRatio, double *
                               dAdaRatio, BUFFER_DUALVAR, &dStep));
     dMaxStep = HDSDP_MIN(dMaxStep, dStep);
     
-    if ( dMaxStep < 1e-03 ) {
-        HSolver->nSmallStep += 1;
-    }
-    
 exit_cleanup:
     *dMaxDist = dMaxStep;
     return retcode;
@@ -1141,6 +1136,11 @@ static hdsdp_retcode HDSDP_PhaseA_BarInfeasSolve( hdsdp *HSolver, int dOnly ) {
         /* Final ratio test */
         HDSDP_CALL(HDSDP_RatioTest(HSolver, dAdaRatio, &HSolver->dDStep));
         HSolver->dDStep = HDSDP_MIN(0.95 * HSolver->dDStep, 1.0);
+        
+        if ( HSolver->dDStep < 1e-03 ) {
+            HSolver->nSmallStep += 1;
+        }
+        
         algo_debug("Stepsize: %e\n", HSolver->dDStep);
         
         /* Take step */
@@ -1429,10 +1429,6 @@ static hdsdp_retcode HDSDP_Reduce_Potential( hdsdp *HSolver ) {
         dDualStep *= 0.3;
     }
     
-    if ( HSolver->dDStep < 1e-03 ) {
-        HSolver->nSmallStep += 1;
-    }
-    
     HSolver->dDStep = dDualStep;
     HSolver->dPotentialVal = dPotentialNew;
     
@@ -1685,6 +1681,10 @@ static hdsdp_retcode HDSDP_PhaseB_BarDualPotentialSolve( hdsdp *HSolver ) {
         
         /* Reduce potential function by line-search */
         HDSDP_CALL(HDSDP_Reduce_Potential(HSolver));
+        
+        if ( HSolver->dDStep < 1e-03 ) {
+            HSolver->nSmallStep += 1;
+        }
         
         /* Call centrality corrector */
         HDSDP_CALL(HDSDP_Feasible_Corrector(HSolver));
