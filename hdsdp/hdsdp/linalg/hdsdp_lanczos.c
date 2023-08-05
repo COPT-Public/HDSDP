@@ -217,7 +217,7 @@ extern hdsdp_retcode HLanczosSolve( hdsdp_lanczos *HLanczos, double *LanczosStar
             }
             
             dArrSymmetrize(kPlus1, HLanczos->UMat);
-            HDSDP_CALL(fds_syev(kPlus1, HLanczos->UMat, HLanczos->dArray, HLanczos->YMat,
+            HDSDP_CALL(fds_syev(kPlus1, HLanczos->UMat, HLanczos->dArray, HLanczos->YMat, 2,
                                 HLanczos->eigDblMat, HLanczos->eigIntMat, ldWork, liWork));
             
             double resiVal = fabs( H(kPlus1, k) * HLanczos->YMat[kPlus1 + k] );

@@ -10,6 +10,7 @@
 #include "interface/hdsdp_user_data.h"
 #include "interface/hdsdp_schur.h"
 #include "interface/hdsdp_algo.h"
+#include "linalg/dense_opts.h"
 #else
 #include "def_hdsdp.h"
 #include "hdsdp.h"
@@ -19,6 +20,8 @@
 #include "hdsdp_user_data.h"
 #include "hdsdp_schur.h"
 #include "hdsdp_algo.h"
+#include "dense_opts.h"
+#include "vec_opts.h"
 #endif
 
 #include <math.h>
@@ -371,9 +374,9 @@ static void HDSDPIPrintSolutionStats( hdsdp *HSolver ) {
         assert( 0 );
     }
     
-    hdsdp_printf("Primal Obj: %+20.10e\n", HSolver->pObjVal);
-    hdsdp_printf("Dual Obj  : %+20.10e\n", HSolver->dObjVal);
-    hdsdp_printf("PD Gap    : %+20.10e\n", (HSolver->pObjVal - HSolver->dObjVal) / (fabs(HSolver->pObjVal) + fabs(HSolver->dObjVal) + 1.0));
+    hdsdp_printf("Final pObj   %+20.10e\n", HSolver->pObjVal);
+    hdsdp_printf("Final dObj   %+20.10e\n", HSolver->dObjVal);
+    hdsdp_printf("Final PD Gap %+20.10e\n", HSolver->pObjVal - HSolver->dObjVal);
     hdsdp_printf("\n");
     
     return;
@@ -557,6 +560,7 @@ extern hdsdp_retcode HDSDPOptimize( hdsdp *HSolver, int dOptOnly ) {
     
     /* Invoke solver */
     retcode = HDSDPSolve(HSolver, dOptOnly);
+    HDSDPCheckSolution(HSolver, HSolver->dErrs);
     HDSDPIPrintSolutionStats(HSolver);
     
 exit_cleanup:
@@ -583,13 +587,18 @@ exit_cleanup:
     return retcode;
 }
 
-extern hdsdp_retcode HDSDPGetConeValues( hdsdp *HSolver, int iCone, double *conePrimal, double *coneDual ) {
+extern void HDSDPGetConeValues( hdsdp *HSolver, int iCone, double *conePrimal, double *coneDual, double *coneAuxi ) {
+        
+    if ( conePrimal ) {
+        HConeGetPrimal(HSolver->HCones[iCone], HSolver->dAccBarrierMaker,
+                       HSolver->dAccRowDualMaker, HSolver->dAccRowDualStepMaker, conePrimal, coneAuxi);
+    }
     
-    hdsdp_retcode retcode = HDSDP_RETCODE_OK;
+    if ( coneDual ) {
+        HConeGetDual(HSolver->HCones[iCone], coneDual, coneAuxi);
+    }
     
-    
-exit_cleanup:
-    return retcode;
+    return;
 }
 
 #define DIMACS_ERROR_1 0
@@ -598,9 +607,11 @@ exit_cleanup:
 #define DIMACS_ERROR_4 3
 #define DIMACS_ERROR_5 4
 #define DIMACS_ERROR_6 5
-extern void HDSDPCheckSolution( hdsdp *HSolver, double dErrs[6] ) {
+extern hdsdp_retcode HDSDPCheckSolution( hdsdp *HSolver, double dErrs[6] ) {
     /* Compute and report 6 DIMACS error */
     
+    hdsdp_retcode retcode = HDSDP_RETCODE_OK;
+        
     dErrs[DIMACS_ERROR_1] = 1.0;
     dErrs[DIMACS_ERROR_2] = 1.0;
     dErrs[DIMACS_ERROR_3] = 1.0;
@@ -608,9 +619,91 @@ extern void HDSDPCheckSolution( hdsdp *HSolver, double dErrs[6] ) {
     dErrs[DIMACS_ERROR_5] = 1.0;
     dErrs[DIMACS_ERROR_6] = 1.0;
     
-    hdsdp_printf("DIMACS errors: %5.2e %5.2e %5.2e %5.2e %5.2e %5.2e \n",
-                 dErrs[DIMACS_ERROR_1], dErrs[DIMACS_ERROR_2], dErrs[DIMACS_ERROR_3],
-                 dErrs[DIMACS_ERROR_4], dErrs[DIMACS_ERROR_5], dErrs[DIMACS_ERROR_6]);
+    double dPrimalInfeas = HDSDP_INFINITY;
+    /* We guarantee dual infeasibility up to a diagonal perturbation */
+    double dDualInfeas = HSolver->dPerturb * sqrt(get_int_feature(HSolver, INT_FEATURE_N_SUMCONEDIMS));
+    double dMinPrimalEVal = HDSDP_INFINITY;
+    /* We guarantee dual interior point solution */
+    double dCompl = 0.0;
+    double dPrimalObj = 0.0;
+    double dDualObj = 0.0;
+    
+    double dPrimalScal = get_dbl_feature(HSolver, DBL_FEATURE_RHSSCALING);
+    double dDualScal = get_dbl_feature(HSolver, DBL_FEATURE_OBJSCALING);
+    
+    int nMaxDim = get_int_feature(HSolver, INT_FEATURE_N_MAXCONEDIM);
+    int nConeDimSqr = 0;
+    
+    double *dPrimalMatBuffer = NULL;
+    double *dDualMatBuffer = NULL;
+    double *dAuxiMat = NULL;
+    double dEValAuxi[2] = {0.0, 0.0};
+    
+    int lWork = nMaxDim * 30;
+    int liWork = nMaxDim * 12;
+    double *dWork = NULL;
+    int *iWork = NULL;
+    
+    /* Prepare space */
+    HDSDP_INIT(dPrimalMatBuffer, double, nMaxDim * nMaxDim);
+    HDSDP_MEMCHECK(dPrimalMatBuffer);
+    HDSDP_INIT(dDualMatBuffer, double, nMaxDim * nMaxDim);
+    HDSDP_MEMCHECK(dDualMatBuffer);
+    HDSDP_INIT(dAuxiMat, double, nMaxDim * nMaxDim);
+    HDSDP_MEMCHECK(dAuxiMat);
+    HDSDP_INIT(iWork, int, liWork);
+    HDSDP_MEMCHECK(iWork);
+    HDSDP_INIT(dWork, double, lWork);
+    HDSDP_MEMCHECK(dWork);
+    
+    /* Compute dual objective */
+    for ( int iRow = 0; iRow < HSolver->nRows; ++iRow ) {
+        dDualObj += HSolver->rowRHS[iRow] * HSolver->dRowDual[iRow];
+    }
+        
+    /* Check DIMACS errors of the SDP solution */
+    HDSDP_ZERO(HSolver->dHAuxiVec1, double, HSolver->nRows);
+    for ( int iCone = 0; iCone < HSolver->nCones; ++iCone ) {
+        HDSDPGetConeValues(HSolver, iCone, dPrimalMatBuffer, dDualMatBuffer, dAuxiMat);
+        /* Get A * X */
+        HConeComputeATimesX(HSolver->HCones[iCone], dPrimalMatBuffer, HSolver->dHAuxiVec1);
+        /* Compute complementarity */
+        nConeDimSqr = HConeGetDim(HSolver->HCones[iCone]) * HConeGetDim(HSolver->HCones[iCone]);
+        dCompl += dot(&nConeDimSqr, dPrimalMatBuffer, &HIntConstantOne, dDualMatBuffer, &HIntConstantOne);
+        dPrimalObj += HConeComputeTraceCX(HSolver->HCones[iCone], dPrimalMatBuffer);
+        /* Eigen-decompose X to get the minimum eigenvalue */
+        fds_syev(HConeGetDim(HSolver->HCones[iCone]), dPrimalMatBuffer, dEValAuxi, dAuxiMat, 1, dWork, iWork, lWork, liWork);
+        dMinPrimalEVal = HDSDP_MIN(dMinPrimalEVal, dEValAuxi[0]);
+    }
+    
+    dDualObj = dDualObj * dPrimalScal * dDualScal;
+    dPrimalObj = dPrimalObj * dPrimalScal * dDualScal;
+    
+    for ( int iRow = 0; iRow < HSolver->nRows; ++iRow ) {
+        HSolver->dHAuxiVec1[iRow] -= HSolver->rowRHS[iRow];
+    }
+    
+    dPrimalInfeas = nrm2(&HSolver->nRows, HSolver->dHAuxiVec1, &HIntConstantOne);
+    dPrimalInfeas = dPrimalInfeas / get_dbl_feature(HSolver, DBL_FEATURE_RHSSCALING);
+    dDualInfeas = dDualInfeas / get_dbl_feature(HSolver, DBL_FEATURE_OBJSCALING);
+    
+    /* Collect DIMACS errors */
+    /* DIMACS error 1: pInfeas / (1 + ||b||_1)*/
+    dErrs[DIMACS_ERROR_1] = dPrimalInfeas / (1.0 + get_dbl_feature(HSolver, DBL_FEATURE_RHSONENORM));
+    /* DIMACS error 2: -lambda_min(X) / (1 + ||b||_1) */
+    if ( dMinPrimalEVal < 0.0 ) {
+        dErrs[DIMACS_ERROR_2] = - dMinPrimalEVal / (1.0 + get_dbl_feature(HSolver, DBL_FEATURE_RHSONENORM));
+    } else {
+        dErrs[DIMACS_ERROR_2] = 0.0;
+    }
+    /* DIMACS error 3: dInfeas / (1 + ||C||) */
+    dErrs[DIMACS_ERROR_3] = dDualInfeas / (1.0 + get_dbl_feature(HSolver, DBL_FEATURE_OBJONENORM));
+    /* DIMACS error 4: -lambda_min(S) / (1 + ||C||_1) */
+    dErrs[DIMACS_ERROR_4] = 0.0;
+    /* DIMACS error 5 */
+    dErrs[DIMACS_ERROR_5] = (dPrimalObj - dDualObj) / (fabs(dPrimalObj) + fabs(dDualObj) + 1.0);
+    /* DIMACS error 6 */
+    dErrs[DIMACS_ERROR_6] = dCompl / (fabs(dPrimalObj) + fabs(dDualObj) + 1.0);
     
     double dMaxDimacsErr = 0.0;
     
@@ -618,9 +711,29 @@ extern void HDSDPCheckSolution( hdsdp *HSolver, double dErrs[6] ) {
         dMaxDimacsErr = HDSDP_MAX(dMaxDimacsErr, dErrs[iElem]);
     }
     
-    hdsdp_printf("Maximum error: %5.2e.", dMaxDimacsErr);
+    HSolver->pObjVal = dPrimalObj;
+    HSolver->dObjVal = dDualObj;
     
-    return;
+    hdsdp_printf("\nDIMACS error metric:\n    %5.2e %5.2e %5.2e %5.2e %5.2e %5.2e \n",
+                 dErrs[DIMACS_ERROR_1], dErrs[DIMACS_ERROR_2], dErrs[DIMACS_ERROR_3],
+                 dErrs[DIMACS_ERROR_4], dErrs[DIMACS_ERROR_5], dErrs[DIMACS_ERROR_6]);
+    
+    // hdsdp_printf("Maximum error: %5.2e \n", dMaxDimacsErr);
+    if ( dMaxDimacsErr > 1e-04 ) {
+        HSolver->HStatus = HDSDP_NUMERICAL;
+    } else {
+        HSolver->HStatus = HDSDP_PRIMAL_DUAL_OPTIMAL;
+    }
+    
+exit_cleanup:
+    
+    HDSDP_FREE(dPrimalMatBuffer);
+    HDSDP_FREE(dDualMatBuffer);
+    HDSDP_FREE(dAuxiMat);
+    HDSDP_FREE(dWork);
+    HDSDP_FREE(iWork);
+
+    return retcode;
 }
 
 extern void HDSDPClear( hdsdp *HSolver ) {

@@ -634,15 +634,15 @@ static int HDSDP_ProxMeasure( hdsdp *HSolver ) {
             algo_debug("Found new primal bound %10.6e \n", pObjNew);
             HSolver->pObjInternal = pObjNew;
             
-            if ( dRelGap > 1e-03 ) {
+            if ( dRelGap * HSolver->dBarrierMu > 1e-03 ) {
                 /* Record solution */
                 HSolver->dInaccBarrierMaker = HSolver->dBarrierMu;
                 HDSDP_MEMCPY(HSolver->dInaccRowDualMaker, HSolver->dRowDual, double, HSolver->nRows);
-                HDSDP_MEMCPY(HSolver->dInaccRowDualStepMaker, HSolver->dHAuxiVec2, double, HSolver->nRows);
-            } else {
+                HDSDP_MEMCPY(HSolver->dInaccRowDualStepMaker, HSolver->dHAuxiVec1, double, HSolver->nRows);
+            } else if ( dRelGap * HSolver->dBarrierMu > 1e-10 ) {
                 HSolver->dAccBarrierMaker = HSolver->dBarrierMu;
                 HDSDP_MEMCPY(HSolver->dAccRowDualMaker, HSolver->dRowDual, double, HSolver->nRows);
-                HDSDP_MEMCPY(HSolver->dAccRowDualStepMaker, HSolver->dHAuxiVec2, double, HSolver->nRows);
+                HDSDP_MEMCPY(HSolver->dAccRowDualStepMaker, HSolver->dHAuxiVec1, double, HSolver->nRows);
             }
             
             /* Recover primal infeasibilities */

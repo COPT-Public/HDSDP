@@ -105,8 +105,8 @@ extern hdsdp_retcode HDSDPSetCone( hdsdp *HSolver, int iCone, void *userCone );
 extern void HDSDPSetDualObjective( hdsdp *HSolver, double *dObj );
 extern hdsdp_retcode HDSDPOptimize( hdsdp *HSolver, int dOptOnly );
 extern hdsdp_retcode HDSDPGetRowDual( hdsdp *HSolver, double *pObjVal, double *dObjVal, double *dualVal );
-extern hdsdp_retcode HDSDPGetConeValues( hdsdp *HSolver, int iCone, double *conePrimal, double *coneDual );
-extern void HDSDPCheckSolution( hdsdp *HSolver, double diErrors[6] );
+extern void HDSDPGetConeValues( hdsdp *HSolver, int iCone, double *conePrimal, double *coneDual, double *coneAuxi );
+extern hdsdp_retcode HDSDPCheckSolution( hdsdp *HSolver, double diErrors[6] );
 extern void HDSDPClear( hdsdp *HSolver );
 extern void HDSDPDestroy( hdsdp **pHSolver );
 

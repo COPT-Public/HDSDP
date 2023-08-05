@@ -87,7 +87,9 @@ typedef struct {
     void    (*coneReduceResi)  ( void *, double );
     void    (*coneSetPerturb)  ( void *, double );
     void    (*conePRecover)    ( void *, double, double *, double *, double *, double *);
+    void    (*coneDRecover)    ( void *, double *, double * );
     void    (*coneATimesX)     ( void *, double *, double * );
+    double  (*coneTraceCX)     ( void *, double * );
     
     double  (*coneGetCoeffNorm) ( void *, int );
     double  (*coneGetObjNorm)  ( void *, int );

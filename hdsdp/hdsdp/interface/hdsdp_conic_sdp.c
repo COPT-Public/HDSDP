@@ -2307,12 +2307,15 @@ extern void sdpDenseConeGetPrimal( hdsdp_cone_sdp_dense *cone, double dBarrierMu
     int isInterior = 0;
     sdpDenseConeInteriorCheckExpert(cone, 1.0, -1.0, dRowDual, 0.0, BUFFER_DUALCHECK, &isInterior);
     assert( isInterior );
-    sdpDenseConeIUpdateBuffer(cone, 1.0, -1.0, dRowDualStep, 0.0, BUFFER_DUALSTEP);
+    sdpDenseConeIUpdateBuffer(cone, 0.0, 1.0, dRowDualStep, 0.0, BUFFER_DUALSTEP);
+    
+    HDSDP_ZERO(dConePrimal, double, cone->nCol * cone->nCol);
     
     if ( cone->isDualSparse ) {
         csp_dump(cone->nCol, cone->dualMatBeg, cone->dualMatIdx, cone->dualStep, dConePrimal);
         HFpLinsysFSolve(cone->dualChecker, cone->nCol, dConePrimal, dAuxiMat);
     } else {
+        HUtilMatSymmetrize(cone->nCol, cone->dualStep);
         HFpLinsysFSolve(cone->dualChecker, cone->nCol, cone->dualStep, dAuxiMat);
     }
     
@@ -2335,29 +2338,32 @@ extern void sdpDenseConeGetPrimal( hdsdp_cone_sdp_dense *cone, double dBarrierMu
     HFpLinsysBSolve(cone->dualChecker, cone->nCol, dAuxiMat, dConePrimal);
     
     for ( int iCol = 0; iCol < cone->nCol; ++iCol ) {
-        dConePrimal[iCol * cone->nCol + iCol] += 1.0;
+        dConePrimal[iCol * cone->nCol + iCol] *= dBarrierMu;
         for ( int iRow = iCol + 1; iRow < cone->nCol; ++iRow ) {
             dTmpElem = 0.5 * (dConePrimal[iRow * cone->nCol + iCol] + \
                               dConePrimal[iCol * cone->nCol + iRow]);
             dConePrimal[iRow * cone->nCol + iCol] = \
-            dConePrimal[iCol * cone->nCol + iRow] = dTmpElem;
+            dConePrimal[iCol * cone->nCol + iRow] = dBarrierMu * dTmpElem;
         }
     }
     
     return;
 }
 
-extern void sdpSparseConeGetPrimal( hdsdp_cone_sdp_sparse *cone, double *dBarrierMu, double *dRowDual, double *dRowDualStep, double *dConePrimal, double *dAuxiMat ) {
+extern void sdpSparseConeGetPrimal( hdsdp_cone_sdp_sparse *cone, double dBarrierMu, double *dRowDual, double *dRowDualStep, double *dConePrimal, double *dAuxiMat ) {
     
     int isInterior = 0;
     sdpSparseConeInteriorCheckExpert(cone, 1.0, -1.0, dRowDual, 0.0, BUFFER_DUALCHECK, &isInterior);
     assert( isInterior );
-    sdpSparseConeIUpdateBuffer(cone, 1.0, -1.0, dRowDualStep, 0.0, BUFFER_DUALSTEP);
+    sdpSparseConeIUpdateBuffer(cone, 0.0, 1.0, dRowDualStep, 0.0, BUFFER_DUALSTEP);
+    
+    HDSDP_ZERO(dConePrimal, double, cone->nCol * cone->nCol);
     
     if ( cone->isDualSparse ) {
         csp_dump(cone->nCol, cone->dualMatBeg, cone->dualMatIdx, cone->dualStep, dConePrimal);
         HFpLinsysFSolve(cone->dualChecker, cone->nCol, dConePrimal, dAuxiMat);
     } else {
+        HUtilMatSymmetrize(cone->nCol, cone->dualStep);
         HFpLinsysFSolve(cone->dualChecker, cone->nCol, cone->dualStep, dAuxiMat);
     }
     
@@ -2380,16 +2386,50 @@ extern void sdpSparseConeGetPrimal( hdsdp_cone_sdp_sparse *cone, double *dBarrie
     HFpLinsysBSolve(cone->dualChecker, cone->nCol, dAuxiMat, dConePrimal);
     
     for ( int iCol = 0; iCol < cone->nCol; ++iCol ) {
-        dConePrimal[iCol * cone->nCol + iCol] += 1.0;
+        dConePrimal[iCol * cone->nCol + iCol] *= dBarrierMu;
         for ( int iRow = iCol + 1; iRow < cone->nCol; ++iRow ) {
             dTmpElem = 0.5 * (dConePrimal[iRow * cone->nCol + iCol] + \
                               dConePrimal[iCol * cone->nCol + iRow]);
             dConePrimal[iRow * cone->nCol + iCol] = \
-            dConePrimal[iCol * cone->nCol + iRow] = dTmpElem;
+            dConePrimal[iCol * cone->nCol + iRow] = dBarrierMu * dTmpElem;
         }
     }
+}
 
+extern void sdpDenseConeGetDual( hdsdp_cone_sdp_dense *cone, double *dConeDual, double *ddummy ) {
+    
+    if ( cone->isDualSparse ) {
+        HDSDP_ZERO(dConeDual, double, cone->nCol * cone->nCol);
+        csp_dump(cone->nCol, cone->dualMatBeg, cone->dualMatIdx, cone->dualMatElem, dConeDual);
+    } else {
+        HDSDP_MEMCPY(dConeDual, cone->dualMatElem, double, cone->nCol * cone->nCol);
+        HUtilMatSymmetrize(cone->nCol, dConeDual);
+    }
+    
     return;
+}
+
+extern void sdpSparseConeGetDual( hdsdp_cone_sdp_sparse *cone, double *dConeDual, double *ddummy ) {
+    
+    if ( cone->isDualSparse ) {
+        HDSDP_ZERO(dConeDual, double, cone->nCol * cone->nCol);
+        csp_dump(cone->nCol, cone->dualMatBeg, cone->dualMatIdx, cone->dualMatElem, dConeDual);
+    } else {
+        HDSDP_MEMCPY(dConeDual, cone->dualMatElem, double, cone->nCol * cone->nCol);
+        HUtilMatSymmetrize(cone->nCol, dConeDual);
+    }
+    
+    return;
+}
+
+extern double sdpDenseConeTraceCX( hdsdp_cone_sdp_dense *cone, double *dConePrimel ) {
+    
+    return sdpDataMatKKT3TraceABuffer(cone->sdpObj, dConePrimel, cone->dVecBuffer);
+}
+
+extern double sdpSparseConeTraceCX( hdsdp_cone_sdp_sparse *cone, double *dConePrimel ) {
+    
+    return sdpDataMatKKT3TraceABuffer(cone->sdpObj, dConePrimel, cone->dVecBuffer);
 }
 
 extern void sdpDenseConeATimesX( hdsdp_cone_sdp_dense *cone, double *dPrimalX, double *dATimesX ) {
