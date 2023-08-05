@@ -188,6 +188,8 @@ int test_solver( char *fname ) {
     int nCols = 0;
     int nElem = 0;
     
+    double dErrors[6] = {0.0};
+    
     hdsdp *hsolve = NULL;
     user_data **SDPDatas = NULL;
     user_data *SDPData = NULL;

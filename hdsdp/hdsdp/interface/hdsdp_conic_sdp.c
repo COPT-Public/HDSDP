@@ -163,7 +163,7 @@ static hdsdp_retcode sdpSparseConeIAllocDualMat( hdsdp_cone_sdp_sparse *cone ) {
     /* If there is a dense matrix, the dual matrix will be dense */
     if ( cone->sdpConeStats[SDP_COEFF_DENSE] > 0 ||
          cone->sdpConeStats[SDP_COEFF_DSR1] > 0  ||
-         cone->nCol < SMALL_DUAL_THRESHOLD ) {
+         cone->nCol < SMALL_DUAL_THRESHOLD || cone->nCol < 500 ) {
         cone->isDualSparse = 0;
     }
     

@@ -21,6 +21,7 @@
 //#define HDSDP_CONJGRAD_DEBUG
 //#define HDSDP_ALGO_DEBUG
 //#define HDSDP_LINSYS_PROFILE
+//#define MEMORY_DEBUG
 #define KKT_ACCURACY (1e-10)
 #define HDSDP_SPARSE_CONE_THRESHOLD  (0.3)
 #define HDSDP_SPARSE_SCHUR_THRESHOLD (0.3)
@@ -84,6 +85,7 @@ typedef struct hdsdp_solver_internal hdsdp;
 #define DBL_PARAM_DUALSTART    10
 #define DBL_PARAM_POBJSTART    11
 #define DBL_PARAM_TRXESTIMATE  12
+#define DBL_PARAM_PRECORDACC   13
 
 // Version information
 #define VERSION_MAJOR           1

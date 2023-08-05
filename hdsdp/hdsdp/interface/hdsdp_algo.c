@@ -562,6 +562,7 @@ static int HDSDP_ProxMeasure( hdsdp *HSolver ) {
     int isPFeasible = 0;
     double dTraceSinv = 0.0;
     double pObjNew = HSolver->dObjInternal;
+    double dPrimalAccuray = get_dbl_param(HSolver, DBL_PARAM_PRECORDACC);
     
     HKKTExport(HSolver->HKKT, NULL, NULL, NULL, NULL, NULL, NULL, &dTraceSinv);
     for ( int iRow = 0; iRow < HSolver->nRows; ++iRow ) {
@@ -634,12 +635,12 @@ static int HDSDP_ProxMeasure( hdsdp *HSolver ) {
             algo_debug("Found new primal bound %10.6e \n", pObjNew);
             HSolver->pObjInternal = pObjNew;
             
-            if ( dRelGap * HSolver->dBarrierMu > 1e-03 ) {
+            if ( dRelGap * HSolver->dBarrierMu > 1e-04 * (fabs(HSolver->dObjVal) + 1.0) ) {
                 /* Record solution */
                 HSolver->dInaccBarrierMaker = HSolver->dBarrierMu;
                 HDSDP_MEMCPY(HSolver->dInaccRowDualMaker, HSolver->dRowDual, double, HSolver->nRows);
                 HDSDP_MEMCPY(HSolver->dInaccRowDualStepMaker, HSolver->dHAuxiVec1, double, HSolver->nRows);
-            } else if ( dRelGap * HSolver->dBarrierMu > 1e-10 ) {
+            } else if ( dRelGap * HSolver->dBarrierMu > dPrimalAccuray * (fabs(HSolver->dObjVal) + 1.0) ) {
                 HSolver->dAccBarrierMaker = HSolver->dBarrierMu;
                 HDSDP_MEMCPY(HSolver->dAccRowDualMaker, HSolver->dRowDual, double, HSolver->nRows);
                 HDSDP_MEMCPY(HSolver->dAccRowDualStepMaker, HSolver->dHAuxiVec1, double, HSolver->nRows);
@@ -1383,6 +1384,11 @@ static hdsdp_retcode HDSDP_Reduce_Potential( hdsdp *HSolver ) {
     double dPotentialNew = 0.0;
     double dRequiredPotDecrease = 0.0;
     double dRho = (HSolver->pObjVal - HSolver->dObjVal) / HSolver->dBarrierMu;
+    double dMinStepTol = 0.0;
+    
+    if ( HSolver->nSmallStep >= 2 ) {
+        dMinStepTol = 0.5;
+    }
     
     if ( HSolver->dProxNorm < 0.5 ) {
         dRequiredPotDecrease = 0.05;
@@ -1413,7 +1419,7 @@ static hdsdp_retcode HDSDP_Reduce_Potential( hdsdp *HSolver ) {
         dPotentialNew = HDSDP_GetPotential(HSolver, dRho, HSolver->dHAuxiVec1, BUFFER_DUALVAR);
         
         if ( dPotentialNew <= dPotentialNow - dRequiredPotDecrease ||
-             dDualStep * HSolver->dProxNorm <= 0.001 ) {
+             dDualStep * HSolver->dProxNorm <= 0.001 || dDualStep < dMinStepTol ) {
             HDSDP_MEMCPY(HSolver->dRowDual, HSolver->dHAuxiVec1, double, HSolver->nRows);
             break;
         }
@@ -1643,11 +1649,15 @@ static hdsdp_retcode HDSDP_PhaseB_BarDualPotentialSolve( hdsdp *HSolver ) {
         
         /* Build up Schur complement */
         HDSDP_CALL(HKKTBuildUp(HSolver->HKKT, KKT_TYPE_INFEASIBLE));
-        HDSDP_CALL(HKKTBuildUpExtraCone(HSolver->HKKT, HSolver->HBndCone, KKT_TYPE_INFEASIBLE));
-        // HKKTRegularize(HSolver->HKKT, 0.0);
 #if 0
         HDSDP_CALL(HUtilKKTCheck(HSolver->HKKT));
 #endif
+        
+        HDSDP_CALL(HKKTBuildUpExtraCone(HSolver->HKKT, HSolver->HBndCone, KKT_TYPE_INFEASIBLE));
+        
+        if ( HSolver->dBarrierMu > 1e-03 ) {
+            HKKTRegularize(HSolver->HKKT, 1e-02);
+        }
       
         /* Export the information needed */
         HKKTExport(HSolver->HKKT, HSolver->dMinvASinv, HSolver->dMinvASinvRdSinv,

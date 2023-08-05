@@ -370,7 +370,6 @@ hdsdp_retcode HUtilKKTCheck( void *Hkkt ) {
                 retcode = HDSDP_RETCODE_FAILED;
             }
         }
-        
     }
     
     for ( int iRow = 0; iRow < kkt->nRow; ++iRow ) {

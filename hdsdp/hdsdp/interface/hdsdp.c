@@ -162,6 +162,7 @@ static void HDSDPIAdjustOneConeParams( hdsdp *HSolver ) {
         set_dbl_param(HSolver, DBL_PARAM_DUALBOX_UP, 1e+06);
         set_dbl_param(HSolver, DBL_PARAM_DUALBOX_LOW, -1e+06);
         set_dbl_param(HSolver, DBL_PARAM_DUALSTART, 1e+03);
+        set_dbl_param(HSolver, DBL_PARAM_PRECORDACC, 5e-06);
         strcat(HSolver->modelFeatures, "no-primal interior ");
     }
     
@@ -229,7 +230,7 @@ static void HDSDPIAdjustParams( hdsdp *HSolver ) {
         HUtilSetGlobalMKLThreads(nTargetThreads);
     } else {
         HUtilSetGlobalMKLThreads(nMaxThreads);
-        hdsdp_printf("    Hardware has %d threads\n", nMaxThreads);
+        hdsdp_printf("    Hardware has %d thread(s)\n", nMaxThreads);
         set_int_param(HSolver, INT_PARAM_THREADS, nMaxThreads);
     }
     
@@ -303,8 +304,8 @@ static void HDSDPIGetDefaultParams( hdsdp *HSolver ) {
     set_int_param(HSolver, INT_PARAM_CORRECTORB, 12);
     set_int_param(HSolver, INT_PARAM_THREADS, 12);
     
-    set_dbl_param(HSolver, DBL_PARAM_ABSOPTTOL, 1e-10);
-    set_dbl_param(HSolver, DBL_PARAM_ABSFEASTOL, 1e-10);
+    set_dbl_param(HSolver, DBL_PARAM_ABSOPTTOL, 1e-05);
+    set_dbl_param(HSolver, DBL_PARAM_ABSFEASTOL, 1e-05);
     set_dbl_param(HSolver, DBL_PARAM_RELOPTTOL, 1e-10);
     set_dbl_param(HSolver, DBL_PARAM_RELFEASTOL, 1e-10);
     set_dbl_param(HSolver, DBL_PARAM_TIMELIMIT, 3600.0);
@@ -316,6 +317,7 @@ static void HDSDPIGetDefaultParams( hdsdp *HSolver ) {
     set_dbl_param(HSolver, DBL_PARAM_POBJSTART, 1e+10);
     set_dbl_param(HSolver, DBL_PARAM_DUALSTART, 1e+05);
     set_dbl_param(HSolver, DBL_PARAM_TRXESTIMATE, 1e+08);
+    set_dbl_param(HSolver, DBL_PARAM_PRECORDACC, 1e-08);
     
     return;
 }
@@ -374,9 +376,9 @@ static void HDSDPIPrintSolutionStats( hdsdp *HSolver ) {
         assert( 0 );
     }
     
-    hdsdp_printf("Final pObj   %+20.10e\n", HSolver->pObjVal);
-    hdsdp_printf("Final dObj   %+20.10e\n", HSolver->dObjVal);
-    hdsdp_printf("Final PD Gap %+20.10e\n", HSolver->pObjVal - HSolver->dObjVal);
+    hdsdp_printf("  pObj %+15.10e\n", HSolver->pObjVal);
+    hdsdp_printf("  dObj %+15.10e\n", HSolver->dObjVal);
+    hdsdp_printf("PD Gap %+15.10e\n", HSolver->pObjVal - HSolver->dObjVal);
     hdsdp_printf("\n");
     
     return;
@@ -470,6 +472,9 @@ extern hdsdp_retcode HDSDPInit( hdsdp *HSolver, int nRows, int nCones ) {
     HSolver->dBarrierMu = 1e+10;
     HSolver->comp = HDSDP_INFINITY;
     
+    HSolver->dAccBarrierMaker = -1.0;
+    HSolver->dInaccBarrierMaker = -1.0;
+    
     HSolver->HStatus = HDSDP_UNKNOWN;
     
 exit_cleanup:
@@ -556,11 +561,18 @@ extern hdsdp_retcode HDSDPOptimize( hdsdp *HSolver, int dOptOnly ) {
     HDSDPIPrintParams(HSolver);
     
     hdsdp_printf("%s", HSolver->modelFeatures);
-    hdsdp_printf("Optimizing over %d threads \n", get_int_param(HSolver, INT_PARAM_THREADS));
+    hdsdp_printf("Optimizing over %d thread(s) \n", get_int_param(HSolver, INT_PARAM_THREADS));
     
     /* Invoke solver */
     retcode = HDSDPSolve(HSolver, dOptOnly);
-    HDSDPCheckSolution(HSolver, HSolver->dErrs);
+    
+    hdsdp_printf("\nElapsed optimization time: %3.1f seconds", HUtilGetTimeStamp() - HSolver->dTimeBegin);
+    
+    if ( HSolver->HStatus != HDSDP_INFEAS_OR_UNBOUNDED &&
+         HSolver->HStatus != HDSDP_SUSPECT_INFEAS_OR_UNBOUNDED ) {
+        HDSDPCheckSolution(HSolver, HSolver->dErrs);
+    }
+    
     HDSDPIPrintSolutionStats(HSolver);
     
 exit_cleanup:
@@ -588,10 +600,20 @@ exit_cleanup:
 }
 
 extern void HDSDPGetConeValues( hdsdp *HSolver, int iCone, double *conePrimal, double *coneDual, double *coneAuxi ) {
+    
+    double dBarrierMaker = HSolver->dAccBarrierMaker;
+    double *dRowDualMaker = HSolver->dAccRowDualMaker;
+    double *dRowDualStepMaker = HSolver->dAccRowDualStepMaker;
+    
+    if ( dBarrierMaker <= 0.0 ) {
+        dBarrierMaker = HSolver->dInaccBarrierMaker;
+        dRowDualMaker = HSolver->dInaccRowDualMaker;
+        dRowDualStepMaker = HSolver->dInaccRowDualStepMaker;
+    }
         
     if ( conePrimal ) {
-        HConeGetPrimal(HSolver->HCones[iCone], HSolver->dAccBarrierMaker,
-                       HSolver->dAccRowDualMaker, HSolver->dAccRowDualStepMaker, conePrimal, coneAuxi);
+        HConeGetPrimal(HSolver->HCones[iCone], dBarrierMaker,
+                       dRowDualMaker, dRowDualStepMaker, conePrimal, coneAuxi);
     }
     
     if ( coneDual ) {
@@ -676,8 +698,8 @@ extern hdsdp_retcode HDSDPCheckSolution( hdsdp *HSolver, double dErrs[6] ) {
         dMinPrimalEVal = HDSDP_MIN(dMinPrimalEVal, dEValAuxi[0]);
     }
     
-    dDualObj = dDualObj * dPrimalScal * dDualScal;
-    dPrimalObj = dPrimalObj * dPrimalScal * dDualScal;
+    dDualObj = dDualObj / (dPrimalScal * dDualScal);
+    dPrimalObj = dPrimalObj / (dPrimalScal * dDualScal);
     
     for ( int iRow = 0; iRow < HSolver->nRows; ++iRow ) {
         HSolver->dHAuxiVec1[iRow] -= HSolver->rowRHS[iRow];
@@ -708,22 +730,30 @@ extern hdsdp_retcode HDSDPCheckSolution( hdsdp *HSolver, double dErrs[6] ) {
     double dMaxDimacsErr = 0.0;
     
     for ( int iElem = 0; iElem < 6; ++iElem ) {
-        dMaxDimacsErr = HDSDP_MAX(dMaxDimacsErr, dErrs[iElem]);
+        dMaxDimacsErr = HDSDP_MAX(dMaxDimacsErr, fabs(dErrs[iElem]));
     }
     
     HSolver->pObjVal = dPrimalObj;
     HSolver->dObjVal = dDualObj;
     
-    hdsdp_printf("\nDIMACS error metric:\n    %5.2e %5.2e %5.2e %5.2e %5.2e %5.2e \n",
-                 dErrs[DIMACS_ERROR_1], dErrs[DIMACS_ERROR_2], dErrs[DIMACS_ERROR_3],
-                 dErrs[DIMACS_ERROR_4], dErrs[DIMACS_ERROR_5], dErrs[DIMACS_ERROR_6]);
-    
     // hdsdp_printf("Maximum error: %5.2e \n", dMaxDimacsErr);
-    if ( dMaxDimacsErr > 1e-04 ) {
-        HSolver->HStatus = HDSDP_NUMERICAL;
+    if ( dMaxDimacsErr > 1e-02 ) {
+        if ( HSolver->dAccBarrierMaker < 0.0 ) {
+            HSolver->HStatus = HDSDP_NUMERICAL;
+        } else {
+            /* The primal solution is not good. Switch to the other */
+            hdsdp_printf("Dealing with primal solution");
+            HSolver->dAccBarrierMaker = -1.0;
+            HDSDPCheckSolution(HSolver, dErrs);
+        }
+        
     } else {
         HSolver->HStatus = HDSDP_PRIMAL_DUAL_OPTIMAL;
     }
+    
+    hdsdp_printf("\nDIMACS error metric:\n    %5.2e %5.2e %5.2e %5.2e %5.2e %5.2e \n\n",
+                 dErrs[DIMACS_ERROR_1], dErrs[DIMACS_ERROR_2], dErrs[DIMACS_ERROR_3],
+                 dErrs[DIMACS_ERROR_4], dErrs[DIMACS_ERROR_5], dErrs[DIMACS_ERROR_6]);
     
 exit_cleanup:
     
