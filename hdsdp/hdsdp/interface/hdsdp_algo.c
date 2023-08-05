@@ -1620,6 +1620,7 @@ static hdsdp_retcode HDSDP_PhaseB_BarDualPotentialSolve( hdsdp *HSolver ) {
     double dRhsScal = get_dbl_feature(HSolver, DBL_FEATURE_RHSSCALING);
     double nSumCones = (double) get_int_feature(HSolver, INT_FEATURE_N_SUMCONEDIMS);
     double pdScal = dObjScal * dRhsScal;
+    int nIterInternal = 0;
     
     double dFeasTol = HDSDP_MIN(dAbsfeasTol, dRelfeasTol * (1.0 + dObjOneNorm));
     dFeasTol = dFeasTol * dObjScal / sqrt(nSumCones);
@@ -1647,6 +1648,8 @@ static hdsdp_retcode HDSDP_PhaseB_BarDualPotentialSolve( hdsdp *HSolver ) {
     /* Start dual-scaling */
     while ( 1 ) {
         
+        nIterInternal += 1;
+        
         /* Build up Schur complement */
         HDSDP_CALL(HKKTBuildUp(HSolver->HKKT, KKT_TYPE_INFEASIBLE));
 #if 0
@@ -1656,7 +1659,11 @@ static hdsdp_retcode HDSDP_PhaseB_BarDualPotentialSolve( hdsdp *HSolver ) {
         HDSDP_CALL(HKKTBuildUpExtraCone(HSolver->HKKT, HSolver->HBndCone, KKT_TYPE_INFEASIBLE));
         
         if ( HSolver->dBarrierMu > 1e-03 ) {
-            HKKTRegularize(HSolver->HKKT, 1e-02);
+            HKKTRegularize(HSolver->HKKT, 1e-06);
+        } else {
+            if ( pObjFound < nIterInternal - 10 ) {
+                HKKTRegularize(HSolver->HKKT, 1e-06);
+            }
         }
       
         /* Export the information needed */

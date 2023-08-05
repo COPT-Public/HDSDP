@@ -41,6 +41,17 @@ static void HLanczosIPrepare( int n, double *vVec ) {
     return;
 }
 
+static void HLanczosIPerturb( int n, double *vVec ) {
+    
+    srand(n);
+    for ( int i = 0; i < n; ++i ) {
+        srand(rand());
+        vVec[i] += 1e-04 * sqrt(sqrt((rand() % 1627))) * (rand() % 2 - 0.5);
+    }
+    
+    return;
+}
+
 static void HLanczosICleanUp( hdsdp_lanczos *HLanczos ) {
     
     HDSDP_ZERO(HLanczos->wVec, double, HLanczos->nCol);
@@ -156,13 +167,14 @@ extern hdsdp_retcode HLanczosSolve( hdsdp_lanczos *HLanczos, double *LanczosStar
         HDSDP_LANCZOS_DEBUG("Loaded user Lanczos warm-start. %s\n", "");
         HDSDP_MEMCPY(HLanczos->vVec, LanczosStart, double, HLanczos->nCol);
     } else {
-        if ( HLanczos->nComputed == 0 || 1 ) {
+        if ( HLanczos->nComputed == 0 ) {
             HDSDP_LANCZOS_DEBUG("Starting Lanczos from scratch. %s\n", "");
             HLanczosIPrepare(HLanczos->nCol, HLanczos->vVec);
         } else {
             HLanczosICleanUp(HLanczos);
             HDSDP_LANCZOS_DEBUG("Loaded Lanczos warm start from previous iteration. %s", "");
             HDSDP_MEMCPY(HLanczos->vVec, HLanczos->dLanczosWarmStart, double, HLanczos->nCol);
+            HLanczosIPerturb(HLanczos->nCol, HLanczos->vVec);
         }
     }
     
@@ -173,7 +185,7 @@ extern hdsdp_retcode HLanczosSolve( hdsdp_lanczos *HLanczos, double *LanczosStar
     /* Configure and start Lanczos iteration */
     int k = 0;
     int LCheckFrequency = (int) HLanczos->nMaxSpaceDim / 5;
-    LCheckFrequency = HDSDP_MIN(LCheckFrequency, 5);
+    LCheckFrequency = HDSDP_MIN(LCheckFrequency, 3);
     
     int nVRow = HLanczos->nCol;
     int nHRow = HLanczos->nMaxSpaceDim + 1;

@@ -379,6 +379,7 @@ static void HDSDPIPrintSolutionStats( hdsdp *HSolver ) {
     hdsdp_printf("  pObj %+15.10e\n", HSolver->pObjVal);
     hdsdp_printf("  dObj %+15.10e\n", HSolver->dObjVal);
     hdsdp_printf("PD Gap %+15.10e\n", HSolver->pObjVal - HSolver->dObjVal);
+    hdsdp_printf("  Time %3.1f seconds\n", HUtilGetTimeStamp() - HSolver->dTimeBegin);
     hdsdp_printf("\n");
     
     return;
@@ -566,7 +567,7 @@ extern hdsdp_retcode HDSDPOptimize( hdsdp *HSolver, int dOptOnly ) {
     /* Invoke solver */
     retcode = HDSDPSolve(HSolver, dOptOnly);
     
-    hdsdp_printf("\nElapsed optimization time: %3.1f seconds", HUtilGetTimeStamp() - HSolver->dTimeBegin);
+    hdsdp_printf("\nOpt time: %3.1f seconds", HUtilGetTimeStamp() - HSolver->dTimeBegin);
     
     if ( HSolver->HStatus != HDSDP_INFEAS_OR_UNBOUNDED &&
          HSolver->HStatus != HDSDP_SUSPECT_INFEAS_OR_UNBOUNDED ) {
@@ -742,16 +743,16 @@ extern hdsdp_retcode HDSDPCheckSolution( hdsdp *HSolver, double dErrs[6] ) {
             HSolver->HStatus = HDSDP_NUMERICAL;
         } else {
             /* The primal solution is not good. Switch to the other */
-            hdsdp_printf("Dealing with primal solution");
+            hdsdp_printf("\nDealing with primal solution");
             HSolver->dAccBarrierMaker = -1.0;
-            HDSDPCheckSolution(HSolver, dErrs);
+            return HDSDPCheckSolution(HSolver, dErrs);
         }
         
     } else {
         HSolver->HStatus = HDSDP_PRIMAL_DUAL_OPTIMAL;
     }
     
-    hdsdp_printf("\nDIMACS error metric:\n    %5.2e %5.2e %5.2e %5.2e %5.2e %5.2e \n\n",
+    hdsdp_printf("\nDIMACS error metric:\n    %5.2e %5.2e %5.2e %5.2e %5.2e %5.2e \n",
                  dErrs[DIMACS_ERROR_1], dErrs[DIMACS_ERROR_2], dErrs[DIMACS_ERROR_3],
                  dErrs[DIMACS_ERROR_4], dErrs[DIMACS_ERROR_5], dErrs[DIMACS_ERROR_6]);
     
