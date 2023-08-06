@@ -145,8 +145,8 @@ static void HDSDPIAdjustOneConeParams( hdsdp *HSolver ) {
     if ( isExtremelyDense ) {
         set_int_param(HSolver, INT_PARAM_CORRECTORA, 4);
         set_dbl_param(HSolver, DBL_PARAM_DUALSTART, 1.0);
-        set_dbl_param(HSolver, DBL_PARAM_DUALBOX_UP, 1e+04);
-        set_dbl_param(HSolver, DBL_PARAM_DUALBOX_LOW, -1e+04);
+        set_dbl_param(HSolver, DBL_PARAM_DUALBOX_UP, 1e+07);
+        set_dbl_param(HSolver, DBL_PARAM_DUALBOX_LOW, -1e+07);
         strcat(HSolver->modelFeatures, "dense ");
     }
     
@@ -376,12 +376,16 @@ static void HDSDPIPrintSolutionStats( hdsdp *HSolver ) {
         assert( 0 );
     }
     
-    hdsdp_printf("  pObj %+15.10e\n", HSolver->pObjVal);
-    hdsdp_printf("  dObj %+15.10e\n", HSolver->dObjVal);
-    hdsdp_printf("PD Gap %+15.10e\n", HSolver->pObjVal - HSolver->dObjVal);
-    hdsdp_printf("  Time %3.1f seconds\n", HUtilGetTimeStamp() - HSolver->dTimeBegin);
-    hdsdp_printf("\n");
+    if ( HSolver->HStatus != HDSDP_SUSPECT_INFEAS_OR_UNBOUNDED &&
+         HSolver->HStatus != HDSDP_INFEAS_OR_UNBOUNDED ) {
+        hdsdp_printf("  pObj %+15.10e\n", HSolver->pObjVal);
+        hdsdp_printf("  dObj %+15.10e\n", HSolver->dObjVal);
+        hdsdp_printf("PD Gap %+15.10e\n", HSolver->pObjVal - HSolver->dObjVal);
+        hdsdp_printf("  Time %3.1f seconds\n", HUtilGetTimeStamp() - HSolver->dTimeBegin);
+    }
     
+    hdsdp_printf("\n");
+
     return;
 }
 
@@ -567,7 +571,7 @@ extern hdsdp_retcode HDSDPOptimize( hdsdp *HSolver, int dOptOnly ) {
     /* Invoke solver */
     retcode = HDSDPSolve(HSolver, dOptOnly);
     
-    hdsdp_printf("\nOpt time: %3.1f seconds", HUtilGetTimeStamp() - HSolver->dTimeBegin);
+    hdsdp_printf("\nOptimization time: %3.1f seconds", HUtilGetTimeStamp() - HSolver->dTimeBegin);
     
     if ( HSolver->HStatus != HDSDP_INFEAS_OR_UNBOUNDED &&
          HSolver->HStatus != HDSDP_SUSPECT_INFEAS_OR_UNBOUNDED ) {

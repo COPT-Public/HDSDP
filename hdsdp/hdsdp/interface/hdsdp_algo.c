@@ -166,21 +166,6 @@ static void HDSDP_PrintLog( hdsdp *HSolver, int SDPMethod ) {
     HSolver->pObjVal = HSolver->pObjInternal * pdObjScal;
     HSolver->comp = HSolver->pObjVal - HSolver->dObjVal;
     
-    double pInfeas = 0.0;
-    double dTmp = 0.0;
-    if ( SDPMethod == HDSDP_ALGO_DUAL_POTENTIAL ) {
-        for ( int iRow = 0; iRow < HSolver->nRows; ++iRow ) {
-            dTmp = fabs(HSolver->dPInfeasUpper[iRow] - HSolver->dPInfeasLower[iRow]);
-            pInfeas = HDSDP_MAX(pInfeas, dTmp);
-        }
-        
-        if ( HSolver->pInfeas < 1e-16 ) {
-            HSolver->pInfeas = 0.0;
-        } else {
-            HSolver->pInfeas = pInfeas;
-        }
-    }
-    
     switch (SDPMethod) {
         case HDSDP_ALGO_DUAL_HSD:
             hdsdp_printf("    %5d  %+12.5e  %+12.5e  %8.2e  %8.2e  %5.2f  %5.1e  %4.1f\n", HSolver->nIterCount + 1,
@@ -649,6 +634,20 @@ static int HDSDP_ProxMeasure( hdsdp *HSolver ) {
             /* Recover primal infeasibilities */
             HConeGetPrimal(HSolver->HBndCone, HSolver->dBarrierMu, HSolver->dRowDual,
                            HSolver->dHAuxiVec2, HSolver->dPInfeasLower, HSolver->dPInfeasUpper);
+            
+            double pInfeas = 0.0;
+            double dTmp = 0.0;
+            
+            for ( int iRow = 0; iRow < HSolver->nRows; ++iRow ) {
+                dTmp = fabs(HSolver->dPInfeasUpper[iRow] - HSolver->dPInfeasLower[iRow]);
+                pInfeas = HDSDP_MAX(pInfeas, dTmp);
+            }
+            
+            if ( pInfeas < 1e-16 ) {
+                HSolver->pInfeas = 0.0;
+            } else {
+                HSolver->pInfeas = pInfeas;
+            }
         }
     }
     
@@ -1593,6 +1592,47 @@ exit_cleanup:
     return retcode;
 }
 
+static int HDSDP_PhaseB_BarPrimalInfeasCheck( hdsdp *HSolver ) {
+        
+    /* Check existence of improving ray */
+    int isRayDetected = 0;
+    int isInterior = 0;
+    
+    double dRowDualNorm = 0.0;
+    
+    if ( HSolver->pInfeas > get_dbl_feature(HSolver, DBL_FEATURE_RHSONENORM) ) {
+        
+        if ( HSolver->dObjVal < 0.0 ) {
+            return isRayDetected;
+        }
+        
+        for ( int iRow = 0; iRow < HSolver->nRows; ++iRow ) {
+            dRowDualNorm += HSolver->dRowDual[iRow] * HSolver->dRowDual[iRow];
+        }
+        
+        dRowDualNorm = sqrt(dRowDualNorm);
+        
+        for ( int iRow = 0; iRow < HSolver->nRows; ++iRow ) {
+            HSolver->dHAuxiVec1[iRow] = HSolver->dRowDual[iRow] / dRowDualNorm;
+        }
+        
+        /* Check if an improving ray is found. (if dS >= 0) */
+        for ( int iCone = 0; iCone < HSolver->nCones; ++iCone ) {
+            HConeCheckIsInteriorExpert(HSolver->HCones[iCone], 0.0, -1.0,
+                                       HSolver->dHAuxiVec1, 1e-07, BUFFER_DUALCHECK, &isInterior);
+            if ( !isInterior ) {
+                break;
+            }
+        }
+        
+        if ( isInterior ) {
+            isRayDetected = 1;
+        }
+    }
+    
+    return isRayDetected;
+}
+
 static hdsdp_retcode HDSDP_PhaseB_BarDualPotentialSolve( hdsdp *HSolver ) {
     
     hdsdp_retcode retcode = HDSDP_RETCODE_OK;
@@ -1642,6 +1682,7 @@ static hdsdp_retcode HDSDP_PhaseB_BarDualPotentialSolve( hdsdp *HSolver ) {
     
     int pObjType = 0;
     int pObjFound = 0;
+    int isRayFound = 0;
     
     HDSDP_PrintHeader(HSolver, HDSDP_ALGO_DUAL_POTENTIAL);
     
@@ -1696,6 +1737,15 @@ static hdsdp_retcode HDSDP_PhaseB_BarDualPotentialSolve( hdsdp *HSolver ) {
         /* Build step */
         HDSDP_Feasible_BuildStep(HSolver);
         
+        /* Detect ray */
+        isRayFound = HDSDP_PhaseB_BarPrimalInfeasCheck(HSolver);
+        
+        if ( isRayFound ) {
+            hdsdp_printf("HDSDP detects a dual improving ray \n");
+            HSolver->HStatus = HDSDP_INFEAS_OR_UNBOUNDED;
+            break;
+        }
+        
         /* Reduce potential function by line-search */
         HDSDP_CALL(HDSDP_Reduce_Potential(HSolver));
         
@@ -1740,17 +1790,6 @@ static hdsdp_retcode HDSDP_PhaseB_BarDualPotentialSolve( hdsdp *HSolver ) {
             break;
         }
     }
-    
-exit_cleanup:
-    return retcode;
-}
-
-static hdsdp_retcode HDSDP_PhaseC_BarPrimalInfeasCheck( hdsdp *HSolver ) {
-    
-    hdsdp_retcode retcode = HDSDP_RETCODE_OK;
-    /* Check existence of improving ray */
-    
-    
     
 exit_cleanup:
     return retcode;
