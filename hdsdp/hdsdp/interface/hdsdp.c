@@ -602,7 +602,7 @@ extern hdsdp_retcode HDSDPOptimize( hdsdp *HSolver, int dOptOnly ) {
     
     if ( HSolver->HStatus != HDSDP_INFEAS_OR_UNBOUNDED &&
          HSolver->HStatus != HDSDP_SUSPECT_INFEAS_OR_UNBOUNDED ) {
-        HDSDPCheckSolution(HSolver, HSolver->dErrs);
+        retcode = HDSDPCheckSolution(HSolver, HSolver->dErrs);
     }
     
     HDSDPIPrintSolutionStats(HSolver);
@@ -673,6 +673,11 @@ extern hdsdp_retcode HDSDPCheckSolution( hdsdp *HSolver, double dErrs[6] ) {
     dErrs[DIMACS_ERROR_5] = 1.0;
     dErrs[DIMACS_ERROR_6] = 1.0;
     
+    if ( HSolver->dInaccBarrierMaker < 0.0 ) {
+        HSolver->HStatus = HDSDP_NUMERICAL;
+        return HDSDP_RETCODE_OK;
+    }
+    
     double dPrimalInfeas = HDSDP_INFINITY;
     /* We guarantee dual infeasibility up to a diagonal perturbation */
     double dDualInfeas = HSolver->dPerturb * sqrt(get_int_feature(HSolver, INT_FEATURE_N_SUMCONEDIMS));
@@ -685,13 +690,13 @@ extern hdsdp_retcode HDSDPCheckSolution( hdsdp *HSolver, double dErrs[6] ) {
     double dPrimalScal = get_dbl_feature(HSolver, DBL_FEATURE_RHSSCALING);
     double dDualScal = get_dbl_feature(HSolver, DBL_FEATURE_OBJSCALING);
     
-    int nMaxDim = 0;
+    int nMaxDim = get_int_feature(HSolver, INT_FEATURE_N_MAXCONEDIM);
+    int nMaxBufferDim = 0;
+    int nConeDimSqr = 0;
     
     for ( int iCone = 0; iCone < HSolver->nCones; ++iCone ) {
-        nMaxDim = HDSDP_MAX(nMaxDim, HConeGetVarBufferDim(HSolver->HCones[iCone]));
+        nMaxBufferDim = HDSDP_MAX(nMaxBufferDim, HConeGetVarBufferDim(HSolver->HCones[iCone]));
     }
-    
-    int nConeDimSqr = 0;
     
     double *dPrimalMatBuffer = NULL;
     double *dDualMatBuffer = NULL;
@@ -704,11 +709,11 @@ extern hdsdp_retcode HDSDPCheckSolution( hdsdp *HSolver, double dErrs[6] ) {
     int *iWork = NULL;
     
     /* Prepare space */
-    HDSDP_INIT(dPrimalMatBuffer, double, nMaxDim);
+    HDSDP_INIT(dPrimalMatBuffer, double, nMaxBufferDim);
     HDSDP_MEMCHECK(dPrimalMatBuffer);
-    HDSDP_INIT(dDualMatBuffer, double, nMaxDim);
+    HDSDP_INIT(dDualMatBuffer, double, nMaxBufferDim);
     HDSDP_MEMCHECK(dDualMatBuffer);
-    HDSDP_INIT(dAuxiMat, double, nMaxDim);
+    HDSDP_INIT(dAuxiMat, double, nMaxBufferDim);
     HDSDP_MEMCHECK(dAuxiMat);
     HDSDP_INIT(iWork, int, liWork);
     HDSDP_MEMCHECK(iWork);
@@ -783,6 +788,7 @@ extern hdsdp_retcode HDSDPCheckSolution( hdsdp *HSolver, double dErrs[6] ) {
     if ( dMaxDimacsErr > 1e-02 ) {
         if ( HSolver->dAccBarrierMaker < 0.0 ) {
             HSolver->HStatus = HDSDP_NUMERICAL;
+            goto exit_cleanup;
         } else {
             /* The primal solution is not good. Switch to the other */
             hdsdp_printf("\nDealing with primal solution");

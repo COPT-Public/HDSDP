@@ -807,8 +807,6 @@ static hdsdp_retcode HDSDP_Infeasible_Corrector( hdsdp *HSolver, int lastStep ) 
     double dAdaRatio = 0.0;
     double dAdaRatioMax = 0.8;
     
-    nMaxCorr = 15;
-    
     HDSDP_CALL(HDSDP_GetLogBarrier(HSolver, 0.0, NULL, BUFFER_DUALVAR, &dBarrierVal));
     
     for ( int nCorr = 0; nCorr < nMaxCorr; ++nCorr ) {
@@ -1712,7 +1710,7 @@ static hdsdp_retcode HDSDP_PhaseB_BarDualPotentialSolve( hdsdp *HSolver ) {
         HDSDP_CALL(HKKTBuildUpExtraCone(HSolver->HKKT, HSolver->HBndCone, KKT_TYPE_INFEASIBLE));
         
         if ( HSolver->dBarrierMu > 1e-03 ) {
-            HKKTRegularize(HSolver->HKKT, 0.0);
+            HKKTRegularize(HSolver->HKKT, 1e-06);
         }
       
         /* Export the information needed */
