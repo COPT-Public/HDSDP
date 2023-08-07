@@ -24,6 +24,7 @@ extern "C" {
 #define BUFFER_DUALCHECK (1)
 #define BUFFER_DUALSTEP  (2)
 extern hdsdp_retcode HConeCreate( hdsdp_cone **pHCone );
+extern int HConeGetVarBufferDim( hdsdp_cone *HCone );
 extern hdsdp_retcode HConeSetData( hdsdp_cone *HCone, user_data *coneData );
 extern hdsdp_retcode HConeProcData( hdsdp_cone *HCone );
 extern hdsdp_retcode HConePresolveData( hdsdp_cone *HCone );

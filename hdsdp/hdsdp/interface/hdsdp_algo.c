@@ -30,7 +30,7 @@
    1. Infeasible-start dual interior point method
    2. Dual embedding
    3. Dual potential reduction
-   4. Primal-dual interior point method for linear programs
+   4. Primal-dual interior point method for linear programs (Todo)
    5. Infeasible dual corrector step
    6. Feasible dual corrector step
  
@@ -435,7 +435,7 @@ static hdsdp_retcode HDSDP_PhaseA_BarHsdSolve( hdsdp *HSolver, int dOnly ) {
         
         /* Afterwards, we set up the Schur complement system */
         HDSDP_CALL(HKKTBuildUp(HSolver->HKKT, KKT_TYPE_HOMOGENEOUS));
-        // HKKTRegularize(HSolver->HKKT, 0.0);
+        HKKTRegularize(HSolver->HKKT, 0.0);
         
         /* Then we export information needed */
         HKKTExport(HSolver->HKKT, HSolver->dMinvASinv, HSolver->dMinvASinvRdSinv,
@@ -620,16 +620,7 @@ static int HDSDP_ProxMeasure( hdsdp *HSolver ) {
             algo_debug("Found new primal bound %10.6e \n", pObjNew);
             HSolver->pObjInternal = pObjNew;
             
-            if ( dRelGap * HSolver->dBarrierMu > 1e-04 * (fabs(HSolver->dObjVal) + 1.0) ) {
-                /* Record solution */
-                HSolver->dInaccBarrierMaker = HSolver->dBarrierMu;
-                HDSDP_MEMCPY(HSolver->dInaccRowDualMaker, HSolver->dRowDual, double, HSolver->nRows);
-                HDSDP_MEMCPY(HSolver->dInaccRowDualStepMaker, HSolver->dHAuxiVec1, double, HSolver->nRows);
-            } else if ( dRelGap * HSolver->dBarrierMu > dPrimalAccuray * (fabs(HSolver->dObjVal) + 1.0) ) {
-                HSolver->dAccBarrierMaker = HSolver->dBarrierMu;
-                HDSDP_MEMCPY(HSolver->dAccRowDualMaker, HSolver->dRowDual, double, HSolver->nRows);
-                HDSDP_MEMCPY(HSolver->dAccRowDualStepMaker, HSolver->dHAuxiVec1, double, HSolver->nRows);
-            }
+            double dPrimalInAcc = HDSDP_MIN(dPrimalAccuray * 100, 5e-03);
             
             /* Recover primal infeasibilities */
             HConeGetPrimal(HSolver->HBndCone, HSolver->dBarrierMu, HSolver->dRowDual,
@@ -648,6 +639,21 @@ static int HDSDP_ProxMeasure( hdsdp *HSolver ) {
             } else {
                 HSolver->pInfeas = pInfeas;
             }
+            
+            if ( pInfeas < 1e-03 ) {
+                
+                if ( dRelGap * HSolver->dBarrierMu > dPrimalInAcc * (fabs(HSolver->dObjVal) + 1.0) ) {
+                    /* Record solution */
+                    HSolver->dInaccBarrierMaker = HSolver->dBarrierMu;
+                    HDSDP_MEMCPY(HSolver->dInaccRowDualMaker, HSolver->dRowDual, double, HSolver->nRows);
+                    HDSDP_MEMCPY(HSolver->dInaccRowDualStepMaker, HSolver->dHAuxiVec1, double, HSolver->nRows);
+                } else if ( dRelGap * HSolver->dBarrierMu > dPrimalAccuray * (fabs(HSolver->dObjVal) + 1.0) ) {
+                    HSolver->dAccBarrierMaker = HSolver->dBarrierMu;
+                    HDSDP_MEMCPY(HSolver->dAccRowDualMaker, HSolver->dRowDual, double, HSolver->nRows);
+                    HDSDP_MEMCPY(HSolver->dAccRowDualStepMaker, HSolver->dHAuxiVec1, double, HSolver->nRows);
+                }
+            }
+            
         }
     }
     
@@ -801,6 +807,7 @@ static hdsdp_retcode HDSDP_Infeasible_Corrector( hdsdp *HSolver, int lastStep ) 
     double dAdaRatio = 0.0;
     double dAdaRatioMax = 0.8;
     
+    nMaxCorr = 15;
     
     HDSDP_CALL(HDSDP_GetLogBarrier(HSolver, 0.0, NULL, BUFFER_DUALVAR, &dBarrierVal));
     
@@ -1056,7 +1063,7 @@ static hdsdp_retcode HDSDP_PhaseA_BarInfeasSolve( hdsdp *HSolver, int dOnly ) {
     while ( 1 ) {
         
         /* Restart if there is no valid primal bound */
-        if ( HSolver->nIterCount == 3 && !pObjFound && allowReset ) {
+        if ( HSolver->nIterCount == 4 && !pObjFound && allowReset ) {
             hdsdp_printf("Increasing dual infeasibility \n");
             HDSDP_ResetStart(HSolver);
             for ( int iCone = 0; iCone < HSolver->nCones; ++iCone ) {
@@ -1673,15 +1680,20 @@ static hdsdp_retcode HDSDP_PhaseB_BarDualPotentialSolve( hdsdp *HSolver ) {
     }
     
     /* Set infeasibilities */
-    HSolver->dPerturb = - HSolver->dResidual;
+    HSolver->dPerturb = -10.0 * HSolver->dResidual;
     HSolver->dResidual = 0.0;
     for ( int iCone = 0; iCone < HSolver->nCones; ++iCone ) {
         HConeReduceResi(HSolver->HCones[iCone], 0.0);
         HConeSetPerturb(HSolver->HCones[iCone], HSolver->dPerturb);
     }
     
+    if ( HSolver->dPerturb != 0.0 ) {
+        HDSDP_CheckIsInterior(HSolver, 1.0, HSolver->dRowDual);
+    }
+    
     int pObjType = 0;
     int pObjFound = 0;
+    int nopObjFound = 0;
     int isRayFound = 0;
     
     HDSDP_PrintHeader(HSolver, HDSDP_ALGO_DUAL_POTENTIAL);
@@ -1700,11 +1712,7 @@ static hdsdp_retcode HDSDP_PhaseB_BarDualPotentialSolve( hdsdp *HSolver ) {
         HDSDP_CALL(HKKTBuildUpExtraCone(HSolver->HKKT, HSolver->HBndCone, KKT_TYPE_INFEASIBLE));
         
         if ( HSolver->dBarrierMu > 1e-03 ) {
-            HKKTRegularize(HSolver->HKKT, 1e-06);
-        } else {
-            if ( pObjFound < nIterInternal - 10 ) {
-                HKKTRegularize(HSolver->HKKT, 1e-06);
-            }
+            HKKTRegularize(HSolver->HKKT, 0.0);
         }
       
         /* Export the information needed */
@@ -1729,6 +1737,11 @@ static hdsdp_retcode HDSDP_PhaseB_BarDualPotentialSolve( hdsdp *HSolver ) {
             HSolver->HStatus = HDSDP_SUSPECT_INFEAS_OR_UNBOUNDED;
         } else {
             pObjFound += pObjType;
+            if ( pObjType ) {
+                nopObjFound = 0;
+            } else {
+                nopObjFound += 1;
+            }
         }
         
         /* Choose new barrier parameter */
@@ -1789,6 +1802,12 @@ static hdsdp_retcode HDSDP_PhaseB_BarDualPotentialSolve( hdsdp *HSolver ) {
             HSolver->HStatus = HDSDP_MAXITER;
             break;
         }
+        
+        if ( nopObjFound >= 10 ) {
+            HSolver->HStatus = HDSDP_NUMERICAL;
+            break;
+        }
+        
     }
     
 exit_cleanup:

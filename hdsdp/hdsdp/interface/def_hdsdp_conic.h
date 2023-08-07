@@ -200,20 +200,30 @@ typedef struct {
     
 } hdsdp_cone_sdp_sparse;
 
-/* TODO: The structures for the following cones are not yet formally set up */
 /* An LP cone */
 typedef struct {
     
     int     nRow;
     int     nCol;
     
+    double *colObj;
     double *colDual;
+    double *colDualInverse;
     double *colDualChecker;
     double *colDualStep;
+    
+    double *colBuffer;
+    
+    double dualResidual;
+    double dualPerturb;
     
     int *rowMatBeg;
     int *rowMatIdx;
     double *rowMatElem;
+    
+    int64_t coneKKTNnz;
+    int iKKTCounted;
+    int *kktMapping;
     
 } hdsdp_cone_lp;
 

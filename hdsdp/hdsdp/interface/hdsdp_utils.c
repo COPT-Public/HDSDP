@@ -139,8 +139,8 @@ extern void HUtilMatSymmetrize( int n, double *v ) {
 extern void HUtilMatTranspose( int n, double *A ) {
     
     double tmp = 0.0;
-    for (int i = 0, j; i < n; ++i) {
-        for (j = i + 1; j < n; ++j) {
+    for ( int i = 0, j; i < n; ++i ) {
+        for ( j = i + 1; j < n; ++j ) {
             tmp = A[i * n + j];
             A[i * n + j] = A[j * n + i];
             A[j * n + i] = tmp;
@@ -165,6 +165,17 @@ extern void HUtilPrintIntContent( int n, int *d ) {
     }
     printf("\n");
     return;
+}
+
+extern double HUtilGetDblMinimum( int n, double *d ) {
+    
+    double dMin = HDSDP_INFINITY;
+    
+    for ( int i = 0; i < n; ++i ) {
+        dMin = HDSDP_MIN(dMin, d[i]);
+    }
+    
+    return dMin;
 }
 
 extern double HUtilPrintDblSum( int n, double *d ) {

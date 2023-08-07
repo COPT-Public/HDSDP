@@ -1395,7 +1395,6 @@ exit_cleanup:
     return retcode;
 }
 
-
 extern void HFpLinsysFSolve( hdsdp_linsys_fp *HLin, int nRhs, double *rhsVec, double *solVec ) {
     
     HLin->cholFSolve(HLin->chol, nRhs, rhsVec, solVec);

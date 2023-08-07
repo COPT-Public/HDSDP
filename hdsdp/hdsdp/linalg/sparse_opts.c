@@ -33,7 +33,6 @@ extern void csp_Axpby( int n, int *Ap, int *Ai, double *Ax, double a, double *x,
     return;
 }
 
-
 extern void csp_ATxpby( int n, int *Ap, int *Ai, double *Ax, double a, double *x, double *y ) {
     
     if ( a == 0.0 ) {
@@ -55,9 +54,9 @@ extern void csp_ATxpby( int n, int *Ap, int *Ai, double *Ax, double a, double *x
 extern double csp_sum_abs( int n, int *Ap, int *Ai, double *Ax ) {
     
     double sabs = 0.0;
-    for ( int i = 0, j; i < Ap[n]; ++i ) {
-        for ( j = Ap[i]; j < Ap[i + 1]; ++i ) {
-            sabs += ( Ai[i] == i ) ? 0.5 * fabs(Ax[i]) : fabs(Ax[i]);
+    for ( int i = 0, j; i < n; ++i ) {
+        for ( j = Ap[i]; j < Ap[i + 1]; ++j ) {
+            sabs += ( Ai[j] == i ) ? 0.5 * fabs(Ax[j]) : fabs(Ax[j]);
         }
     }
     
@@ -67,9 +66,9 @@ extern double csp_sum_abs( int n, int *Ap, int *Ai, double *Ax ) {
 extern double csp_fro_norm( int n, int *Ap, int *Ai, double *Ax ) {
     
     double nrm = 0.0;
-    for ( int i = 0, j; i < Ap[n]; ++i ) {
-        for ( j = Ap[i]; j < Ap[i + 1]; ++i ) {
-            nrm += ( Ai[i] == i ) ? 0.5 * Ax[i] * Ax[i]: Ax[i] * Ax[i];
+    for ( int i = 0, j; i < n; ++i ) {
+        for ( j = Ap[i]; j < Ap[i + 1]; ++j ) {
+            nrm += ( Ai[j] == i ) ? 0.5 * Ax[j] * Ax[j]: Ax[j] * Ax[j];
         }
     }
     

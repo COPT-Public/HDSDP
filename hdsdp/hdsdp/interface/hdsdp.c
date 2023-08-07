@@ -34,7 +34,10 @@ static void HDSDPIGetStatistics( hdsdp *HSolver ) {
     int sumConeDims = 0;
     int maxConeDim = 0;
     for ( int iCone = 0; iCone < HSolver->nCones; ++iCone ) {
-        maxConeDim = HDSDP_MAX(maxConeDim, HConeGetDim(HSolver->HCones[iCone]));
+        if ( HSolver->HCones[iCone]->cone == HDSDP_CONETYPE_DENSE_SDP ||
+             HSolver->HCones[iCone]->cone == HDSDP_CONETYPE_SPARSE_SDP ) {
+            maxConeDim = HDSDP_MAX(maxConeDim, HConeGetDim(HSolver->HCones[iCone]));
+        }
         sumConeDims += HConeGetDim(HSolver->HCones[iCone]);
     }
     
@@ -114,8 +117,9 @@ static void HDSDPIPrintStatistics( hdsdp *HSolver ) {
     print_int_feature(HSolver, INT_FEATURE_N_CONES, "Number of cones");
     print_int_feature(HSolver, INT_FEATURE_N_SPSDPCONES, "Number of sparse SDP cones");
     print_int_feature(HSolver, INT_FEATURE_N_DSSDPCONES, "Number of dense SDP cones");
+    print_int_feature(HSolver, INT_FEATURE_N_LPCONES, "Number of LP cones");
     print_int_feature(HSolver, INT_FEATURE_N_SUMCONEDIMS, "Cone dimensions");
-    print_int_feature(HSolver, INT_FEATURE_N_MAXCONEDIM, "Max cone dimension");
+    print_int_feature(HSolver, INT_FEATURE_N_MAXCONEDIM, "Max matrix cone dimension");
     print_dbl_feature(HSolver, DBL_FEATURE_OBJONENORM, "Norm of objective");
     print_dbl_feature(HSolver, DBL_FEATURE_DATAONENORM, "Norm of SDP data");
     print_dbl_feature(HSolver, DBL_FEATURE_RHSONENORM, "Norm of RHS");
@@ -123,21 +127,36 @@ static void HDSDPIPrintStatistics( hdsdp *HSolver ) {
     return;
 }
 
-static void HDSDPIAdjustOneConeParams( hdsdp *HSolver ) {
+static void HDSDPIAdjustConeParams( hdsdp *HSolver ) {
     
     /* Detect features when there is one cone */
-    HConeDetectFeature(HSolver->HCones[0], HSolver->rowRHS, HSolver->HIntFeatures, HSolver->HDblFeatures);
-    
     int isHit = 0;
+    int isOneCone = 1;
+    
+    if ( get_int_feature(HSolver, INT_FEATURE_N_DSSDPCONES) + \
+         get_int_feature(HSolver, INT_FEATURE_N_SPSDPCONES) > 1 ) {
+        isOneCone = 0;
+    }
+    
+    if ( isOneCone ) {
+        HConeDetectFeature(HSolver->HCones[0], HSolver->rowRHS, HSolver->HIntFeatures, HSolver->HDblFeatures);
+    }
+    
+    if ( get_int_feature(HSolver, INT_FEATURE_N_LPCONES) &&
+         get_int_feature(HSolver, INT_FEATURE_N_CONES) < 10 ) {
+        HConeDetectFeature(HSolver->HCones[HSolver->nCones - 1], HSolver->rowRHS, HSolver->HIntFeatures, HSolver->HDblFeatures);
+    }
+    
     int isImpliedTrace = get_int_feature(HSolver, INT_FEATURE_I_IMPTRACE);
     int isNoPrimalInterior = get_int_feature(HSolver, INT_FEATURE_I_NOPINTERIOR);
+    int isNoDualInterior = get_int_feature(HSolver, INT_FEATURE_I_NODINTERIOR);
     int isExtremelyDense = get_int_feature(HSolver, INT_FEATURE_I_VERYDENSE);
     int isImpliedDual = get_int_feature(HSolver, INT_FEATURE_I_IMPYBOUND);
     int isNoObj = get_int_feature(HSolver, INT_FEATURE_I_NULLOBJ);
     
     HDSDP_ZERO(HSolver->modelFeatures, char, 200);
     
-    if ( isImpliedTrace + isNoPrimalInterior + isExtremelyDense + isImpliedDual + isNoObj ) {
+    if ( (isImpliedTrace + isNoPrimalInterior + isNoDualInterior + isExtremelyDense + isNoObj) || isImpliedDual ) {
         isHit = 1;
         strcat(HSolver->modelFeatures, "This is a ");
     }
@@ -164,6 +183,16 @@ static void HDSDPIAdjustOneConeParams( hdsdp *HSolver ) {
         set_dbl_param(HSolver, DBL_PARAM_DUALSTART, 1e+03);
         set_dbl_param(HSolver, DBL_PARAM_PRECORDACC, 5e-06);
         strcat(HSolver->modelFeatures, "no-primal interior ");
+    }
+    
+    if ( isNoDualInterior ) {
+        set_dbl_param(HSolver, DBL_PARAM_DUALBOX_UP, 10.0);
+        set_dbl_param(HSolver, DBL_PARAM_DUALBOX_LOW, -10.0);
+        set_dbl_param(HSolver, DBL_PARAM_DUALSTART, 1.0);
+        set_dbl_param(HSolver, DBL_PARAM_PRECORDACC, 1e-05);
+        set_dbl_param(HSolver, DBL_PARAM_ABSFEASTOL, 1e-05);
+        set_dbl_param(HSolver, DBL_PARAM_RELFEASTOL, 1e-07);
+        strcat(HSolver->modelFeatures, "no-dual interior ");
     }
     
     if ( isNoObj ) {
@@ -290,9 +319,7 @@ static void HDSDPIAdjustParams( hdsdp *HSolver ) {
         set_dbl_param(HSolver, DBL_PARAM_POBJSTART, 1e+10);
     }
     
-    if ( HSolver->nCones == 1 ) {
-        HDSDPIAdjustOneConeParams(HSolver);
-    }
+    HDSDPIAdjustConeParams(HSolver);
     
     return;
 }
@@ -658,7 +685,12 @@ extern hdsdp_retcode HDSDPCheckSolution( hdsdp *HSolver, double dErrs[6] ) {
     double dPrimalScal = get_dbl_feature(HSolver, DBL_FEATURE_RHSSCALING);
     double dDualScal = get_dbl_feature(HSolver, DBL_FEATURE_OBJSCALING);
     
-    int nMaxDim = get_int_feature(HSolver, INT_FEATURE_N_MAXCONEDIM);
+    int nMaxDim = 0;
+    
+    for ( int iCone = 0; iCone < HSolver->nCones; ++iCone ) {
+        nMaxDim = HDSDP_MAX(nMaxDim, HConeGetVarBufferDim(HSolver->HCones[iCone]));
+    }
+    
     int nConeDimSqr = 0;
     
     double *dPrimalMatBuffer = NULL;
@@ -672,11 +704,11 @@ extern hdsdp_retcode HDSDPCheckSolution( hdsdp *HSolver, double dErrs[6] ) {
     int *iWork = NULL;
     
     /* Prepare space */
-    HDSDP_INIT(dPrimalMatBuffer, double, nMaxDim * nMaxDim);
+    HDSDP_INIT(dPrimalMatBuffer, double, nMaxDim);
     HDSDP_MEMCHECK(dPrimalMatBuffer);
-    HDSDP_INIT(dDualMatBuffer, double, nMaxDim * nMaxDim);
+    HDSDP_INIT(dDualMatBuffer, double, nMaxDim);
     HDSDP_MEMCHECK(dDualMatBuffer);
-    HDSDP_INIT(dAuxiMat, double, nMaxDim * nMaxDim);
+    HDSDP_INIT(dAuxiMat, double, nMaxDim);
     HDSDP_MEMCHECK(dAuxiMat);
     HDSDP_INIT(iWork, int, liWork);
     HDSDP_MEMCHECK(iWork);
@@ -695,11 +727,17 @@ extern hdsdp_retcode HDSDPCheckSolution( hdsdp *HSolver, double dErrs[6] ) {
         /* Get A * X */
         HConeComputeATimesX(HSolver->HCones[iCone], dPrimalMatBuffer, HSolver->dHAuxiVec1);
         /* Compute complementarity */
-        nConeDimSqr = HConeGetDim(HSolver->HCones[iCone]) * HConeGetDim(HSolver->HCones[iCone]);
+        nConeDimSqr = HConeGetVarBufferDim(HSolver->HCones[iCone]);
         dCompl += dot(&nConeDimSqr, dPrimalMatBuffer, &HIntConstantOne, dDualMatBuffer, &HIntConstantOne);
         dPrimalObj += HConeComputeTraceCX(HSolver->HCones[iCone], dPrimalMatBuffer);
+        
         /* Eigen-decompose X to get the minimum eigenvalue */
-        fds_syev(HConeGetDim(HSolver->HCones[iCone]), dPrimalMatBuffer, dEValAuxi, dAuxiMat, 1, dWork, iWork, lWork, liWork);
+        if ( HSolver->HCones[iCone]->cone == HDSDP_CONETYPE_LP ) {
+            dEValAuxi[0] = HUtilGetDblMinimum(nConeDimSqr, dPrimalMatBuffer);
+        } else {
+            fds_syev(HConeGetDim(HSolver->HCones[iCone]), dPrimalMatBuffer, dEValAuxi, dAuxiMat, 1, dWork, iWork, lWork, liWork);
+        }
+        
         dMinPrimalEVal = HDSDP_MIN(dMinPrimalEVal, dEValAuxi[0]);
     }
     
@@ -749,6 +787,11 @@ extern hdsdp_retcode HDSDPCheckSolution( hdsdp *HSolver, double dErrs[6] ) {
             /* The primal solution is not good. Switch to the other */
             hdsdp_printf("\nDealing with primal solution");
             HSolver->dAccBarrierMaker = -1.0;
+            HDSDP_FREE(dPrimalMatBuffer);
+            HDSDP_FREE(dDualMatBuffer);
+            HDSDP_FREE(dAuxiMat);
+            HDSDP_FREE(dWork);
+            HDSDP_FREE(iWork);
             return HDSDPCheckSolution(HSolver, dErrs);
         }
         

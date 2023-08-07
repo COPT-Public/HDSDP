@@ -31,7 +31,7 @@
 #endif
 
 #ifndef SPARSE_DUAL_THRESHOLD
-#define SPARSE_DUAL_THRESHOLD (0.6)
+#define SPARSE_DUAL_THRESHOLD (0.25)
 #endif
 static hdsdp_retcode sdpDenseConeIAllocDualMat( hdsdp_cone_sdp_dense *cone ) {
     /* This routine allocates the dual information for a dense SDP cone
@@ -361,7 +361,7 @@ static inline void sdpDenseConeIUpdateBuffer( hdsdp_cone_sdp_dense *cone, double
             break;
     }
     
-    /* Zero out buffer space*/
+    /* Zero out buffer space */
     if ( cone->isDualSparse ) {
         HDSDP_ZERO(target, double, cone->dualMatBeg[cone->nCol]);
     } else {
@@ -647,7 +647,7 @@ static hdsdp_retcode sdpDenseConeIGetKKTOrdering( hdsdp_cone_sdp_dense *cone ) {
                                        cone->sdpConePerm, cone->nRow, cone->nCol, iPerm);
     }
     
-#if 0
+#if 1
     int KKTMethods[5] = {0};
     for ( int iRow = 0; iRow < cone->nRow; ++iRow ) {
         KKTMethods[cone->KKTStrategies[iRow]] += 1;
@@ -1481,6 +1481,7 @@ extern hdsdp_retcode sdpSparseConeProcDataImpl( hdsdp_cone_sdp_sparse *cone, int
     cone->coneKKTNnz = cone->coneKKTNnz * cone->coneKKTNnz;
     
     HDSDP_INIT(cone->kktMapping, int, PACK_NNZ(cone->nRowElem));
+    HDSDP_MEMCHECK(cone->kktMapping);
     
 exit_cleanup:
     
@@ -2149,7 +2150,6 @@ extern void sdpDenseConeSetPerturb( hdsdp_cone_sdp_dense *cone, double dDualPert
     
     assert( dDualPerturb >= 0.0 );
     cone->dualPerturb = dDualPerturb;
-    
     return;
 }
 
@@ -2181,6 +2181,7 @@ extern hdsdp_retcode sdpDenseConeGetBarrier( hdsdp_cone_sdp_dense *cone, double 
     }
     
     if ( rowDual ) {
+        assert( whichBuffer == BUFFER_DUALVAR );
         sdpDenseConeUpdateImpl(cone, barHsdTau, rowDual);
         HDSDP_CALL(HFpLinsysNumeric(sTarget, cone->dualMatBeg, cone->dualMatIdx, sElememt));
     }
@@ -2220,6 +2221,7 @@ extern hdsdp_retcode sdpSparseConeGetBarrier( hdsdp_cone_sdp_sparse *cone, doubl
     }
     
     if ( rowDual ) {
+        assert( whichBuffer == BUFFER_DUALVAR );
         sdpSparseConeUpdateImpl(cone, barHsdTau, rowDual);
         HDSDP_CALL(HFpLinsysNumeric(sTarget, cone->dualMatBeg, cone->dualMatIdx, sElement));
     }
@@ -2306,7 +2308,12 @@ extern void sdpDenseConeGetPrimal( hdsdp_cone_sdp_dense *cone, double dBarrierMu
     
     int isInterior = 0;
     sdpDenseConeInteriorCheckExpert(cone, 1.0, -1.0, dRowDual, 0.0, BUFFER_DUALCHECK, &isInterior);
-    assert( isInterior );
+    
+    if ( !isInterior ) {
+        printf("Recovery step is infeasible\n");
+        return;
+    }
+    
     sdpDenseConeIUpdateBuffer(cone, 0.0, 1.0, dRowDualStep, 0.0, BUFFER_DUALSTEP);
     
     HDSDP_ZERO(dConePrimal, double, cone->nCol * cone->nCol);
@@ -2615,11 +2622,6 @@ extern void sdpDenseConeFeatureDetectImpl( hdsdp_cone_sdp_dense *cone, double *r
     if ( isImpliedTraceX ) {
         coneIntFeatures[INT_FEATURE_I_IMPTRACE] = 1;
         coneDblFeatures[DBL_FEATURE_IMPTRACEX] = dImpliedTraceX;
-    }
-    
-    /* Detect if there is no objective */
-    if ( sdpDataMatGetType(cone->sdpObj) == SDP_COEFF_ZERO ) {
-        coneIntFeatures[INT_FEATURE_I_NULLOBJ] = 1;
     }
     
     /* Detect dense cone */
