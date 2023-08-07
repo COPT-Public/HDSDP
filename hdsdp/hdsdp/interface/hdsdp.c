@@ -164,8 +164,8 @@ static void HDSDPIAdjustConeParams( hdsdp *HSolver ) {
     if ( isExtremelyDense ) {
         set_int_param(HSolver, INT_PARAM_CORRECTORA, 4);
         set_dbl_param(HSolver, DBL_PARAM_DUALSTART, 1.0);
-        set_dbl_param(HSolver, DBL_PARAM_DUALBOX_UP, 1e+07);
-        set_dbl_param(HSolver, DBL_PARAM_DUALBOX_LOW, -1e+07);
+        set_dbl_param(HSolver, DBL_PARAM_DUALBOX_UP, 1e+04);
+        set_dbl_param(HSolver, DBL_PARAM_DUALBOX_LOW, -1e+04);
         strcat(HSolver->modelFeatures, "dense ");
     }
     
