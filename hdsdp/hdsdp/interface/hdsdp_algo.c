@@ -108,11 +108,12 @@ static void HDSDP_ResetStart( hdsdp *HSolver ) {
     HSolver->dBarHsdTau = 1.0;
     
     double objFroNorm = get_dbl_feature(HSolver, DBL_FEATURE_OBJFRONORM);
+    HSolver->pObjInternal = 1e+15;
     HSolver->dResidual = - HDSDP_MAX(objFroNorm, 1e+02);
-    HSolver->dResidual = HSolver->dResidual * 1e+07;
+    HSolver->dResidual = HSolver->dResidual * 1e+06;
     HSolver->dResidual = HDSDP_MAX(HSolver->dResidual, -1e+15);
     
-    hdsdp_printf("Reset with dual residual %3.1e\n", HSolver->dResidual);
+    hdsdp_printf("Reset with dual residual %3.1e\n", -HSolver->dResidual);
     for ( int iCone = 0; iCone < HSolver->nCones; ++iCone ) {
         HConeSetStart(HSolver->HCones[iCone], HSolver->dResidual);
     }
@@ -1062,7 +1063,7 @@ static hdsdp_retcode HDSDP_PhaseA_BarInfeasSolve( hdsdp *HSolver, int dOnly ) {
     while ( 1 ) {
         
         /* Restart if there is no valid primal bound */
-        if ( HSolver->nIterCount == 4 && !pObjFound && allowReset ) {
+        if ( HSolver->nIterCount == 3 && !pObjFound && allowReset ) {
             hdsdp_printf("Increasing dual infeasibility \n");
             HDSDP_ResetStart(HSolver);
             for ( int iCone = 0; iCone < HSolver->nCones; ++iCone ) {
@@ -1102,7 +1103,7 @@ static hdsdp_retcode HDSDP_PhaseA_BarInfeasSolve( hdsdp *HSolver, int dOnly ) {
         algo_debug("MinvASinvRdSinv: %20.10e\n", HUtilPrintDblSum(HSolver->nRows, HSolver->dMinvASinvRdSinv));
         
         /* Compute proximity norm and verify primal feasibility */
-        pObjType += HDSDP_ProxMeasure(HSolver);
+        pObjType = HDSDP_ProxMeasure(HSolver);
         
         if ( pObjType < 0 ) {
             HSolver->HStatus = HDSDP_SUSPECT_INFEAS_OR_UNBOUNDED;

@@ -140,9 +140,9 @@ static hdsdp_retcode sdpDenseConeIAllocDualMat( hdsdp_cone_sdp_dense *cone ) {
         
         /* Symbolic factorization is left in the presolve routine */
         HDSDP_CALL(HFpLinsysCreate(&cone->dualFactor, cone->nCol, HDSDP_LINSYS_SPARSE_DIRECT));
-        HFpLinsysSetParam(cone->dualFactor, -1.0, -1.0, 4, -1, -1);
+        HFpLinsysSetParam(cone->dualFactor, -1.0, -1.0, 12, -1, -1);
         HDSDP_CALL(HFpLinsysCreate(&cone->dualChecker, cone->nCol, HDSDP_LINSYS_SPARSE_DIRECT));
-        HFpLinsysSetParam(cone->dualChecker, -1.0, -1.0, 4, -1, -1);
+        HFpLinsysSetParam(cone->dualChecker, -1.0, -1.0, 12, -1, -1);
         /* Done */
     }
     
@@ -656,7 +656,7 @@ static hdsdp_retcode sdpDenseConeIGetKKTOrdering( hdsdp_cone_sdp_dense *cone ) {
     for ( int iRow = 0; iRow < cone->nRow; ++iRow ) {
         KKTMethods[cone->KKTStrategies[iRow]] += 1;
     }
-    printf("    M1: %d M2: %d M3: %d M4: %d M5: %d \n",
+    printf("    M1: %-4d M2: %-4d M3: %-4d M4: %-4d M5: %-4d \n",
            KKTMethods[0], KKTMethods[1], KKTMethods[2], KKTMethods[3], KKTMethods[4]);
     
 #endif

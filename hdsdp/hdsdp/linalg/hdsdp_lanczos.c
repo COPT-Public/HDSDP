@@ -46,7 +46,7 @@ static void HLanczosIPerturb( int n, double *vVec ) {
     srand(n);
     for ( int i = 0; i < n; ++i ) {
         srand(rand());
-        vVec[i] += 1e-04 * sqrt(sqrt((rand() % 1627))) * (rand() % 2 - 0.5);
+        vVec[i] += 1e-03 * sqrt(sqrt((rand() % 1627))) * (rand() % 2 - 0.5);
     }
     
     return;

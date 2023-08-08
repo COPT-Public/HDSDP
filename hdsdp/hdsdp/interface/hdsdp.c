@@ -812,7 +812,6 @@ extern hdsdp_retcode HDSDPCheckSolution( hdsdp *HSolver, double dErrs[6] ) {
     if ( dMaxDimacsErr > 1e-02 ) {
         if ( HSolver->dAccBarrierMaker < 0.0 ) {
             HSolver->HStatus = HDSDP_NUMERICAL;
-            goto exit_cleanup;
         } else {
             /* The primal solution is not good. Switch to the other */
             hdsdp_printf("\nDealing with primal solution\n");
@@ -822,7 +821,7 @@ extern hdsdp_retcode HDSDPCheckSolution( hdsdp *HSolver, double dErrs[6] ) {
             HDSDP_FREE(dAuxiMat);
             HDSDP_FREE(dWork);
             HDSDP_FREE(iWork);
-            HDSDPCheckSolution(HSolver, dErrs);
+            return HDSDPCheckSolution(HSolver, dErrs);
         }
         
     } else {
