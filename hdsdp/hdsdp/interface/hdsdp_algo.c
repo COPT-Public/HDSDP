@@ -1020,7 +1020,7 @@ static hdsdp_retcode HDSDP_PhaseA_BarInfeasSolve( hdsdp *HSolver, int dOnly ) {
     int allowReset = 1;
     
     if ( get_int_feature(HSolver, INT_FEATURE_I_MANYCONES) ||
-        get_int_feature(HSolver, INT_FEATURE_I_IMPTRACE) ) {
+        get_int_feature(HSolver, INT_FEATURE_I_IMPTRACE) || get_int_feature(HSolver, INT_FEATURE_I_VERYDENSE) ) {
         allowReset = 0;
     }
     
@@ -1607,7 +1607,7 @@ exit_cleanup:
     return retcode;
 }
 
-static int HDSDP_PhaseB_BarPrimalInfeasCheck( hdsdp *HSolver ) {
+static int HDSDP_PhaseB_BarPrimalInfeasCheck( hdsdp *HSolver, int iForceDetect ) {
         
     /* Check existence of improving ray */
     int isRayDetected = 0;
@@ -1615,7 +1615,8 @@ static int HDSDP_PhaseB_BarPrimalInfeasCheck( hdsdp *HSolver ) {
     
     double dRowDualNorm = 0.0;
     
-    if ( HSolver->pInfeas > get_dbl_feature(HSolver, DBL_FEATURE_RHSONENORM) ) {
+    if ( HSolver->pInfeas >= get_dbl_feature(HSolver, DBL_FEATURE_RHSFRONORM) || iForceDetect ||
+        (HSolver->pInfeas > 0.01 * get_dbl_feature(HSolver, DBL_FEATURE_RHSONENORM) && HSolver->dBarrierMu < 1e-03 )) {
         
         if ( HSolver->dObjVal < 0.0 ) {
             return isRayDetected;
@@ -1634,7 +1635,7 @@ static int HDSDP_PhaseB_BarPrimalInfeasCheck( hdsdp *HSolver ) {
         /* Check if an improving ray is found. (if dS >= 0) */
         for ( int iCone = 0; iCone < HSolver->nCones; ++iCone ) {
             HConeCheckIsInteriorExpert(HSolver->HCones[iCone], 0.0, -1.0,
-                                       HSolver->dHAuxiVec1, 1e-07, BUFFER_DUALCHECK, &isInterior);
+                                       HSolver->dHAuxiVec1, 1e-08, BUFFER_DUALCHECK, &isInterior);
             if ( !isInterior ) {
                 break;
             }
@@ -1703,6 +1704,7 @@ static hdsdp_retcode HDSDP_PhaseB_BarDualPotentialSolve( hdsdp *HSolver ) {
     int pObjFound = 0;
     int nopObjFound = 0;
     int isRayFound = 0;
+    int iForceDetect = 1;
     
     double pObjStart = HSolver->pObjInternal;
     
@@ -1712,6 +1714,10 @@ static hdsdp_retcode HDSDP_PhaseB_BarDualPotentialSolve( hdsdp *HSolver ) {
     while ( 1 ) {
         
         nIterInternal += 1;
+        
+        if ( nIterInternal > 10 ) {
+            iForceDetect = 0;
+        }
         
         /* Build up Schur complement */
         HDSDP_CALL(HKKTBuildUp(HSolver->HKKT, KKT_TYPE_INFEASIBLE));
@@ -1763,7 +1769,7 @@ static hdsdp_retcode HDSDP_PhaseB_BarDualPotentialSolve( hdsdp *HSolver ) {
         HDSDP_Feasible_BuildStep(HSolver);
         
         /* Detect ray */
-        isRayFound = HDSDP_PhaseB_BarPrimalInfeasCheck(HSolver);
+        isRayFound = HDSDP_PhaseB_BarPrimalInfeasCheck(HSolver, iForceDetect);
         
         if ( isRayFound ) {
             hdsdp_printf("HDSDP detects a dual improving ray \n");

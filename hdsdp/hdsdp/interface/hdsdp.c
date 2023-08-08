@@ -616,6 +616,10 @@ extern hdsdp_retcode HDSDPOptimize( hdsdp *HSolver, int dOptOnly ) {
         retcode = HDSDPCheckSolution(HSolver, HSolver->dErrs);
     }
     
+    hdsdp_printf("DIMACS error metric:\n    %5.2e %5.2e %5.2e %5.2e %5.2e %5.2e \n",
+                 HSolver->dErrs[0], HSolver->dErrs[1], HSolver->dErrs[2],
+                 HSolver->dErrs[3], HSolver->dErrs[4], HSolver->dErrs[5]);
+    
     HDSDPIPrintSolutionStats(HSolver);
     
 exit_cleanup:
@@ -827,10 +831,6 @@ extern hdsdp_retcode HDSDPCheckSolution( hdsdp *HSolver, double dErrs[6] ) {
     } else {
         HSolver->HStatus = HDSDP_PRIMAL_DUAL_OPTIMAL;
     }
-    
-    hdsdp_printf("DIMACS error metric:\n    %5.2e %5.2e %5.2e %5.2e %5.2e %5.2e \n",
-                 dErrs[DIMACS_ERROR_1], dErrs[DIMACS_ERROR_2], dErrs[DIMACS_ERROR_3],
-                 dErrs[DIMACS_ERROR_4], dErrs[DIMACS_ERROR_5], dErrs[DIMACS_ERROR_6]);
     
 exit_cleanup:
     
