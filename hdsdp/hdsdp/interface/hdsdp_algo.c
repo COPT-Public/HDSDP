@@ -1486,6 +1486,10 @@ static hdsdp_retcode HDSDP_Feasible_Corrector( hdsdp *HSolver ) {
         nMaxCorr = 0;
     }
     
+    if ( HSolver->dDStep < 1e-02 ) {
+        nMaxCorr = 0;
+    }
+    
     if ( HSolver->dDStep < 0.1 && HSolver->dBarrierMu < 1e-05 ) {
         nMaxCorr = 0;
         set_int_param(HSolver, INT_PARAM_CORRECTORB, 0);
