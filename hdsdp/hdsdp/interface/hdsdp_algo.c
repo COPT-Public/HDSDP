@@ -109,7 +109,7 @@ static void HDSDP_ResetStart( hdsdp *HSolver ) {
     
     double objFroNorm = get_dbl_feature(HSolver, DBL_FEATURE_OBJFRONORM);
     HSolver->dResidual = - HDSDP_MAX(objFroNorm, 1e+02);
-    HSolver->dResidual = HSolver->dResidual * 1e+10;
+    HSolver->dResidual = HSolver->dResidual * 1e+07;
     HSolver->dResidual = HDSDP_MAX(HSolver->dResidual, -1e+15);
     
     hdsdp_printf("Reset with dual residual %3.1e\n", HSolver->dResidual);
@@ -620,7 +620,8 @@ static int HDSDP_ProxMeasure( hdsdp *HSolver ) {
             algo_debug("Found new primal bound %10.6e \n", pObjNew);
             HSolver->pObjInternal = pObjNew;
             
-            double dPrimalInAcc = HDSDP_MIN(dPrimalAccuray * 100, 5e-03);
+            double dPrimalInAcc = HDSDP_MIN(dPrimalAccuray * 1000, 5e-03);
+            dPrimalInAcc = HDSDP_MAX(dPrimalAccuray, 1e-04);
             
             /* Recover primal infeasibilities */
             HConeGetPrimal(HSolver->HBndCone, HSolver->dBarrierMu, HSolver->dRowDual,
@@ -1720,7 +1721,7 @@ static hdsdp_retcode HDSDP_PhaseB_BarDualPotentialSolve( hdsdp *HSolver ) {
         HDSDP_CALL(HKKTBuildUpExtraCone(HSolver->HKKT, HSolver->HBndCone, KKT_TYPE_INFEASIBLE));
         
         if ( HSolver->dBarrierMu > 1e-03 ) {
-            HKKTRegularize(HSolver->HKKT, 1e-06);
+            HKKTRegularize(HSolver->HKKT, 1e-08);
         }
       
         /* Export the information needed */

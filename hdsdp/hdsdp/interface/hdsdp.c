@@ -174,6 +174,8 @@ static void HDSDPIAdjustConeParams( hdsdp *HSolver ) {
         set_dbl_param(HSolver, DBL_PARAM_TRXESTIMATE, get_dbl_feature(HSolver, DBL_FEATURE_IMPTRACEX));
         set_dbl_param(HSolver, DBL_PARAM_POBJSTART, 1e+08);
         set_dbl_param(HSolver, DBL_PARAM_POTRHOVAL, 5.0);
+        set_dbl_param(HSolver, DBL_PARAM_DUALBOX_UP, 1e+06);
+        set_dbl_param(HSolver, DBL_PARAM_DUALBOX_LOW, -1e+06);
         strcat(HSolver->modelFeatures, "trace-implied ");
     }
     
@@ -811,7 +813,7 @@ extern hdsdp_retcode HDSDPCheckSolution( hdsdp *HSolver, double dErrs[6] ) {
             HDSDP_FREE(dAuxiMat);
             HDSDP_FREE(dWork);
             HDSDP_FREE(iWork);
-            return HDSDPCheckSolution(HSolver, dErrs);
+            HDSDPCheckSolution(HSolver, dErrs);
         }
         
     } else {

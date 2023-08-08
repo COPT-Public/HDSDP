@@ -506,7 +506,7 @@ extern void LPConeViewImpl( hdsdp_cone_lp *cone ) {
 
 extern void LPConeGetStatsImpl( hdsdp_cone_lp *cone, double *rowRHS, int coneIntFeatures[20], double coneDblFeatures[20] ) {
     
-    if ( cone->nCol % 2 != 0 ) {
+    if ( cone->nCol % 2 != 0 || cone->nCol < 100 ) {
         return;
     }
     
