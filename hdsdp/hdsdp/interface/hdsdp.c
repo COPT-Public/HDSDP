@@ -172,7 +172,7 @@ static void HDSDPIAdjustConeParams( hdsdp *HSolver ) {
     if ( isImpliedTrace ) {
         set_dbl_param(HSolver, DBL_PARAM_DUALSTART, 1e+03);
         set_dbl_param(HSolver, DBL_PARAM_TRXESTIMATE, get_dbl_feature(HSolver, DBL_FEATURE_IMPTRACEX));
-        set_dbl_param(HSolver, DBL_PARAM_POBJSTART, 1e+10);
+        set_dbl_param(HSolver, DBL_PARAM_POBJSTART, 1e+08);
         set_dbl_param(HSolver, DBL_PARAM_POTRHOVAL, 5.0);
         strcat(HSolver->modelFeatures, "trace-implied ");
     }
@@ -181,7 +181,7 @@ static void HDSDPIAdjustConeParams( hdsdp *HSolver ) {
         set_dbl_param(HSolver, DBL_PARAM_DUALBOX_UP, 1e+06);
         set_dbl_param(HSolver, DBL_PARAM_DUALBOX_LOW, -1e+06);
         set_dbl_param(HSolver, DBL_PARAM_DUALSTART, 1e+03);
-        set_dbl_param(HSolver, DBL_PARAM_PRECORDACC, 5e-06);
+        set_dbl_param(HSolver, DBL_PARAM_PRECORDACC, 1e-07);
         strcat(HSolver->modelFeatures, "no-primal interior ");
     }
     
@@ -598,7 +598,7 @@ extern hdsdp_retcode HDSDPOptimize( hdsdp *HSolver, int dOptOnly ) {
     /* Invoke solver */
     retcode = HDSDPSolve(HSolver, dOptOnly);
     
-    hdsdp_printf("\nOptimization time: %3.1f seconds", HUtilGetTimeStamp() - HSolver->dTimeBegin);
+    hdsdp_printf("\nOptimization time: %3.1f seconds\n", HUtilGetTimeStamp() - HSolver->dTimeBegin);
     
     if ( HSolver->HStatus != HDSDP_INFEAS_OR_UNBOUNDED &&
          HSolver->HStatus != HDSDP_SUSPECT_INFEAS_OR_UNBOUNDED ) {
@@ -637,6 +637,18 @@ extern void HDSDPGetConeValues( hdsdp *HSolver, int iCone, double *conePrimal, d
     double *dRowDualMaker = HSolver->dAccRowDualMaker;
     double *dRowDualStepMaker = HSolver->dAccRowDualStepMaker;
     
+#if 0
+#include "debug_data.h"
+    dBarrierMaker = globalmu;
+    dRowDualMaker = globaly;
+    dRowDualStepMaker = globaldy;
+    
+    for ( int iCone = 0; iCone < HSolver->nCones; ++iCone ) {
+        HConeReduceResi(HSolver->HCones[iCone], 0.0);
+        HConeSetPerturb(HSolver->HCones[iCone], 7.3018532792337075E-8);
+    }
+#endif
+    
     if ( dBarrierMaker <= 0.0 ) {
         dBarrierMaker = HSolver->dInaccBarrierMaker;
         dRowDualMaker = HSolver->dInaccRowDualMaker;
@@ -673,7 +685,7 @@ extern hdsdp_retcode HDSDPCheckSolution( hdsdp *HSolver, double dErrs[6] ) {
     dErrs[DIMACS_ERROR_5] = 1.0;
     dErrs[DIMACS_ERROR_6] = 1.0;
     
-    if ( HSolver->dInaccBarrierMaker < 0.0 ) {
+    if ( HSolver->dInaccBarrierMaker < 0.0 && HSolver->dAccBarrierMaker < 0.0 ) {
         HSolver->HStatus = HDSDP_NUMERICAL;
         return HDSDP_RETCODE_OK;
     }
@@ -740,7 +752,8 @@ extern hdsdp_retcode HDSDPCheckSolution( hdsdp *HSolver, double dErrs[6] ) {
         if ( HSolver->HCones[iCone]->cone == HDSDP_CONETYPE_LP ) {
             dEValAuxi[0] = HUtilGetDblMinimum(nConeDimSqr, dPrimalMatBuffer);
         } else {
-            fds_syev(HConeGetDim(HSolver->HCones[iCone]), dPrimalMatBuffer, dEValAuxi, dAuxiMat, 1, dWork, iWork, lWork, liWork);
+            int nConeDim = HConeGetDim(HSolver->HCones[iCone]);
+            fds_syev(nConeDim, dPrimalMatBuffer, dEValAuxi, dAuxiMat, 1, dWork, iWork, lWork, liWork);
         }
         
         dMinPrimalEVal = HDSDP_MIN(dMinPrimalEVal, dEValAuxi[0]);
@@ -791,7 +804,7 @@ extern hdsdp_retcode HDSDPCheckSolution( hdsdp *HSolver, double dErrs[6] ) {
             goto exit_cleanup;
         } else {
             /* The primal solution is not good. Switch to the other */
-            hdsdp_printf("\nDealing with primal solution");
+            hdsdp_printf("\nDealing with primal solution\n");
             HSolver->dAccBarrierMaker = -1.0;
             HDSDP_FREE(dPrimalMatBuffer);
             HDSDP_FREE(dDualMatBuffer);
@@ -805,7 +818,7 @@ extern hdsdp_retcode HDSDPCheckSolution( hdsdp *HSolver, double dErrs[6] ) {
         HSolver->HStatus = HDSDP_PRIMAL_DUAL_OPTIMAL;
     }
     
-    hdsdp_printf("\nDIMACS error metric:\n    %5.2e %5.2e %5.2e %5.2e %5.2e %5.2e \n",
+    hdsdp_printf("DIMACS error metric:\n    %5.2e %5.2e %5.2e %5.2e %5.2e %5.2e \n",
                  dErrs[DIMACS_ERROR_1], dErrs[DIMACS_ERROR_2], dErrs[DIMACS_ERROR_3],
                  dErrs[DIMACS_ERROR_4], dErrs[DIMACS_ERROR_5], dErrs[DIMACS_ERROR_6]);
     

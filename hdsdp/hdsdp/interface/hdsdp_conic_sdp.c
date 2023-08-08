@@ -377,7 +377,9 @@ static inline void sdpDenseConeIUpdateBuffer( hdsdp_cone_sdp_dense *cone, double
     sdpDataMatAddToBuffer(cone->sdpObj, dCCoef, cone->dualPosToElemMap, target);
     
     /* Add cone perturbation */
-    dEyeCoef += cone->dualPerturb;
+    if ( whichBuffer != BUFFER_DUALSTEP ) {
+        dEyeCoef += cone->dualPerturb;
+    }
     
     /* Add residual and perturbation */
     if ( dEyeCoef != 0.0 ) {
@@ -433,7 +435,9 @@ static inline void sdpSparseConeIUpdateBuffer( hdsdp_cone_sdp_sparse *cone, doub
     sdpDataMatAddToBuffer(cone->sdpObj, dCCoef, cone->dualPosToElemMap, target);
     
     /* Add cone perturbation */
-    dEyeCoef += cone->dualPerturb;
+    if ( whichBuffer != BUFFER_DUALSTEP ) {
+        dEyeCoef += cone->dualPerturb;
+    }
     
     /* Add residual */
     if ( dEyeCoef != 0.0 ) {

@@ -67,7 +67,9 @@ static inline void LPConeIUpdateBuffer( hdsdp_cone_lp *cone, double dCCoef, doub
         target[iCol] += dCCoef * cone->colObj[iCol];
     }
     
-    dEyeCoef += cone->dualPerturb;
+    if ( whichBuffer != BUFFER_DUALSTEP ) {
+        dEyeCoef += cone->dualPerturb;
+    }
     
     if ( dEyeCoef != 0.0 ) {
         for ( int iCol = 0; iCol < cone->nCol; ++iCol ) {
@@ -140,6 +142,7 @@ extern hdsdp_retcode LPConeProcDataImpl( hdsdp_cone_lp *cone, int nRow, int nCol
     
     int nMaxKKTNz = 0;
     nMaxKKTNz = nRow * nRow;
+    cone->coneKKTNnz = nMaxKKTNz;
     
 #if 0
     for ( int iCol = 0; iCol < cone->nCol; ++iCol ) {

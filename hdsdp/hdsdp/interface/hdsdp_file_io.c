@@ -221,9 +221,9 @@ hdsdp_retcode HReadSDPA( char *fname, int *pnConstrs, int *pnBlks, int **pblkDim
             iRow -= 1;
             iCol -= 1;
             
-            if ( fabs(dElem) < 1e-10 ) {
+            if ( fabs(dElem) < 1e-12 ) {
                 if ( warnTinyEntry ) {
-                    printf("[Warning] Entry smaller than 1e-10 is ignored. \n");
+                    printf("[Warning] Entry smaller than 1e-12 is ignored. \n");
                     warnTinyEntry = 0;
                 }
                 continue;
