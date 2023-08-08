@@ -180,20 +180,29 @@ static void HDSDPIAdjustConeParams( hdsdp *HSolver ) {
     }
     
     if ( isNoPrimalInterior ) {
-        set_dbl_param(HSolver, DBL_PARAM_DUALBOX_UP, 1e+06);
-        set_dbl_param(HSolver, DBL_PARAM_DUALBOX_LOW, -1e+06);
+        set_dbl_param(HSolver, DBL_PARAM_DUALBOX_UP, 1e+04);
+        set_dbl_param(HSolver, DBL_PARAM_DUALBOX_LOW, -1e+04);
         set_dbl_param(HSolver, DBL_PARAM_DUALSTART, 1e+03);
         set_dbl_param(HSolver, DBL_PARAM_PRECORDACC, 1e-07);
         strcat(HSolver->modelFeatures, "no-primal interior ");
     }
     
     if ( isNoDualInterior ) {
-        set_dbl_param(HSolver, DBL_PARAM_DUALBOX_UP, 10.0);
-        set_dbl_param(HSolver, DBL_PARAM_DUALBOX_LOW, -10.0);
-        set_dbl_param(HSolver, DBL_PARAM_DUALSTART, 1.0);
+        set_dbl_param(HSolver, DBL_PARAM_DUALBOX_UP, 1.0);
+        set_dbl_param(HSolver, DBL_PARAM_DUALBOX_LOW, -1.0);
+        
+        if ( HSolver->dAllConeDims > 100000 ) {
+            set_dbl_param(HSolver, DBL_PARAM_DUALSTART, 1e+00);
+            set_dbl_param(HSolver, DBL_PARAM_ABSFEASTOL, 1e-04);
+            set_dbl_param(HSolver, DBL_PARAM_RELFEASTOL, 1e-05);
+        } else {
+            set_dbl_param(HSolver, DBL_PARAM_DUALSTART, 1e+01);
+            set_dbl_param(HSolver, DBL_PARAM_ABSFEASTOL, 1e-05);
+            set_dbl_param(HSolver, DBL_PARAM_RELFEASTOL, 1e-07);
+        }
+        
         set_dbl_param(HSolver, DBL_PARAM_PRECORDACC, 1e-05);
-        set_dbl_param(HSolver, DBL_PARAM_ABSFEASTOL, 1e-05);
-        set_dbl_param(HSolver, DBL_PARAM_RELFEASTOL, 1e-07);
+        
         strcat(HSolver->modelFeatures, "no-dual interior ");
     }
     

@@ -1720,8 +1720,8 @@ static hdsdp_retcode HDSDP_PhaseB_BarDualPotentialSolve( hdsdp *HSolver ) {
         
         HDSDP_CALL(HKKTBuildUpExtraCone(HSolver->HKKT, HSolver->HBndCone, KKT_TYPE_INFEASIBLE));
         
-        if ( HSolver->dBarrierMu > 1e-03 ) {
-            HKKTRegularize(HSolver->HKKT, 1e-08);
+        if ( HSolver->dBarrierMu > 1.0 ) {
+            HKKTRegularize(HSolver->HKKT, 1e-06);
         }
       
         /* Export the information needed */
@@ -1749,7 +1749,9 @@ static hdsdp_retcode HDSDP_PhaseB_BarDualPotentialSolve( hdsdp *HSolver ) {
             if ( pObjType ) {
                 nopObjFound = 0;
             } else {
-                nopObjFound += 1;
+                if ( HSolver->dProxNorm > 1.7 ) {
+                    nopObjFound += 1;
+                }
             }
         }
         
