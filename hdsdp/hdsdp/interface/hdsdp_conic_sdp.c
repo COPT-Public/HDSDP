@@ -140,9 +140,9 @@ static hdsdp_retcode sdpDenseConeIAllocDualMat( hdsdp_cone_sdp_dense *cone ) {
         
         /* Symbolic factorization is left in the presolve routine */
         HDSDP_CALL(HFpLinsysCreate(&cone->dualFactor, cone->nCol, HDSDP_LINSYS_SPARSE_DIRECT));
-        HFpLinsysSetParam(cone->dualFactor, -1.0, -1.0, 12, -1, -1);
+        HFpLinsysSetParam(cone->dualFactor, -1.0, -1.0, 8, -1, -1);
         HDSDP_CALL(HFpLinsysCreate(&cone->dualChecker, cone->nCol, HDSDP_LINSYS_SPARSE_DIRECT));
-        HFpLinsysSetParam(cone->dualChecker, -1.0, -1.0, 12, -1, -1);
+        HFpLinsysSetParam(cone->dualChecker, -1.0, -1.0, 8, -1, -1);
         /* Done */
     }
     

@@ -1030,7 +1030,7 @@ static hdsdp_retcode HDSDP_PhaseA_BarInfeasSolve( hdsdp *HSolver, int dOnly ) {
     double nSumCones = (double) get_int_feature(HSolver, INT_FEATURE_N_SUMCONEDIMS);
     double dObjScal = get_dbl_feature(HSolver, DBL_FEATURE_OBJSCALING);
     double dObjOneNorm = get_dbl_feature(HSolver, DBL_FEATURE_OBJONENORM);
-    double dFeasTol = HDSDP_MIN(dAbsfeasTol, dRelfeasTol * (1 + dObjOneNorm));
+    double dFeasTol = HDSDP_MAX(dAbsfeasTol, dRelfeasTol * (1 + dObjOneNorm));
     double dAdaRatio = 0.0;
     dFeasTol = dFeasTol * dObjScal / sqrt(nSumCones);
     

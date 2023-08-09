@@ -196,7 +196,8 @@ static void HDSDPIAdjustConeParams( hdsdp *HSolver ) {
             set_dbl_param(HSolver, DBL_PARAM_ABSFEASTOL, 1e-04);
             set_dbl_param(HSolver, DBL_PARAM_RELFEASTOL, 1e-05);
         } else {
-            set_dbl_param(HSolver, DBL_PARAM_DUALSTART, 1e+01);
+            set_dbl_param(HSolver, DBL_PARAM_DUALBOX_UP, 1e+01);
+            set_dbl_param(HSolver, DBL_PARAM_DUALBOX_LOW, -1e+01);
             set_dbl_param(HSolver, DBL_PARAM_ABSFEASTOL, 1e-05);
             set_dbl_param(HSolver, DBL_PARAM_RELFEASTOL, 1e-07);
         }
@@ -342,10 +343,10 @@ static void HDSDPIGetDefaultParams( hdsdp *HSolver ) {
     set_int_param(HSolver, INT_PARAM_CORRECTORB, 12);
     set_int_param(HSolver, INT_PARAM_THREADS, 12);
     
-    set_dbl_param(HSolver, DBL_PARAM_ABSOPTTOL, 1e-04);
-    set_dbl_param(HSolver, DBL_PARAM_ABSFEASTOL, 1e-04);
-    set_dbl_param(HSolver, DBL_PARAM_RELOPTTOL, 1e-06);
-    set_dbl_param(HSolver, DBL_PARAM_RELFEASTOL, 1e-06);
+    set_dbl_param(HSolver, DBL_PARAM_ABSOPTTOL, 1e-08);
+    set_dbl_param(HSolver, DBL_PARAM_ABSFEASTOL, 1e-08);
+    set_dbl_param(HSolver, DBL_PARAM_RELOPTTOL, 1e-10);
+    set_dbl_param(HSolver, DBL_PARAM_RELFEASTOL, 1e-10);
     set_dbl_param(HSolver, DBL_PARAM_TIMELIMIT, 3600.0);
     set_dbl_param(HSolver, DBL_PARAM_POTRHOVAL, 4.0);
     set_dbl_param(HSolver, DBL_PARAM_HSDGAMMA, 0.5);
