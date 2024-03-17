@@ -298,6 +298,7 @@ static void sdpSparseConeIFreeDualMat( hdsdp_cone_sdp_sparse *cone ) {
     return;
 }
 
+#if 0
 static void sdpDenseConeIZeroBuffer( hdsdp_cone_sdp_dense *cone, int whichBuffer ) {
     
     double *target = NULL;
@@ -337,6 +338,7 @@ static void sdpSparseConeIZeroBuffer( hdsdp_cone_sdp_sparse *cone, int whichBuff
     
     return;
 }
+#endif
 
 static inline void sdpDenseConeIUpdateBuffer( hdsdp_cone_sdp_dense *cone, double dCCoef, double dACoefScal,
                                        double *dACoef, double dEyeCoef, int whichBuffer ) {
@@ -675,7 +677,6 @@ static hdsdp_retcode sdpDenseConeIGetKKTColumnByKKT1( hdsdp_cone_sdp_dense *cone
     /* Schur strategy M1 is disabled now */
     assert( 0 );
     
-exit_cleanup:
     return retcode;
 }
 
@@ -769,7 +770,6 @@ static hdsdp_retcode sdpDenseConeIGetKKTColumnByKKT2( hdsdp_cone_sdp_dense *cone
         }
     }
         
-exit_cleanup:
     return retcode;
 }
 
@@ -843,7 +843,6 @@ static hdsdp_retcode sdpDenseConeIGetKKTColumnByKKT3( hdsdp_cone_sdp_dense *cone
         }
     }
     
-exit_cleanup:
     return retcode;
 }
 
@@ -914,7 +913,6 @@ static hdsdp_retcode sdpDenseConeIGetKKTColumnByKKT4( hdsdp_cone_sdp_dense *cone
         }
     }
     
-exit_cleanup:
     return retcode;
 }
 
@@ -979,7 +977,6 @@ static hdsdp_retcode sdpDenseConeIGetKKTColumnByKKT5( hdsdp_cone_sdp_dense *cone
         }
     }
     
-exit_cleanup:
     return retcode;
 }
 
@@ -1051,7 +1048,6 @@ static hdsdp_retcode sdpDenseConeIGetKKTCorrectorComponents( hdsdp_cone_sdp_dens
         }
     }
  
-exit_cleanup:
     return retcode;
 }
 
@@ -1104,7 +1100,6 @@ static hdsdp_retcode sdpSparseConeIGetKKTColumnByKKT2( hdsdp_cone_sdp_sparse *co
         dSinAVecSign * sdpDataMatKKT2QuadForm(cone->sdpRow[iRowElem], dSinvAVecBuffer, dAuxiQuadFormVec);
     }
     
-exit_cleanup:
     return retcode;
 }
 
@@ -1157,7 +1152,6 @@ static hdsdp_retcode sdpSparseConeIGetKKTColumnByKKT3( hdsdp_cone_sdp_sparse *co
         sdpDataMatKKT3TraceABuffer(cone->sdpRow[iRowElem], dSinvASinvBuffer, dAuxiMat);
     }
     
-exit_cleanup:
     return retcode;
 }
 
@@ -1208,7 +1202,6 @@ static hdsdp_retcode sdpSparseConeIGetKKTColumnByKKT4( hdsdp_cone_sdp_sparse *co
         sdpDataMatKKT4TraceASinvBuffer(cone->sdpRow[iRowElem], cone->dualFactor, kkt->invBuffer, dASinvBuffer, dAuxiMat);
     }
     
-exit_cleanup:
     return retcode;
 }
 
@@ -1258,7 +1251,6 @@ static hdsdp_retcode sdpSparseConeIGetKKTColumnByKKT5( hdsdp_cone_sdp_sparse *co
         sdpDataMatKKT5TraceASinvBSinv(sdpTargetMatrix, cone->sdpRow[iRowElem], kkt->invBuffer, dAuxiMat);
     }
     
-exit_cleanup:
     return retcode;
 }
 
@@ -1318,7 +1310,6 @@ static hdsdp_retcode sdpSparseConeIGetKKTCorrectorComponents( hdsdp_cone_sdp_spa
         }
     }
  
-exit_cleanup:
     return retcode;
 }
 
@@ -2051,6 +2042,10 @@ extern void sdpSparseConeAddSymNnzImpl( hdsdp_cone_sdp_sparse *cone, int iCol, i
      Then we let the cone retrieve their column sparsity from the transformed buffer
      */
     
+    if ( cone->iKKTCounted >= cone->nRowElem ) {
+        return;
+    }
+    
     if ( cone->rowIdx[cone->iKKTCounted] == iCol ) {
         /* We get nonzero in this column */
         for ( int iElem = cone->iKKTCounted; iElem < cone->nRowElem; ++iElem ) {
@@ -2074,6 +2069,10 @@ extern void sdpSparseConeGetSymMapping( hdsdp_cone_sdp_sparse *cone, int iCol, i
     /* Now we extract the sparsity pattern */
     int kktShift = ((2 * cone->nRowElem - cone->iKKTCounted + 1) * cone->iKKTCounted) / 2;
     int *kktStart = cone->kktMapping + kktShift;
+    
+    if ( cone->iKKTCounted >= cone->nRowElem ) {
+        return;
+    }
     
     if ( cone->rowIdx[cone->iKKTCounted] == iCol ) {
         for ( int iElem = cone->iKKTCounted; iElem < cone->nRowElem; ++iElem ) {

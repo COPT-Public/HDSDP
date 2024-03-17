@@ -1,5 +1,5 @@
 /** @file hdsdp\_sdpdata.h
- *  @brief Implenent the SDP Coeffcient data operations
+ *  @brief Implement the SDP Coeffcient data operations
  *  @date 11/24/2022
  */
 

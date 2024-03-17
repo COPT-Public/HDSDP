@@ -284,7 +284,6 @@ extern hdsdp_retcode sBoundConeInteriorCheck( hdsdp_cone_bound_scalar *cone, dou
     
     *isInterior = 1;
     
-exit_cleanup:
     return HDSDP_RETCODE_OK;
 }
 
@@ -318,7 +317,6 @@ extern hdsdp_retcode sBoundConeInteriorCheckExpert( hdsdp_cone_bound_scalar *con
     
     *isInterior = 1;
     
-exit_cleanup:
     return HDSDP_RETCODE_OK;
 }
 
@@ -364,7 +362,6 @@ extern hdsdp_retcode sBoundConeGetBarrier( hdsdp_cone_bound_scalar *cone, double
     
     *logdet = dLogDeterminant;
  
-exit_cleanup:
     return HDSDP_RETCODE_OK;
 }
 

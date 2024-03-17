@@ -836,8 +836,6 @@ static hdsdp_retcode conjGradBuildPreconditioner( iterative_linsys *cg ) {
         retcode = lapackLinSolverNumeric((void *) cg->lap, NULL, NULL, cg->fullMatElem);
     }
     
-exit_cleanup:
-    
     return retcode;
 }
 
@@ -1430,9 +1428,7 @@ extern hdsdp_retcode HFpLinsysGetDiag( hdsdp_linsys_fp *HLin, double *diagElem )
     
     hdsdp_retcode retcode = HDSDP_RETCODE_OK;
     HLin->cholGetDiag(HLin->chol, diagElem);
-    
-exit_cleanup:
-    
+       
     return retcode;
 }
 

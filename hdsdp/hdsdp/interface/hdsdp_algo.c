@@ -642,7 +642,7 @@ static int HDSDP_ProxMeasure( hdsdp *HSolver ) {
                 HSolver->pInfeas = pInfeas;
             }
             
-            if ( pInfeas < 1e-02 ) {
+            if ( pInfeas < 1.0 ) {
                 
                 if ( dRelGap * HSolver->dBarrierMu > dPrimalInAcc * (fabs(HSolver->dObjInternal) + 1.0) ) {
                     /* Record solution */
@@ -1111,6 +1111,10 @@ static hdsdp_retcode HDSDP_PhaseA_BarInfeasSolve( hdsdp *HSolver, int dOnly ) {
             pObjFound += pObjType;
         }
         
+        if ( (pObjType == 1) && HSolver->dProxNorm < 2.0 ) {
+            HSolver->dBarrierMu *= 0.7;
+        }
+        
         algo_debug("Proximity norm %20.10e \n", HSolver->dProxNorm);
         
         /* Update barrier parameter */
@@ -1253,7 +1257,7 @@ static hdsdp_retcode HDSDP_PhaseB_ChooseBarrier( hdsdp *HSolver, int pObjType ) 
         
         HConeRatioTest(HSolver->HBndCone, 0.0, HSolver->dHAuxiVec1, 0.0, BUFFER_DUALCHECK, &dStep);
         dMaxStep = HDSDP_MIN(dMaxStep, dStep);
-        dMaxStep = HDSDP_MIN(dMaxStep * 0.97, 1e+03);
+        dMaxStep = HDSDP_MIN(dMaxStep * 0.97, 1e+05);
         
         HSolver->dBarrierMu = HSolver->dBarrierMu / ( 1.0 + dMaxStep );
         
@@ -1313,7 +1317,7 @@ static hdsdp_retcode HDSDP_PhaseB_ChooseBarrier( hdsdp *HSolver, int pObjType ) 
         
         HConeRatioTest(HSolver->HBndCone, 0.0, HSolver->dHAuxiVec1, 0.0, BUFFER_DUALCHECK, &dStep);
         dMaxStep = HDSDP_MIN(dMaxStep, dStep);
-        dMaxStep = HDSDP_MIN(dMaxStep * 0.97, 1e+03);
+        dMaxStep = HDSDP_MIN(dMaxStep * 0.97, 1e+05);
         HSolver->dBarrierMu = dPStep * HSolver->dBarrierMu / (1.0 + dMaxStep) + \
                             (1.0 - dPStep) * (HSolver->pObjInternal - HSolver->dObjInternal) / HSolver->dAllConeDims;
     }
@@ -1756,9 +1760,7 @@ static hdsdp_retcode HDSDP_PhaseB_BarDualPotentialSolve( hdsdp *HSolver ) {
             if ( pObjType ) {
                 nopObjFound = 0;
             } else {
-                if ( HSolver->dProxNorm > 1.7 ) {
-                    nopObjFound += 1;
-                }
+                nopObjFound += 1;
             }
         }
         
@@ -1851,6 +1853,7 @@ exit_cleanup:
     return retcode;
 }
 
+#ifdef TODO
 static hdsdp_retcode HDSDP_PureLP_Solve( hdsdp *HSolver ) {
     
     hdsdp_retcode retcode = HDSDP_RETCODE_OK;
@@ -1860,6 +1863,7 @@ static hdsdp_retcode HDSDP_PureLP_Solve( hdsdp *HSolver ) {
 exit_cleanup:
     return retcode;
 }
+#endif
 
 extern hdsdp_retcode HDSDPSolve( hdsdp *HSolver, int dOnly ) {
     

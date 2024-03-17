@@ -22,7 +22,7 @@
 //#define HDSDP_ALGO_DEBUG
 //#define HDSDP_LINSYS_PROFILE
 //#define MEMORY_DEBUG
-#define KKT_ACCURACY (1e-10)
+#define KKT_ACCURACY (1e-12)
 #define HDSDP_SPARSE_CONE_THRESHOLD  (0.3)
 #define HDSDP_SPARSE_SCHUR_THRESHOLD (0.3)
 
@@ -106,6 +106,8 @@ extern hdsdp_retcode HDSDPInit( hdsdp *HSolver, int nRows, int nCones );
 extern hdsdp_retcode HDSDPSetCone( hdsdp *HSolver, int iCone, void *userCone );
 extern void HDSDPSetDualObjective( hdsdp *HSolver, double *dObj );
 extern hdsdp_retcode HDSDPOptimize( hdsdp *HSolver, int dOptOnly );
+extern void HDSDPSetIntParam( hdsdp *HSolver, int intParam, int intParamVal );
+extern void HDSDPSetDblParam( hdsdp *HSolver, int intParam, double dblParamVal );
 extern hdsdp_retcode HDSDPGetRowDual( hdsdp *HSolver, double *pObjVal, double *dObjVal, double *dualVal );
 extern void HDSDPGetConeValues( hdsdp *HSolver, int iCone, double *conePrimal, double *coneDual, double *coneAuxi );
 extern hdsdp_retcode HDSDPCheckSolution( hdsdp *HSolver, double diErrors[6] );

@@ -506,11 +506,106 @@ extern void LPConeViewImpl( hdsdp_cone_lp *cone ) {
 
 extern void LPConeGetStatsImpl( hdsdp_cone_lp *cone, double *rowRHS, int coneIntFeatures[20], double coneDblFeatures[20] ) {
     
+    /* Detect two special structures for LPs:
+     
+     1. Implied dual equality (free primal variable)
+     2. Implied dual box constraint
+    
+     */
+    
     if ( cone->nCol % 2 != 0 || cone->nCol < 100 ) {
         return;
     }
     
+    /* Use two auxiliary arrays from the LP datas structure */
+    double *dDualBoundUpperTmp = NULL;
+    double *dDualBoundLowerTmp = NULL;
+    
+    HDSDP_INIT(dDualBoundLowerTmp, double, cone->nRow);
+    HDSDP_INIT(dDualBoundUpperTmp, double, cone->nRow);
+    HDSDP_ZERO(dDualBoundLowerTmp, double, cone->nRow);
+    HDSDP_ZERO(dDualBoundUpperTmp, double, cone->nRow);
+    
+    if ( !dDualBoundLowerTmp || !dDualBoundUpperTmp ) {
+        HDSDP_FREE(dDualBoundLowerTmp);
+        HDSDP_FREE(dDualBoundUpperTmp);
+        return;
+    }
+    
     int nHalfCols = (int) cone->nCol / 2;
+    
+    int isImpliedDual = 1;
+    int isImpliedUpper = 0;
+    int isImpliedLower = 0;
+    
+    double dMaxDualBoundUpper = 1.0;
+    double dMinDualBoundLower = -1.0;
+    
+    
+    /* First detect if l <= y <= u */
+    for ( int iCol = 0; iCol < cone->nRow; ++iCol ) {
+        for ( int iElem = cone->rowMatBeg[iCol]; iElem < cone->rowMatBeg[iCol + 1]; ++iElem ) {
+            
+            if ( cone->rowMatBeg[iCol + 1] - cone->rowMatBeg[iCol] > 2 ) {
+                isImpliedDual = 0;
+                break;
+            }
+            
+            if ( cone->rowMatElem[iElem] > 0.0 ) {
+                if ( dDualBoundUpperTmp[iCol] ) {
+                    isImpliedDual = 0;
+                    break;
+                }
+                isImpliedUpper = 1;
+                double dUpperBound = cone->colObj[cone->rowMatIdx[iElem]] / cone->rowMatElem[iElem];
+                dDualBoundUpperTmp[iCol] = HDSDP_MAX(dDualBoundUpperTmp[iCol], dUpperBound);
+            } else {
+                if ( dDualBoundLowerTmp[iCol] ) {
+                    isImpliedDual = 0;
+                    break;
+                }
+                isImpliedLower = 1;
+                double dLowerBound = cone->colObj[cone->rowMatIdx[iElem]] / cone->rowMatElem[iElem];
+                dDualBoundLowerTmp[iCol] = HDSDP_MIN(dDualBoundLowerTmp[iCol], dLowerBound);
+            }
+        }
+        
+        if ( !isImpliedDual ) {
+            break;
+        }
+    }
+    
+    if ( isImpliedDual ) {
+        
+        coneIntFeatures[INT_FEATURE_I_IMPYBOUND] = 1;
+        
+        if ( isImpliedUpper ) {
+            for ( int iRow = 0; iRow < cone->nRow; ++iRow ) {
+                dMaxDualBoundUpper = HDSDP_MAX(dMaxDualBoundUpper, dDualBoundUpperTmp[iRow]);
+            }
+            
+            if ( dMaxDualBoundUpper <= 0.0 ) {
+                dMaxDualBoundUpper = 1.0;
+            }
+            
+            coneDblFeatures[DBL_FEATURE_IMPYBOUNDUP] = dMaxDualBoundUpper;
+        }
+        
+        if ( isImpliedLower ) {
+            for ( int iRow = 0; iRow < cone->nRow; ++iRow ) {
+                dMinDualBoundLower = HDSDP_MIN(dMinDualBoundLower, dDualBoundLowerTmp[iRow]);
+            }
+            
+            if ( dMinDualBoundLower >= 0.0 ) {
+                dMinDualBoundLower = -1.0;
+            }
+            
+            coneDblFeatures[DBL_FEATURE_IMPYBOUNDLOW] = dMinDualBoundLower;
+        }
+    }
+    
+    HDSDP_FREE(dDualBoundLowerTmp);
+    HDSDP_FREE(dDualBoundUpperTmp);
     
     for ( int iCol = 0; iCol < nHalfCols; ++iCol ) {
         if ( cone->colObj[iCol] + cone->colObj[iCol + nHalfCols] != 0.0 ) {

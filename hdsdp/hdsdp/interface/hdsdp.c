@@ -187,6 +187,41 @@ static void HDSDPIAdjustConeParams( hdsdp *HSolver ) {
         strcat(HSolver->modelFeatures, "no-primal interior ");
     }
     
+    if ( isImpliedDual ) {
+        
+        double dBoxUpper = get_dbl_param(HSolver, DBL_PARAM_DUALBOX_UP);
+        double dBoxLower = get_dbl_param(HSolver, DBL_PARAM_DUALBOX_LOW);
+        int isUpper = 0;
+        int isLower = 0;
+        
+        if ( get_dbl_feature(HSolver, DBL_FEATURE_IMPYBOUNDUP) ) {
+            isUpper = 1;
+            dBoxUpper = HDSDP_MIN(dBoxUpper, get_dbl_feature(HSolver, DBL_FEATURE_IMPYBOUNDUP));
+            set_dbl_param(HSolver, DBL_PARAM_DUALBOX_UP, dBoxUpper);
+        }
+        if ( get_dbl_feature(HSolver, DBL_FEATURE_IMPYBOUNDLOW) ) {
+            isLower = 1;
+            dBoxLower = HDSDP_MAX(dBoxLower, get_dbl_feature(HSolver, DBL_FEATURE_IMPYBOUNDLOW));
+            set_dbl_param(HSolver, DBL_PARAM_DUALBOX_LOW, dBoxLower);
+        }
+        
+        if ( isUpper && isLower ) {
+            set_dbl_param(HSolver, DBL_PARAM_DUALSTART, 1e+02);
+            set_dbl_param(HSolver, DBL_PARAM_POBJSTART, 1e+05);
+        } else {
+            set_dbl_param(HSolver, DBL_PARAM_DUALSTART, 1e+05);
+            set_dbl_param(HSolver, DBL_PARAM_POBJSTART, 1e+10);
+            set_int_param(HSolver, INT_PARAM_CORRECTORA, 12);
+            set_int_param(HSolver, INT_PARAM_CORRECTORB, 12);
+        }
+        
+        set_dbl_param(HSolver, DBL_PARAM_ABSOPTTOL, 1e-01);
+        set_dbl_param(HSolver, DBL_PARAM_RELOPTTOL, 1e-04);
+        set_dbl_param(HSolver, DBL_PARAM_PRECORDACC, 1e-05);
+        
+        strcat(HSolver->modelFeatures, "dual-bounded ");
+    }
+    
     if ( isNoDualInterior ) {
         set_dbl_param(HSolver, DBL_PARAM_DUALBOX_UP, 1.0);
         set_dbl_param(HSolver, DBL_PARAM_DUALBOX_LOW, -1.0);
@@ -457,6 +492,8 @@ extern hdsdp_retcode HDSDPInit( hdsdp *HSolver, int nRows, int nCones ) {
     HSolver->nRows = nRows;
     HSolver->nCones = nCones;
     
+    HDSDPIGetDefaultParams(HSolver);
+    
     HDSDP_INIT(HSolver->rowRHS, double, nRows);
     HDSDP_MEMCHECK(HSolver->rowRHS);
         
@@ -551,6 +588,27 @@ extern void HDSDPSetDualStart( hdsdp *HSolver, double *dStart ) {
     return;
 }
 
+extern void HDSDPSetIntParam( hdsdp *HSolver, int intParam, int intParamVal ) {
+    
+    if ( intParam >= 3 || intParam < 0 ) {
+        return;
+    }
+    
+    HSolver->HIntParams[intParam] = intParamVal;
+    return;
+}
+
+
+extern void HDSDPSetDblParam( hdsdp *HSolver, int dblParam, double dblParamVal ) {
+    
+    if ( dblParam >= 13 || dblParam < 0 ) {
+        return;
+    }
+    HSolver->HDblParams[dblParam] = dblParamVal;
+    return;
+    
+}
+
 extern hdsdp_retcode HDSDPOptimize( hdsdp *HSolver, int dOptOnly ) {
     
     hdsdp_retcode retcode = HDSDP_RETCODE_OK;
@@ -560,8 +618,6 @@ extern hdsdp_retcode HDSDPOptimize( hdsdp *HSolver, int dOptOnly ) {
     hdsdp_printf("Wenzhi Gao, Dongdong Ge, Yinyu Ye, 2023\n");
     hdsdp_printf("---------------------------------------------\n");
     HSolver->dTimeBegin = HUtilGetTimeStamp();
-    
-    HDSDPIGetDefaultParams(HSolver);
     
     /* Process conic data */
     hdsdp_printf("Pre-solver starts \n");
