@@ -1,3 +1,0 @@
-\_form#0=55x11:$ A = \alpha  a  a^T $
-\_form#1=99x15:$||A - a a^T||_F \leq tol$
-\_form#2=15x18:$ \frac{\sqrt{2}}{2} $

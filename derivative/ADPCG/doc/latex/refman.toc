@@ -1,5 +1,0 @@
-\@ifundefined {etoctocstyle}{\let \etoc@startlocaltoc \@gobble \let \etoc@settocdepth \@gobble \let \etoc@depthtag \@gobble \let \etoc@setlocaltop \@gobble }{}
-\contentsline {chapter}{\numberline {1}Design of an adaptive pre-\/conditioned CG solver}{1}{chapter.1}%
-\contentsline {paragraph}{\numberline {1.0.0.0.1}Target problem}{1}{paragraph.1.0.0.0.1}%
-\contentsline {paragraph}{\numberline {1.0.0.0.2}Origin}{1}{paragraph.1.0.0.0.2}%
-\contentsline {paragraph}{\numberline {1.0.0.0.3}Adaptive pre-\/conditioning}{1}{paragraph.1.0.0.0.3}%
