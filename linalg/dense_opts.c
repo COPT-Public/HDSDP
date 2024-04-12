@@ -50,15 +50,14 @@ extern void fds_symv( int n, double alpha, double *A, double *x, double beta, do
     return;
 }
 
-extern int fds_syev( int n, double *U, double *d, double *Y,
+extern int fds_syev( int n, double *U, double *d, double *Y, int m,
                       double *work, int *iwork, int lwork, int liwork ) {
     
     int retcode = HDSDP_RETCODE_OK;
     
     char jobz = 'V', range = 'I', uplo = HCharConstantUploUp;
     int isuppz[4] = {0};
-    int il = n - 1, iu = n;
-    int m = 2;
+    int il = n - m + 1, iu = n;
     int info = 0;
     
     dsyevr(&jobz, &range, &uplo, &n, U, &n,

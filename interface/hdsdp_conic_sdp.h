@@ -36,6 +36,10 @@ extern void sdpDenseConeReduceResidual( hdsdp_cone_sdp_dense *cone, double resiR
 extern void sdpDenseConeSetPerturb( hdsdp_cone_sdp_dense *cone, double dDualPerturb );
 extern hdsdp_retcode sdpDenseConeGetBarrier( hdsdp_cone_sdp_dense *cone, double barHsdTau, double *rowDual, int whichBuffer, double *logdet );
 extern hdsdp_retcode sdpDenseConeAddStepToBufferAndCheck( hdsdp_cone_sdp_dense *cone, double dStep, int whichBuffer, int *isInterior );
+extern void sdpDenseConeGetPrimal( hdsdp_cone_sdp_dense *cone, double dBarrierMu, double *dRowDual, double *dRowDualStep, double *dConePrimal, double *dAuxiMat );
+extern void sdpDenseConeGetDual( hdsdp_cone_sdp_dense *cone, double *dConeDual, double *ddummy );
+extern double sdpDenseConeTraceCX( hdsdp_cone_sdp_dense *cone, double *dConePrimel );
+extern void sdpDenseConeATimesX( hdsdp_cone_sdp_dense *cone, double *dPrimalX, double *dATimesX );
 extern void sdpDenseConeClearImpl( hdsdp_cone_sdp_dense *cone );
 extern void sdpDenseConeDestroyImpl( hdsdp_cone_sdp_dense **pCone );
 extern void sdpDenseConeFeatureDetectImpl( hdsdp_cone_sdp_dense *cone, double *rowRHS, int coneIntFeatures[20], double coneDblFeatures[20] );
@@ -65,6 +69,10 @@ extern void sdpSparseConeReduceResidual( hdsdp_cone_sdp_sparse *cone, double res
 extern void sdpSparseConeSetPerturb( hdsdp_cone_sdp_sparse *cone, double dDualPerturb );
 extern hdsdp_retcode sdpSparseConeGetBarrier( hdsdp_cone_sdp_sparse *cone, double barHsdTau, double *rowDual, int whichBuffer, double *logdet );
 extern hdsdp_retcode sdpSparseConeAddStepToBufferAndCheck( hdsdp_cone_sdp_sparse *cone, double dStep, int whichBuffer, int *isInterior );
+extern void sdpSparseConeGetPrimal( hdsdp_cone_sdp_sparse *cone, double dBarrierMu, double *dRowDual, double *dRowDualStep, double *dConePrimal, double *dAuxiMat );
+extern void sdpSparseConeGetDual( hdsdp_cone_sdp_sparse *cone, double *dConeDual, double *ddummy );
+extern double sdpSparseConeTraceCX( hdsdp_cone_sdp_sparse *cone, double *dConePrimel );
+extern void sdpSparseConeATimesX( hdsdp_cone_sdp_sparse *cone, double *dPrimalX, double *dATimesX );
 extern void sdpSparseConeClearImpl( hdsdp_cone_sdp_sparse *cone );
 extern void sdpSparseConeDestroyImpl( hdsdp_cone_sdp_sparse **pCone );
 extern void sdpSparseConeFeatureDetectImpl( hdsdp_cone_sdp_dense *cone, double *rowRHS, int coneIntFeatures[20], double coneDblFeatures[20] );

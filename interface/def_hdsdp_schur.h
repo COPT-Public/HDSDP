@@ -61,6 +61,10 @@ typedef struct {
     double dCSinv;
     double dTraceSinv;
     
+    /* Primal matrix */
+    int iKKTCone;
+    double **dPrimalX;
+    
 } hdsdp_kkt;
 
 #endif /* def_hdsdp_schur_h */

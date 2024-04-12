@@ -16,6 +16,7 @@ extern "C" {
 #define KKT_TYPE_INFEASIBLE  (0)
 #define KKT_TYPE_CORRECTOR   (1)
 #define KKT_TYPE_HOMOGENEOUS (2)
+#define KKT_TYPE_PRIMAL      (3)
 
 #define ABS_NORM    (1)
 #define FRO_NORM    (2)
@@ -24,6 +25,7 @@ extern "C" {
 #define BUFFER_DUALCHECK (1)
 #define BUFFER_DUALSTEP  (2)
 extern hdsdp_retcode HConeCreate( hdsdp_cone **pHCone );
+extern int HConeGetVarBufferDim( hdsdp_cone *HCone );
 extern hdsdp_retcode HConeSetData( hdsdp_cone *HCone, user_data *coneData );
 extern hdsdp_retcode HConeProcData( hdsdp_cone *HCone );
 extern hdsdp_retcode HConePresolveData( hdsdp_cone *HCone );
@@ -51,6 +53,9 @@ extern void HConeReduceResi( hdsdp_cone *HCone, double resiReduction );
 extern void HConeSetPerturb( hdsdp_cone *HCone, double dPerturb );
 extern int HConePFeasSolFound( hdsdp_cone *HCone, double barHsdTauStep, double *rowDualStep );
 extern void HConeGetPrimal( hdsdp_cone *HCone, double dBarrierMu, double *dRowDual, double *dRowDualStep, double *dConePrimal, double *dConePrimal2 );
+extern void HConeGetDual( hdsdp_cone *HCone, double *dConeDual, double *dConeDual2 );
+extern void HConeComputeATimesX( hdsdp_cone *HCone, double *dConePrimal, double *dATimesX );
+extern double HConeComputeTraceCX( hdsdp_cone *HCone, double *dConePrimal );
 extern void HConeScalByConstant( hdsdp_cone *HCone, double dScal );
 
 #ifdef __cplusplus

@@ -84,10 +84,12 @@ typedef struct {
     hdsdp_retcode (*coneInteriorCheckExpert) ( void *, double, double, double *, double, int, int *);
     hdsdp_retcode (*coneGetBarrier)  ( void *, double, double *, int, double * );
     hdsdp_retcode (*coneAxpyBufferAndCheck) ( void *, double, int, int * );
-    int     (*conePFeasCheck)  ( void *, double, double * );
     void    (*coneReduceResi)  ( void *, double );
     void    (*coneSetPerturb)  ( void *, double );
     void    (*conePRecover)    ( void *, double, double *, double *, double *, double *);
+    void    (*coneDRecover)    ( void *, double *, double * );
+    void    (*coneATimesX)     ( void *, double *, double * );
+    double  (*coneTraceCX)     ( void *, double * );
     
     double  (*coneGetCoeffNorm) ( void *, int );
     double  (*coneGetObjNorm)  ( void *, int );
@@ -198,20 +200,30 @@ typedef struct {
     
 } hdsdp_cone_sdp_sparse;
 
-/* TODO: The structures for the following cones are not yet formally set up */
 /* An LP cone */
 typedef struct {
     
     int     nRow;
     int     nCol;
     
+    double *colObj;
     double *colDual;
+    double *colDualInverse;
     double *colDualChecker;
     double *colDualStep;
+    
+    double *colBuffer;
+    
+    double dualResidual;
+    double dualPerturb;
     
     int *rowMatBeg;
     int *rowMatIdx;
     double *rowMatElem;
+    
+    int64_t coneKKTNnz;
+    int iKKTCounted;
+    int *kktMapping;
     
 } hdsdp_cone_lp;
 

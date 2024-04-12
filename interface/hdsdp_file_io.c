@@ -44,14 +44,14 @@ hdsdp_retcode HReadSDPA( char *fname, int *pnConstrs, int *pnBlks, int **pblkDim
     int nConstrs = 0;
     int nCols = 0;
     int nLPCols = 0;
-    int nBlks = 0;
+    int nCones = 0;
     int nElems = 0;
-    int iBlk = 0;
+    int iCone = 0;
     int iCon = 0;
     int blkDim = 0;
     
     /* Allocated memory */
-    int *blkDims = NULL;
+    int *coneDims = NULL;
     double *rowRHS = NULL;
     int **coneMatBeg = NULL;
     int **coneMatIdx = NULL;
@@ -91,7 +91,7 @@ hdsdp_retcode HReadSDPA( char *fname, int *pnConstrs, int *pnBlks, int **pblkDim
     read_line(file, fileLine, whichLine);
     
     /* Get number of blocks */
-    if ( sscanf(fileLine, "%d", &nBlks) != 1 ) {
+    if ( sscanf(fileLine, "%d", &nCones) != 1 ) {
         HDSDP_ERROR_TRACE;
         retcode = HDSDP_RETCODE_FAILED;
         goto exit_cleanup;
@@ -99,13 +99,13 @@ hdsdp_retcode HReadSDPA( char *fname, int *pnConstrs, int *pnBlks, int **pblkDim
     
     /* Get all the dimensions */
     ++whichLine;
-    HDSDP_INIT(blkDims, int, nBlks);
-    HDSDP_MEMCHECK(blkDims);
+    HDSDP_INIT(coneDims, int, nCones);
+    HDSDP_MEMCHECK(coneDims);
     
-    for ( iBlk = 0; iBlk < nBlks - 1; ++iBlk ) {
+    for ( iCone = 0; iCone < nCones - 1; ++iCone ) {
         if ( fscanf(file, "{") == 1 || fscanf(file, "(") == 1 ||
              fscanf(file, "'") == 1 ) {
-            --iBlk;
+            --iCone;
         } else if ( fscanf(file, "%d", &blkDim) == 1 ) {
             if ( blkDim <= 0 ) {
                 /* Reason: only one diagonal block is supported and
@@ -116,7 +116,7 @@ hdsdp_retcode HReadSDPA( char *fname, int *pnConstrs, int *pnBlks, int **pblkDim
                 goto exit_cleanup;
             }
             nCols += blkDim * blkDim;
-            blkDims[iBlk] = blkDim;
+            coneDims[iCone] = blkDim;
             
         } else {
             HDSDP_ERROR_TRACE;
@@ -128,10 +128,10 @@ hdsdp_retcode HReadSDPA( char *fname, int *pnConstrs, int *pnBlks, int **pblkDim
     /* Special treatment for LP */
     if ( fscanf(file, "%d", &blkDim) == 1 ) {
         if ( blkDim < 0 ) {
-            --nBlks;
+            --nCones;
             nLPCols = -blkDim;
         } else {
-            blkDims[iBlk] = blkDim;
+            coneDims[iCone] = blkDim;
             nCols += blkDim * blkDim;
         }
     }
@@ -187,24 +187,24 @@ hdsdp_retcode HReadSDPA( char *fname, int *pnConstrs, int *pnBlks, int **pblkDim
         HDSDP_MEMCHECK(LpConeData);
     }
     
-    HDSDP_INIT(pSDPConeData, dcs *, nBlks);
+    HDSDP_INIT(pSDPConeData, dcs *, nCones);
     HDSDP_MEMCHECK(pSDPConeData);
     
-    for ( iBlk = 0; iBlk < nBlks; ++iBlk ) {
-        pSDPConeData[iBlk] = dcs_spalloc(PACK_NNZ(blkDims[iBlk]), nConstrs + 1, 100, 1, 1);
-        HDSDP_MEMCHECK(pSDPConeData[iBlk]);
+    for ( iCone = 0; iCone < nCones; ++iCone ) {
+        pSDPConeData[iCone] = dcs_spalloc(PACK_NNZ(coneDims[iCone]), nConstrs + 1, 100, 1, 1);
+        HDSDP_MEMCHECK(pSDPConeData[iCone]);
     }
     
     int LpConeID = -1;
     if ( nLPCols > 0 ) {
-        LpConeID = nBlks;
+        LpConeID = nCones;
     }
     
     while( !feof(file) ) {
         fileLine[0] = '\0';
         read_line(file, fileLine, whichLine);
         
-        if ( sscanf(fileLine, "%d %d %d %d %lg", &iCon, &iBlk, &iRow, &iCol, &dElem) != 5 ) {
+        if ( sscanf(fileLine, "%d %d %d %d %lg", &iCon, &iCone, &iRow, &iCol, &dElem) != 5 ) {
             
             if ( feof(file) || strcmp(fileLine, "BEGIN.COMMENT  \n") == 0 ) {
                 break;
@@ -217,20 +217,26 @@ hdsdp_retcode HReadSDPA( char *fname, int *pnConstrs, int *pnBlks, int **pblkDim
         } else {
         
             /* To 0-based indexing */
-            iBlk -= 1;
+            iCone -= 1;
             iRow -= 1;
             iCol -= 1;
             
-            if ( fabs(dElem) < 1e-10 ) {
+            if ( fabs(dElem) < 1e-12 ) {
                 if ( warnTinyEntry ) {
-                    printf("[Warning] Entry smaller than 1e-10 is ignored. \n");
+                    printf("[Warning] Entry smaller than 1e-12 is ignored. \n");
                     warnTinyEntry = 0;
                 }
                 continue;
             }
             
-            if ( iBlk == LpConeID ) {
-                isMemOK = dcs_entry(LpConeData, iRow, iCol, dElem);
+            if ( iCone == LpConeID ) {
+                
+                if ( iCon == 0 ) {
+                    dElem = -dElem;
+                }
+                
+                isMemOK = dcs_entry(LpConeData, iRow, iCon, dElem);
+                
             } else {
                 
                 if ( iRow > iCol ) {
@@ -243,7 +249,7 @@ hdsdp_retcode HReadSDPA( char *fname, int *pnConstrs, int *pnBlks, int **pblkDim
                     dElem = -dElem;
                 }
                 
-                isMemOK = dcs_entry(pSDPConeData[iBlk], PACK_IDX(blkDims[iBlk], iCol, iRow), iCon, dElem);
+                isMemOK = dcs_entry(pSDPConeData[iCone], PACK_IDX(coneDims[iCone], iCol, iRow), iCon, dElem);
             }
             
             nElems += 1;
@@ -258,11 +264,11 @@ hdsdp_retcode HReadSDPA( char *fname, int *pnConstrs, int *pnBlks, int **pblkDim
     
     /* Compress data and complete conversion */
     dcs *cscMat = NULL;
-    for ( iBlk = 0; iBlk < nBlks; ++iBlk ) {
-        cscMat = dcs_compress(pSDPConeData[iBlk]);
+    for ( iCone = 0; iCone < nCones; ++iCone ) {
+        cscMat = dcs_compress(pSDPConeData[iCone]);
         HDSDP_MEMCHECK(cscMat);
-        dcs_spfree(pSDPConeData[iBlk]);
-        pSDPConeData[iBlk] = cscMat;
+        dcs_spfree(pSDPConeData[iCone]);
+        pSDPConeData[iCone] = cscMat;
     }
     
     if ( nLPCols > 0 ) {
@@ -272,28 +278,28 @@ hdsdp_retcode HReadSDPA( char *fname, int *pnConstrs, int *pnBlks, int **pblkDim
     }
     
     /* Copy the data out */
-    HDSDP_INIT(coneMatBeg, int *, nBlks);
-    HDSDP_INIT(coneMatIdx, int *, nBlks);
-    HDSDP_INIT(coneMatElem, double *, nBlks);
+    HDSDP_INIT(coneMatBeg, int *, nCones);
+    HDSDP_INIT(coneMatIdx, int *, nCones);
+    HDSDP_INIT(coneMatElem, double *, nCones);
     
     HDSDP_MEMCHECK(coneMatBeg);
     HDSDP_MEMCHECK(coneMatIdx);
     HDSDP_MEMCHECK(coneMatElem);
     
-    for ( iBlk = 0; iBlk < nBlks; ++iBlk ) {
+    for ( iCone = 0; iCone < nCones; ++iCone ) {
         
-        cscMat = pSDPConeData[iBlk];
-        HDSDP_INIT(coneMatBeg[iBlk], int, cscMat->n + 1);
-        HDSDP_INIT(coneMatIdx[iBlk], int, cscMat->p[cscMat->n]);
-        HDSDP_INIT(coneMatElem[iBlk], double, cscMat->p[cscMat->n]);
+        cscMat = pSDPConeData[iCone];
+        HDSDP_INIT(coneMatBeg[iCone], int, cscMat->n + 1);
+        HDSDP_INIT(coneMatIdx[iCone], int, cscMat->p[cscMat->n]);
+        HDSDP_INIT(coneMatElem[iCone], double, cscMat->p[cscMat->n]);
         
-        HDSDP_MEMCHECK(coneMatBeg[iBlk]);
-        HDSDP_MEMCHECK(coneMatIdx[iBlk]);
-        HDSDP_MEMCHECK(coneMatElem[iBlk]);
+        HDSDP_MEMCHECK(coneMatBeg[iCone]);
+        HDSDP_MEMCHECK(coneMatIdx[iCone]);
+        HDSDP_MEMCHECK(coneMatElem[iCone]);
         
-        HDSDP_MEMCPY(coneMatBeg[iBlk], cscMat->p, int, cscMat->n + 1);
-        HDSDP_MEMCPY(coneMatIdx[iBlk], cscMat->i, int, cscMat->p[cscMat->n]);
-        HDSDP_MEMCPY(coneMatElem[iBlk], cscMat->x, double, cscMat->p[cscMat->n]);
+        HDSDP_MEMCPY(coneMatBeg[iCone], cscMat->p, int, cscMat->n + 1);
+        HDSDP_MEMCPY(coneMatIdx[iCone], cscMat->i, int, cscMat->p[cscMat->n]);
+        HDSDP_MEMCPY(coneMatElem[iCone], cscMat->x, double, cscMat->p[cscMat->n]);
         
     }
     
@@ -314,8 +320,8 @@ hdsdp_retcode HReadSDPA( char *fname, int *pnConstrs, int *pnBlks, int **pblkDim
      
     /* Get the outputs */
     *pnConstrs = nConstrs;
-    *pnBlks = nBlks;
-    *pblkDims = blkDims;
+    *pnBlks = nCones;
+    *pblkDims = coneDims;
     *prowRHS = rowRHS;
     *pconeMatBeg = coneMatBeg;
     *pconeMatIdx = coneMatIdx;
@@ -333,15 +339,15 @@ exit_cleanup:
     dcs_spfree(LpConeData);
     
     if ( pSDPConeData ) {
-        for ( iBlk = 0; iBlk < nBlks; ++iBlk ) {
-            dcs_spfree(pSDPConeData[iBlk]);
+        for ( iCone = 0; iCone < nCones; ++iCone ) {
+            dcs_spfree(pSDPConeData[iCone]);
         }
         HDSDP_FREE(pSDPConeData);
     }
     
     if ( retcode != HDSDP_RETCODE_OK ) {
         /* Free all the internal memories if failed */
-        HDSDP_FREE(blkDims);
+        HDSDP_FREE(coneDims);
         HDSDP_FREE(rowRHS);
         
         HDSDP_FREE(LpMatBeg);
@@ -349,22 +355,22 @@ exit_cleanup:
         HDSDP_FREE(LpMatElem);
         
         if ( coneMatBeg ) {
-            for ( iBlk = 0; iBlk < nBlks; ++iBlk ) {
-                HDSDP_FREE(coneMatBeg[iBlk]);
+            for ( iCone = 0; iCone < nCones; ++iCone ) {
+                HDSDP_FREE(coneMatBeg[iCone]);
             }
             HDSDP_FREE(coneMatBeg);
         }
         
         if ( coneMatIdx ) {
-            for ( iBlk = 0; iBlk < nBlks; ++iBlk ) {
-                HDSDP_FREE(coneMatIdx[iBlk]);
+            for ( iCone = 0; iCone < nCones; ++iCone ) {
+                HDSDP_FREE(coneMatIdx[iCone]);
             }
             HDSDP_FREE(coneMatIdx);
         }
         
         if ( coneMatElem ) {
-            for ( iBlk = 0; iBlk < nBlks; ++iBlk ) {
-                HDSDP_FREE(coneMatElem[iBlk]);
+            for ( iCone = 0; iCone < nCones; ++iCone ) {
+                HDSDP_FREE(coneMatElem[iCone]);
             }
             HDSDP_FREE(coneMatElem);
         }

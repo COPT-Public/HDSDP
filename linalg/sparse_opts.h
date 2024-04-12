@@ -6,7 +6,7 @@ extern "C" {
 #endif
 
 extern void csp_Axpby( int n, int *Ap, int *Ai, double *Ax, double a, double *x, double *y );
-extern void csp_Axpby( int n, int *Ap, int *Ai, double *Ax, double a, double *x, double *y );
+extern void csp_ATxpby( int n, int *Ap, int *Ai, double *Ax, double a, double *x, double *y );
 extern double csp_sum_abs( int n, int *Ap, int *Ai, double *Ax );
 extern double csp_fro_norm( int n, int *Ap, int *Ai, double *Ax );
 extern void csp_aApB( int n, int nnz, double a, int *Al, double *Ax, double *Bx );

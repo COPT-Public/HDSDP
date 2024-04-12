@@ -175,7 +175,7 @@ int test_solver( char *fname ) {
     hdsdp_retcode retcode = HDSDP_RETCODE_OK;
     
     int nConstrs = 0;
-    int nBlks = 0;
+    int nCones = 0;
     int *BlkDims = NULL;
     double *rowRHS = NULL;
     int **coneMatBeg = NULL;
@@ -191,34 +191,41 @@ int test_solver( char *fname ) {
     hdsdp *hsolve = NULL;
     user_data **SDPDatas = NULL;
     user_data *SDPData = NULL;
+    user_data *LPData = NULL;
     
     double timeStart = HUtilGetTimeStamp();
     printf("Filename: %s\n", fname);
     
-    HDSDP_CALL(HReadSDPA(fname, &nConstrs, &nBlks, &BlkDims, &rowRHS, &coneMatBeg,
+    HDSDP_CALL(HReadSDPA(fname, &nConstrs, &nCones, &BlkDims, &rowRHS, &coneMatBeg,
                          &coneMatIdx, &coneMatElem, &nCols, &nLpCols, &LpMatBeg,
                          &LpMatIdx, &LpMatElem, &nElem));
     
-    if ( nLpCols > 0 ) {
-        printf("LP Cone is being developed. \n");
-        goto exit_cleanup;
-    }
-    
     printf("Reading SDPA file in %f seconds \n", HUtilGetTimeStamp() - timeStart);
     
-    HDSDP_INIT(SDPDatas, user_data *, nBlks);
+    HDSDP_INIT(SDPDatas, user_data *, nCones);
     HDSDP_MEMCHECK(SDPDatas);
     
     HDSDP_CALL(HDSDPCreate(&hsolve));
-    HDSDP_CALL(HDSDPInit(hsolve, nConstrs, nBlks));
     
-    for ( int iBlk = 0; iBlk < nBlks; ++iBlk ) {
+    if ( nLpCols > 0 ) {
+        HDSDP_CALL(HDSDPInit(hsolve, nConstrs, nCones + 1));
+    } else {
+        HDSDP_CALL(HDSDPInit(hsolve, nConstrs, nCones));
+    }
+    
+    for ( int iCone = 0; iCone < nCones; ++iCone ) {
         HDSDP_CALL(HUserDataCreate(&SDPData));
-        HUserDataSetConeData(SDPData, HDSDP_CONETYPE_DENSE_SDP, nConstrs, BlkDims[iBlk],
-                             coneMatBeg[iBlk], coneMatIdx[iBlk], coneMatElem[iBlk]);
-        HDSDP_CALL(HDSDPSetCone(hsolve, iBlk, SDPData));
-        SDPDatas[iBlk] = SDPData;
+        HUserDataSetConeData(SDPData, HDSDP_CONETYPE_DENSE_SDP, nConstrs, BlkDims[iCone],
+                             coneMatBeg[iCone], coneMatIdx[iCone], coneMatElem[iCone]);
+        HDSDP_CALL(HDSDPSetCone(hsolve, iCone, SDPData));
+        SDPDatas[iCone] = SDPData;
         SDPData = NULL;
+    }
+    
+    if ( nLpCols > 0 ) {
+        HDSDP_CALL(HUserDataCreate(&LPData));
+        HUserDataSetConeData(LPData, HDSDP_CONETYPE_LP, nConstrs, nLpCols, LpMatBeg, LpMatIdx, LpMatElem);
+        HDSDP_CALL(HDSDPSetCone(hsolve, nCones, LPData));
     }
     
     HDSDPSetDualObjective(hsolve, rowRHS);
@@ -226,18 +233,20 @@ int test_solver( char *fname ) {
     
 exit_cleanup:
     
-    for ( int iBlk = 0; iBlk < nBlks; ++iBlk ) {
+    for ( int iBlk = 0; iBlk < nCones; ++iBlk ) {
         HUserDataDestroy(&SDPDatas[iBlk]);
     }
     HDSDP_FREE(SDPDatas);
     
     HUserDataDestroy(&SDPData);
+    HUserDataDestroy(&LPData);
+    
     HDSDPDestroy(&hsolve);
     
     HDSDP_FREE(BlkDims);
     HDSDP_FREE(rowRHS);
     
-    for ( int iBlk = 0; iBlk < nBlks; ++iBlk ) {
+    for ( int iBlk = 0; iBlk < nCones; ++iBlk ) {
         HDSDP_FREE(coneMatBeg[iBlk]);
         HDSDP_FREE(coneMatIdx[iBlk]);
         HDSDP_FREE(coneMatElem[iBlk]);

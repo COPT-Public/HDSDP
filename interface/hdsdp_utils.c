@@ -136,6 +136,18 @@ extern void HUtilMatSymmetrize( int n, double *v ) {
     return;
 }
 
+extern void HUtilMatTranspose( int n, double *A ) {
+    
+    double tmp = 0.0;
+    for ( int i = 0, j; i < n; ++i ) {
+        for ( j = i + 1; j < n; ++j ) {
+            tmp = A[i * n + j];
+            A[i * n + j] = A[j * n + i];
+            A[j * n + i] = tmp;
+        }
+    }
+}
+
 /* Debugging */
 extern void HUtilPrintDblContent( int n, double *d ) {
     
@@ -153,6 +165,17 @@ extern void HUtilPrintIntContent( int n, int *d ) {
     }
     printf("\n");
     return;
+}
+
+extern double HUtilGetDblMinimum( int n, double *d ) {
+    
+    double dMin = HDSDP_INFINITY;
+    
+    for ( int i = 0; i < n; ++i ) {
+        dMin = HDSDP_MIN(dMin, d[i]);
+    }
+    
+    return dMin;
 }
 
 extern double HUtilPrintDblSum( int n, double *d ) {
@@ -250,6 +273,21 @@ extern int HUtilCheckCtrlC( void ) {
 extern void HUtilResetCtrl( void ) {
     
     isCtrlC = 0;
+}
+
+extern void HUtilWriteDblArray( char *outFileName, int nLen, double *dblContent ) {
+    
+    FILE *outFile = fopen(outFileName, "w");
+    
+    if ( !outFile ) {
+        return;
+    }
+    
+    for ( int i = 0; i < nLen; ++i ) {
+        fprintf(outFile, "%20.20e,", dblContent[i]);
+    }
+    
+    fclose(outFile);
 }
 
 hdsdp_retcode HUtilKKTCheck( void *Hkkt ) {
@@ -358,7 +396,6 @@ hdsdp_retcode HUtilKKTCheck( void *Hkkt ) {
                 retcode = HDSDP_RETCODE_FAILED;
             }
         }
-        
     }
     
     for ( int iRow = 0; iRow < kkt->nRow; ++iRow ) {

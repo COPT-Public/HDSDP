@@ -96,7 +96,6 @@ struct hdsdp_solver_internal {
     double dProxNorm;
     double dPotentialVal;
     double dBarrierVal;
-    double dPStep;
     double dDStep;
     double dResidual;
     double dPerturb;
@@ -133,6 +132,7 @@ struct hdsdp_solver_internal {
     double HDblParams[20];
     int HIntFeatures[20];
     double HDblFeatures[20];
+    double dErrs[6];
 };
 
 #endif /* def_hdsdp_h */

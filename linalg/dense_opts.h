@@ -6,7 +6,7 @@ extern "C" {
 #endif
 
 extern void fds_symv( int n, double alpha, double *A, double *x, double beta, double *y );
-extern int fds_syev( int n, double *U, double *d, double *Y,
+extern int fds_syev( int n, double *U, double *d, double *Y, int m,
                      double *work, int *iwork, int lwork, int liwork );
 extern void fds_gemv( int m, int n, double *M, double *v, double *y );
 extern void fds_symm( char side, char uplo, int m, int n, double alpha, double *a, int lda,
