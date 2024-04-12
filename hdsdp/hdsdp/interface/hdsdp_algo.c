@@ -16,6 +16,7 @@
 #include "hdsdp_conic.h"
 #include "hdsdp_schur.h"
 #include "hdsdp_algo.h"
+#include "hdsdp_psdp.h"
 #endif
 
 #include <math.h>
@@ -1670,6 +1671,7 @@ static hdsdp_retcode HDSDP_PhaseB_BarDualPotentialSolve( hdsdp *HSolver ) {
     HSolver->whichMethod = HDSDP_ALGO_DUAL_POTENTIAL;
     
     int nMaxIter = get_int_param(HSolver, INT_PARAM_MAXITER);
+    int iPrimalMethod = get_int_param(HSolver, INT_PARAM_PSDP);
     double dAbsfeasTol = get_dbl_param(HSolver, DBL_PARAM_ABSFEASTOL);
     double dAbsoptTol = get_dbl_param(HSolver, DBL_PARAM_ABSOPTTOL);
     double dRelfeasTol = get_dbl_param(HSolver, DBL_PARAM_RELFEASTOL);
@@ -1798,6 +1800,15 @@ static hdsdp_retcode HDSDP_PhaseB_BarDualPotentialSolve( hdsdp *HSolver ) {
             break;
         }
         
+        if ( HSolver->comp < (fabs(HSolver->pObjVal) + fabs(HSolver->dObjVal) + 1.0) * 0.1 && iPrimalMethod ) {
+            hdsdp_psdp *psdp = NULL;
+            HDSDP_CALL(HPSDPCreate(&psdp));
+            HDSDP_CALL(HPSDPInit(psdp, HSolver));
+            retcode = HPSDPOptimize(psdp);
+            HPSDPDestroy(&psdp);
+            break;
+        }
+        
         if ( HUtilCheckCtrlC() ) {
             HSolver->HStatus = HDSDP_USER_INTERRUPT;
             break;
@@ -1830,6 +1841,19 @@ static hdsdp_retcode HDSDP_PhaseB_BarDualPotentialSolve( hdsdp *HSolver ) {
         
     }
     
+exit_cleanup:
+    return retcode;
+}
+
+static hdsdp_retcode HDSDP_PhaseB_BarPrimalRefinement( hdsdp *HSolver ) {
+    
+    /* Implement primal refinement procedure for HDSDP */
+    hdsdp_retcode retcode = HDSDP_RETCODE_OK;
+    
+    
+    
+    
+ 
 exit_cleanup:
     return retcode;
 }

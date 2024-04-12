@@ -105,6 +105,8 @@ extern void HUtilStartCtrlCCheck( void );
 extern int HUtilCheckCtrlC( void );
 extern void HUtilResetCtrl( void );
 
+extern void HUtilWriteDblArray( char *outFileName, int nLen, double *dblContent );
+
 extern int HUtilGetGlobalMKLThreads( void );
 extern void HUtilSetGlobalMKLThreads( int nTargetThreads );
 

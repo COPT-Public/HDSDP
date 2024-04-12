@@ -138,6 +138,10 @@ static void HDSDPIAdjustConeParams( hdsdp *HSolver ) {
         isOneCone = 0;
     }
     
+    if ( !isOneCone ) {
+        set_int_param(HSolver, INT_PARAM_PSDP, 0);
+    }
+    
     if ( isOneCone ) {
         HConeDetectFeature(HSolver->HCones[0], HSolver->rowRHS, HSolver->HIntFeatures, HSolver->HDblFeatures);
     }
@@ -377,6 +381,7 @@ static void HDSDPIGetDefaultParams( hdsdp *HSolver ) {
     set_int_param(HSolver, INT_PARAM_CORRECTORA, 12);
     set_int_param(HSolver, INT_PARAM_CORRECTORB, 12);
     set_int_param(HSolver, INT_PARAM_THREADS, 12);
+    set_int_param(HSolver, INT_PARAM_PSDP, 1);
     
     set_dbl_param(HSolver, DBL_PARAM_ABSOPTTOL, 1e-08);
     set_dbl_param(HSolver, DBL_PARAM_ABSFEASTOL, 1e-08);

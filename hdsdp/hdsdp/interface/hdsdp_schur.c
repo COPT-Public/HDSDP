@@ -153,7 +153,7 @@ static void HKKTClean( hdsdp_kkt *HKKT, int typeKKT ) {
     
     HKKT->dTraceSinv = 0.0;
     
-    if ( typeKKT == KKT_TYPE_INFEASIBLE || typeKKT == KKT_TYPE_HOMOGENEOUS ) {
+    if ( typeKKT == KKT_TYPE_INFEASIBLE || typeKKT == KKT_TYPE_HOMOGENEOUS || typeKKT == KKT_TYPE_PRIMAL ) {
         if ( HKKT->isKKTSparse ) {
             HDSDP_ZERO(HKKT->kktMatElem, double, HKKT->kktMatBeg[HKKT->nRow]);
         } else {
@@ -246,6 +246,8 @@ extern hdsdp_retcode HKKTInit( hdsdp_kkt *HKKT, int nRow, int nCones, hdsdp_cone
         HDSDP_CALL(HKKTAllocSparseKKT(HKKT));
         printf("    Using sparse Schur complement (%d nnzs)\n", HKKT->kktMatBeg[HKKT->nRow]);
     }
+    
+    HKKT->dPrimalX = NULL;
     
 exit_cleanup:
     return retcode;

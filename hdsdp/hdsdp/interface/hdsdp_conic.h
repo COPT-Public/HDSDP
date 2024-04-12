@@ -16,6 +16,7 @@ extern "C" {
 #define KKT_TYPE_INFEASIBLE  (0)
 #define KKT_TYPE_CORRECTOR   (1)
 #define KKT_TYPE_HOMOGENEOUS (2)
+#define KKT_TYPE_PRIMAL      (3)
 
 #define ABS_NORM    (1)
 #define FRO_NORM    (2)

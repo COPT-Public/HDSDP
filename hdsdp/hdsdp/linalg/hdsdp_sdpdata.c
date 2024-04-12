@@ -1204,7 +1204,7 @@ static double dataMatDenseKKT3ComputeSinvASinvImpl( void *A, hdsdp_linsys *S, do
     
     /* Then we are ready to compute S^-1 * ASinv.
        This part of the code involves two conversions.
-       The loop order acturally targets the upper-triangular of the matrix
+       The loop order actually targets the upper-triangular of the matrix
        and we map the element symmetrically
      */
     for ( int iCol = 0; iCol < dense->nSDPCol; ++iCol ) {

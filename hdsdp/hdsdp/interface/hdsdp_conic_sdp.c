@@ -1738,8 +1738,14 @@ extern hdsdp_retcode sdpDenseConeGetKKT( hdsdp_cone_sdp_dense *cone, void *kkt, 
     hdsdp_retcode retcode = HDSDP_RETCODE_OK;
     hdsdp_kkt *Hkkt = (hdsdp_kkt *) kkt;
     
-    /* Prepare inverse */
-    HFpLinsysInvert(cone->dualFactor, Hkkt->invBuffer, Hkkt->kktBuffer);
+    if ( typeKKT == KKT_TYPE_PRIMAL ) {
+        /* Call KKT method M5 for primal method */
+        HDSDP_CALL(sdpDenseConeGetKKTByFixedStrategy(cone, kkt, typeKKT, KKT_M5));
+        goto exit_cleanup;
+    } else {
+        /* Prepare inverse */
+        HFpLinsysInvert(cone->dualFactor, Hkkt->invBuffer, Hkkt->kktBuffer);
+    }
     
     if ( typeKKT == KKT_TYPE_CORRECTOR ) {
         HDSDP_CALL(sdpDenseConeIGetKKTCorrectorComponents(cone, kkt));
@@ -1803,7 +1809,18 @@ extern hdsdp_retcode sdpDenseConeGetKKTByFixedStrategy( hdsdp_cone_sdp_dense *co
     hdsdp_kkt *Hkkt = (hdsdp_kkt *) kkt;
     
     /* Prepare inverse */
-    HFpLinsysInvert(cone->dualFactor, Hkkt->invBuffer, Hkkt->kktBuffer);
+    
+    if ( typeKKT == KKT_TYPE_PRIMAL ) {
+        /* For primal method, X is used in place of S */
+        if ( !Hkkt->dPrimalX ) {
+            retcode = HDSDP_RETCODE_FAILED;
+            goto exit_cleanup;
+        }
+        HDSDP_MEMCPY(Hkkt->invBuffer, Hkkt->dPrimalX[Hkkt->iKKTCone],
+                     double, cone->nCol * cone->nCol);
+    } else {
+        HFpLinsysInvert(cone->dualFactor, Hkkt->invBuffer, Hkkt->kktBuffer);
+    }
     
     if ( typeKKT == KKT_TYPE_CORRECTOR ) {
         HDSDP_CALL(sdpDenseConeIGetKKTCorrectorComponents(cone, kkt));
@@ -1864,7 +1881,14 @@ extern hdsdp_retcode sdpSparseConeGetKKT( hdsdp_cone_sdp_sparse *cone, void *kkt
     hdsdp_kkt *Hkkt = (hdsdp_kkt *) kkt;
     
     /* Prepare inverse */
+    if ( typeKKT == KKT_TYPE_PRIMAL ) {
+        /* Primal method should not be invoked in sparse cone */
+        retcode = HDSDP_RETCODE_FAILED;
+        goto exit_cleanup;
+    }
+    
     HFpLinsysInvert(cone->dualFactor, Hkkt->invBuffer, Hkkt->kktBuffer);
+    
     
     if ( typeKKT == KKT_TYPE_CORRECTOR ) {
         HDSDP_CALL(sdpSparseConeIGetKKTCorrectorComponents(cone, kkt));
@@ -1882,12 +1906,6 @@ extern hdsdp_retcode sdpSparseConeGetKKT( hdsdp_cone_sdp_sparse *cone, void *kkt
         
         int KKTStrategy = KKT_M1;
         (void) KKTStrategy;
-        
-#if 0
-        if ( cone->rowIdx[iKKTNzCol] == 3 ) {
-            printf("Here. \n");
-        }
-#endif
         
         sdp_coeff_type dataType = sdpDataMatGetType(cone->sdpRow[iKKTNzCol]);
         

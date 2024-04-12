@@ -275,6 +275,21 @@ extern void HUtilResetCtrl( void ) {
     isCtrlC = 0;
 }
 
+extern void HUtilWriteDblArray( char *outFileName, int nLen, double *dblContent ) {
+    
+    FILE *outFile = fopen(outFileName, "w");
+    
+    if ( !outFile ) {
+        return;
+    }
+    
+    for ( int i = 0; i < nLen; ++i ) {
+        fprintf(outFile, "%20.20e,", dblContent[i]);
+    }
+    
+    fclose(outFile);
+}
+
 hdsdp_retcode HUtilKKTCheck( void *Hkkt ) {
     
     hdsdp_retcode retcode = HDSDP_RETCODE_OK;
