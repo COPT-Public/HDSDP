@@ -55,6 +55,7 @@ typedef enum {
  */
 typedef struct {
     
+    int iCone;
     cone_type cone; ///< What cone is it?
     
     void  *usrData;
@@ -76,20 +77,22 @@ typedef struct {
     int     (*coneGetDim)      ( void * );
     void    (*coneAddSymNz)    ( void *, int, int * );
     void    (*coneGetKKTMap)   ( void *, int, int * );
-    hdsdp_retcode (*coneBuildSchur)  ( void *, void *, int );
-    hdsdp_retcode (*coneBuildSchurFixed) ( void *, void *, int, int );
+    hdsdp_retcode (*coneBuildSchur)  ( void *, int, void *, int );
+    hdsdp_retcode (*coneBuildSchurFixed) ( void *, int, void *, int, int );
+    void    (*coneBuildPrimalDirection)  ( void *, void *, double *, double *, int );
     
     /* Barrier, projection and recovery */
     hdsdp_retcode (*coneInteriorCheck) ( void *, double, double *, int * );
-    hdsdp_retcode (*coneInteriorCheckExpert) ( void *, double, double, double *, double, int, int *);
+    hdsdp_retcode (*coneInteriorCheckExpert) ( void *, double, double, double *, double, int, int * );
     hdsdp_retcode (*coneGetBarrier)  ( void *, double, double *, int, double * );
     hdsdp_retcode (*coneAxpyBufferAndCheck) ( void *, double, int, int * );
     void    (*coneReduceResi)  ( void *, double );
     void    (*coneSetPerturb)  ( void *, double );
-    void    (*conePRecover)    ( void *, double, double *, double *, double *, double *);
+    void    (*conePRecover)    ( void *, double, double *, double *, double *, double * );
     void    (*coneDRecover)    ( void *, double *, double * );
     void    (*coneATimesX)     ( void *, double *, double * );
     double  (*coneTraceCX)     ( void *, double * );
+    double  (*coneXDotS)       ( void *, double * );
     
     double  (*coneGetCoeffNorm) ( void *, int );
     double  (*coneGetObjNorm)  ( void *, int );

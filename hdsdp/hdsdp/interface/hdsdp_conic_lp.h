@@ -24,8 +24,10 @@ extern void LPConeUpdateImpl( hdsdp_cone_lp *cone, double barHsdTau, double *row
 extern hdsdp_retcode LPConeRatioTestImpl( hdsdp_cone_lp *cone, double barHsdTauStep, double *rowDualStep, double dAdaRatio,
                                          int whichBuffer, double *maxStep );
 extern int LPConeGetDim( hdsdp_cone_lp *cone );
-extern hdsdp_retcode LPConeGetKKT( hdsdp_cone_lp *cone, void *kkt, int typeKKT );
-extern hdsdp_retcode LPConeGetKKTFixedStrategy( hdsdp_cone_lp *cone, void *kkt, int typeKKT, int ikktStrategy );
+extern hdsdp_retcode LPConeGetKKT( hdsdp_cone_lp *cone, int iCone, void *kkt, int typeKKT );
+extern hdsdp_retcode LPConeGetKKTFixedStrategy( hdsdp_cone_lp *cone, int iCone, void *kkt, int typeKKT, int ikktStrategy );
+extern void LPConeBuildPrimalXSXDirection( hdsdp_cone_lp *cone, void *kkt, double *dPrimalScalMatrix, double *dPrimalXSXBuffer, int iDualMat );
+extern double LPConeXDotS( hdsdp_cone_lp *cone, double *dConePrimal );
 extern int64_t LPConeGetSymNnzImpl( hdsdp_cone_lp *cone );
 extern void LPConeAddSymNnzImpl( hdsdp_cone_sdp_dense *cone, int iCol, int *schurMatCol );
 extern void LPConeGetSymMapping( hdsdp_cone_lp *cone, int iCol, int *schurMatCol );

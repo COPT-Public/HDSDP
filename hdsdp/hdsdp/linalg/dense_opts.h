@@ -13,6 +13,8 @@ extern void fds_symm( char side, char uplo, int m, int n, double alpha, double *
                       double *b, int ldb, double beta, double *c, int ldc );
 extern void fds_ger( int m, int n, double alpha, double *x, int incx,
                     double *y, int incy, double *a, int lda);
+extern void fds_trimultiply( int n, double *S, double *X, double *aux, double *XSX );
+extern double fds_dot_fds( int n, double *A, double *B );
 extern void fds_print( int n, double *A );
 extern void pds_scal( double a, int n, double *A );
 extern double pds_sum_abs( int n, double *A );

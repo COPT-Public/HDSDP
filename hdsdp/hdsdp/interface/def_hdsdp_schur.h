@@ -61,8 +61,8 @@ typedef struct {
     double dCSinv;
     double dTraceSinv;
     
+    /* Primal IPM. No memory is allocated to inside the pointers */
     /* Primal matrix */
-    int iKKTCone;
     double **dPrimalX;
     
 } hdsdp_kkt;

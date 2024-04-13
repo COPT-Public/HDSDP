@@ -372,6 +372,13 @@ extern void HKKTRegularize( hdsdp_kkt *HKKT, double dKKTReg ) {
     return;
 }
 
+extern void HKKTRegisterPSDP( hdsdp_kkt *HKKT, double **dPrimalX ) {
+    
+    HKKT->dPrimalX = dPrimalX;
+    
+    return;
+}
+
 extern void HKKTClear( hdsdp_kkt *HKKT ) {
     
     if ( !HKKT ) {

@@ -1800,7 +1800,7 @@ static hdsdp_retcode HDSDP_PhaseB_BarDualPotentialSolve( hdsdp *HSolver ) {
             break;
         }
         
-        if ( HSolver->comp < (fabs(HSolver->pObjVal) + fabs(HSolver->dObjVal) + 1.0) * 0.1 && iPrimalMethod ) {
+        if ( HSolver->comp < (fabs(HSolver->pObjVal) + fabs(HSolver->dObjVal) + 1.0) * 1e-02 && iPrimalMethod ) {
             hdsdp_psdp *psdp = NULL;
             HDSDP_CALL(HPSDPCreate(&psdp));
             HDSDP_CALL(HPSDPInit(psdp, HSolver));

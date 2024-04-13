@@ -138,7 +138,11 @@ static void HDSDPIAdjustConeParams( hdsdp *HSolver ) {
         isOneCone = 0;
     }
     
-    if ( !isOneCone ) {
+    if ( get_int_feature(HSolver, INT_FEATURE_N_MAXCONEDIM) < HSolver->nRows / 3 && isOneCone ) {
+        set_int_param(HSolver, INT_PARAM_PSDP, 1);
+    }
+    
+    if ( get_int_feature(HSolver, INT_FEATURE_N_LPCONES) > 0 ) {
         set_int_param(HSolver, INT_PARAM_PSDP, 0);
     }
     
@@ -381,7 +385,7 @@ static void HDSDPIGetDefaultParams( hdsdp *HSolver ) {
     set_int_param(HSolver, INT_PARAM_CORRECTORA, 12);
     set_int_param(HSolver, INT_PARAM_CORRECTORB, 12);
     set_int_param(HSolver, INT_PARAM_THREADS, 12);
-    set_int_param(HSolver, INT_PARAM_PSDP, 1);
+    set_int_param(HSolver, INT_PARAM_PSDP, 0);
     
     set_dbl_param(HSolver, DBL_PARAM_ABSOPTTOL, 1e-08);
     set_dbl_param(HSolver, DBL_PARAM_ABSFEASTOL, 1e-08);
@@ -408,6 +412,7 @@ static void HDSDPIPrintParams( hdsdp *HSolver ) {
     print_int_param(HSolver, INT_PARAM_CORRECTORA, "Infeasible corrector");
     print_int_param(HSolver, INT_PARAM_CORRECTORB, "Feasible corrector");
     print_int_param(HSolver, INT_PARAM_THREADS, "Threads");
+    print_int_param(HSolver, INT_PARAM_PSDP, "Primal refinement");
     
     print_dbl_param(HSolver, DBL_PARAM_ABSOPTTOL, "Abs optimality");
     print_dbl_param(HSolver, DBL_PARAM_RELOPTTOL, "Rel optimality");
@@ -506,10 +511,10 @@ extern hdsdp_retcode HDSDPInit( hdsdp *HSolver, int nRows, int nCones ) {
     HDSDP_MEMCHECK(HSolver->HCones);
     
     for ( int iCone = 0; iCone < nCones; ++iCone ) {
-        HDSDP_CALL(HConeCreate(&HSolver->HCones[iCone]));
+        HDSDP_CALL(HConeCreate(&HSolver->HCones[iCone], iCone));
     }
     
-    HDSDP_CALL(HConeCreate(&HSolver->HBndCone));
+    HDSDP_CALL(HConeCreate(&HSolver->HBndCone, -1));
     HDSDP_CALL(HKKTCreate(&HSolver->HKKT));
     
     /* Allocate vectors */

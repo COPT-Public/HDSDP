@@ -17,6 +17,7 @@ extern void HKKTExport( hdsdp_kkt *HKKT, double *dKKTASinvVec, double *dKKTASinv
 extern hdsdp_retcode HKKTFactorize( hdsdp_kkt *HKKT );
 extern hdsdp_retcode HKKTSolve( hdsdp_kkt *HKKT, double *dRhsVec, double *dLhsVec );
 extern void HKKTRegularize( hdsdp_kkt *HKKT, double dKKTReg );
+extern void HKKTRegisterPSDP( hdsdp_kkt *HKKT, double **dPrimalScalX );
 extern void HKKTClear( hdsdp_kkt *HKKT );
 extern void HKKTDestroy( hdsdp_kkt **pHKKT );
 

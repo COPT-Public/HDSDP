@@ -196,9 +196,15 @@ extern int sBoundConeGetDimImpl( hdsdp_cone_bound_scalar *cone ) {
     return cone->nRow;
 }
 
-extern hdsdp_retcode sBoundConeGetKKT( hdsdp_cone_bound_scalar *cone, void *kkt, int typeKKT ) {
+extern hdsdp_retcode sBoundConeGetKKT( hdsdp_cone_bound_scalar *cone, int iCone, void *kkt, int typeKKT ) {
     
+    (void) iCone;
     hdsdp_kkt *Hkkt = (hdsdp_kkt *) kkt;
+    
+    /* No bound cone in the primal method */
+    if ( typeKKT == KKT_TYPE_PRIMAL ) {
+        return HDSDP_RETCODE_FAILED;
+    }
     
     for ( int iRow = 0; iRow < cone->nRow; ++iRow ) {
         cone->dualLowerInverse[iRow] = 1.0 / cone->dualLower[iRow];
@@ -240,10 +246,29 @@ extern hdsdp_retcode sBoundConeGetKKT( hdsdp_cone_bound_scalar *cone, void *kkt,
     return HDSDP_RETCODE_OK;
 }
 
-extern hdsdp_retcode sBoundConeGetKKTByFixedStrategy( hdsdp_cone_bound_scalar *cone, void *kkt, int typeKKT, int ikktStrategy ) {
+extern hdsdp_retcode sBoundConeGetKKTByFixedStrategy( hdsdp_cone_bound_scalar *cone, int iCone, void *kkt, int typeKKT, int ikktStrategy ) {
     
     (void) ikktStrategy;
-    return sBoundConeGetKKT(cone, kkt, typeKKT);
+    return sBoundConeGetKKT(cone, iCone, kkt, typeKKT);
+}
+
+extern void sBoundConeBuildPrimalXSXDirection( hdsdp_cone_bound_scalar *cone, void *kkt, double *dPrimalScalMatrix, double *dPrimalXSXBuffer, int iDualMat ) {
+    
+    /* Should not be invoked for bound cone */
+    (void) kkt;
+    (void) dPrimalScalMatrix;
+    (void) dPrimalXSXBuffer;
+    (void) iDualMat;
+    
+    assert( 0 );
+    return;
+}
+
+extern double sBoundConeXDotS( hdsdp_cone_bound_scalar *cone, double *dConePrimal ) {
+    
+    (void) dConePrimal;
+    assert( 0 );
+    return HDSDP_INFINITY;
 }
 
 extern int64_t sBoundConeGetSymNnzImpl( hdsdp_cone_bound_scalar *cone ) {

@@ -1926,6 +1926,42 @@ static double KKT5Pair_RankOneSparse_RankOneDense( sdp_coeff_spr1 *A, sdp_coeff_
     return A->spR1FactorSign * B->r1FactorSign * dSinvAVecDotBVec * dSinvAVecDotBVec;
 }
 
+static double KKT5Pair_RankOneDense_Sparse( sdp_coeff_dsr1 *A, sdp_coeff_sparse *B, double *Sinv, double *aux ) {
+   
+    /* Implement trace(A * S^-1 * B * S^-1 ) for dense rank one A and sparse B
+       trace(A * S^-1 * B * S^-1 )
+     = signa * trace((S^-1 * a)' * B *  (S^-1 * a))
+     */
+    
+    fds_symv(A->nSDPCol, 1.0, Sinv, A->r1MatFactor, 0.0, aux);
+    return A->r1FactorSign * tsp_quadform(B->nSDPCol, B->nTriMatElem, B->triMatRow, B->triMatCol, B->triMatElem, aux);
+}
+
+static double KKT5Pair_RankOneDense_Dense( sdp_coeff_dsr1 *A, sdp_coeff_dense *B, double *Sinv, double *aux ) {
+    
+    /* Implement trace(A * S^-1 * B * S^-1 ) for dense rank one A and dense  B
+       trace(A * S^-1 * B * S^-1 )
+     = signa * trace((S^-1 * a)' * B *  (S^-1 * a))
+     */
+    
+    fds_symv(A->nSDPCol, 1.0, Sinv, A->r1MatFactor, 0.0, aux);
+    return A->r1FactorSign * pds_quadform(A->nSDPCol, B->dsMatElem, aux, aux + A->nSDPCol);
+}
+
+static double KKT5Pair_RankOneDense_RankOneDense( sdp_coeff_dsr1 *A, sdp_coeff_dsr1 *B, double *Sinv, double *aux ) {
+    
+    /* Implement trace(A * S^-1 * B * S^-1 ) for dense rank one A and dense rank one B
+       trace(A * S^-1 * B * S^-1 )
+     = signa * signb * trace( a * a' * S^-1 * b * b' * S^-1 )
+     = signa * signb *  (a' * S^-1 * b)^2
+     */
+    
+    fds_symv(A->nSDPCol, 1.0, Sinv, A->r1MatFactor, 0.0, aux);
+    double aDotSinvb = dot(&A->nSDPCol, B->r1MatFactor, &HIntConstantOne, aux, &HIntConstantOne);
+    
+    return A->r1FactorSign * B->r1FactorSign * aDotSinvb * aDotSinvb;
+}
+
 static double dataMatZeroKKT5TraceASinvBSinvImpl( void *A, sdp_coeff *B, double *Sinv, double *aux ) {
     
     return 0.0;
@@ -1993,6 +2029,25 @@ static double dataMatRankOneSparseKKT5TraceASinvBSinvImpl( void *A, sdp_coeff *B
 }
 
 static double dataMatRankOneDenseKKT5TraceASinvBSinvImpl( void *A, sdp_coeff *B, double *Sinv, double *aux ) {
+    
+    sdp_coeff_dsr1 *dsr1 = (sdp_coeff_dsr1 *) A;
+    
+    switch (B->dataType) {
+        case SDP_COEFF_ZERO:
+            return 0.0;
+            break;
+        case SDP_COEFF_SPARSE:
+            return KKT5Pair_RankOneDense_Sparse(dsr1, B->dataMat, Sinv, aux);
+        case SDP_COEFF_DENSE:
+            return KKT5Pair_RankOneDense_Dense(dsr1, B->dataMat, Sinv, aux);
+            break;
+        case SDP_COEFF_DSR1:
+            return KKT5Pair_RankOneDense_RankOneDense(dsr1, B->dataMat, Sinv, aux);
+            break;
+        default:
+            assert( 0 );
+            break;
+    }
     
     assert( 0 );
     return 0.0;

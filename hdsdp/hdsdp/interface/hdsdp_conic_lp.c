@@ -249,15 +249,24 @@ extern int LPConeGetDim( hdsdp_cone_lp *cone ) {
     return cone->nCol;
 }
 
-extern hdsdp_retcode LPConeGetKKT( hdsdp_cone_lp *cone, void *kkt, int typeKKT ) {
+extern hdsdp_retcode LPConeGetKKT( hdsdp_cone_lp *cone, int iCone, void *kkt, int typeKKT ) {
     
     hdsdp_kkt *Hkkt = (hdsdp_kkt *) kkt;
     
     /* We currently implement the dense version */
     assert( !Hkkt->isKKTSparse );
     
-    for ( int iCol = 0; iCol < cone->nCol; ++iCol ) {
-        cone->colDualInverse[iCol] = 1.0 / cone->colDual[iCol];
+    if ( typeKKT == KKT_TYPE_PRIMAL ) {
+        if ( !Hkkt->dPrimalX || !Hkkt->dPrimalX[iCone] ) {
+            return HDSDP_RETCODE_FAILED;
+        }
+        for ( int iCol = 0; iCol < cone->nCol; ++iCol ) {
+            cone->colDualInverse[iCol] = Hkkt->dPrimalX[iCone][iCol];
+        }
+    } else {
+        for ( int iCol = 0; iCol < cone->nCol; ++iCol ) {
+            cone->colDualInverse[iCol] = 1.0 / cone->colDual[iCol];
+        }
     }
     
     csp_ATxpby(cone->nRow, cone->rowMatBeg, cone->rowMatIdx,
@@ -318,10 +327,32 @@ extern hdsdp_retcode LPConeGetKKT( hdsdp_cone_lp *cone, void *kkt, int typeKKT )
     return HDSDP_RETCODE_OK;
 }
 
-extern hdsdp_retcode LPConeGetKKTFixedStrategy( hdsdp_cone_lp *cone, void *kkt, int typeKKT, int ikktStrategy ) {
+extern void LPConeBuildPrimalXSXDirection( hdsdp_cone_lp *cone, void *kkt, double *dPrimalScalMatrix, double *dPrimalXSXBuffer, int iDualMat ) {
+    
+    if ( iDualMat ) {
+        for ( int iCol = 0; iCol < cone->nCol; ++iCol ) {
+            dPrimalXSXBuffer[iCol] = \
+            dPrimalScalMatrix[iCol] * dPrimalScalMatrix[iCol] * cone->colDual[iCol];
+        }
+    } else {
+        for ( int iCol = 0; iCol < cone->nCol; ++iCol ) {
+            dPrimalXSXBuffer[iCol] = \
+            dPrimalScalMatrix[iCol] * dPrimalScalMatrix[iCol] * cone->colDualStep[iCol];
+        }
+    }
+    
+    return;
+}
+
+extern double LPConeXDotS( hdsdp_cone_lp *cone, double *dConePrimal ) {
+    
+    return dot(&cone->nCol, cone->colDual, &HIntConstantOne, dConePrimal, &HIntConstantOne);
+}
+
+extern hdsdp_retcode LPConeGetKKTFixedStrategy( hdsdp_cone_lp *cone, int iCone, void *kkt, int typeKKT, int ikktStrategy ) {
     
     (void) ikktStrategy;
-    return LPConeGetKKT(cone, kkt, typeKKT);
+    return LPConeGetKKT(cone, iCone, kkt, typeKKT);
 }
 
 extern int64_t LPConeGetSymNnzImpl( hdsdp_cone_lp *cone ) {

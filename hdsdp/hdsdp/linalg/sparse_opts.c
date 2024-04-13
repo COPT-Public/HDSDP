@@ -100,7 +100,7 @@ extern void csp_aApB( int n, int nnz, double a, int *Al, double *Ax, double *Bx 
 /** @brief Get the number of nonzero columns in an csc matrix
  *
  */
-extern int csp_nnz_cols ( int n, int *Ap ) {
+extern int csp_nnz_cols( int n, int *Ap ) {
     
     int nzcols = 0;
     
@@ -109,6 +109,71 @@ extern int csp_nnz_cols ( int n, int *Ap ) {
     }
     
     return nzcols;
+}
+
+extern void csp_trimultiply( int n, int *Sp, int *Si, double *Sx, double *X, double *aux, double *XSX ) {
+    /* Routine for multiplying X * S * X (S is csc sparse) and adding it to buffer
+       Check dataMatSparseKKT3ComputeSinvASinvImpl for more details */
+    
+    int i, j;
+    double aVal = 0.0;
+    double *Sinv = X;
+    double *SinvACol = NULL;
+    double *SinvARow = NULL;
+    double *SinvRow = NULL;
+    double *SinvCol = NULL;
+    double *SinvA = aux;
+    
+    HDSDP_ZERO(SinvA, double, n * n);
+    
+    for ( int i = 0; i < n; ++i ) {
+        for ( int k = Sp[i]; k < Sp[i + 1]; ++k ) {
+            int j = Si[k];
+            aVal = Sx[k];
+            SinvACol = SinvA + n * i;
+            SinvRow = Sinv + n * j;
+            axpy(&n, &aVal, SinvRow, &HIntConstantOne, SinvACol, &HIntConstantOne);
+            
+            if ( j != i ) {
+                SinvACol = SinvA + n * j;
+                SinvRow = Sinv + n * i;
+                axpy(&n, &aVal, SinvRow, &HIntConstantOne, SinvACol, &HIntConstantOne);
+            }
+        }
+    }
+    
+    for ( i = 0; i < n; ++i ) {
+        SinvARow = SinvA + i;
+        for ( j = 0; j < i; ++j ) {
+            SinvCol = Sinv + n * j;
+            double dDotVal = dot(&n, SinvARow, &n, SinvCol, &HIntConstantOne);
+            FULL_ENTRY(XSX, n, i, j) += dDotVal;
+            FULL_ENTRY(XSX, n, j, i) += dDotVal;
+        }
+        
+        SinvCol = Sinv + n * i;
+        FULL_ENTRY(XSX, n, i, i) += dot(&n, SinvARow, &n, SinvCol, &HIntConstantOne);
+    }
+    
+    return;
+}
+
+extern double csp_dot_fds( int n, int *Ap, int *Ai, double *Ax, double *B ) {
+    
+    double dAdotB = 0.0;
+    
+    for ( int i = 0; i < n; ++i ) {
+        for ( int k = Ap[i]; k < Ap[i + 1]; ++k ) {
+            int j = Ai[k];
+            if ( i == j ) {
+                dAdotB += 0.5 * Ax[k] * FULL_ENTRY(B, n, j, i);
+            } else {
+                dAdotB += Ax[k] * FULL_ENTRY(B, n, j, i);
+            }
+        }
+    }
+    
+    return dAdotB;
 }
 
 extern void csp_dump( int n, int *Ap, int *Ai, double *Ax, double *v ) {

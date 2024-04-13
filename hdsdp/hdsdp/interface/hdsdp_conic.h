@@ -24,7 +24,7 @@ extern "C" {
 #define BUFFER_DUALVAR   (0)
 #define BUFFER_DUALCHECK (1)
 #define BUFFER_DUALSTEP  (2)
-extern hdsdp_retcode HConeCreate( hdsdp_cone **pHCone );
+extern hdsdp_retcode HConeCreate( hdsdp_cone **pHCone, int iCone );
 extern int HConeGetVarBufferDim( hdsdp_cone *HCone );
 extern hdsdp_retcode HConeSetData( hdsdp_cone *HCone, user_data *coneData );
 extern hdsdp_retcode HConeProcData( hdsdp_cone *HCone );
@@ -45,6 +45,7 @@ extern double HConeGetCoeffNorm( hdsdp_cone *HCone, int whichNorm );
 extern double HConeGetObjNorm( hdsdp_cone *HCone, int whichNorm );
 extern hdsdp_retcode HConeBuildSchurComplement( hdsdp_cone *HCone, void *schurMat, int typeKKT );
 extern hdsdp_retcode HConeBuildSchurComplementFixed( hdsdp_cone *HCone, void *schurMat, int typeKKT, int kktStrategy );
+extern void HConeBuildPrimalXSXDirection( hdsdp_cone *HCone, void *schurMat, double *dPrimalScalMatrix, double *dPrimalXSXBuffer, int iDualMat );
 extern hdsdp_retcode HConeGetLogBarrier( hdsdp_cone *HCone, double barHsdTau, double *rowDual, int whichBuffer, double *logdet );
 extern hdsdp_retcode HConeAddStepToBufferAndCheck( hdsdp_cone *HCone, double dStep, int whichBuffer, int *isInterior );
 extern hdsdp_retcode HConeCheckIsInterior( hdsdp_cone *HCone, double barHsdTau, double *rowDual, int *isInterior );
@@ -55,6 +56,7 @@ extern int HConePFeasSolFound( hdsdp_cone *HCone, double barHsdTauStep, double *
 extern void HConeGetPrimal( hdsdp_cone *HCone, double dBarrierMu, double *dRowDual, double *dRowDualStep, double *dConePrimal, double *dConePrimal2 );
 extern void HConeGetDual( hdsdp_cone *HCone, double *dConeDual, double *dConeDual2 );
 extern void HConeComputeATimesX( hdsdp_cone *HCone, double *dConePrimal, double *dATimesX );
+extern double HConeComputeXDotS( hdsdp_cone *HCone, double *dConePrimal );
 extern double HConeComputeTraceCX( hdsdp_cone *HCone, double *dConePrimal );
 extern void HConeScalByConstant( hdsdp_cone *HCone, double dScal );
 

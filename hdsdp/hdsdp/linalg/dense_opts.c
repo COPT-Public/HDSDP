@@ -96,6 +96,62 @@ extern void fds_ger( int m, int n, double alpha, double *x, int incx,
     return;
 }
 
+extern void fds_trimultiply( int n, double *S, double *X, double *aux, double *XSX ) {
+    /* Routine for multiplying three dense matrices X * S * X and adding it to buffer
+       Check dataMatDenseKKT3ComputeSinvASinvImpl for more details */
+    
+    double *XCol = NULL;
+    double *SXCol = NULL;
+    double *SX = aux;
+    
+    HDSDP_ZERO(SX, double, n * n);
+    for ( int i = 0; i < n; ++i ) {
+        XCol = X + n * i;
+        SXCol = SX + n * i;
+        fds_symv(n, 1.0, S, XCol, 0.0, SXCol);
+    }
+    
+    for ( int i = 0; i < n; ++i ) {
+        SXCol = SX + n * i;
+        for ( int j = 0; j < i; ++j ) {
+            XCol = X + n * j;
+            double dDotVal = dot(&n, SXCol, &HIntConstantOne, XCol, &HIntConstantOne);
+            FULL_ENTRY(XSX, n, i, j) += dDotVal;
+            FULL_ENTRY(XSX, n, j, i) += dDotVal;
+        }
+        
+        XCol = X + n * i;
+        FULL_ENTRY(XSX, n, i, i) += \
+        dot(&n, SXCol, &HIntConstantOne, XCol, &HIntConstantOne);
+    }
+
+    return;
+}
+
+extern double fds_dot_fds( int n, double *A, double *B ) {
+    
+    double dAdotB = 0.0;
+    
+    int j = 0;
+    int i = 0;
+    
+    double *dACol = A;
+    double *dBCol = B;
+    
+    for ( i = 0; i < n; ++i ) {
+        /* The first element of each column is diagonal */
+        dAdotB += 0.5 * dACol[0] * dBCol[0];
+        for ( j = 1; j < n - i; ++j ) {
+            dAdotB += dACol[j] * dBCol[j];
+        }
+        /* Move pointer to the start of each column */
+        dACol += n + 1;
+        dBCol += n + 1;
+    }
+    
+    return 2.0 * dAdotB;
+}
+
 extern void fds_print( int n, double *A ) {
     
     for ( int i = 0; i < n; ++i ) {

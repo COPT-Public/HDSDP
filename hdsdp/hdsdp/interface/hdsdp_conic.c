@@ -20,7 +20,7 @@
 #include "hdsdp_conic_bound.h"
 #endif
 
-extern hdsdp_retcode HConeCreate( hdsdp_cone **pHCone ) {
+extern hdsdp_retcode HConeCreate( hdsdp_cone **pHCone, int iCone ) {
     
     hdsdp_retcode retcode = HDSDP_RETCODE_OK;
     HDSDP_NULLCHECK(pHCone);
@@ -28,6 +28,8 @@ extern hdsdp_retcode HConeCreate( hdsdp_cone **pHCone ) {
     HDSDP_INIT(HCone, hdsdp_cone, 1);
     HDSDP_MEMCHECK(HCone);
     HDSDP_ZERO(HCone, hdsdp_cone, 1);
+    HCone->iCone = iCone;
+    
     *pHCone = HCone;
     
 exit_cleanup:
@@ -72,6 +74,8 @@ extern hdsdp_retcode HConeSetData( hdsdp_cone *HCone, user_data *usrData ) {
             set_func_pointer(HCone->coneScal, sBoundConeScalDummyImpl);
             set_func_pointer(HCone->coneBuildSchur, sBoundConeGetKKT);
             set_func_pointer(HCone->coneBuildSchurFixed, sBoundConeGetKKTByFixedStrategy);
+            set_func_pointer(HCone->coneBuildPrimalDirection, sBoundConeBuildPrimalXSXDirection);
+            set_func_pointer(HCone->coneXDotS, sBoundConeXDotS);
             set_func_pointer(HCone->coneGetBarrier, sBoundConeGetBarrier);
             set_func_pointer(HCone->coneAxpyBufferAndCheck, sBoundConeAddStepToBufferAndCheck);
             set_func_pointer(HCone->coneInteriorCheck, sBoundConeInteriorCheck);
@@ -101,6 +105,8 @@ extern hdsdp_retcode HConeSetData( hdsdp_cone *HCone, user_data *usrData ) {
             set_func_pointer(HCone->coneScal, LPConeScal);
             set_func_pointer(HCone->coneBuildSchur, LPConeGetKKT);
             set_func_pointer(HCone->coneBuildSchurFixed, LPConeGetKKTFixedStrategy);
+            set_func_pointer(HCone->coneBuildPrimalDirection, LPConeBuildPrimalXSXDirection);
+            set_func_pointer(HCone->coneXDotS, LPConeXDotS);
             set_func_pointer(HCone->coneGetBarrier, LPConeGetBarrier);
             set_func_pointer(HCone->coneAxpyBufferAndCheck, LPConeAddStepToBufferAndCheck);
             set_func_pointer(HCone->coneInteriorCheck, LPConeInteriorCheck);
@@ -131,6 +137,8 @@ extern hdsdp_retcode HConeSetData( hdsdp_cone *HCone, user_data *usrData ) {
             set_func_pointer(HCone->coneScal, sdpDenseConeScal);
             set_func_pointer(HCone->coneBuildSchur, sdpDenseConeGetKKT);
             set_func_pointer(HCone->coneBuildSchurFixed, sdpDenseConeGetKKTByFixedStrategy);
+            set_func_pointer(HCone->coneBuildPrimalDirection, sdpDenseConeBuildPrimalXSXDirection);
+            set_func_pointer(HCone->coneXDotS, sdpDenseConeXDotS);
             set_func_pointer(HCone->coneGetBarrier, sdpDenseConeGetBarrier);
             set_func_pointer(HCone->coneAxpyBufferAndCheck, sdpDenseConeAddStepToBufferAndCheck);
             set_func_pointer(HCone->coneInteriorCheck, sdpDenseConeInteriorCheck);
@@ -161,6 +169,8 @@ extern hdsdp_retcode HConeSetData( hdsdp_cone *HCone, user_data *usrData ) {
             set_func_pointer(HCone->coneScal, sdpSparseConeScal);
             set_func_pointer(HCone->coneBuildSchur, sdpSparseConeGetKKT);
             set_func_pointer(HCone->coneBuildSchurFixed, sdpSparseConeGetKKTByFixedStrategy);
+            set_func_pointer(HCone->coneBuildPrimalDirection, sdpSparseConeBuildPrimalXSXDirection);
+            set_func_pointer(HCone->coneXDotS, sdpSparseConeXDotS);
             set_func_pointer(HCone->coneGetBarrier, sdpSparseConeGetBarrier);
             set_func_pointer(HCone->coneAxpyBufferAndCheck, sdpSparseConeAddStepToBufferAndCheck);
             set_func_pointer(HCone->coneInteriorCheck, sdpSparseConeInteriorCheck);
@@ -312,12 +322,17 @@ extern hdsdp_retcode HConeBuildSchurComplement( hdsdp_cone *HCone, void *schurMa
      (Most time-consuming and will only be invoked when the problem is considered dual infeasible)
      */
     
-    return HCone->coneBuildSchur(HCone->coneData, schurMat, typeKKT);
+    return HCone->coneBuildSchur(HCone->coneData, HCone->iCone, schurMat, typeKKT);
 }
 
 extern hdsdp_retcode HConeBuildSchurComplementFixed( hdsdp_cone *HCone, void *schurMat, int typeKKT, int kktStrategy ) {
     
-    return HCone->coneBuildSchurFixed(HCone->coneData, schurMat, typeKKT, kktStrategy);
+    return HCone->coneBuildSchurFixed(HCone->coneData, HCone->iCone, schurMat, typeKKT, kktStrategy);
+}
+
+extern void HConeBuildPrimalXSXDirection( hdsdp_cone *HCone, void *schurMat, double *dPrimalScalMatrix, double *dPrimalXSXBuffer, int iDualMat ) {
+    
+    return HCone->coneBuildPrimalDirection(HCone->coneData, schurMat, dPrimalScalMatrix, dPrimalXSXBuffer, iDualMat);
 }
 
 /* Barrier, projection and recovery */
@@ -392,12 +407,16 @@ extern double HConeComputeTraceCX( hdsdp_cone *HCone, double *dConePrimal ) {
     return HCone->coneTraceCX(HCone->coneData, dConePrimal);
 }
 
+extern double HConeComputeXDotS( hdsdp_cone *HCone, double *dConePrimal ) {
+    
+    return HCone->coneXDotS(HCone->coneData, dConePrimal);
+}
+
 extern void HConeScalByConstant( hdsdp_cone *HCone, double dScal ) {
     
     HCone->coneScal(HCone->coneData, dScal);
     return;
 }
-
 
 extern void HConeDetectFeature( hdsdp_cone *HCone, double *rowRHS, int coneIntFeatures[20], double coneDblFeatures[20] ) {
     

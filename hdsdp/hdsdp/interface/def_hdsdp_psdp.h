@@ -21,33 +21,36 @@
 
 typedef struct {
     
+    /* Dual solver */
     hdsdp *HSolver;
     
+    /* Basic conic information */
     int nRow;
-    int nCol;
     int nCones;
     
+    /* Synchronized from dual solver, no memory needed */
     double *rowRHS;
-    hdsdp_cone *HCone;
+    hdsdp_cone **HCones;
     hdsdp_kkt *HKKT;
     
     double *dRowDual;
     double *dRowDualStep;
-    
     double *dPrimalAuxiVec1;
     double *dPrimalAuxiVec2;
-    double *dPrimalKKTRhs;
-    
     double dBarrierMu;
     
-    double *dPrimalX;
-    double *dPrimalScalX;
-    double *dDualS;
-    double *dPrimalXStep;
-    double *dPrimalMatBuffer;
+    /* Freshly allocated memory */
+    double *dPrimalKKTRhs;
+    double **dPrimalX;
+    double **dPrimalScalX;
+    double **dPrimalXStep;
+    double **dPrimalMatBuffer;
     
-    hdsdp_lanczos *Lanczos;
-    hdsdp_linsys_fp *XFactor;
+    /* Each cone has its own primal ratio test */
+    int iLanczos;
+    hdsdp_lanczos **Lanczos;
+    /* Each cone has its Primal Cholesky factor */
+    hdsdp_linsys_fp **XFactors;
     
 } hdsdp_psdp;
 

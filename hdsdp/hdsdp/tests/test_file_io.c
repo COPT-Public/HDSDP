@@ -74,7 +74,7 @@ int test_file_io( char *fname ) {
         HUserDataSetConeData(SDPData, HDSDP_CONETYPE_DENSE_SDP, nConstrs, BlkDims[iBlk],
                              coneMatBeg[iBlk], coneMatIdx[iBlk], coneMatElem[iBlk]);
         cone_type cone = HUserDataChooseCone(SDPData);
-        HDSDP_CALL(HConeCreate(&SDPCone));
+        HDSDP_CALL(HConeCreate(&SDPCone, iBlk));
         
         SDPCones[iBlk] = SDPCone;
         
