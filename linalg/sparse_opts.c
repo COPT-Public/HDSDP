@@ -17,6 +17,12 @@
 #include <stdio.h>
 #include <math.h>
 
+extern void dgemm( const char *transa, const char *transb, const int *m,
+                   const int *n, const int *k, const double *alpha,
+                   const double *a, const int *lda, const double *b,
+                   const int *ldb, const double *beta, double *c,
+                   const int *ldc );
+
 /* Compressed column operations */
 extern void csp_Axpy( int n, int *Ap, int *Ai, double *Ax, double a, double *x, double *y ) {
     
@@ -91,7 +97,7 @@ extern void csp_aApB( int n, int nnz, double a, int *Al, double *Ax, double *Bx 
         
     } else {
         /* In this case B is dense and axpy is sufficient*/
-        
+        axpy(&n, &a, Ax, &HIntConstantOne, Bx, &HIntConstantOne);
     }
     
     return;
@@ -142,19 +148,10 @@ extern void csp_trimultiply( int n, int *Sp, int *Si, double *Sx, double *X, dou
         }
     }
     
-    for ( i = 0; i < n; ++i ) {
-        SinvARow = SinvA + i;
-        for ( j = 0; j < i; ++j ) {
-            SinvCol = Sinv + n * j;
-            double dDotVal = dot(&n, SinvARow, &n, SinvCol, &HIntConstantOne);
-            FULL_ENTRY(XSX, n, i, j) += dDotVal;
-            FULL_ENTRY(XSX, n, j, i) += dDotVal;
-        }
-        
-        SinvCol = Sinv + n * i;
-        FULL_ENTRY(XSX, n, i, i) += dot(&n, SinvARow, &n, SinvCol, &HIntConstantOne);
-    }
-    
+    /* XSX += SinvA^T * Sinv  (one dgemm instead of n*(n+1)/2 strided dot calls) */
+    dgemm(&HCharConstantTrans, &HCharConstantNoTrans, &n, &n, &n,
+          &HDblConstantOne, SinvA, &n, Sinv, &n, &HDblConstantOne, XSX, &n);
+
     return;
 }
 

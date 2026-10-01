@@ -7,6 +7,7 @@
 #include "interface/hdsdp_schur.h"
 #include "interface/hdsdp_lpsolve.h"
 #include "linalg/sparse_opts.h"
+#include "linalg/hdsdp_mineig.h"
 #include "external/lp_mps.h"
 #include "external/hdsdp_cs.h"
 #else
@@ -16,6 +17,7 @@
 #include "hdsdp_file_io.h"
 #include "hdsdp_conic.h"
 #include "hdsdp_schur.h"
+#include "hdsdp_mineig.h"
 #include "sparse_opts.h"
 #include "lp_mps.h"
 #include "hdsdp_cs.h"
@@ -29,6 +31,7 @@
 int test_file_io( char *fname );
 int test_sdpa_io( char *fname );
 int test_mat( char *path );
+int test_mineig( char *path );
 int test_primal_primal_dual_bench( char *fname );
 
 #define FILE_TYPE_UNKOWN (0)
@@ -84,6 +87,16 @@ static void get_sol_status( hdsdp_status status, char *sStatus ) {
     }
     
     return;
+}
+
+static int is_psd( void *chol, int *Ap, int *Ai, double *Ax, int *ispd ) {
+    
+    hdsdp_retcode retcode = HDSDP_RETCODE_OK;
+    hdsdp_linsys *ichol = (hdsdp_linsys *) chol;
+    HDSDP_CALL(HFpLinsysPsdCheck(ichol, Ap, Ai, Ax, ispd));
+    
+exit_cleanup:
+    return retcode;
 }
 
 static int file_io_mps( char *fname ) {
@@ -273,6 +286,51 @@ exit_cleanup:
         HDSDP_FREE(LpMatIdx);
         HDSDP_FREE(LpMatElem);
     }
+    
+    return (int) retcode;
+}
+
+int test_mineig( char *path ) {
+    
+    hdsdp_retcode retcode = HDSDP_RETCODE_OK;
+    
+    int nRow = 0;
+    int nCol = 0;
+    int *Ap = NULL;
+    int *Ai = NULL;
+    double *Ax = NULL;
+    double *dRhs = NULL;
+    double *dLhs = NULL;
+    
+    double dPerturb = 0.0;
+    
+    HDSDP_CALL(HUtilGetSparseMatrix(path, &nRow, &nCol, &Ap, &Ai, &Ax, &dRhs));
+    HDSDP_INIT(dLhs, double, nCol);
+    
+    hdsdp_mineig *eig = NULL;
+    hdsdp_linsys_fp *chol = NULL;
+    
+    HDSDP_CALL(HFpLinsysCreate(&chol, nCol, HDSDP_LINSYS_SPARSE_DIRECT));
+    HDSDP_CALL(HFpLinsysSymbolic(chol, Ap, Ai));
+    
+    HDSDP_CALL(HMinEigCreate(&eig));
+    HDSDP_CALL(HMinEigInit(eig, nCol, 30));
+    
+    HDSDP_CALL(HMinEigComputeMinEig(eig, Ap, Ai, Ax, (void *) chol, is_psd,
+                                    MIN_EIG_LANCZOS, &dPerturb));
+    
+exit_cleanup:
+    
+    if ( retcode != HDSDP_RETCODE_OK ) {
+        printf("Failed \n");
+    }
+    
+    HDSDP_FREE(Ap);
+    HDSDP_FREE(Ai);
+    HDSDP_FREE(Ax);
+    HDSDP_FREE(dLhs);
+    HDSDP_FREE(dRhs);
+    HMinEigDestroy(&eig);
     
     return (int) retcode;
 }

@@ -7,6 +7,7 @@
 #include "interface/hdsdp_conic.h"
 #include "interface/hdsdp_schur.h"
 #include "interface/hdsdp_algo.h"
+#include "linalg/vec_opts.h"
 #else
 #include "def_hdsdp.h"
 #include "hdsdp.h"
@@ -17,6 +18,7 @@
 #include "hdsdp_schur.h"
 #include "hdsdp_algo.h"
 #include "hdsdp_psdp.h"
+#include "vec_opts.h"
 #endif
 
 #include <math.h>
@@ -160,11 +162,9 @@ static void HDSDP_PrintLog( hdsdp *HSolver, int SDPMethod ) {
     double pdObjScal = 1.0 / (dRhsScal * dObjScal * HSolver->dBarHsdTau);
     HSolver->dInfeas = sqrt(nSumCones) * fabs(HSolver->dResidual) / (dRhsScal * HSolver->dBarHsdTau);
     
-    HSolver->dObjInternal = 0.0;
-    for ( int iRow = 0; iRow < HSolver->nRows; ++iRow ) {
-        HSolver->dObjInternal += HSolver->rowRHS[iRow] * HSolver->dRowDual[iRow];
-    }
-    
+    HSolver->dObjInternal = dot(&HSolver->nRows, HSolver->rowRHS, &HIntConstantOne,
+                                HSolver->dRowDual, &HIntConstantOne);
+
     HSolver->dObjVal = HSolver->dObjInternal * pdObjScal;
     HSolver->pObjVal = HSolver->pObjInternal * pdObjScal;
     HSolver->comp = HSolver->pObjVal - HSolver->dObjVal;
@@ -271,12 +271,7 @@ static void HDSDP_HSD_BuildStep( hdsdp *HSolver ) {
     
     /* First get dual objective */
     double dOldObjVal = HSolver->dObjInternal;
-    bTy = 0.0;
-    
-    for ( int iRow = 0; iRow < HSolver->nRows; ++iRow ) {
-        bTy += b[iRow] * y[iRow];
-    }
-    
+    bTy = dot(&HSolver->nRows, b, &HIntConstantOne, y, &HIntConstantOne);
     HSolver->dObjImprove = bTy - dOldObjVal;
     
     /* Then compute dd1 = b - mu * ASinvCSinv */
@@ -475,9 +470,8 @@ static hdsdp_retcode HDSDP_PhaseA_BarHsdSolve( hdsdp *HSolver, int dOnly ) {
         
         /* Take step */
         HSolver->dBarHsdTau += HSolver->dDStep * HSolver->dBarHsdTauStep;
-        for ( int iRow = 0; iRow < HSolver->nRows; ++iRow ) {
-            HSolver->dRowDual[iRow] += HSolver->dDStep * HSolver->dRowDualStep[iRow];
-        }
+        axpy(&HSolver->nRows, &HSolver->dDStep, HSolver->dRowDualStep,
+             &HIntConstantOne, HSolver->dRowDual, &HIntConstantOne);
         HSolver->dResidual = HSolver->dResidual * (1.0 - HSolver->dDStep);
         HDSDP_SetResidual(HSolver, HSolver->dResidual);
         
@@ -560,11 +554,9 @@ static int HDSDP_ProxMeasure( hdsdp *HSolver ) {
             HSolver->rowRHS[iRow] / HSolver->dBarrierMu - HSolver->HKKT->dASinvVec[iRow];
     }
     
-    HSolver->dProxNorm = 0.0;
-    for ( int iRow = 0; iRow < HSolver->nRows; ++iRow ) {
-        HSolver->dProxNorm += HSolver->dHAuxiVec1[iRow] * HSolver->dHAuxiVec2[iRow];
-    }
-    
+    HSolver->dProxNorm = dot(&HSolver->nRows, HSolver->dHAuxiVec1, &HIntConstantOne,
+                             HSolver->dHAuxiVec2, &HIntConstantOne);
+
     if ( HSolver->dProxNorm < 0.0 ) {
         algo_debug("Proximity norm is negative \n");
         HSolver->dProxNorm = 1.0;
@@ -1355,7 +1347,7 @@ static void HDSDP_Feasible_BuildStep( hdsdp *HSolver ) {
         HSolver->dProxNorm = dProxNormNew;
     }
     
-    if ( dProxNormNew < 0.1 ) {
+    if ( dProxNormNew < 0.1 && HSolver->dBarrierMu > 1e-05 ) {
         HSolver->dBarrierMu = 0.1 * HSolver->dBarrierMu;
         HDSDP_Feasible_BuildStep(HSolver);
     }

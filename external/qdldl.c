@@ -31,7 +31,9 @@ int QDLDL_etree( const int  n, const int* Ap, const int* Ai, int* work, int* Lnz
     work[j] = j;
     for(p = Ap[j]; p < Ap[j+1]; p++){
       i = Ai[p];
-      if(i > j){return -1;}; //abort if entries on lower triangle
+        if(i > j){
+            return -1;
+        }; //abort if entries on lower triangle
       while(work[i] != j){
         if(etree[i] == QDLDL_UNKNOWN){
           etree[i] = j;

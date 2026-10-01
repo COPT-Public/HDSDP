@@ -63,9 +63,7 @@ static void HLanczosICleanUp( hdsdp_lanczos *HLanczos ) {
     HDSDP_ZERO(HLanczos->YMat, double, HLanczos->nMaxSpaceDim * 2);
     HDSDP_ZERO(HLanczos->dArray, double, HLanczos->nMaxSpaceDim);
     HDSDP_ZERO(HLanczos->UMat, double, HLanczos->nMaxSpaceDim * HLanczos->nMaxSpaceDim);
-    HDSDP_ZERO(HLanczos->eigDblMat, double, HLanczos->nMaxSpaceDim * SYEV_WORK);
-    HDSDP_ZERO(HLanczos->eigIntMat, int, HLanczos->nMaxSpaceDim * SYEV_IWORK);
-    
+
     return;
 }
 

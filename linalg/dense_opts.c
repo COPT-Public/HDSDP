@@ -38,6 +38,12 @@ extern void dsymm( const char *side, const char *uplo, const int *m,
                    const int *lda, const double *b, const int *ldb,
                    const double *beta, double *c, const int *ldc );
 
+extern void dgemm( const char *transa, const char *transb, const int *m,
+                   const int *n, const int *k, const double *alpha,
+                   const double *a, const int *lda, const double *b,
+                   const int *ldb, const double *beta, double *c,
+                   const int *ldc );
+
 void dsyr( const char *uplo, const int *n, const double *alpha,
            const double *x, const int *incx, double *a, const int *lda );
 
@@ -102,31 +108,13 @@ extern void fds_ger( int m, int n, double alpha, double *x, int incx,
 extern void fds_trimultiply( int n, double *S, double *X, double *aux, double *XSX ) {
     /* Routine for multiplying three dense matrices X * S * X and adding it to buffer
        Check dataMatDenseKKT3ComputeSinvASinvImpl for more details */
-    
-    double *XCol = NULL;
-    double *SXCol = NULL;
+
     double *SX = aux;
-    
-    HDSDP_ZERO(SX, double, n * n);
-    for ( int i = 0; i < n; ++i ) {
-        XCol = X + n * i;
-        SXCol = SX + n * i;
-        fds_symv(n, 1.0, S, XCol, 0.0, SXCol);
-    }
-    
-    for ( int i = 0; i < n; ++i ) {
-        SXCol = SX + n * i;
-        for ( int j = 0; j < i; ++j ) {
-            XCol = X + n * j;
-            double dDotVal = dot(&n, SXCol, &HIntConstantOne, XCol, &HIntConstantOne);
-            FULL_ENTRY(XSX, n, i, j) += dDotVal;
-            FULL_ENTRY(XSX, n, j, i) += dDotVal;
-        }
-        
-        XCol = X + n * i;
-        FULL_ENTRY(XSX, n, i, i) += \
-        dot(&n, SXCol, &HIntConstantOne, XCol, &HIntConstantOne);
-    }
+    /* SX = S * X  (one dsymm instead of n dsymv calls; beta=0 avoids manual ZERO) */
+    fds_symm('L', HCharConstantUploLow, n, n, 1.0, S, n, X, n, 0.0, SX, n);
+    /* XSX += SX^T * X  (one dgemm instead of n*(n+1)/2 dot calls) */
+    dgemm(&HCharConstantTrans, &HCharConstantNoTrans, &n, &n, &n,
+          &HDblConstantOne, SX, &n, X, &n, &HDblConstantOne, XSX, &n);
 
     return;
 }

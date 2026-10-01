@@ -1662,6 +1662,18 @@ extern hdsdp_retcode sdpDenseConeRatioTestImpl( hdsdp_cone_sdp_dense *cone, doub
     hdsdp_retcode retcode = HDSDP_RETCODE_OK;
     sdpDenseConeIUpdateBuffer(cone, barHsdTauStep, -1.0, rowDualStep, dAdaRatio * cone->dualResidual, BUFFER_DUALSTEP);
     
+    double dDualNorm = 0.0;
+    if ( cone->isDualSparse ) {
+        dDualNorm = csp_sum_abs(cone->nCol, cone->dualMatBeg, cone->dualMatIdx, cone->dualStep);
+    } else {
+        dDualNorm = pds_sum_abs(cone->nCol, cone->dualStep);
+    }
+    
+    if ( dDualNorm == 0.0 ) {
+        *maxStep = HDSDP_INFINITY;
+        return retcode;
+    }
+    
     /* Choose Lanczos target buffer */
     if ( whichBuffer == BUFFER_DUALVAR ) {
         cone->LTarget = cone->dualFactor;
@@ -1690,6 +1702,18 @@ extern hdsdp_retcode sdpSparseConeRatioTestImpl( hdsdp_cone_sdp_sparse *cone, do
     
     hdsdp_retcode retcode = HDSDP_RETCODE_OK;
     sdpSparseConeIUpdateBuffer(cone, barHsdTauStep, -1.0, rowDualStep, dAdaRatio * cone->dualResidual, BUFFER_DUALSTEP);
+    
+    double dDualNorm = 0.0;
+    if ( cone->isDualSparse ) {
+        dDualNorm = csp_sum_abs(cone->nCol, cone->dualMatBeg, cone->dualMatIdx, cone->dualStep);
+    } else {
+        dDualNorm = pds_sum_abs(cone->nCol, cone->dualStep);
+    }
+    
+    if ( dDualNorm == 0.0 ) {
+        *maxStep = HDSDP_INFINITY;
+        return retcode;
+    }
     
     /* Choose Lanczos target buffer */
     if ( whichBuffer == BUFFER_DUALVAR ) {

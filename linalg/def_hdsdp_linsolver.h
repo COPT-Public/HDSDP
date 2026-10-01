@@ -222,6 +222,7 @@ typedef struct {
 #define PARDISO_PARAM_MATCHING     (12)
 #define PARDISO_PARAM_FACNNZ       (17)
 #define PARDISO_PARAM_FACFLOP      (18)
+#define PARDISO_PARAM_CHECKER      (26)
 #define PARDISO_PARAM_THREADS      (33)
 #define PARDISO_PARAM_INDEX        (34)
 #define PARDISO_PARAM_INDEX_C       (1)
