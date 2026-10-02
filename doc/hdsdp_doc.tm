@@ -295,7 +295,7 @@
   HDSDP is written in ANSI C and is freely available. Since version 2.0,
   HDSDP is maintained as personal repository
 
-  <center|<samp|<center|><hlink|https://github.com/Gwzwpxz/hdsdp|>>>
+  <center|<samp|<center|><hlink|https://github.com/COPT-Public/HDSDP|>>>
 
   and all the source files for HDSDP are directly available.\ 
 
