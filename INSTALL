@@ -1,0 +1,42 @@
+Building, installing, and running HDSDP
+=======================================
+
+Tested platform: macOS on Apple silicon, using Apple Clang, CMake 4.4.3, and
+the system Accelerate BLAS/LAPACK. The following commands use the default
+build with Pardiso disabled. CMake 3.21 or later and a C compiler are needed.
+
+From the package root:
+
+    cmake -S . -B build -DCMAKE_BUILD_TYPE=Release -DBUILD_TESTING=ON
+    cmake --build build --parallel
+    ctest --test-dir build --output-on-failure
+    cmake --install build --prefix "$PWD/install"
+    ./install/bin/sdpasolve examples/truss1.dat-s
+
+The last command should print `SDP Status: Primal dual optimal`. The installed
+headers are under `install/include/hdsdp/`, the libraries under `install/lib/`,
+and the executable under `install/bin/`. Set a different installation prefix
+with `--prefix /desired/path` if needed.
+
+The default build needs BLAS and LAPACK. These must be installed or supplied
+by the system before CMake configuration. On macOS, Accelerate is one option;
+on Linux, a BLAS/LAPACK implementation such as OpenBLAS may be used. To choose
+specific libraries, supply CMake's `BLA_VENDOR` or `BLAS_LIBRARIES` and
+`LAPACK_LIBRARIES` settings as appropriate for the installation. For BLAS
+symbol naming differences, consult `external/lapack_names.h` and the manual.
+
+Optional Intel MKL Pardiso support is enabled with `-DLINSYS_PARDISO=ON`.
+The CMake file contains example MKL paths that must be adapted to the local
+installation; the tested procedure above does not require MKL. Additional
+bundled source components have separate licenses: SuiteSparse CSparse/CXSparse
+and LDL use LGPL-2.1-or-later; OSQP QDLDL uses Apache-2.0; SPEIGS has an MIT
+license. Their source and license locations are recorded in
+`THIRD_PARTY_NOTICES`.
+
+`sdpasolve` accepts SDPA `.dat-s` and MPS `.mps` files, for example:
+
+    ./install/bin/sdpasolve examples/theta1.dat-s
+    ./install/bin/sdpasolve examples/afiro.mps
+
+See `TESTING` for the smoke test and how to extend it. For API usage, see the
+manual `doc/hdsdp_doc.pdf` and the public headers in `interface/`.

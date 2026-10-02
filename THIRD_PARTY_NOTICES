@@ -1,0 +1,25 @@
+Third-party components and licenses
+===================================
+
+The top-level LICENSE contains the project's MIT notice. The MIT notice does
+not replace the licenses below.
+
+* `external/hdsdp_cs.c`, `external/hdsdp_cs.h`, and
+  `external/hdsdp_cschol.c` contain or adapt SuiteSparse CSparse/CXSparse
+  routines by Timothy A. Davis. The applicable SuiteSparse notices describe
+  these components as LGPL version 2.1 or later. See
+  `external/lics/suitesparse/LICENSE.txt` (CSparse and CXSparse sections) and
+  `external/lics/suitesparse/LGPL-2.1.txt` for the license text.
+
+* `external/hdsdp_ldl.c` contains or adapts SuiteSparse LDL by Timothy A.
+  Davis. Its source states `SPDX-License-Identifier: LGPL-2.1+`. See the LDL
+  section of `external/lics/suitesparse/LICENSE.txt` and the full license text
+  in `external/lics/suitesparse/LGPL-2.1.txt`.
+
+* `external/qdldl.c` and `external/qdldl.h` include QDLDL routines credited
+  to OSQP. QDLDL is Apache License 2.0; the license text is in
+  `external/lics/qdldl/LICENSE.txt`.
+
+* `derivative/SPEIGS/` is a separate component with its own MIT notice,
+  copyright LEAVES Optimization Software Platform, in
+  `derivative/SPEIGS/LICENSE`.

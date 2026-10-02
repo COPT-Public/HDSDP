@@ -1,0 +1,9 @@
+HDSDP code contributors
+=======================
+
+Wenzhi Gao — HDSDP implementation and maintenance; project manager.
+SkyLiu0 — contributions to the solver interface, data operations, and
+  utilities, recorded under this Git identity.
+
+Third-party code authors and copyright holders are identified in
+`THIRD_PARTY_NOTICES` and the corresponding source and license files.

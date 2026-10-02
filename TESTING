@@ -1,0 +1,22 @@
+Installation smoke test
+=======================
+
+After the build in `INSTALL`, run:
+
+    ctest --test-dir build --output-on-failure
+
+CTest runs `sdpasolve` on `examples/truss1.dat-s` and checks both the process
+exit code and the solver's `SDP Status: Primal dual optimal` output. Both are
+needed: an unsupported input type can currently exit with status zero while
+printing an error message.
+
+To test the installed executable, run:
+
+    cmake -DSOLVER="$PWD/install/bin/sdpasolve" \
+          -DINSTANCE="$PWD/examples/truss1.dat-s" \
+          -P tests/check_sdpasolve.cmake
+
+To add a small regression instance later, put its input under `examples/`,
+register another `add_test` in `CMakeLists.txt`, and use the checker script to
+assert its expected status. For numerical regressions, extend the checker to
+compare a documented objective value and tolerance as well.

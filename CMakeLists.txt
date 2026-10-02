@@ -1,6 +1,8 @@
 cmake_minimum_required(VERSION 3.21)
 # set(CMAKE_OSX_ARCHITECTURES x86_64)
 project(hdsdp LANGUAGES C)
+include(GNUInstallDirs)
+include(CTest)
 
 #-------------------------------
 # Options and configurations
@@ -103,7 +105,8 @@ set(LIB_SOURCES
 #-------------------------------
 add_library(hdsdp_shared SHARED ${LIB_SOURCES})
 target_include_directories(hdsdp_shared PUBLIC
-    ${CMAKE_SOURCE_DIR}
+    $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}>
+    $<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}/hdsdp>
 )
 set_target_properties(hdsdp_shared PROPERTIES OUTPUT_NAME "hdsdp")
 target_link_libraries(hdsdp_shared PRIVATE ${BLAS_LIBRARIES} ${LAPACK_LIBRARIES})
@@ -113,7 +116,8 @@ endif()
 
 add_library(hdsdp_static STATIC ${LIB_SOURCES})
 target_include_directories(hdsdp_static PUBLIC
-    ${CMAKE_SOURCE_DIR}
+    $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}>
+    $<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}/hdsdp>
 )
 set_target_properties(hdsdp_static PROPERTIES OUTPUT_NAME "hdsdp")
 target_link_libraries(hdsdp_static PRIVATE ${BLAS_LIBRARIES} ${LAPACK_LIBRARIES})
@@ -132,11 +136,35 @@ if(NOT WIN32)
     target_include_directories(sdpasolve PUBLIC
         ${CMAKE_SOURCE_DIR}
     )
-    target_link_libraries(sdpasolve PRIVATE hdsdp_shared ${BLAS_LIBRARIES} ${LAPACK_LIBRARIES} m)
+    target_link_libraries(sdpasolve PRIVATE hdsdp_static ${BLAS_LIBRARIES} ${LAPACK_LIBRARIES} m)
     if(LINSYS_PARDISO AND MKL_LIBS)
         target_link_libraries(sdpasolve PRIVATE ${MKL_LIBS})
     endif()
 
     # If you need C99 standard:
     set_property(TARGET hdsdp_shared hdsdp_static sdpasolve PROPERTY C_STANDARD 99)
+endif()
+
+install(TARGETS hdsdp_shared hdsdp_static
+    LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
+    ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR}
+    RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
+)
+if(TARGET sdpasolve)
+    install(TARGETS sdpasolve RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR})
+endif()
+
+# The headers refer to one another by interface/, linalg/, and external/ paths.
+install(DIRECTORY interface linalg external
+    DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/hdsdp
+    FILES_MATCHING PATTERN "*.h"
+)
+
+if(BUILD_TESTING AND TARGET sdpasolve)
+    add_test(NAME hdsdp_truss1
+        COMMAND ${CMAKE_COMMAND}
+            "-DSOLVER=$<TARGET_FILE:sdpasolve>"
+            "-DINSTANCE=${CMAKE_CURRENT_SOURCE_DIR}/examples/truss1.dat-s"
+            -P "${CMAKE_CURRENT_SOURCE_DIR}/tests/check_sdpasolve.cmake"
+    )
 endif()
