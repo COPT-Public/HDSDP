@@ -7,10 +7,12 @@
 #include "linalg/sparse_opts.h"
 #include "linalg/vec_opts.h"
 #include "interface/hdsdp_utils.h"
+#include "external/lapack_names.h"
 #else
 #include "sparse_opts.h"
 #include "vec_opts.h"
 #include "hdsdp_utils.h"
+#include "lapack_names.h"
 #endif
 
 #include <assert.h>

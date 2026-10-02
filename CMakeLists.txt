@@ -15,12 +15,6 @@ if(LINSYS_PARDISO)
 endif()
 
 add_compile_definitions(HEADERPATH)
-# ddot_
-# add_compile_definitions(UNDERBLAS)    
-# DDOT
-# add_compile_definitions(CAPBLAS)
-# DDOT_
-# add_compile_definitions(CAPUNDERBLAS)
 
 #-------------------------------
 # Find BLAS/LAPACK
@@ -30,6 +24,41 @@ find_package(LAPACK REQUIRED)
 
 if(NOT BLAS_FOUND OR NOT LAPACK_FOUND)
     message(FATAL_ERROR "BLAS and LAPACK are required but not found.")
+endif()
+
+#-------------------------------
+# Detect the BLAS/LAPACK symbol naming convention (see external/lapack_names.h)
+#   dgemm  -> none, dgemm_ -> UNDERBLAS, DGEMM -> CAPBLAS, DGEMM_ -> UNDERCAPBLAS
+# Override with -DHDSDP_BLAS_NAMING=<none|UNDERBLAS|CAPBLAS|UNDERCAPBLAS>.
+#-------------------------------
+set(HDSDP_BLAS_NAMING "" CACHE STRING "BLAS/LAPACK symbol naming: none, UNDERBLAS, CAPBLAS or UNDERCAPBLAS (empty to auto-detect)")
+if(NOT HDSDP_BLAS_NAMING)
+    include(CheckFunctionExists)
+    set(CMAKE_REQUIRED_LIBRARIES ${LAPACK_LIBRARIES} ${BLAS_LIBRARIES})
+    check_function_exists(dpotrf_ HDSDP_HAVE_dpotrf_)
+    if(HDSDP_HAVE_dpotrf_)
+        set(HDSDP_BLAS_NAMING UNDERBLAS)
+    else()
+        check_function_exists(dpotrf HDSDP_HAVE_dpotrf)
+        if(HDSDP_HAVE_dpotrf)
+            set(HDSDP_BLAS_NAMING none)
+        else()
+            check_function_exists(DPOTRF HDSDP_HAVE_DPOTRF)
+            check_function_exists(DPOTRF_ HDSDP_HAVE_DPOTRF_)
+            if(HDSDP_HAVE_DPOTRF)
+                set(HDSDP_BLAS_NAMING CAPBLAS)
+            elseif(HDSDP_HAVE_DPOTRF_)
+                set(HDSDP_BLAS_NAMING UNDERCAPBLAS)
+            else()
+                message(FATAL_ERROR "Could not determine BLAS/LAPACK symbol naming; set HDSDP_BLAS_NAMING.")
+            endif()
+        endif()
+    endif()
+    unset(CMAKE_REQUIRED_LIBRARIES)
+endif()
+message(STATUS "BLAS/LAPACK symbol naming: ${HDSDP_BLAS_NAMING}")
+if(NOT HDSDP_BLAS_NAMING STREQUAL "none")
+    add_compile_definitions(${HDSDP_BLAS_NAMING})
 endif()
 
 #-------------------------------

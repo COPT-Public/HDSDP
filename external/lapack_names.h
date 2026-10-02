@@ -26,6 +26,7 @@
     #define dpotri  dpotri_
     #define dpotrs  dpotrs_
     #define dpotrf  dpotrf_
+    #define dgemm   dgemm_
 #endif
 
 #ifdef CAPBLAS
@@ -47,6 +48,7 @@
     #define dpotri  DPOTRI
     #define dpotrs  DPOTRS
     #define dpotrf  DPOTRF
+    #define dgemm   DGEMM
 #endif
 
 #ifdef UNDERCAPBLAS
@@ -68,6 +70,7 @@
     #define dpotri  DPOTRI_
     #define dpotrs  DPOTRS_
     #define dpotrf  DPOTRF_
+    #define dgemm   DGEMM_
 #endif
 
 #endif
